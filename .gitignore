@@ -1,0 +1,151 @@
+# ================================
+# Dependencies
+# ================================
+node_modules/
+vendor/
+
+# ================================
+# Build output
+# ================================
+dist/
+build/
+out/
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# ================================
+# Go
+# ================================
+*.test
+*.out
+*.prof
+*.pprof
+coverage.txt
+go.work.sum
+
+# ================================
+# Node.js / Frontend
+# ================================
+.next/
+.nuxt/
+.output/
+.vite/
+.cache/
+.parcel-cache/
+.turbo/
+.vercel/
+.netlify/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+.prettiercache
+
+# ================================
+# Package manager
+# ================================
+.pnpm-store/
+.yarn/
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.npm/
+*.tgz
+
+# ================================
+# Environment & Secrets
+# ================================
+.env
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# ================================
+# Logs
+# ================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ================================
+# Testing & Coverage
+# ================================
+coverage/
+.nyc_output/
+*.lcov
+htmlcov/
+
+# ================================
+# OS files - macOS
+# ================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+
+# OS files - Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# OS files - Linux
+*~
+.fuse_hidden*
+.nfs*
+
+# ================================
+# IDE & Editor
+# ================================
+.idea/
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+*.orig
+
+# ================================
+# AI tools
+# ================================
+.codex/
+.opencode/
+
+# ================================
+# Docker (local volumes, not config)
+# ================================
+docker-compose.override.yml
+
+# ================================
+# Misc
+# ================================
+.terraform/
+*.tfstate
+*.tfstate.*
+*.pid
+*.seed
