@@ -23,7 +23,8 @@
     "signingIn": "登入中...",
     "active": "已啟用",
     "inactive": "已停用",
-    "copied": "已複製"
+    "copied": "已複製",
+    "confirm": "確認"
   },
   "landing": {
     "dashboard": "控制台",
@@ -79,6 +80,9 @@
     "manage": "管理",
     "release": "釋放",
     "releaseConfirm": "釋放 {{fqdn}}？所有 DNS 記錄將被刪除。",
+    "releaseTitle": "釋放網域",
+    "releaseDesc": "釋放 {{fqdn}} 後，所有 DNS 記錄將被刪除，且已消耗的積分不會退還。",
+    "releaseInputLabel": "請輸入 {{fqdn}} 以確認釋放",
     "released": "已釋放 {{fqdn}}",
     "notFound": "未找到子網域",
     "backToList": "返回列表",
@@ -140,6 +144,8 @@
     "noRecords": "暫無 DNS 記錄",
     "noRecordsHelp": "新增你的第一筆記錄開始使用",
     "deleteConfirm": "刪除指向 {{content}} 的 {{type}} 記錄？",
+    "deleteTitle": "刪除記錄",
+    "deleteDesc": "確定刪除指向 {{content}} 的 {{type}} 記錄？",
     "recordDeleted": "記錄已刪除"
   },
   "adminUsers": {

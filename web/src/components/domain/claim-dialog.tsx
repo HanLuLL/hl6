@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useTranslation, Trans } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,7 +46,12 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
         <DialogHeader>
           <DialogTitle>{t("claimDialog.title")}</DialogTitle>
           <DialogDescription>
-            {t("claimDialog.description", { count: domain.credit_cost, domain: domain.name, cost: domain.credit_cost })}
+            <Trans
+              i18nKey="claimDialog.description"
+              count={domain.credit_cost}
+              values={{ domain: domain.name, cost: domain.credit_cost }}
+              components={{ strong: <strong /> }}
+            />
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -64,7 +69,11 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
             </div>
             {name && (
               <p className="text-xs text-muted-foreground">
-                {t("claimDialog.result", { fqdn: `${name}.${domain.name}` })}
+                <Trans
+                  i18nKey="claimDialog.result"
+                  values={{ fqdn: `${name}.${domain.name}` }}
+                  components={{ strong: <strong /> }}
+                />
               </p>
             )}
           </div>

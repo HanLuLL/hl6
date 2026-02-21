@@ -23,7 +23,8 @@
     "signingIn": "\u767b\u5f55\u4e2d...",
     "active": "\u5df2\u542f\u7528",
     "inactive": "\u5df2\u505c\u7528",
-    "copied": "\u5df2\u590d\u5236"
+    "copied": "\u5df2\u590d\u5236",
+    "confirm": "确认"
   },
   "landing": {
     "dashboard": "\u63a7\u5236\u53f0",
@@ -79,6 +80,9 @@
     "manage": "\u7ba1\u7406",
     "release": "\u91ca\u653e",
     "releaseConfirm": "\u91ca\u653e {{fqdn}}\uff1f\u6240\u6709 DNS \u8bb0\u5f55\u5c06\u88ab\u5220\u9664\u3002",
+    "releaseTitle": "释放域名",
+    "releaseDesc": "释放 {{fqdn}} 后，所有 DNS 记录将被删除，且已消耗的积分不会退还。",
+    "releaseInputLabel": "请输入 {{fqdn}} 以确认释放",
     "released": "\u5df2\u91ca\u653e {{fqdn}}",
     "notFound": "\u672a\u627e\u5230\u5b50\u57df\u540d",
     "backToList": "\u8fd4\u56de\u5217\u8868",
@@ -140,6 +144,8 @@
     "noRecords": "\u6682\u65e0 DNS \u8bb0\u5f55",
     "noRecordsHelp": "\u6dfb\u52a0\u4f60\u7684\u7b2c\u4e00\u6761\u8bb0\u5f55\u5f00\u59cb\u4f7f\u7528",
     "deleteConfirm": "\u5220\u9664\u6307\u5411 {{content}} \u7684 {{type}} \u8bb0\u5f55\uff1f",
+    "deleteTitle": "删除记录",
+    "deleteDesc": "确定删除指向 {{content}} 的 {{type}} 记录？",
     "recordDeleted": "\u8bb0\u5f55\u5df2\u5220\u9664"
   },
   "adminUsers": {

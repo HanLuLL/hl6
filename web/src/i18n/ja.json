@@ -23,7 +23,8 @@
     "signingIn": "ログイン中...",
     "active": "有効",
     "inactive": "無効",
-    "copied": "コピーしました"
+    "copied": "コピーしました",
+    "confirm": "確認"
   },
   "landing": {
     "dashboard": "ダッシュボード",
@@ -79,6 +80,9 @@
     "manage": "管理",
     "release": "解放",
     "releaseConfirm": "{{fqdn}} を解放しますか？すべてのDNSレコードが削除されます。",
+    "releaseTitle": "ドメインを解放",
+    "releaseDesc": "{{fqdn}} を解放すると、すべてのDNSレコードが削除され、消費したクレジットは返金されません。",
+    "releaseInputLabel": "確認のため {{fqdn}} と入力してください",
     "released": "{{fqdn}} を解放しました",
     "notFound": "サブドメインが見つかりません",
     "backToList": "一覧に戻る",
@@ -140,6 +144,8 @@
     "noRecords": "DNSレコードはまだありません",
     "noRecordsHelp": "最初のレコードを追加して始めましょう",
     "deleteConfirm": "{{content}} を指す {{type}} レコードを削除しますか？",
+    "deleteTitle": "レコードを削除",
+    "deleteDesc": "{{content}} を指す {{type}} レコードを削除してもよろしいですか？",
     "recordDeleted": "レコードを削除しました"
   },
   "adminUsers": {

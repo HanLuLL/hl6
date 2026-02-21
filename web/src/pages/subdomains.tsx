@@ -1,19 +1,25 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useSubdomains, useReleaseSubdomain } from "@/hooks/use-subdomains";
 
 export default function SubdomainsPage() {
   const { data: subdomains, isLoading } = useSubdomains();
   const release = useReleaseSubdomain();
   const { t } = useTranslation();
+  const [releaseTarget, setReleaseTarget] = useState<{ id: number; fqdn: string } | null>(null);
 
-  const handleRelease = (id: number, fqdn: string) => {
-    if (!confirm(t("subdomains.releaseConfirm", { fqdn }))) return;
-    release.mutate({ id, fqdn });
+  const handleRelease = () => {
+    if (!releaseTarget) return;
+    release.mutate(
+      { id: releaseTarget.id, fqdn: releaseTarget.fqdn },
+      { onSuccess: () => setReleaseTarget(null) }
+    );
   };
 
   return (
@@ -85,7 +91,7 @@ export default function SubdomainsPage() {
                       size="sm"
                       variant="ghost"
                       className="text-destructive"
-                      onClick={() => handleRelease(sub.id, sub.fqdn)}
+                      onClick={() => setReleaseTarget({ id: sub.id, fqdn: sub.fqdn })}
                       disabled={release.isPending}
                     >
                       {t("subdomains.release")}
@@ -97,6 +103,18 @@ export default function SubdomainsPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!releaseTarget}
+        onOpenChange={(open) => !open && setReleaseTarget(null)}
+        title={t("subdomains.releaseTitle")}
+        description={t("subdomains.releaseDesc", { fqdn: releaseTarget?.fqdn })}
+        confirmInput={releaseTarget?.fqdn}
+        confirmInputLabel={t("subdomains.releaseInputLabel", { fqdn: releaseTarget?.fqdn })}
+        onConfirm={handleRelease}
+        destructive
+        loading={release.isPending}
+      />
     </div>
   );
 }

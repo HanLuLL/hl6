@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useSubdomain, useReleaseSubdomain } from "@/hooks/use-subdomains";
 import { useDNSRecords } from "@/hooks/use-dns-records";
 import { RecordTable } from "@/components/dns/record-table";
@@ -19,14 +20,15 @@ export default function SubdomainDetailPage() {
   const { data: records } = useDNSRecords(subdomainId);
   const release = useReleaseSubdomain();
   const [showAddRecord, setShowAddRecord] = useState(false);
+  const [showRelease, setShowRelease] = useState(false);
 
   const handleRelease = () => {
     if (!subdomain) return;
-    if (!confirm(t("subdomains.releaseConfirm", { fqdn: subdomain.fqdn }))) return;
     release.mutate(
       { id: subdomain.id, fqdn: subdomain.fqdn },
       {
         onSuccess: () => {
+          setShowRelease(false);
           navigate("/subdomains");
         },
       }
@@ -114,7 +116,7 @@ export default function SubdomainDetailPage() {
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setShowAddRecord(true)}>{t("subdomains.addRecord")}</Button>
-          <Button variant="destructive" onClick={handleRelease} disabled={release.isPending}>
+          <Button variant="destructive" onClick={() => setShowRelease(true)} disabled={release.isPending}>
             {t("subdomains.release")}
           </Button>
         </div>
@@ -135,6 +137,18 @@ export default function SubdomainDetailPage() {
         subdomainId={subdomainId}
         open={showAddRecord}
         onOpenChange={setShowAddRecord}
+      />
+
+      <ConfirmDialog
+        open={showRelease}
+        onOpenChange={setShowRelease}
+        title={t("subdomains.releaseTitle")}
+        description={t("subdomains.releaseDesc", { fqdn: subdomain.fqdn })}
+        confirmInput={subdomain.fqdn}
+        confirmInputLabel={t("subdomains.releaseInputLabel", { fqdn: subdomain.fqdn })}
+        onConfirm={handleRelease}
+        destructive
+        loading={release.isPending}
       />
     </div>
   );

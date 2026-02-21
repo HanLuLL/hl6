@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import type { DNSRecord } from "@/types";
 import { useDeleteRecord } from "@/hooks/use-dns-records";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RecordForm } from "./record-form";
 
 interface RecordTableProps {
@@ -21,12 +22,15 @@ interface RecordTableProps {
 
 export function RecordTable({ subdomainId, records }: RecordTableProps) {
   const [editRecord, setEditRecord] = useState<DNSRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DNSRecord | null>(null);
   const deleteRecord = useDeleteRecord(subdomainId);
   const { t } = useTranslation();
 
-  const handleDelete = (record: DNSRecord) => {
-    if (!confirm(t("recordTable.deleteConfirm", { type: record.type, content: record.content }))) return;
-    deleteRecord.mutate(record.id);
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    deleteRecord.mutate(deleteTarget.id, {
+      onSuccess: () => setDeleteTarget(null),
+    });
   };
 
   const typeBadgeVariant = (type: string) => {
@@ -88,7 +92,7 @@ export function RecordTable({ subdomainId, records }: RecordTableProps) {
                       variant="ghost"
                       size="sm"
                       className="text-destructive"
-                      onClick={() => handleDelete(record)}
+                      onClick={() => setDeleteTarget(record)}
                       disabled={deleteRecord.isPending}
                     >
                       {t("common.delete")}
@@ -106,6 +110,16 @@ export function RecordTable({ subdomainId, records }: RecordTableProps) {
         record={editRecord}
         open={!!editRecord}
         onOpenChange={(open) => !open && setEditRecord(null)}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={t("recordTable.deleteTitle")}
+        description={t("recordTable.deleteDesc", { type: deleteTarget?.type, content: deleteTarget?.content })}
+        onConfirm={handleDelete}
+        destructive
+        loading={deleteRecord.isPending}
       />
     </>
   );

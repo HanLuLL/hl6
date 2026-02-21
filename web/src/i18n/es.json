@@ -23,7 +23,8 @@
     "signingIn": "Iniciando sesión...",
     "active": "Activo",
     "inactive": "Inactivo",
-    "copied": "Copiado"
+    "copied": "Copiado",
+    "confirm": "Confirmar"
   },
   "landing": {
     "dashboard": "Panel de control",
@@ -79,6 +80,9 @@
     "manage": "Gestionar",
     "release": "Liberar",
     "releaseConfirm": "¿Liberar {{fqdn}}? Se eliminarán todos los registros DNS.",
+    "releaseTitle": "Liberar dominio",
+    "releaseDesc": "Tras liberar {{fqdn}}, se eliminarán todos los registros DNS y los créditos consumidos no serán reembolsados.",
+    "releaseInputLabel": "Escribe {{fqdn}} para confirmar la liberación",
     "released": "Se ha liberado {{fqdn}}",
     "notFound": "Subdominio no encontrado",
     "backToList": "Volver a la lista",
@@ -140,6 +144,8 @@
     "noRecords": "No hay registros DNS aún",
     "noRecordsHelp": "Añade tu primer registro para comenzar",
     "deleteConfirm": "¿Eliminar el registro {{type}} que apunta a {{content}}?",
+    "deleteTitle": "Eliminar registro",
+    "deleteDesc": "¿Estás seguro de eliminar el registro {{type}} que apunta a {{content}}?",
     "recordDeleted": "Registro eliminado"
   },
   "adminUsers": {

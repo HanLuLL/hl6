@@ -23,7 +23,8 @@
     "signingIn": "Signing in...",
     "active": "Active",
     "inactive": "Inactive",
-    "copied": "Copied"
+    "copied": "Copied",
+    "confirm": "Confirm"
   },
   "landing": {
     "dashboard": "Dashboard",
@@ -79,6 +80,9 @@
     "manage": "Manage",
     "release": "Release",
     "releaseConfirm": "Release {{fqdn}}? All DNS records will be deleted.",
+    "releaseTitle": "Release Domain",
+    "releaseDesc": "After releasing {{fqdn}}, all DNS records will be deleted and credits spent will not be refunded.",
+    "releaseInputLabel": "Type {{fqdn}} to confirm release",
     "released": "Released {{fqdn}}",
     "notFound": "Subdomain not found",
     "backToList": "Back to list",
@@ -140,6 +144,8 @@
     "noRecords": "No DNS records yet",
     "noRecordsHelp": "Add your first record to get started",
     "deleteConfirm": "Delete {{type}} record pointing to {{content}}?",
+    "deleteTitle": "Delete Record",
+    "deleteDesc": "Are you sure you want to delete the {{type}} record pointing to {{content}}?",
     "recordDeleted": "Record deleted"
   },
   "adminUsers": {
