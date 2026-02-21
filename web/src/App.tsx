@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { RootLayout } from "@/components/layout/root-layout";
+import { Skeleton } from "@/components/ui/skeleton";
 import LandingPage from "@/pages/landing";
 import CallbackPage from "@/pages/callback";
 import DashboardPage from "@/pages/dashboard";
@@ -19,8 +20,32 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex min-h-screen">
+        <aside className="hidden w-64 border-r bg-sidebar-background lg:block">
+          <div className="flex h-14 items-center border-b px-4">
+            <Skeleton className="h-5 w-28" />
+          </div>
+          <div className="space-y-2 p-4">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-8 w-full" />
+            ))}
+          </div>
+        </aside>
+        <div className="flex flex-1 flex-col">
+          <header className="flex h-14 items-center border-b bg-background px-4 lg:px-6">
+            <div className="flex-1" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-5 w-10" />
+              <Skeleton className="h-8 w-8 rounded-full" />
+            </div>
+          </header>
+          <main className="flex-1 p-4 lg:p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+          </main>
+        </div>
       </div>
     );
   }

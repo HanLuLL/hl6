@@ -1,6 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { prefetchRouteData } from "@/lib/prefetch";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./language-toggle";
 import { Button } from "@/components/ui/button";
@@ -33,11 +35,14 @@ const adminItems = [
 function NavLink({ item, onClick }: { item: typeof navItems[0]; onClick?: () => void }) {
   const location = useLocation();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const active = location.pathname === item.href;
   return (
     <Link
       to={item.href}
       onClick={onClick}
+      onMouseEnter={() => prefetchRouteData(queryClient, item.href)}
+      onFocus={() => prefetchRouteData(queryClient, item.href)}
       className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
         active
           ? "bg-primary text-primary-foreground"
@@ -87,6 +92,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut, credits } = useAuth();
   const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <div className="flex min-h-screen">
@@ -142,7 +148,9 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
 
         {/* Main content */}
         <main className="flex-1 p-4 lg:p-6">
-          {children}
+          <div key={location.pathname} className="animate-page-enter">
+            {children}
+          </div>
         </main>
       </div>
     </div>
