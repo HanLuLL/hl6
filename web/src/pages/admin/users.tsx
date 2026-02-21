@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
@@ -81,7 +82,45 @@ export default function AdminUsersPage() {
   });
 
   if (isLoading) {
-    return <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t("adminUsers.title")}</h1>
+          <p className="text-muted-foreground">{t("adminUsers.subtitle")}</p>
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-4 w-32" />
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("adminUsers.name")}</TableHead>
+                  <TableHead>{t("adminUsers.email")}</TableHead>
+                  <TableHead>{t("adminUsers.group")}</TableHead>
+                  <TableHead>{t("adminUsers.role")}</TableHead>
+                  <TableHead>{t("adminUsers.joined")}</TableHead>
+                  <TableHead className="text-right">{t("adminUsers.actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

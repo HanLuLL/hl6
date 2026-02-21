@@ -20,6 +20,7 @@ export function useCreateRecord(subdomainId: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dns-records", subdomainId] });
       queryClient.invalidateQueries({ queryKey: ["subdomain", subdomainId] });
+      queryClient.invalidateQueries({ queryKey: ["subdomains"] });
     },
   });
 }
@@ -42,6 +43,7 @@ export function useDeleteRecord(subdomainId: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dns-records", subdomainId] });
       queryClient.invalidateQueries({ queryKey: ["subdomain", subdomainId] });
+      queryClient.invalidateQueries({ queryKey: ["subdomains"] });
     },
   });
 }

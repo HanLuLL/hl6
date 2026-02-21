@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
@@ -37,7 +38,29 @@ export default function AdminSettingsPage() {
   });
 
   if (isLoading) {
-    return <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t("adminSettings.title")}</h1>
+          <p className="text-muted-foreground">{t("adminSettings.subtitle")}</p>
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-64 mt-1" />
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-4">
+              <div className="space-y-2 flex-1 max-w-xs">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <Skeleton className="h-9 w-16" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

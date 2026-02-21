@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CloudflareZone, DomainWithGroupAccess, UserGroup } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface GroupAccessEntry {
   group_id: number;
@@ -100,7 +101,43 @@ export default function AdminDomainsPage() {
   });
 
   if (isLoading) {
-    return <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{t("adminDomains.title")}</h1>
+            <p className="text-muted-foreground">{t("adminDomains.subtitle")}</p>
+          </div>
+          <Skeleton className="h-9 w-24" />
+        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("adminDomains.domain")}</TableHead>
+                  <TableHead>{t("adminDomains.zoneId")}</TableHead>
+                  <TableHead>{t("adminDomains.groupAccess")}</TableHead>
+                  <TableHead>{t("adminDomains.status")}</TableHead>
+                  <TableHead className="text-right">{t("adminDomains.actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(4)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-28 ml-auto" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

@@ -3,12 +3,13 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCredits, useTransactions } from "@/hooks/use-credits";
 
 export default function CreditsPage() {
-  const { data: creditData } = useCredits();
+  const { data: creditData, isLoading: creditLoading } = useCredits();
   const [page, setPage] = useState(1);
-  const { data: txnData } = useTransactions(page, 20);
+  const { data: txnData, isLoading: txnLoading } = useTransactions(page, 20);
   const { t } = useTranslation();
 
   const typeBadge = (type: string) => {
@@ -32,7 +33,11 @@ export default function CreditsPage() {
           <CardTitle className="text-sm font-medium text-muted-foreground">{t("credits.currentBalance")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold">{creditData?.balance ?? 0}</div>
+          {creditLoading ? (
+            <Skeleton className="h-10 w-20" />
+          ) : (
+            <div className="text-4xl font-bold">{creditData?.balance ?? 0}</div>
+          )}
           <p className="text-sm text-muted-foreground mt-1">{t("credits.creditsAvailable")}</p>
         </CardContent>
       </Card>
@@ -42,7 +47,25 @@ export default function CreditsPage() {
           <CardTitle className="text-lg">{t("credits.transactionHistory")}</CardTitle>
         </CardHeader>
         <CardContent>
-          {!txnData?.data || txnData.data.length === 0 ? (
+          {txnLoading ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                    <div className="space-y-1">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3 w-28" />
+                    </div>
+                  </div>
+                  <div className="text-right space-y-1">
+                    <Skeleton className="h-4 w-10 ml-auto" />
+                    <Skeleton className="h-3 w-16 ml-auto" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !txnData?.data || txnData.data.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">{t("credits.noTransactions")}</p>
           ) : (
             <div className="space-y-3">
@@ -67,23 +90,13 @@ export default function CreditsPage() {
               ))}
               {txnData.total > 20 && (
                 <div className="flex justify-center gap-2 pt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => p - 1)}
-                  >
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                     {t("common.previous")}
                   </Button>
                   <span className="flex items-center text-sm text-muted-foreground">
                     {t("common.pageOf", { page, total: Math.ceil(txnData.total / 20) })}
                   </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= Math.ceil(txnData.total / 20)}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
+                  <Button variant="outline" size="sm" disabled={page >= Math.ceil(txnData.total / 20)} onClick={() => setPage((p) => p + 1)}>
                     {t("common.next")}
                   </Button>
                 </div>

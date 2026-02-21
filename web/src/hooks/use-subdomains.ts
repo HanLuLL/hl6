@@ -38,7 +38,9 @@ export function useClaimSubdomain() {
     mutationFn: api.claimSubdomain,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subdomains"] });
+      queryClient.invalidateQueries({ queryKey: ["domains"] });
       queryClient.invalidateQueries({ queryKey: ["me"] });
+      queryClient.invalidateQueries({ queryKey: ["credits"] });
     },
   });
 }
@@ -49,6 +51,9 @@ export function useReleaseSubdomain() {
     mutationFn: api.releaseSubdomain,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subdomains"] });
+      queryClient.invalidateQueries({ queryKey: ["domains"] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      queryClient.invalidateQueries({ queryKey: ["credits"] });
     },
   });
 }

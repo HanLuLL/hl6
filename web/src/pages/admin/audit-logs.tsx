@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
@@ -26,7 +27,43 @@ export default function AdminAuditLogsPage() {
   });
 
   if (isLoading) {
-    return <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t("auditLogs.title")}</h1>
+          <p className="text-muted-foreground">{t("auditLogs.subtitle")}</p>
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-4 w-28" />
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("auditLogs.action")}</TableHead>
+                  <TableHead>{t("auditLogs.user")}</TableHead>
+                  <TableHead>{t("auditLogs.resource")}</TableHead>
+                  <TableHead>{t("auditLogs.details")}</TableHead>
+                  <TableHead>{t("auditLogs.time")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(6)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
