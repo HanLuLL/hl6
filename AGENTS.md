@@ -1,7 +1,3 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project Overview
 
 HL6 是一个域名/子域名管理平台，用户可以在已注册域名下认领和管理子域名，并管理 DNS 记录。包含基于积分的访问控制和管理员功能。
