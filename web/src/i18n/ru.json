@@ -22,7 +22,8 @@
     "signOut": "Выйти",
     "signingIn": "Вход в систему...",
     "active": "Активен",
-    "inactive": "Неактивен"
+    "inactive": "Неактивен",
+    "copied": "Скопировано"
   },
   "landing": {
     "dashboard": "Панель управления",

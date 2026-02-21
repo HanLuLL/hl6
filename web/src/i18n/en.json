@@ -22,7 +22,8 @@
     "signOut": "Sign out",
     "signingIn": "Signing in...",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "copied": "Copied"
   },
   "landing": {
     "dashboard": "Dashboard",

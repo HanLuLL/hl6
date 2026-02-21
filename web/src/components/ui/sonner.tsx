@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import {
   CircleCheckIcon,
   InfoIcon,
@@ -6,14 +7,68 @@ import {
   TriangleAlertIcon,
 } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useTranslation } from "react-i18next"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
+  const { t } = useTranslation()
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const toastEl = (e.target as HTMLElement).closest(
+        '[data-sonner-toast][data-type="error"]'
+      ) as HTMLElement | null
+      if (!toastEl) return
+
+      const contentEl = toastEl.querySelector("[data-content]") as HTMLElement | null
+      if (!contentEl) return
+
+      const text = contentEl.textContent
+      if (!text || toastEl.dataset.copied === "true") return
+      toastEl.dataset.copied = "true"
+
+      navigator.clipboard.writeText(text)
+
+      // Animate: slide old text up, then slide "copied" text in from below
+      contentEl.style.overflow = "hidden"
+      contentEl.style.transition = "none"
+      const h = contentEl.offsetHeight
+      contentEl.style.height = `${h}px`
+
+      const inner = contentEl.querySelector("[data-title]") as HTMLElement | null
+      const target = inner || contentEl
+      target.style.transition = "transform 0.2s ease-in, opacity 0.2s ease-in"
+      target.style.transform = "translateY(-100%)"
+      target.style.opacity = "0"
+
+      setTimeout(() => {
+        if (inner) {
+          inner.textContent = t("common.copied")
+        } else {
+          contentEl.textContent = t("common.copied")
+        }
+        target.style.transition = "none"
+        target.style.transform = "translateY(100%)"
+        target.style.opacity = "0"
+
+        requestAnimationFrame(() => {
+          target.style.transition = "transform 0.2s ease-out, opacity 0.2s ease-out"
+          target.style.transform = "translateY(0)"
+          target.style.opacity = "1"
+        })
+      }, 200)
+    }
+
+    document.addEventListener("click", handler, true)
+    return () => document.removeEventListener("click", handler, true)
+  }, [t])
 
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
+      position="top-center"
+      richColors
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,
@@ -27,7 +82,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          "--border-radius": "9999px",
         } as React.CSSProperties
       }
       {...props}

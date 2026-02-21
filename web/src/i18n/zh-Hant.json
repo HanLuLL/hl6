@@ -22,7 +22,8 @@
     "signOut": "登出",
     "signingIn": "登入中...",
     "active": "已啟用",
-    "inactive": "已停用"
+    "inactive": "已停用",
+    "copied": "已複製"
   },
   "landing": {
     "dashboard": "控制台",

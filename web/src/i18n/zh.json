@@ -22,7 +22,8 @@
     "signOut": "\u9000\u51fa\u767b\u5f55",
     "signingIn": "\u767b\u5f55\u4e2d...",
     "active": "\u5df2\u542f\u7528",
-    "inactive": "\u5df2\u505c\u7528"
+    "inactive": "\u5df2\u505c\u7528",
+    "copied": "\u5df2\u590d\u5236"
   },
   "landing": {
     "dashboard": "\u63a7\u5236\u53f0",

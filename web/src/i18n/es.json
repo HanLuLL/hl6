@@ -22,7 +22,8 @@
     "signOut": "Cerrar sesión",
     "signingIn": "Iniciando sesión...",
     "active": "Activo",
-    "inactive": "Inactivo"
+    "inactive": "Inactivo",
+    "copied": "Copiado"
   },
   "landing": {
     "dashboard": "Panel de control",

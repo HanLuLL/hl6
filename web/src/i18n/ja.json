@@ -22,7 +22,8 @@
     "signOut": "ログアウト",
     "signingIn": "ログイン中...",
     "active": "有効",
-    "inactive": "無効"
+    "inactive": "無効",
+    "copied": "コピーしました"
   },
   "landing": {
     "dashboard": "ダッシュボード",
