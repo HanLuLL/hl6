@@ -59,7 +59,8 @@
     "creditsBalance": "Credits Balance",
     "mySubdomains": "My Subdomains",
     "dnsRecords": "DNS Records",
-    "recentTransactions": "Recent Transactions"
+    "recentTransactions": "Recent Transactions",
+    "viewAll": "View all"
   },
   "domains": {
     "title": "Available Domains",

@@ -59,7 +59,8 @@
     "creditsBalance": "積分餘額",
     "mySubdomains": "我的子網域",
     "dnsRecords": "DNS 記錄",
-    "recentTransactions": "最近交易"
+    "recentTransactions": "最近交易",
+    "viewAll": "查看全部"
   },
   "domains": {
     "title": "可用網域",

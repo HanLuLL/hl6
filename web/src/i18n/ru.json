@@ -59,7 +59,8 @@
     "creditsBalance": "Баланс кредитов",
     "mySubdomains": "Мои поддомены",
     "dnsRecords": "DNS-записи",
-    "recentTransactions": "Последние транзакции"
+    "recentTransactions": "Последние транзакции",
+    "viewAll": "Смотреть все"
   },
   "domains": {
     "title": "Доступные домены",

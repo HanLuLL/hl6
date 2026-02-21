@@ -59,7 +59,8 @@
     "creditsBalance": "\u79ef\u5206\u4f59\u989d",
     "mySubdomains": "\u6211\u7684\u5b50\u57df\u540d",
     "dnsRecords": "DNS \u8bb0\u5f55",
-    "recentTransactions": "\u6700\u8fd1\u4ea4\u6613"
+    "recentTransactions": "最近交易",
+    "viewAll": "查看全部"
   },
   "domains": {
     "title": "\u53ef\u7528\u57df\u540d",

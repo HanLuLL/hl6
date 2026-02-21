@@ -1,18 +1,15 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubdomains } from "@/hooks/use-subdomains";
-import { useCredits, useTransactions } from "@/hooks/use-credits";
+import { useCredits } from "@/hooks/use-credits";
 
 export default function DashboardPage() {
   const { user, credits } = useAuth();
   const { data: subdomains, isLoading: subdomainsLoading } = useSubdomains();
-  const { isLoading: creditsLoading } = useCredits();
-  const [txPage, setTxPage] = useState(1);
-  const { data: txnData, isLoading: txnLoading } = useTransactions(txPage, 5);
+  const { data: creditData, isLoading: creditsLoading } = useCredits();
   const { t } = useTranslation();
 
   const isLoading = subdomainsLoading || creditsLoading;
@@ -63,7 +60,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {isLoading || txnLoading ? (
+      {isLoading ? (
         <Card>
           <CardHeader>
             <Skeleton className="h-5 w-36" />
@@ -82,14 +79,17 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-      ) : txnData?.data && txnData.data.length > 0 && (
+      ) : creditData?.transactions && creditData.transactions.length > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">{t("dashboard.recentTransactions")}</CardTitle>
+            <Link to="/credits" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {t("dashboard.viewAll")} &rarr;
+            </Link>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {txnData.data.map((tx) => (
+              {creditData.transactions.slice(0, 5).map((tx) => (
                 <div key={tx.id} className="flex items-center justify-between text-sm">
                   <div>
                     <p className="font-medium">{t(tx.description_key, tx.description_params ?? {})}</p>
@@ -102,19 +102,6 @@ export default function DashboardPage() {
                   </span>
                 </div>
               ))}
-              {txnData.total > 5 && (
-                <div className="flex justify-center gap-2 pt-4">
-                  <Button variant="outline" size="sm" disabled={txPage <= 1} onClick={() => setTxPage((p) => p - 1)}>
-                    {t("common.previous")}
-                  </Button>
-                  <span className="flex items-center text-sm text-muted-foreground">
-                    {t("common.pageOf", { page: txPage, total: Math.ceil(txnData.total / 5) })}
-                  </span>
-                  <Button variant="outline" size="sm" disabled={txPage >= Math.ceil(txnData.total / 5)} onClick={() => setTxPage((p) => p + 1)}>
-                    {t("common.next")}
-                  </Button>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>

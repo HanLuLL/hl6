@@ -59,7 +59,8 @@
     "creditsBalance": "クレジット残高",
     "mySubdomains": "マイサブドメイン",
     "dnsRecords": "DNSレコード",
-    "recentTransactions": "最近の取引"
+    "recentTransactions": "最近の取引",
+    "viewAll": "すべて表示"
   },
   "domains": {
     "title": "利用可能なドメイン",
