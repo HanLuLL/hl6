@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ import type { Domain, CloudflareZone } from "@/types";
 
 export default function AdminDomainsPage() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const { data: domains, isLoading } = useQuery({
     queryKey: ["admin-domains"],
     queryFn: async () => {
@@ -56,7 +58,7 @@ export default function AdminDomainsPage() {
     mutationFn: api.adminCreateDomain,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-domains"] });
-      toast.success("Domain created");
+      toast.success(t("adminDomains.domainCreated"));
       setShowAdd(false);
       setSelectedZone(null);
       setCreditCost("1");
@@ -70,7 +72,7 @@ export default function AdminDomainsPage() {
       api.adminUpdateDomain(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-domains"] });
-      toast.success("Domain updated");
+      toast.success(t("adminDomains.domainUpdated"));
       setEditDomain(null);
     },
     onError: (err) => toast.error(err.message),
@@ -84,10 +86,10 @@ export default function AdminDomainsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Manage Domains</h1>
-          <p className="text-muted-foreground">Add and configure root domains</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("adminDomains.title")}</h1>
+          <p className="text-muted-foreground">{t("adminDomains.subtitle")}</p>
         </div>
-        <Button onClick={() => setShowAdd(true)}>Add Domain</Button>
+        <Button onClick={() => setShowAdd(true)}>{t("adminDomains.addDomain")}</Button>
       </div>
 
       <Card>
@@ -95,11 +97,11 @@ export default function AdminDomainsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Domain</TableHead>
-                <TableHead>Zone ID</TableHead>
-                <TableHead>Cost</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("adminDomains.domain")}</TableHead>
+                <TableHead>{t("adminDomains.zoneId")}</TableHead>
+                <TableHead>{t("adminDomains.cost")}</TableHead>
+                <TableHead>{t("adminDomains.status")}</TableHead>
+                <TableHead className="text-right">{t("adminDomains.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -110,17 +112,17 @@ export default function AdminDomainsPage() {
                   <TableCell>{domain.credit_cost}</TableCell>
                   <TableCell>
                     <Badge variant={domain.is_active ? "default" : "secondary"}>
-                      {domain.is_active ? "Active" : "Inactive"}
+                      {domain.is_active ? t("common.active") : t("common.inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => setEditDomain(domain)}>Edit</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setEditDomain(domain)}>{t("common.edit")}</Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => updateMutation.mutate({ id: domain.id, is_active: !domain.is_active })}
                     >
-                      {domain.is_active ? "Disable" : "Enable"}
+                      {domain.is_active ? t("common.disable") : t("common.enable")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -140,10 +142,10 @@ export default function AdminDomainsPage() {
         }
       }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Add Domain</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("adminDomains.addDomain")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Domain</Label>
+              <Label>{t("adminDomains.domain")}</Label>
               <ZoneCombobox
                 value={selectedZone}
                 onSelect={setSelectedZone}
@@ -151,16 +153,16 @@ export default function AdminDomainsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Credit Cost</Label>
+              <Label>{t("adminDomains.creditCost")}</Label>
               <Input type="number" min="1" value={creditCost} onChange={(e) => setCreditCost(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea placeholder="Optional description" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Label>{t("adminDomains.description")}</Label>
+              <Textarea placeholder={t("adminDomains.optionalDescription")} value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowAdd(false)}>{t("common.cancel")}</Button>
             <Button
               onClick={() => {
                 if (!selectedZone) return;
@@ -173,7 +175,7 @@ export default function AdminDomainsPage() {
               }}
               disabled={!selectedZone || createMutation.isPending}
             >
-              {createMutation.isPending ? "Creating..." : "Create"}
+              {createMutation.isPending ? t("common.creating") : t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -182,7 +184,7 @@ export default function AdminDomainsPage() {
       {/* Edit Dialog */}
       <Dialog open={!!editDomain} onOpenChange={(open) => !open && setEditDomain(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit Domain: {editDomain?.name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("adminDomains.editDomain", { name: editDomain?.name })}</DialogTitle></DialogHeader>
           {editDomain && (
             <EditDomainForm
               domain={editDomain}
@@ -202,6 +204,7 @@ function ZoneCombobox({ value, onSelect, enabled }: {
   enabled: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
 
   const { data: zones, isLoading } = useQuery({
     queryKey: ["admin-cloudflare-zones"],
@@ -221,16 +224,16 @@ function ZoneCombobox({ value, onSelect, enabled }: {
           aria-expanded={open}
           className="w-full justify-between font-normal"
         >
-          {value ? value.name : "Select a domain..."}
+          {value ? value.name : t("adminDomains.selectDomain")}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" onWheel={(e) => e.stopPropagation()}>
         <Command>
-          <CommandInput placeholder="Search domains..." />
+          <CommandInput placeholder={t("adminDomains.searchDomains")} />
           <CommandList>
             <CommandEmpty>
-              {isLoading ? "Loading..." : "No domains found."}
+              {isLoading ? t("common.loading") : t("adminDomains.noDomainsFound")}
             </CommandEmpty>
             <CommandGroup>
               {zones?.map((zone) => (
@@ -262,22 +265,23 @@ function EditDomainForm({ domain, onSave, isPending }: {
 }) {
   const [cost, setCost] = useState(String(domain.credit_cost));
   const [desc, setDesc] = useState(domain.description);
+  const { t } = useTranslation();
 
   return (
     <>
       <div className="space-y-4 py-4">
         <div className="space-y-2">
-          <Label>Credit Cost</Label>
+          <Label>{t("adminDomains.creditCost")}</Label>
           <Input type="number" min="1" value={cost} onChange={(e) => setCost(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label>Description</Label>
+          <Label>{t("adminDomains.description")}</Label>
           <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} />
         </div>
       </div>
       <DialogFooter>
         <Button onClick={() => onSave({ credit_cost: parseInt(cost) || 1, description: desc })} disabled={isPending}>
-          {isPending ? "Saving..." : "Save"}
+          {isPending ? t("common.saving") : t("common.save")}
         </Button>
       </DialogFooter>
     </>

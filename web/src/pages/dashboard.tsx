@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubdomains } from "@/hooks/use-subdomains";
@@ -7,20 +8,21 @@ export default function DashboardPage() {
   const { user, credits } = useAuth();
   const { data: subdomains } = useSubdomains();
   const { data: creditData } = useCredits();
+  const { t } = useTranslation();
 
   const stats = [
     {
-      title: "Credits Balance",
+      title: t("dashboard.creditsBalance"),
       value: credits,
       icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
     },
     {
-      title: "My Subdomains",
+      title: t("dashboard.mySubdomains"),
       value: subdomains?.length ?? 0,
       icon: "M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9",
     },
     {
-      title: "DNS Records",
+      title: t("dashboard.dnsRecords"),
       value: subdomains?.reduce((acc, s) => acc + (s.dns_records?.length ?? 0), 0) ?? 0,
       icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10",
     },
@@ -29,8 +31,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back, {user?.name || "User"}</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("dashboard.title")}</h1>
+        <p className="text-muted-foreground">{t("dashboard.welcome", { name: user?.name || "User" })}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -50,7 +52,7 @@ export default function DashboardPage() {
       {creditData?.transactions && creditData.transactions.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Recent Transactions</CardTitle>
+            <CardTitle className="text-lg">{t("dashboard.recentTransactions")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">

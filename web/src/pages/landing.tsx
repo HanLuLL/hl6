@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { LanguageToggle } from "@/components/layout/language-toggle";
 
 export default function LandingPage() {
   const { isAuthenticated, signIn } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen">
@@ -15,13 +18,14 @@ export default function LandingPage() {
           SubDomain
         </div>
         <div className="flex items-center gap-2">
+          <LanguageToggle />
           <ThemeToggle />
           {isAuthenticated ? (
             <Button asChild>
-              <Link to="/dashboard">Dashboard</Link>
+              <Link to="/dashboard">{t("landing.dashboard")}</Link>
             </Button>
           ) : (
-            <Button onClick={() => signIn()}>Sign in</Button>
+            <Button onClick={() => signIn()}>{t("common.signIn")}</Button>
           )}
         </div>
       </header>
@@ -29,23 +33,22 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="flex flex-col items-center justify-center px-6 py-24 text-center">
         <h1 className="text-4xl font-bold tracking-tight sm:text-6xl max-w-3xl">
-          Your subdomain,{" "}
+          {t("landing.heroTitle")}
           <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            instantly deployed
+            {t("landing.heroHighlight")}
           </span>
         </h1>
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
-          Claim a subdomain, configure DNS records, and get your project online in seconds.
-          Simple, fast, and powered by Cloudflare.
+          {t("landing.heroDesc")}
         </p>
         <div className="mt-10 flex gap-4">
           {isAuthenticated ? (
             <Button size="lg" asChild>
-              <Link to="/domains">Browse Domains</Link>
+              <Link to="/domains">{t("landing.browseDomains")}</Link>
             </Button>
           ) : (
             <Button size="lg" onClick={() => signIn()}>
-              Get Started
+              {t("landing.getStarted")}
             </Button>
           )}
         </div>
@@ -55,18 +58,18 @@ export default function LandingPage() {
       <section className="grid gap-8 px-6 py-16 md:grid-cols-3 max-w-5xl mx-auto">
         {[
           {
-            title: "Instant Setup",
-            desc: "Claim a subdomain and add DNS records in under a minute. No waiting, no approval process.",
+            title: t("landing.featureInstantTitle"),
+            desc: t("landing.featureInstantDesc"),
             icon: "M13 10V3L4 14h7v7l9-11h-7z",
           },
           {
-            title: "Cloudflare Powered",
-            desc: "DNS records sync directly with Cloudflare for enterprise-grade reliability and speed.",
+            title: t("landing.featureCloudflareTitle"),
+            desc: t("landing.featureCloudflareDesc"),
             icon: "M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z",
           },
           {
-            title: "Full Control",
-            desc: "Manage A, AAAA, and CNAME records. Toggle Cloudflare proxy. Set custom TTL values.",
+            title: t("landing.featureControlTitle"),
+            desc: t("landing.featureControlDesc"),
             icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
           },
         ].map((f) => (
@@ -81,7 +84,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        SubDomain &copy; {new Date().getFullYear()}
+        {t("landing.copyright", { year: new Date().getFullYear() })}
       </footer>
     </div>
   );

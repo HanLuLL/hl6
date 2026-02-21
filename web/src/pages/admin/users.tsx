@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import { toast } from "sonner";
 
 export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users", page],
     queryFn: async () => {
@@ -40,7 +42,7 @@ export default function AdminUsersPage() {
   const grantMutation = useMutation({
     mutationFn: api.adminGrantCredits,
     onSuccess: (res) => {
-      toast.success(`Granted ${res.data.granted} credits. New balance: ${res.data.balance}`);
+      toast.success(t("adminUsers.grantSuccess", { amount: res.data.granted, balance: res.data.balance }));
       setGrantUserId(null);
     },
     onError: (err) => toast.error(err.message),
@@ -53,25 +55,25 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Users</h1>
-        <p className="text-muted-foreground">Manage users and grant credits</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("adminUsers.title")}</h1>
+        <p className="text-muted-foreground">{t("adminUsers.subtitle")}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            {data?.total ?? 0} total users
+            {t("adminUsers.totalUsers", { count: data?.total ?? 0 })}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("adminUsers.name")}</TableHead>
+                <TableHead>{t("adminUsers.email")}</TableHead>
+                <TableHead>{t("adminUsers.role")}</TableHead>
+                <TableHead>{t("adminUsers.joined")}</TableHead>
+                <TableHead className="text-right">{t("adminUsers.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -87,7 +89,7 @@ export default function AdminUsersPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" onClick={() => setGrantUserId(user.id)}>
-                      Grant Credits
+                      {t("adminUsers.grantCredits")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -99,36 +101,36 @@ export default function AdminUsersPage() {
 
       {data && data.total > 20 && (
         <div className="flex justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-          <span className="flex items-center text-sm text-muted-foreground">Page {page}</span>
-          <Button variant="outline" size="sm" disabled={page >= Math.ceil(data.total / 20)} onClick={() => setPage((p) => p + 1)}>Next</Button>
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>{t("common.previous")}</Button>
+          <span className="flex items-center text-sm text-muted-foreground">{t("common.page", { page })}</span>
+          <Button variant="outline" size="sm" disabled={page >= Math.ceil(data.total / 20)} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</Button>
         </div>
       )}
 
       <Dialog open={grantUserId !== null} onOpenChange={(open) => !open && setGrantUserId(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Grant Credits</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("adminUsers.grantCredits")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Amount</Label>
+              <Label>{t("adminUsers.amount")}</Label>
               <Input type="number" min="1" value={grantAmount} onChange={(e) => setGrantAmount(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Description (optional)</Label>
-              <Input value={grantDesc} onChange={(e) => setGrantDesc(e.target.value)} placeholder="Admin grant" />
+              <Label>{t("adminUsers.descriptionOptional")}</Label>
+              <Input value={grantDesc} onChange={(e) => setGrantDesc(e.target.value)} placeholder={t("adminUsers.adminGrant")} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setGrantUserId(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setGrantUserId(null)}>{t("common.cancel")}</Button>
             <Button
               onClick={() => grantMutation.mutate({
                 user_id: grantUserId!,
                 amount: parseInt(grantAmount) || 1,
-                description: grantDesc || "Admin grant",
+                description: grantDesc || t("adminUsers.adminGrant"),
               })}
               disabled={grantMutation.isPending}
             >
-              {grantMutation.isPending ? "Granting..." : "Grant"}
+              {grantMutation.isPending ? t("adminUsers.granting") : t("credits.grant")}
             </Button>
           </DialogFooter>
         </DialogContent>

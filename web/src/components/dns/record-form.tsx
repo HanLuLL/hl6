@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +34,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
   const [content, setContent] = useState(record?.content || "");
   const [ttl, setTtl] = useState(String(record?.ttl || 1));
   const [proxied, setProxied] = useState(record?.proxied || false);
+  const { t } = useTranslation();
 
   const create = useCreateRecord(subdomainId);
   const update = useUpdateRecord(subdomainId);
@@ -51,7 +53,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
         { recordId: record.id, ...data },
         {
           onSuccess: () => {
-            toast.success("Record updated");
+            toast.success(t("recordForm.recordUpdated"));
             onOpenChange(false);
           },
           onError: (err) => toast.error(err.message),
@@ -62,7 +64,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
         { type, ...data },
         {
           onSuccess: () => {
-            toast.success("Record created");
+            toast.success(t("recordForm.recordCreated"));
             setContent("");
             onOpenChange(false);
           },
@@ -76,29 +78,29 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit" : "Add"} DNS Record</DialogTitle>
+          <DialogTitle>{isEdit ? t("recordForm.editTitle") : t("recordForm.addTitle")}</DialogTitle>
           <DialogDescription>
-            {isEdit ? "Update the record values." : "Create a new DNS record for this subdomain."}
+            {isEdit ? t("recordForm.editDesc") : t("recordForm.addDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {!isEdit && (
             <div className="space-y-2">
-              <Label>Type</Label>
+              <Label>{t("recordForm.type")}</Label>
               <Select value={type} onValueChange={setType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="A">A (IPv4)</SelectItem>
-                  <SelectItem value="AAAA">AAAA (IPv6)</SelectItem>
-                  <SelectItem value="CNAME">CNAME</SelectItem>
+                  <SelectItem value="A">{t("recordForm.typeA")}</SelectItem>
+                  <SelectItem value="AAAA">{t("recordForm.typeAAAA")}</SelectItem>
+                  <SelectItem value="CNAME">{t("recordForm.typeCNAME")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           )}
           <div className="space-y-2">
-            <Label>Content</Label>
+            <Label>{t("recordForm.content")}</Label>
             <Input
               placeholder={type === "A" ? "1.2.3.4" : type === "AAAA" ? "2001:db8::1" : "example.com"}
               value={content}
@@ -107,22 +109,22 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>TTL</Label>
+              <Label>{t("recordForm.ttl")}</Label>
               <Select value={ttl} onValueChange={setTtl}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Auto</SelectItem>
-                  <SelectItem value="60">1 min</SelectItem>
-                  <SelectItem value="300">5 min</SelectItem>
-                  <SelectItem value="3600">1 hour</SelectItem>
-                  <SelectItem value="86400">1 day</SelectItem>
+                  <SelectItem value="1">{t("common.auto")}</SelectItem>
+                  <SelectItem value="60">{t("recordForm.ttl1min")}</SelectItem>
+                  <SelectItem value="300">{t("recordForm.ttl5min")}</SelectItem>
+                  <SelectItem value="3600">{t("recordForm.ttl1hour")}</SelectItem>
+                  <SelectItem value="86400">{t("recordForm.ttl1day")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Proxied</Label>
+              <Label>{t("recordForm.proxied")}</Label>
               <div className="flex items-center h-9">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -131,7 +133,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
                     onChange={(e) => setProxied(e.target.checked)}
                     className="rounded"
                   />
-                  <span className="text-sm">{proxied ? "On" : "Off"}</span>
+                  <span className="text-sm">{proxied ? t("common.on") : t("common.off")}</span>
                 </label>
               </div>
             </div>
@@ -139,10 +141,10 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={!content.trim() || create.isPending || update.isPending}>
-            {create.isPending || update.isPending ? "Saving..." : isEdit ? "Update" : "Create"}
+            {create.isPending || update.isPending ? t("common.saving") : isEdit ? t("recordForm.update") : t("common.create")}
           </Button>
         </DialogFooter>
       </DialogContent>

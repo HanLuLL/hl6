@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,12 +9,13 @@ export default function CreditsPage() {
   const { data: creditData } = useCredits();
   const [page, setPage] = useState(1);
   const { data: txnData } = useTransactions(page, 20);
+  const { t } = useTranslation();
 
   const typeBadge = (type: string) => {
     switch (type) {
-      case "grant": return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Grant</Badge>;
-      case "deduct": return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Deduct</Badge>;
-      case "refund": return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Refund</Badge>;
+      case "grant": return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{t("credits.grant")}</Badge>;
+      case "deduct": return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">{t("credits.deduct")}</Badge>;
+      case "refund": return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{t("credits.refund")}</Badge>;
       default: return <Badge variant="outline">{type}</Badge>;
     }
   };
@@ -21,27 +23,27 @@ export default function CreditsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Credits</h1>
-        <p className="text-muted-foreground">Your credit balance and transaction history</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("credits.title")}</h1>
+        <p className="text-muted-foreground">{t("credits.subtitle")}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-muted-foreground">Current Balance</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">{t("credits.currentBalance")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-4xl font-bold">{creditData?.balance ?? 0}</div>
-          <p className="text-sm text-muted-foreground mt-1">credits available</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("credits.creditsAvailable")}</p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Transaction History</CardTitle>
+          <CardTitle className="text-lg">{t("credits.transactionHistory")}</CardTitle>
         </CardHeader>
         <CardContent>
           {!txnData?.data || txnData.data.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No transactions yet</p>
+            <p className="text-center text-muted-foreground py-8">{t("credits.noTransactions")}</p>
           ) : (
             <div className="space-y-3">
               {txnData.data.map((tx) => (
@@ -59,7 +61,7 @@ export default function CreditsPage() {
                     <p className={`font-medium ${tx.amount > 0 ? "text-green-600" : "text-red-600"}`}>
                       {tx.amount > 0 ? "+" : ""}{tx.amount}
                     </p>
-                    <p className="text-xs text-muted-foreground">Balance: {tx.balance_after}</p>
+                    <p className="text-xs text-muted-foreground">{t("credits.balance", { balance: tx.balance_after })}</p>
                   </div>
                 </div>
               ))}
@@ -71,10 +73,10 @@ export default function CreditsPage() {
                     disabled={page <= 1}
                     onClick={() => setPage((p) => p - 1)}
                   >
-                    Previous
+                    {t("common.previous")}
                   </Button>
                   <span className="flex items-center text-sm text-muted-foreground">
-                    Page {page} of {Math.ceil(txnData.total / 20)}
+                    {t("common.pageOf", { page, total: Math.ceil(txnData.total / 20) })}
                   </span>
                   <Button
                     variant="outline"
@@ -82,7 +84,7 @@ export default function CreditsPage() {
                     disabled={page >= Math.ceil(txnData.total / 20)}
                     onClick={() => setPage((p) => p + 1)}
                   >
-                    Next
+                    {t("common.next")}
                   </Button>
                 </div>
               )}

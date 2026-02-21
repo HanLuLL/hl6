@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,6 +24,7 @@ interface ClaimDialogProps {
 export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
   const [name, setName] = useState("");
   const claim = useClaimSubdomain();
+  const { t } = useTranslation();
 
   const handleSubmit = () => {
     if (!domain || !name.trim()) return;
@@ -30,7 +32,7 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
       { domain_id: domain.id, name: name.trim().toLowerCase() },
       {
         onSuccess: () => {
-          toast.success(`Successfully claimed ${name}.${domain.name}`);
+          toast.success(t("claimDialog.success", { fqdn: `${name}.${domain.name}` }));
           setName("");
           onOpenChange(false);
         },
@@ -47,19 +49,18 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Claim Subdomain</DialogTitle>
+          <DialogTitle>{t("claimDialog.title")}</DialogTitle>
           <DialogDescription>
-            Choose a subdomain name for <strong>{domain.name}</strong>. This will cost{" "}
-            <strong>{domain.credit_cost}</strong> credit{domain.credit_cost > 1 ? "s" : ""}.
+            {t("claimDialog.description", { count: domain.credit_cost, domain: domain.name, cost: domain.credit_cost })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="subdomain">Subdomain name</Label>
+            <Label htmlFor="subdomain">{t("claimDialog.subdomainName")}</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="subdomain"
-                placeholder="mysite"
+                placeholder={t("claimDialog.placeholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
@@ -68,17 +69,17 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
             </div>
             {name && (
               <p className="text-xs text-muted-foreground">
-                Result: <strong>{name}.{domain.name}</strong>
+                {t("claimDialog.result", { fqdn: `${name}.${domain.name}` })}
               </p>
             )}
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={!name.trim() || claim.isPending}>
-            {claim.isPending ? "Claiming..." : `Claim for ${domain.credit_cost} credit${domain.credit_cost > 1 ? "s" : ""}`}
+            {claim.isPending ? t("claimDialog.claiming") : t("claimDialog.claimFor", { count: domain.credit_cost, cost: domain.credit_cost })}
           </Button>
         </DialogFooter>
       </DialogContent>

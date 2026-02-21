@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,11 +9,12 @@ import { toast } from "sonner";
 export default function SubdomainsPage() {
   const { data: subdomains, isLoading } = useSubdomains();
   const release = useReleaseSubdomain();
+  const { t } = useTranslation();
 
   const handleRelease = (id: number, fqdn: string) => {
-    if (!confirm(`Release ${fqdn}? All DNS records will be deleted.`)) return;
+    if (!confirm(t("subdomains.releaseConfirm", { fqdn }))) return;
     release.mutate(id, {
-      onSuccess: () => toast.success(`Released ${fqdn}`),
+      onSuccess: () => toast.success(t("subdomains.released", { fqdn })),
       onError: (err) => toast.error(err.message),
     });
   };
@@ -29,20 +31,20 @@ export default function SubdomainsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">My Subdomains</h1>
-          <p className="text-muted-foreground">Manage your claimed subdomains</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("subdomains.title")}</h1>
+          <p className="text-muted-foreground">{t("subdomains.subtitle")}</p>
         </div>
         <Button asChild>
-          <Link to="/domains">Claim New</Link>
+          <Link to="/domains">{t("subdomains.claimNew")}</Link>
         </Button>
       </div>
 
       {!subdomains || subdomains.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-muted-foreground/50 mb-4"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-          <p className="text-muted-foreground">You haven't claimed any subdomains yet</p>
+          <p className="text-muted-foreground">{t("subdomains.noSubdomains")}</p>
           <Button className="mt-4" asChild>
-            <Link to="/domains">Browse Domains</Link>
+            <Link to="/domains">{t("subdomains.browseDomains")}</Link>
           </Button>
         </div>
       ) : (
@@ -56,17 +58,17 @@ export default function SubdomainsPage() {
                       {sub.fqdn}
                     </Link>
                   </CardTitle>
-                  <Badge variant="outline">{sub.dns_records?.length ?? 0} records</Badge>
+                  <Badge variant="outline">{t("subdomains.records", { count: sub.dns_records?.length ?? 0 })}</Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">
-                    Claimed {new Date(sub.created_at).toLocaleDateString()}
+                    {t("subdomains.claimed", { date: new Date(sub.created_at).toLocaleDateString() })}
                   </span>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" asChild>
-                      <Link to={`/subdomains/${sub.id}`}>Manage</Link>
+                      <Link to={`/subdomains/${sub.id}`}>{t("subdomains.manage")}</Link>
                     </Button>
                     <Button
                       size="sm"
@@ -75,7 +77,7 @@ export default function SubdomainsPage() {
                       onClick={() => handleRelease(sub.id, sub.fqdn)}
                       disabled={release.isPending}
                     >
-                      Release
+                      {t("subdomains.release")}
                     </Button>
                   </div>
                 </div>

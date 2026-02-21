@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { api } from "@/lib/api";
 
 export default function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["admin-audit-logs", page],
     queryFn: async () => {
@@ -30,25 +32,25 @@ export default function AdminAuditLogsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Audit Logs</h1>
-        <p className="text-muted-foreground">System activity log</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("auditLogs.title")}</h1>
+        <p className="text-muted-foreground">{t("auditLogs.subtitle")}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            {data?.total ?? 0} total entries
+            {t("auditLogs.totalEntries", { count: data?.total ?? 0 })}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Action</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Resource</TableHead>
-                <TableHead>Details</TableHead>
-                <TableHead>Time</TableHead>
+                <TableHead>{t("auditLogs.action")}</TableHead>
+                <TableHead>{t("auditLogs.user")}</TableHead>
+                <TableHead>{t("auditLogs.resource")}</TableHead>
+                <TableHead>{t("auditLogs.details")}</TableHead>
+                <TableHead>{t("auditLogs.time")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -74,9 +76,9 @@ export default function AdminAuditLogsPage() {
 
       {data && data.total > 20 && (
         <div className="flex justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-          <span className="flex items-center text-sm text-muted-foreground">Page {page}</span>
-          <Button variant="outline" size="sm" disabled={page >= Math.ceil(data.total / 20)} onClick={() => setPage((p) => p + 1)}>Next</Button>
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>{t("common.previous")}</Button>
+          <span className="flex items-center text-sm text-muted-foreground">{t("common.page", { page })}</span>
+          <Button variant="outline" size="sm" disabled={page >= Math.ceil(data.total / 20)} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</Button>
         </div>
       )}
     </div>
