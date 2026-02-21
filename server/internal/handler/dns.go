@@ -31,7 +31,7 @@ func (h *DNSHandler) ListRecords(c *gin.Context) {
 	}
 	records, err := h.repo.ListDNSRecords(sub.ID)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to list records")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list records", "error.failedToListRecords")
 		return
 	}
 	response.OK(c, records)
@@ -49,30 +49,34 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 		Proxied bool   `json:"proxied"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request body")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 	body.Type = strings.ToUpper(body.Type)
 	if err := validator.ValidateDNSRecord(body.Type, body.Content); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
+		if ve, ok := err.(*validator.ValidationError); ok {
+			response.ErrorWithKey(c, http.StatusBadRequest, ve.Message, ve.Key)
+		} else {
+			response.Error(c, http.StatusBadRequest, err.Error())
+		}
 		return
 	}
 
 	if body.Type == "CNAME" {
 		hasOther, _ := h.repo.HasNonCNAMERecords(sub.ID)
 		if hasOther {
-			response.Error(c, http.StatusConflict, "cannot add CNAME: A/AAAA records exist")
+			response.ErrorWithKey(c, http.StatusConflict, "cannot add CNAME: A/AAAA records exist", "error.cnameConflictWithOther")
 			return
 		}
 		hasCNAME, _ := h.repo.HasCNAMERecord(sub.ID)
 		if hasCNAME {
-			response.Error(c, http.StatusConflict, "CNAME record already exists")
+			response.ErrorWithKey(c, http.StatusConflict, "CNAME record already exists", "error.cnameAlreadyExists")
 			return
 		}
 	} else {
 		hasCNAME, _ := h.repo.HasCNAMERecord(sub.ID)
 		if hasCNAME {
-			response.Error(c, http.StatusConflict, "cannot add A/AAAA: CNAME record exists")
+			response.ErrorWithKey(c, http.StatusConflict, "cannot add A/AAAA: CNAME record exists", "error.otherConflictWithCname")
 			return
 		}
 	}
@@ -83,7 +87,7 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 
 	cfID, err := h.cf.CreateRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, body.Type, sub.FQDN, body.Content, body.TTL, body.Proxied)
 	if err != nil {
-		response.Error(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err))
+		response.ErrorWithKey(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err), "error.cloudflareError")
 		return
 	}
 
@@ -97,7 +101,7 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 		CloudflareRecordID: cfID,
 	}
 	if err := h.repo.CreateDNSRecord(record); err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to save record")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to save record", "error.failedToSaveRecord")
 		return
 	}
 
@@ -126,7 +130,7 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 	recordID, _ := strconv.ParseUint(c.Param("recordId"), 10, 64)
 	record, err := h.repo.FindDNSRecord(uint(recordID))
 	if err != nil || record.SubdomainID != sub.ID {
-		response.Error(c, http.StatusNotFound, "record not found")
+		response.ErrorWithKey(c, http.StatusNotFound, "record not found", "error.recordNotFound")
 		return
 	}
 
@@ -136,11 +140,15 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 		Proxied bool   `json:"proxied"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request body")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 	if err := validator.ValidateDNSRecord(record.Type, body.Content); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
+		if ve, ok := err.(*validator.ValidationError); ok {
+			response.ErrorWithKey(c, http.StatusBadRequest, ve.Message, ve.Key)
+		} else {
+			response.Error(c, http.StatusBadRequest, err.Error())
+		}
 		return
 	}
 	if body.TTL <= 0 {
@@ -148,7 +156,7 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 	}
 
 	if err := h.cf.UpdateRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID, record.Type, sub.FQDN, body.Content, body.TTL, body.Proxied); err != nil {
-		response.Error(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err))
+		response.ErrorWithKey(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err), "error.cloudflareError")
 		return
 	}
 
@@ -167,13 +175,13 @@ func (h *DNSHandler) DeleteRecord(c *gin.Context) {
 	recordID, _ := strconv.ParseUint(c.Param("recordId"), 10, 64)
 	record, err := h.repo.FindDNSRecord(uint(recordID))
 	if err != nil || record.SubdomainID != sub.ID {
-		response.Error(c, http.StatusNotFound, "record not found")
+		response.ErrorWithKey(c, http.StatusNotFound, "record not found", "error.recordNotFound")
 		return
 	}
 
 	if record.CloudflareRecordID != "" {
 		if err := h.cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
-			response.Error(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err))
+			response.ErrorWithKey(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err), "error.cloudflareError")
 			return
 		}
 	}
@@ -190,12 +198,12 @@ func (h *DNSHandler) getSubdomain(c *gin.Context) *model.Subdomain {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	sub, err := h.repo.FindSubdomain(uint(id))
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "subdomain not found")
+		response.ErrorWithKey(c, http.StatusNotFound, "subdomain not found", "error.subdomainNotFound")
 		c.Abort()
 		return nil
 	}
 	if sub.UserID != user.ID {
-		response.Error(c, http.StatusForbidden, "not your subdomain")
+		response.ErrorWithKey(c, http.StatusForbidden, "not your subdomain", "error.notYourSubdomain")
 		c.Abort()
 		return nil
 	}
@@ -206,7 +214,7 @@ func (h *DNSHandler) getUserFromContext(c *gin.Context) *model.User {
 	logtoID := c.GetString("user_id")
 	user, err := h.repo.FindUserByLogtoID(logtoID)
 	if err != nil {
-		response.Error(c, http.StatusUnauthorized, "user not found")
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		c.Abort()
 		return nil
 	}

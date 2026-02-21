@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+type ValidationError struct {
+	Message string
+	Key     string
+	Params  map[string]string
+}
+
+func (e *ValidationError) Error() string { return e.Message }
+
 var subdomainRegex = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
 
 var reservedNames = map[string]bool{
@@ -19,10 +27,17 @@ var reservedNames = map[string]bool{
 func ValidateSubdomainName(name string) error {
 	name = strings.ToLower(name)
 	if !subdomainRegex.MatchString(name) {
-		return fmt.Errorf("invalid subdomain name: must contain only lowercase letters, numbers, and hyphens")
+		return &ValidationError{
+			Message: "invalid subdomain name: must contain only lowercase letters, numbers, and hyphens",
+			Key:     "error.invalidSubdomainName",
+		}
 	}
 	if reservedNames[name] {
-		return fmt.Errorf("subdomain name '%s' is reserved", name)
+		return &ValidationError{
+			Message: fmt.Sprintf("subdomain name '%s' is reserved", name),
+			Key:     "error.reservedSubdomain",
+			Params:  map[string]string{"name": name},
+		}
 	}
 	return nil
 }
@@ -32,19 +47,35 @@ func ValidateDNSRecord(recordType, content string) error {
 	case "A":
 		ip := net.ParseIP(content)
 		if ip == nil || ip.To4() == nil {
-			return fmt.Errorf("invalid IPv4 address: %s", content)
+			return &ValidationError{
+				Message: fmt.Sprintf("invalid IPv4 address: %s", content),
+				Key:     "error.invalidIPv4",
+				Params:  map[string]string{"value": content},
+			}
 		}
 	case "AAAA":
 		ip := net.ParseIP(content)
 		if ip == nil || ip.To4() != nil {
-			return fmt.Errorf("invalid IPv6 address: %s", content)
+			return &ValidationError{
+				Message: fmt.Sprintf("invalid IPv6 address: %s", content),
+				Key:     "error.invalidIPv6",
+				Params:  map[string]string{"value": content},
+			}
 		}
 	case "CNAME":
 		if !isValidHostname(content) {
-			return fmt.Errorf("invalid CNAME target: %s", content)
+			return &ValidationError{
+				Message: fmt.Sprintf("invalid CNAME target: %s", content),
+				Key:     "error.invalidCNAME",
+				Params:  map[string]string{"value": content},
+			}
 		}
 	default:
-		return fmt.Errorf("unsupported record type: %s", recordType)
+		return &ValidationError{
+			Message: fmt.Sprintf("unsupported record type: %s", recordType),
+			Key:     "error.unsupportedRecordType",
+			Params:  map[string]string{"type": recordType},
+		}
 	}
 	return nil
 }

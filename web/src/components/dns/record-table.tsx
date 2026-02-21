@@ -14,6 +14,7 @@ import type { DNSRecord } from "@/types";
 import { useDeleteRecord } from "@/hooks/use-dns-records";
 import { RecordForm } from "./record-form";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/api";
 
 interface RecordTableProps {
   subdomainId: number;
@@ -29,7 +30,7 @@ export function RecordTable({ subdomainId, records }: RecordTableProps) {
     if (!confirm(t("recordTable.deleteConfirm", { type: record.type, content: record.content }))) return;
     deleteRecord.mutate(record.id, {
       onSuccess: () => toast.success(t("recordTable.recordDeleted")),
-      onError: (err) => toast.error(err.message),
+      onError: (err) => toast.error(getErrorMessage(err, t)),
     });
   };
 

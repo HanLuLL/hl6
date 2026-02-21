@@ -21,6 +21,7 @@ import {
 import { useCreateRecord, useUpdateRecord } from "@/hooks/use-dns-records";
 import type { DNSRecord } from "@/types";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/api";
 
 interface RecordFormProps {
   subdomainId: number;
@@ -56,7 +57,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
             toast.success(t("recordForm.recordUpdated"));
             onOpenChange(false);
           },
-          onError: (err) => toast.error(err.message),
+          onError: (err) => toast.error(getErrorMessage(err, t)),
         }
       );
     } else {
@@ -68,7 +69,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
             setContent("");
             onOpenChange(false);
           },
-          onError: (err) => toast.error(err.message),
+          onError: (err) => toast.error(getErrorMessage(err, t)),
         }
       );
     }

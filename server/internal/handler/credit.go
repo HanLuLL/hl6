@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -48,7 +49,7 @@ func (h *CreditHandler) ListTransactions(c *gin.Context) {
 
 	txns, total, err := h.repo.ListTransactions(user.ID, page, perPage)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to list transactions")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list transactions", "error.failedToListTransactions")
 		return
 	}
 	response.Paginated(c, txns, total, page, perPage)
@@ -61,31 +62,35 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 		Description string  `json:"description"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request body")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 	if body.Amount <= 0 {
-		response.Error(c, http.StatusBadRequest, "amount must be positive")
+		response.ErrorWithKey(c, http.StatusBadRequest, "amount must be positive", "error.amountMustBePositive")
 		return
 	}
-	if body.Description == "" {
-		body.Description = "Admin grant"
+
+	descKey := "txn.adminGrant"
+	var descParams json.RawMessage
+	if body.Description != "" {
+		descKey = "txn.adminGrantCustom"
+		descParams, _ = json.Marshal(map[string]string{"description": body.Description})
 	}
 
 	var user model.User
 	if err := h.repo.DB.First(&user, body.UserID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			response.Error(c, http.StatusNotFound, "user not found")
+			response.ErrorWithKey(c, http.StatusNotFound, "user not found", "error.userNotFound")
 			return
 		}
-		response.Error(c, http.StatusInternalServerError, "database error")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
 		return
 	}
 
 	tx := h.repo.DB.Begin()
-	if err := h.repo.GrantCredits(tx, body.UserID, body.Amount, body.Description); err != nil {
+	if err := h.repo.GrantCredits(tx, body.UserID, body.Amount, descKey, descParams); err != nil {
 		tx.Rollback()
-		response.Error(c, http.StatusInternalServerError, "failed to grant credits")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to grant credits", "error.failedToGrantCredits")
 		return
 	}
 	tx.Commit()
@@ -102,7 +107,7 @@ func (h *CreditHandler) getUser(c *gin.Context) *model.User {
 	logtoID := c.GetString("user_id")
 	user, err := h.repo.FindUserByLogtoID(logtoID)
 	if err != nil {
-		response.Error(c, http.StatusUnauthorized, "user not found")
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		c.Abort()
 		return nil
 	}

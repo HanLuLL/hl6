@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/json"
 	"hl6-server/internal/model"
 
 	"gorm.io/gorm"
@@ -140,7 +141,7 @@ func (r *Repository) EnsureCreditBalance(userID uint) (*model.CreditBalance, err
 	return &balance, err
 }
 
-func (r *Repository) DeductCredits(tx *gorm.DB, userID uint, amount float64, description string) error {
+func (r *Repository) DeductCredits(tx *gorm.DB, userID uint, amount float64, descriptionKey string, descriptionParams json.RawMessage) error {
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		return err
@@ -153,16 +154,17 @@ func (r *Repository) DeductCredits(tx *gorm.DB, userID uint, amount float64, des
 		return err
 	}
 	txn := model.CreditTransaction{
-		UserID:       userID,
-		Amount:       -amount,
-		Type:         "deduct",
-		Description:  description,
-		BalanceAfter: balance.Balance,
+		UserID:            userID,
+		Amount:            -amount,
+		Type:              "deduct",
+		DescriptionKey:    descriptionKey,
+		DescriptionParams: descriptionParams,
+		BalanceAfter:      balance.Balance,
 	}
 	return tx.Create(&txn).Error
 }
 
-func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount float64, description string) error {
+func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount float64, descriptionKey string, descriptionParams json.RawMessage) error {
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		balance = model.CreditBalance{UserID: userID, Balance: 0}
@@ -175,16 +177,17 @@ func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount float64, desc
 		return err
 	}
 	txn := model.CreditTransaction{
-		UserID:       userID,
-		Amount:       amount,
-		Type:         "grant",
-		Description:  description,
-		BalanceAfter: balance.Balance,
+		UserID:            userID,
+		Amount:            amount,
+		Type:              "grant",
+		DescriptionKey:    descriptionKey,
+		DescriptionParams: descriptionParams,
+		BalanceAfter:      balance.Balance,
 	}
 	return tx.Create(&txn).Error
 }
 
-func (r *Repository) RefundCredits(tx *gorm.DB, userID uint, amount float64, description string) error {
+func (r *Repository) RefundCredits(tx *gorm.DB, userID uint, amount float64, descriptionKey string, descriptionParams json.RawMessage) error {
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		return err
@@ -194,11 +197,12 @@ func (r *Repository) RefundCredits(tx *gorm.DB, userID uint, amount float64, des
 		return err
 	}
 	txn := model.CreditTransaction{
-		UserID:       userID,
-		Amount:       amount,
-		Type:         "refund",
-		Description:  description,
-		BalanceAfter: balance.Balance,
+		UserID:            userID,
+		Amount:            amount,
+		Type:              "refund",
+		DescriptionKey:    descriptionKey,
+		DescriptionParams: descriptionParams,
+		BalanceAfter:      balance.Balance,
 	}
 	return tx.Create(&txn).Error
 }

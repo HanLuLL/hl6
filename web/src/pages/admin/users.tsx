@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function AdminUsersPage() {
@@ -64,7 +64,7 @@ export default function AdminUsersPage() {
       toast.success(t("adminUsers.grantSuccess", { amount: res.data.granted, balance: res.data.balance }));
       setGrantUserId(null);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
   const changeGroupMutation = useMutation({
@@ -77,7 +77,7 @@ export default function AdminUsersPage() {
       setChangeGroupUserId(null);
       setSelectedGroupId("");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
   if (isLoading) {

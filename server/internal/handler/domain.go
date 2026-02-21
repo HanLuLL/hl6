@@ -24,7 +24,7 @@ func (h *DomainHandler) List(c *gin.Context) {
 	logtoID := c.GetString("user_id")
 	user, err := h.repo.FindUserByLogtoID(logtoID)
 	if err != nil {
-		response.Error(c, http.StatusUnauthorized, "user not found")
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 
@@ -35,7 +35,7 @@ func (h *DomainHandler) List(c *gin.Context) {
 
 	domains, err := h.repo.ListDomainsForGroup(*user.GroupID)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to list domains")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list domains", "error.failedToListDomains")
 		return
 	}
 	response.OK(c, domains)
@@ -54,7 +54,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		GroupAccess      []groupAccessInput `json:"group_access"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request body")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 
@@ -69,7 +69,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	tx := h.repo.DB.Begin()
 	if err := tx.Create(domain).Error; err != nil {
 		tx.Rollback()
-		response.Error(c, http.StatusInternalServerError, "failed to create domain")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create domain", "error.failedToCreateDomain")
 		return
 	}
 
@@ -81,7 +81,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		}
 		if err := tx.Create(&access).Error; err != nil {
 			tx.Rollback()
-			response.Error(c, http.StatusInternalServerError, "failed to create group access")
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create group access", "error.failedToCreateGroupAccess")
 			return
 		}
 	}
@@ -97,7 +97,7 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	domain, err := h.repo.FindDomain(uint(id))
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "domain not found")
+		response.ErrorWithKey(c, http.StatusNotFound, "domain not found", "error.domainNotFound")
 		return
 	}
 	var body struct {
@@ -107,7 +107,7 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		GroupAccess      []groupAccessInput `json:"group_access"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request body")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 
@@ -124,7 +124,7 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 	}
 	if err := tx.Save(domain).Error; err != nil {
 		tx.Rollback()
-		response.Error(c, http.StatusInternalServerError, "failed to update domain")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update domain", "error.failedToUpdateDomain")
 		return
 	}
 
@@ -138,7 +138,7 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		}
 		if err := h.repo.ReplaceDomainGroupAccess(tx, domain.ID, accesses); err != nil {
 			tx.Rollback()
-			response.Error(c, http.StatusInternalServerError, "failed to update group access")
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update group access", "error.failedToUpdateGroupAccess")
 			return
 		}
 	}
@@ -152,7 +152,7 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 func (h *DomainHandler) AdminListDomainsFull(c *gin.Context) {
 	domains, err := h.repo.ListDomains(false)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to list domains")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list domains", "error.failedToListDomains")
 		return
 	}
 
@@ -172,7 +172,7 @@ func (h *DomainHandler) AdminListDomainsFull(c *gin.Context) {
 func (h *DomainHandler) AdminListZones(c *gin.Context) {
 	zones, err := h.cf.ListZones(c.Request.Context())
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to list cloudflare zones")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list cloudflare zones", "error.failedToListCloudflareZones")
 		return
 	}
 	response.OK(c, zones)

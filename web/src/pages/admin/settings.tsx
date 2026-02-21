@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function AdminSettingsPage() {
@@ -33,7 +33,7 @@ export default function AdminSettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-config"] });
       toast.success(t("adminSettings.saved"));
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
   if (isLoading) {

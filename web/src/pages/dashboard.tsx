@@ -59,7 +59,7 @@ export default function DashboardPage() {
               {creditData.transactions.slice(0, 5).map((tx) => (
                 <div key={tx.id} className="flex items-center justify-between text-sm">
                   <div>
-                    <p className="font-medium">{tx.description}</p>
+                    <p className="font-medium">{t(tx.description_key, tx.description_params ?? {})}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(tx.created_at).toLocaleDateString()}
                     </p>

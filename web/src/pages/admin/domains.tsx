@@ -38,7 +38,7 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -84,7 +84,7 @@ export default function AdminDomainsPage() {
       setDescription("");
       setGroupAccess([]);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
   const updateMutation = useMutation({
@@ -96,7 +96,7 @@ export default function AdminDomainsPage() {
       toast.success(t("adminDomains.domainUpdated"));
       setEditDomain(null);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
   if (isLoading) {

@@ -25,7 +25,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	logtoID := c.GetString("user_id")
 	user, err := h.repo.FindUserByLogtoID(logtoID)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"code": -1, "message": "user not found, please sync first"})
+		c.JSON(http.StatusOK, gin.H{"code": -1, "message": "user not found, please sync first", "message_key": "error.userNotFoundPleaseSync"})
 		return
 	}
 	balance, _ := h.repo.EnsureCreditBalance(user.ID)
@@ -44,7 +44,7 @@ func (h *AuthHandler) Sync(c *gin.Context) {
 		AvatarURL string `json:"avatar_url"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request body")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 
@@ -67,7 +67,7 @@ func (h *AuthHandler) Sync(c *gin.Context) {
 		}
 
 		if err := h.repo.CreateUser(user); err != nil {
-			response.Error(c, http.StatusInternalServerError, "failed to create user")
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create user", "error.failedToCreateUser")
 			return
 		}
 		h.repo.EnsureCreditBalance(user.ID)
@@ -76,7 +76,7 @@ func (h *AuthHandler) Sync(c *gin.Context) {
 		if bonusStr, err := h.repo.GetSystemConfig("registration_bonus_credits"); err == nil {
 			if bonus, err := strconv.ParseFloat(bonusStr, 64); err == nil && bonus > 0 {
 				tx := h.repo.DB.Begin()
-				if err := h.repo.GrantCredits(tx, user.ID, bonus, "Registration bonus"); err != nil {
+				if err := h.repo.GrantCredits(tx, user.ID, bonus, "txn.registrationBonus", nil); err != nil {
 					tx.Rollback()
 				} else {
 					tx.Commit()
@@ -90,7 +90,7 @@ func (h *AuthHandler) Sync(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "database error")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
 		return
 	}
 

@@ -88,13 +88,14 @@ type CreditBalance struct {
 }
 
 type CreditTransaction struct {
-	ID           uint      `json:"id" gorm:"primaryKey"`
-	UserID       uint      `json:"user_id" gorm:"index;not null"`
-	Amount       float64   `json:"amount" gorm:"not null"`
-	Type         string    `json:"type" gorm:"not null"`
-	Description  string    `json:"description"`
-	BalanceAfter float64   `json:"balance_after"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID                uint            `json:"id" gorm:"primaryKey"`
+	UserID            uint            `json:"user_id" gorm:"index;not null"`
+	Amount            float64         `json:"amount" gorm:"not null"`
+	Type              string          `json:"type" gorm:"not null"`
+	DescriptionKey    string          `json:"description_key"`
+	DescriptionParams json.RawMessage `json:"description_params,omitempty" gorm:"type:jsonb"`
+	BalanceAfter      float64         `json:"balance_after"`
+	CreatedAt         time.Time       `json:"created_at"`
 }
 
 type AuditLog struct {

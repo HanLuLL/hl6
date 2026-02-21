@@ -30,7 +30,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 
 	users, total, err := h.repo.ListUsers(page, perPage)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to list users")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list users", "error.failedToListUsers")
 		return
 	}
 	response.Paginated(c, users, total, page, perPage)
@@ -39,7 +39,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 func (h *AdminHandler) Stats(c *gin.Context) {
 	stats, err := h.repo.GetStats()
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to get stats")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to get stats", "error.failedToGetStats")
 		return
 	}
 	response.OK(c, stats)
@@ -57,7 +57,7 @@ func (h *AdminHandler) AuditLogs(c *gin.Context) {
 
 	logs, total, err := h.repo.ListAuditLogs(page, perPage)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to list audit logs")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list audit logs", "error.failedToListAuditLogs")
 		return
 	}
 	response.Paginated(c, logs, total, page, perPage)
@@ -68,7 +68,7 @@ func (h *AdminHandler) AuditLogs(c *gin.Context) {
 func (h *AdminHandler) ListGroups(c *gin.Context) {
 	groups, err := h.repo.ListUserGroups()
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to list groups")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list groups", "error.failedToListGroups")
 		return
 	}
 	response.OK(c, groups)
@@ -80,7 +80,7 @@ func (h *AdminHandler) CreateGroup(c *gin.Context) {
 		IsDefault bool   `json:"is_default"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request body")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 
@@ -90,14 +90,14 @@ func (h *AdminHandler) CreateGroup(c *gin.Context) {
 
 	if body.IsDefault {
 		if err := h.repo.SetDefaultUserGroup(0); err != nil {
-			response.Error(c, http.StatusInternalServerError, "failed to update default group")
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update default group", "error.failedToUpdateDefaultGroup")
 			return
 		}
 		group.IsDefault = true
 	}
 
 	if err := h.repo.CreateUserGroup(group); err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to create group")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create group", "error.failedToCreateGroup")
 		return
 	}
 	response.Created(c, group)
@@ -107,7 +107,7 @@ func (h *AdminHandler) UpdateGroup(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	group, err := h.repo.FindUserGroup(uint(id))
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "group not found")
+		response.ErrorWithKey(c, http.StatusNotFound, "group not found", "error.groupNotFound")
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *AdminHandler) UpdateGroup(c *gin.Context) {
 		IsDefault *bool   `json:"is_default"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request body")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 
@@ -125,14 +125,14 @@ func (h *AdminHandler) UpdateGroup(c *gin.Context) {
 	}
 	if body.IsDefault != nil && *body.IsDefault {
 		if err := h.repo.SetDefaultUserGroup(group.ID); err != nil {
-			response.Error(c, http.StatusInternalServerError, "failed to set default group")
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to set default group", "error.failedToSetDefaultGroup")
 			return
 		}
 		group.IsDefault = true
 	}
 
 	if err := h.repo.UpdateUserGroup(group); err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to update group")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update group", "error.failedToUpdateGroup")
 		return
 	}
 	response.OK(c, group)
@@ -142,34 +142,34 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	migrateToStr := c.Query("migrate_to")
 	if migrateToStr == "" {
-		response.Error(c, http.StatusBadRequest, "migrate_to parameter is required")
+		response.ErrorWithKey(c, http.StatusBadRequest, "migrate_to parameter is required", "error.migrateToRequired")
 		return
 	}
 	migrateTo, err := strconv.ParseUint(migrateToStr, 10, 64)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid migrate_to parameter")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid migrate_to parameter", "error.invalidMigrateTo")
 		return
 	}
 	if uint(id) == uint(migrateTo) {
-		response.Error(c, http.StatusBadRequest, "cannot migrate to the same group being deleted")
+		response.ErrorWithKey(c, http.StatusBadRequest, "cannot migrate to the same group being deleted", "error.cannotMigrateToSameGroup")
 		return
 	}
 
 	count, _ := h.repo.CountUserGroups()
 	if count <= 1 {
-		response.Error(c, http.StatusBadRequest, "cannot delete the last group")
+		response.ErrorWithKey(c, http.StatusBadRequest, "cannot delete the last group", "error.cannotDeleteLastGroup")
 		return
 	}
 
 	group, err := h.repo.FindUserGroup(uint(id))
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "group not found")
+		response.ErrorWithKey(c, http.StatusNotFound, "group not found", "error.groupNotFound")
 		return
 	}
 
 	targetGroup, err := h.repo.FindUserGroup(uint(migrateTo))
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "target group not found")
+		response.ErrorWithKey(c, http.StatusNotFound, "target group not found", "error.targetGroupNotFound")
 		return
 	}
 
@@ -178,14 +178,14 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 	// Migrate users
 	if err := tx.Model(&model.User{}).Where("group_id = ?", group.ID).Update("group_id", targetGroup.ID).Error; err != nil {
 		tx.Rollback()
-		response.Error(c, http.StatusInternalServerError, "failed to migrate users")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to migrate users", "error.failedToMigrateUsers")
 		return
 	}
 
 	// Delete domain group accesses
 	if err := h.repo.DeleteDomainGroupAccessByGroup(tx, group.ID); err != nil {
 		tx.Rollback()
-		response.Error(c, http.StatusInternalServerError, "failed to delete group access records")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete group access records", "error.failedToDeleteGroupAccess")
 		return
 	}
 
@@ -193,7 +193,7 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 	if group.IsDefault {
 		if err := tx.Model(&model.UserGroup{}).Where("id = ?", targetGroup.ID).Update("is_default", true).Error; err != nil {
 			tx.Rollback()
-			response.Error(c, http.StatusInternalServerError, "failed to update default group")
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update default group", "error.failedToUpdateDefaultGroup")
 			return
 		}
 	}
@@ -201,7 +201,7 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 	// Delete the group
 	if err := tx.Delete(&model.UserGroup{}, group.ID).Error; err != nil {
 		tx.Rollback()
-		response.Error(c, http.StatusInternalServerError, "failed to delete group")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete group", "error.failedToDeleteGroup")
 		return
 	}
 
@@ -217,18 +217,18 @@ func (h *AdminHandler) UpdateUserGroup(c *gin.Context) {
 		GroupID uint `json:"group_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request body")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 
 	// Verify group exists
 	if _, err := h.repo.FindUserGroup(body.GroupID); err != nil {
-		response.Error(c, http.StatusNotFound, "group not found")
+		response.ErrorWithKey(c, http.StatusNotFound, "group not found", "error.groupNotFound")
 		return
 	}
 
 	if err := h.repo.UpdateUserGroupID(uint(userID), body.GroupID); err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to update user group")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update user group", "error.failedToUpdateUserGroup")
 		return
 	}
 	response.OK(c, gin.H{"message": "user group updated"})
@@ -239,7 +239,7 @@ func (h *AdminHandler) UpdateUserGroup(c *gin.Context) {
 func (h *AdminHandler) GetConfig(c *gin.Context) {
 	configs, err := h.repo.GetAllSystemConfigs()
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to get config")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to get config", "error.failedToGetConfig")
 		return
 	}
 	response.OK(c, configs)
@@ -248,13 +248,13 @@ func (h *AdminHandler) GetConfig(c *gin.Context) {
 func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 	var body map[string]string
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request body")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 
 	for key, value := range body {
 		if err := h.repo.SetSystemConfig(key, value); err != nil {
-			response.Error(c, http.StatusInternalServerError, "failed to update config")
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
 			return
 		}
 	}

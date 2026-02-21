@@ -46,7 +46,7 @@ func (rl *RateLimiter) Handler() gin.HandlerFunc {
 		v.lastSeen = time.Now()
 		if v.count > rl.limit {
 			rl.mu.Unlock()
-			response.Error(c, http.StatusTooManyRequests, "rate limit exceeded")
+			response.ErrorWithKey(c, http.StatusTooManyRequests, "rate limit exceeded", "error.rateLimitExceeded")
 			c.Abort()
 			return
 		}

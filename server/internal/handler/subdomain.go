@@ -32,7 +32,7 @@ func (h *SubdomainHandler) List(c *gin.Context) {
 	}
 	subs, err := h.repo.ListSubdomainsByUser(user.ID)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to list subdomains")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list subdomains", "error.failedToListSubdomains")
 		return
 	}
 	response.OK(c, subs)
@@ -46,11 +46,11 @@ func (h *SubdomainHandler) Get(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	sub, err := h.repo.FindSubdomain(uint(id))
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "subdomain not found")
+		response.ErrorWithKey(c, http.StatusNotFound, "subdomain not found", "error.subdomainNotFound")
 		return
 	}
 	if sub.UserID != user.ID {
-		response.Error(c, http.StatusForbidden, "not your subdomain")
+		response.ErrorWithKey(c, http.StatusForbidden, "not your subdomain", "error.notYourSubdomain")
 		return
 	}
 	response.OK(c, sub)
@@ -66,57 +66,61 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 		Name     string `json:"name" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request body")
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 	body.Name = strings.ToLower(strings.TrimSpace(body.Name))
 	if err := validator.ValidateSubdomainName(body.Name); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
+		if ve, ok := err.(*validator.ValidationError); ok {
+			response.ErrorWithKey(c, http.StatusBadRequest, ve.Message, ve.Key)
+		} else {
+			response.ErrorWithKey(c, http.StatusBadRequest, err.Error(), "error.invalidSubdomainName")
+		}
 		return
 	}
 
 	domain, err := h.repo.FindDomain(body.DomainID)
 	if err != nil || !domain.IsActive {
-		response.Error(c, http.StatusNotFound, "domain not found or inactive")
+		response.ErrorWithKey(c, http.StatusNotFound, "domain not found or inactive", "error.domainNotFoundOrInactive")
 		return
 	}
 
 	// Check group access and get group-specific cost
 	if user.GroupID == nil {
-		response.Error(c, http.StatusForbidden, "user has no group assigned")
+		response.ErrorWithKey(c, http.StatusForbidden, "user has no group assigned", "error.noGroupAssigned")
 		return
 	}
 	access, err := h.repo.FindDomainGroupAccess(domain.ID, *user.GroupID)
 	if err != nil {
-		response.Error(c, http.StatusForbidden, "your group does not have access to this domain")
+		response.ErrorWithKey(c, http.StatusForbidden, "your group does not have access to this domain", "error.groupNoAccess")
 		return
 	}
 	creditCost := access.CreditCost
 
 	if _, err := h.repo.FindSubdomainByName(domain.ID, body.Name); err == nil {
-		response.Error(c, http.StatusConflict, "subdomain already taken")
+		response.ErrorWithKey(c, http.StatusConflict, "subdomain already taken", "error.subdomainAlreadyTaken")
 		return
 	}
 
 	fqdn := fmt.Sprintf("%s.%s", body.Name, domain.Name)
 	tx := h.repo.DB.Begin()
 
+	fqdnParams, _ := json.Marshal(map[string]string{"fqdn": fqdn})
+
 	if creditCost > 0 {
-		desc := fmt.Sprintf("Claim subdomain %s", fqdn)
-		if err := h.repo.DeductCredits(tx, user.ID, creditCost, desc); err != nil {
+		if err := h.repo.DeductCredits(tx, user.ID, creditCost, "txn.claimSubdomain", fqdnParams); err != nil {
 			tx.Rollback()
 			if err == gorm.ErrInvalidData {
-				response.Error(c, http.StatusPaymentRequired, "insufficient credits")
+				response.ErrorWithKey(c, http.StatusPaymentRequired, "insufficient credits", "error.insufficientCredits")
 				return
 			}
-			response.Error(c, http.StatusInternalServerError, "failed to deduct credits")
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to deduct credits", "error.failedToDeductCredits")
 			return
 		}
 	} else if creditCost < 0 {
-		desc := fmt.Sprintf("Reward for claiming subdomain %s", fqdn)
-		if err := h.repo.GrantCredits(tx, user.ID, -creditCost, desc); err != nil {
+		if err := h.repo.GrantCredits(tx, user.ID, -creditCost, "txn.rewardClaimSubdomain", fqdnParams); err != nil {
 			tx.Rollback()
-			response.Error(c, http.StatusInternalServerError, "failed to grant credits")
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to grant credits", "error.failedToGrantCredits")
 			return
 		}
 	}
@@ -129,7 +133,7 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 	}
 	if err := tx.Create(sub).Error; err != nil {
 		tx.Rollback()
-		response.Error(c, http.StatusInternalServerError, "failed to create subdomain")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create subdomain", "error.failedToCreateSubdomain")
 		return
 	}
 
@@ -154,11 +158,11 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	sub, err := h.repo.FindSubdomain(uint(id))
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "subdomain not found")
+		response.ErrorWithKey(c, http.StatusNotFound, "subdomain not found", "error.subdomainNotFound")
 		return
 	}
 	if sub.UserID != user.ID {
-		response.Error(c, http.StatusForbidden, "not your subdomain")
+		response.ErrorWithKey(c, http.StatusForbidden, "not your subdomain", "error.notYourSubdomain")
 		return
 	}
 
@@ -189,7 +193,7 @@ func (h *SubdomainHandler) getUser(c *gin.Context) *model.User {
 	logtoID := c.GetString("user_id")
 	user, err := h.repo.FindUserByLogtoID(logtoID)
 	if err != nil {
-		response.Error(c, http.StatusUnauthorized, "user not found")
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		c.Abort()
 		return nil
 	}

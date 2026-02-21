@@ -9,6 +9,7 @@ import { useDNSRecords } from "@/hooks/use-dns-records";
 import { RecordTable } from "@/components/dns/record-table";
 import { RecordForm } from "@/components/dns/record-form";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/api";
 
 export default function SubdomainDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,7 +29,7 @@ export default function SubdomainDetailPage() {
         toast.success(t("subdomains.released", { fqdn: subdomain.fqdn }));
         navigate("/subdomains");
       },
-      onError: (err) => toast.error(err.message),
+      onError: (err) => toast.error(getErrorMessage(err, t)),
     });
   };
 

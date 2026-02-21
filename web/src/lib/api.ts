@@ -8,6 +8,23 @@ export function setTokenGetter(fn: () => Promise<string>) {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
+export class ApiError extends Error {
+  messageKey?: string;
+  constructor(message: string, messageKey?: string) {
+    super(message);
+    this.messageKey = messageKey;
+  }
+}
+
+export function getErrorMessage(err: unknown, t?: (key: string) => string): string {
+  if (err instanceof ApiError && err.messageKey && t) {
+    const translated = t(err.messageKey);
+    if (translated !== err.messageKey) return translated;
+  }
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {}
@@ -35,7 +52,7 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(body.message || res.statusText);
+    throw new ApiError(body.message || res.statusText, body.message_key);
   }
 
   return res.json();

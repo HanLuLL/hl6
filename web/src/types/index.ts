@@ -66,7 +66,8 @@ export interface CreditTransaction {
   user_id: number;
   amount: number;
   type: "grant" | "deduct" | "refund";
-  description: string;
+  description_key: string;
+  description_params?: Record<string, string>;
   balance_after: number;
   created_at: string;
 }
@@ -74,6 +75,7 @@ export interface CreditTransaction {
 export interface ApiResponse<T> {
   code: number;
   message: string;
+  message_key?: string;
   data: T;
 }
 

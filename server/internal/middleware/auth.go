@@ -36,7 +36,7 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := extractToken(c)
 		if token == "" {
-			response.Error(c, http.StatusUnauthorized, "missing authorization token")
+			response.ErrorWithKey(c, http.StatusUnauthorized, "missing authorization token", "error.missingToken")
 			c.Abort()
 			return
 		}
@@ -44,7 +44,7 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 		jwksURL := a.endpoint + "/oidc/jwks"
 		keySet, err := a.jwksCache.Get(c.Request.Context(), jwksURL)
 		if err != nil {
-			response.Error(c, http.StatusUnauthorized, "failed to fetch JWKS")
+			response.ErrorWithKey(c, http.StatusUnauthorized, "failed to fetch JWKS", "error.failedToFetchJWKS")
 			c.Abort()
 			return
 		}
@@ -55,7 +55,7 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 			jwt.WithAudience(a.resource),
 		)
 		if err != nil {
-			response.Error(c, http.StatusUnauthorized, "invalid token")
+			response.ErrorWithKey(c, http.StatusUnauthorized, "invalid token", "error.invalidToken")
 			c.Abort()
 			return
 		}

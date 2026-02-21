@@ -51,7 +51,7 @@ export default function CreditsPage() {
                   <div className="flex items-center gap-3">
                     {typeBadge(tx.type)}
                     <div>
-                      <p className="text-sm font-medium">{tx.description}</p>
+                      <p className="text-sm font-medium">{t(tx.description_key, tx.description_params ?? {})}</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(tx.created_at).toLocaleString()}
                       </p>

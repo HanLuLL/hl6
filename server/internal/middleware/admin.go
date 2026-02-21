@@ -13,20 +13,20 @@ func AdminRequired(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		logtoID, exists := c.Get("user_id")
 		if !exists {
-			response.Error(c, http.StatusUnauthorized, "unauthorized")
+			response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
 			c.Abort()
 			return
 		}
 
 		var user model.User
 		if err := db.Where("logto_id = ?", logtoID).First(&user).Error; err != nil {
-			response.Error(c, http.StatusForbidden, "user not found")
+			response.ErrorWithKey(c, http.StatusForbidden, "user not found", "error.userNotFound")
 			c.Abort()
 			return
 		}
 
 		if user.Role != "admin" {
-			response.Error(c, http.StatusForbidden, "admin access required")
+			response.ErrorWithKey(c, http.StatusForbidden, "admin access required", "error.adminRequired")
 			c.Abort()
 			return
 		}

@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import type { Domain } from "@/types";
 import { useClaimSubdomain } from "@/hooks/use-subdomains";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/api";
 
 interface ClaimDialogProps {
   domain: Domain | null;
@@ -37,7 +38,7 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
           onOpenChange(false);
         },
         onError: (err) => {
-          toast.error(err.message);
+          toast.error(getErrorMessage(err, t));
         },
       }
     );

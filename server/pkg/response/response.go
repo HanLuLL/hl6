@@ -7,18 +7,20 @@ import (
 )
 
 type Response struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Code       int         `json:"code"`
+	Message    string      `json:"message"`
+	MessageKey string      `json:"message_key,omitempty"`
+	Data       interface{} `json:"data,omitempty"`
 }
 
 type PaginatedResponse struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-	Total   int64       `json:"total"`
-	Page    int         `json:"page"`
-	PerPage int         `json:"per_page"`
+	Code       int         `json:"code"`
+	Message    string      `json:"message"`
+	MessageKey string      `json:"message_key,omitempty"`
+	Data       interface{} `json:"data,omitempty"`
+	Total      int64       `json:"total"`
+	Page       int         `json:"page"`
+	PerPage    int         `json:"per_page"`
 }
 
 func OK(c *gin.Context, data interface{}) {
@@ -31,6 +33,10 @@ func Created(c *gin.Context, data interface{}) {
 
 func Error(c *gin.Context, status int, message string) {
 	c.JSON(status, Response{Code: -1, Message: message})
+}
+
+func ErrorWithKey(c *gin.Context, status int, message, messageKey string) {
+	c.JSON(status, Response{Code: -1, Message: message, MessageKey: messageKey})
 }
 
 func Paginated(c *gin.Context, data interface{}, total int64, page, perPage int) {

@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import type { UserGroup } from "@/types";
 
@@ -63,7 +63,7 @@ export default function AdminGroupsPage() {
       setAddName("");
       setAddIsDefault(false);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
   const updateMutation = useMutation({
@@ -74,7 +74,7 @@ export default function AdminGroupsPage() {
       toast.success(t("adminGroups.groupUpdated"));
       setEditGroup(null);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
   const deleteMutation = useMutation({
@@ -87,7 +87,7 @@ export default function AdminGroupsPage() {
       setDeleteGroup(null);
       setMigrateTo("");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
   if (isLoading) {
