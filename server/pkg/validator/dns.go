@@ -70,6 +70,19 @@ func ValidateDNSRecord(recordType, content string) error {
 				Params:  map[string]string{"value": content},
 			}
 		}
+	case "TXT":
+		if strings.TrimSpace(content) == "" {
+			return &ValidationError{
+				Message: "TXT record content cannot be empty",
+				Key:     "error.invalidTXT",
+			}
+		}
+		if len(content) > 2048 {
+			return &ValidationError{
+				Message: fmt.Sprintf("TXT record content too long: %d characters (max 2048)", len(content)),
+				Key:     "error.txtTooLong",
+			}
+		}
 	default:
 		return &ValidationError{
 			Message: fmt.Sprintf("unsupported record type: %s", recordType),

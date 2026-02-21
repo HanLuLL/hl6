@@ -46,7 +46,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
     const data = {
       content: content.trim(),
       ttl: parseInt(ttl) || 1,
-      proxied,
+      proxied: type === "TXT" ? false : proxied,
     };
 
     if (isEdit && record) {
@@ -96,6 +96,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
                   <SelectItem value="A">{t("recordForm.typeA")}</SelectItem>
                   <SelectItem value="AAAA">{t("recordForm.typeAAAA")}</SelectItem>
                   <SelectItem value="CNAME">{t("recordForm.typeCNAME")}</SelectItem>
+                  <SelectItem value="TXT">{t("recordForm.typeTXT")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -103,7 +104,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
           <div className="space-y-2">
             <Label>{t("recordForm.content")}</Label>
             <Input
-              placeholder={type === "A" ? "1.2.3.4" : type === "AAAA" ? "2001:db8::1" : "example.com"}
+              placeholder={type === "A" ? "1.2.3.4" : type === "AAAA" ? "2001:db8::1" : type === "TXT" ? "v=spf1 include:example.com ~all" : "example.com"}
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
@@ -130,8 +131,9 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={proxied}
+                    checked={type === "TXT" ? false : proxied}
                     onChange={(e) => setProxied(e.target.checked)}
+                    disabled={type === "TXT"}
                     className="rounded"
                   />
                   <span className="text-sm">{proxied ? t("common.on") : t("common.off")}</span>

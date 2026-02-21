@@ -39,6 +39,7 @@ export function RecordTable({ subdomainId, records }: RecordTableProps) {
       case "A": return "default" as const;
       case "AAAA": return "secondary" as const;
       case "CNAME": return "outline" as const;
+      case "TXT": return "secondary" as const;
       default: return "default" as const;
     }
   };

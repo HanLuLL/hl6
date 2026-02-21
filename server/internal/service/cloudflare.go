@@ -46,6 +46,13 @@ func (s *CloudflareService) buildNewBody(recordType, name, content string, ttl i
 			TTL:     cloudflare.F(dns.TTL(ttl)),
 			Proxied: cloudflare.F(proxied),
 		}
+	case "TXT":
+		return dns.TXTRecordParam{
+			Name:    cloudflare.F(name),
+			Type:    cloudflare.F(dns.TXTRecordTypeTXT),
+			Content: cloudflare.F(content),
+			TTL:     cloudflare.F(dns.TTL(ttl)),
+		}
 	default: // A
 		return dns.ARecordParam{
 			Name:    cloudflare.F(name),
@@ -74,6 +81,13 @@ func (s *CloudflareService) buildUpdateBody(recordType, name, content string, tt
 			Content: cloudflare.F(content),
 			TTL:     cloudflare.F(dns.TTL(ttl)),
 			Proxied: cloudflare.F(proxied),
+		}
+	case "TXT":
+		return dns.TXTRecordParam{
+			Name:    cloudflare.F(name),
+			Type:    cloudflare.F(dns.TXTRecordTypeTXT),
+			Content: cloudflare.F(content),
+			TTL:     cloudflare.F(dns.TTL(ttl)),
 		}
 	default: // A
 		return dns.ARecordParam{

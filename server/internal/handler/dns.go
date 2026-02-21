@@ -65,7 +65,7 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 	if body.Type == "CNAME" {
 		hasOther, _ := h.repo.HasNonCNAMERecords(sub.ID)
 		if hasOther {
-			response.ErrorWithKey(c, http.StatusConflict, "cannot add CNAME: A/AAAA records exist", "error.cnameConflictWithOther")
+			response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.cnameConflictWithOther")
 			return
 		}
 		hasCNAME, _ := h.repo.HasCNAMERecord(sub.ID)
@@ -76,9 +76,19 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 	} else {
 		hasCNAME, _ := h.repo.HasCNAMERecord(sub.ID)
 		if hasCNAME {
-			response.ErrorWithKey(c, http.StatusConflict, "cannot add A/AAAA: CNAME record exists", "error.otherConflictWithCname")
+			response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.otherConflictWithCname")
 			return
 		}
+	}
+
+	dup, _ := h.repo.HasDuplicateRecord(sub.ID, body.Type, body.Content)
+	if dup {
+		response.ErrorWithKey(c, http.StatusConflict, "duplicate record", "error.duplicateRecord")
+		return
+	}
+
+	if body.Type == "TXT" {
+		body.Proxied = false
 	}
 
 	if body.TTL <= 0 {
@@ -151,6 +161,17 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 		}
 		return
 	}
+
+	dup, _ := h.repo.HasDuplicateRecordExcluding(sub.ID, record.Type, body.Content, record.ID)
+	if dup {
+		response.ErrorWithKey(c, http.StatusConflict, "duplicate record", "error.duplicateRecord")
+		return
+	}
+
+	if record.Type == "TXT" {
+		body.Proxied = false
+	}
+
 	if body.TTL <= 0 {
 		body.TTL = 1
 	}

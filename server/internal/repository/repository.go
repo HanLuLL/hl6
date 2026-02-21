@@ -128,6 +128,18 @@ func (r *Repository) HasCNAMERecord(subdomainID uint) (bool, error) {
 	return count > 0, err
 }
 
+func (r *Repository) HasDuplicateRecord(subdomainID uint, recordType, content string) (bool, error) {
+	var count int64
+	err := r.DB.Model(&model.DNSRecord{}).Where("subdomain_id = ? AND type = ? AND content = ?", subdomainID, recordType, content).Count(&count).Error
+	return count > 0, err
+}
+
+func (r *Repository) HasDuplicateRecordExcluding(subdomainID uint, recordType, content string, excludeID uint) (bool, error) {
+	var count int64
+	err := r.DB.Model(&model.DNSRecord{}).Where("subdomain_id = ? AND type = ? AND content = ? AND id != ?", subdomainID, recordType, content, excludeID).Count(&count).Error
+	return count > 0, err
+}
+
 // Credits
 func (r *Repository) GetCreditBalance(userID uint) (*model.CreditBalance, error) {
 	var balance model.CreditBalance
