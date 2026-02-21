@@ -20,12 +20,12 @@ func NewAdminHandler(repo *repository.Repository) *AdminHandler {
 
 func (h *AdminHandler) ListUsers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "50"))
 	if page < 1 {
 		page = 1
 	}
 	if perPage < 1 || perPage > 100 {
-		perPage = 20
+		perPage = 50
 	}
 
 	users, total, err := h.repo.ListUsers(page, perPage)
@@ -47,12 +47,12 @@ func (h *AdminHandler) Stats(c *gin.Context) {
 
 func (h *AdminHandler) AuditLogs(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "15"))
 	if page < 1 {
 		page = 1
 	}
 	if perPage < 1 || perPage > 100 {
-		perPage = 20
+		perPage = 15
 	}
 
 	logs, total, err := h.repo.ListAuditLogs(page, perPage)

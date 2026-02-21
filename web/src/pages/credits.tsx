@@ -9,7 +9,7 @@ import { useCredits, useTransactions } from "@/hooks/use-credits";
 export default function CreditsPage() {
   const { data: creditData, isLoading: creditLoading } = useCredits();
   const [page, setPage] = useState(1);
-  const { data: txnData, isLoading: txnLoading } = useTransactions(page, 20);
+  const { data: txnData, isLoading: txnLoading } = useTransactions(page, 10);
   const { t } = useTranslation();
 
   const typeBadge = (type: string) => {
@@ -88,15 +88,15 @@ export default function CreditsPage() {
                   </div>
                 </div>
               ))}
-              {txnData.total > 20 && (
+              {txnData.total > 10 && (
                 <div className="flex justify-center gap-2 pt-4">
                   <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                     {t("common.previous")}
                   </Button>
                   <span className="flex items-center text-sm text-muted-foreground">
-                    {t("common.pageOf", { page, total: Math.ceil(txnData.total / 20) })}
+                    {t("common.pageOf", { page, total: Math.ceil(txnData.total / 10) })}
                   </span>
-                  <Button variant="outline" size="sm" disabled={page >= Math.ceil(txnData.total / 20)} onClick={() => setPage((p) => p + 1)}>
+                  <Button variant="outline" size="sm" disabled={page >= Math.ceil(txnData.total / 10)} onClick={() => setPage((p) => p + 1)}>
                     {t("common.next")}
                   </Button>
                 </div>

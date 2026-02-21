@@ -39,7 +39,7 @@ export default function AdminUsersPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users", page],
     queryFn: async () => {
-      const res = await api.adminListUsers(page, 20);
+      const res = await api.adminListUsers(page, 50);
       return { users: res.data, total: res.total };
     },
     staleTime: 30_000,
@@ -182,11 +182,11 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      {data && data.total > 20 && (
+      {data && data.total > 50 && (
         <div className="flex justify-center gap-2">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>{t("common.previous")}</Button>
-          <span className="flex items-center text-sm text-muted-foreground">{t("common.page", { page })}</span>
-          <Button variant="outline" size="sm" disabled={page >= Math.ceil(data.total / 20)} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</Button>
+          <span className="flex items-center text-sm text-muted-foreground">{t("common.pageOf", { page, total: Math.ceil(data.total / 50) })}</span>
+          <Button variant="outline" size="sm" disabled={page >= Math.ceil(data.total / 50)} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</Button>
         </div>
       )}
 

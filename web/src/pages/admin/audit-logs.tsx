@@ -21,7 +21,7 @@ export default function AdminAuditLogsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-audit-logs", page],
     queryFn: async () => {
-      const res = await api.adminListAuditLogs(page, 20);
+      const res = await api.adminListAuditLogs(page, 15);
       return { logs: res.data, total: res.total };
     },
     staleTime: 30_000,
@@ -112,11 +112,11 @@ export default function AdminAuditLogsPage() {
         </CardContent>
       </Card>
 
-      {data && data.total > 20 && (
+      {data && data.total > 15 && (
         <div className="flex justify-center gap-2">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>{t("common.previous")}</Button>
-          <span className="flex items-center text-sm text-muted-foreground">{t("common.page", { page })}</span>
-          <Button variant="outline" size="sm" disabled={page >= Math.ceil(data.total / 20)} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</Button>
+          <span className="flex items-center text-sm text-muted-foreground">{t("common.pageOf", { page, total: Math.ceil(data.total / 15) })}</span>
+          <Button variant="outline" size="sm" disabled={page >= Math.ceil(data.total / 15)} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</Button>
         </div>
       )}
     </div>
