@@ -9,8 +9,6 @@ import { useSubdomain, useReleaseSubdomain } from "@/hooks/use-subdomains";
 import { useDNSRecords } from "@/hooks/use-dns-records";
 import { RecordTable } from "@/components/dns/record-table";
 import { RecordForm } from "@/components/dns/record-form";
-import { toast } from "sonner";
-import { getErrorMessage } from "@/lib/api";
 
 export default function SubdomainDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,13 +23,14 @@ export default function SubdomainDetailPage() {
   const handleRelease = () => {
     if (!subdomain) return;
     if (!confirm(t("subdomains.releaseConfirm", { fqdn: subdomain.fqdn }))) return;
-    release.mutate(subdomain.id, {
-      onSuccess: () => {
-        toast.success(t("subdomains.released", { fqdn: subdomain.fqdn }));
-        navigate("/subdomains");
-      },
-      onError: (err) => toast.error(getErrorMessage(err, t)),
-    });
+    release.mutate(
+      { id: subdomain.id, fqdn: subdomain.fqdn },
+      {
+        onSuccess: () => {
+          navigate("/subdomains");
+        },
+      }
+    );
   };
 
   if (isLoading) {

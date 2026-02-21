@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubdomains, useReleaseSubdomain } from "@/hooks/use-subdomains";
-import { toast } from "sonner";
-import { getErrorMessage } from "@/lib/api";
 
 export default function SubdomainsPage() {
   const { data: subdomains, isLoading } = useSubdomains();
@@ -15,10 +13,7 @@ export default function SubdomainsPage() {
 
   const handleRelease = (id: number, fqdn: string) => {
     if (!confirm(t("subdomains.releaseConfirm", { fqdn }))) return;
-    release.mutate(id, {
-      onSuccess: () => toast.success(t("subdomains.released", { fqdn })),
-      onError: (err) => toast.error(getErrorMessage(err, t)),
-    });
+    release.mutate({ id, fqdn });
   };
 
   return (

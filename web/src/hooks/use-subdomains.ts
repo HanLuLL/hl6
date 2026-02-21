@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { api, getErrorMessage } from "@/lib/api";
 
 export function useDomains() {
   return useQuery({
@@ -37,26 +39,36 @@ export function useSubdomain(id: number) {
 
 export function useClaimSubdomain() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: api.claimSubdomain,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      toast.success(t("claimDialog.success", { fqdn: data.data.fqdn }));
       queryClient.invalidateQueries({ queryKey: ["subdomains"] });
       queryClient.invalidateQueries({ queryKey: ["domains"] });
       queryClient.invalidateQueries({ queryKey: ["me"] });
       queryClient.invalidateQueries({ queryKey: ["credits"] });
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, t));
     },
   });
 }
 
 export function useReleaseSubdomain() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
-    mutationFn: api.releaseSubdomain,
-    onSuccess: () => {
+    mutationFn: ({ id }: { id: number; fqdn: string }) => api.releaseSubdomain(id),
+    onSuccess: (_data, variables) => {
+      toast.success(t("subdomains.released", { fqdn: variables.fqdn }));
       queryClient.invalidateQueries({ queryKey: ["subdomains"] });
       queryClient.invalidateQueries({ queryKey: ["domains"] });
       queryClient.invalidateQueries({ queryKey: ["me"] });
       queryClient.invalidateQueries({ queryKey: ["credits"] });
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, t));
     },
   });
 }

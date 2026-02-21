@@ -20,8 +20,6 @@ import {
 } from "@/components/ui/select";
 import { useCreateRecord, useUpdateRecord } from "@/hooks/use-dns-records";
 import type { DNSRecord } from "@/types";
-import { toast } from "sonner";
-import { getErrorMessage } from "@/lib/api";
 
 interface RecordFormProps {
   subdomainId: number;
@@ -54,10 +52,8 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
         { recordId: record.id, ...data },
         {
           onSuccess: () => {
-            toast.success(t("recordForm.recordUpdated"));
             onOpenChange(false);
           },
-          onError: (err) => toast.error(getErrorMessage(err, t)),
         }
       );
     } else {
@@ -65,11 +61,9 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
         { type, ...data },
         {
           onSuccess: () => {
-            toast.success(t("recordForm.recordCreated"));
             setContent("");
             onOpenChange(false);
           },
-          onError: (err) => toast.error(getErrorMessage(err, t)),
         }
       );
     }

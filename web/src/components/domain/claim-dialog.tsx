@@ -13,8 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Domain } from "@/types";
 import { useClaimSubdomain } from "@/hooks/use-subdomains";
-import { toast } from "sonner";
-import { getErrorMessage } from "@/lib/api";
 
 interface ClaimDialogProps {
   domain: Domain | null;
@@ -33,12 +31,8 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
       { domain_id: domain.id, name: name.trim().toLowerCase() },
       {
         onSuccess: () => {
-          toast.success(t("claimDialog.success", { fqdn: `${name}.${domain.name}` }));
           setName("");
           onOpenChange(false);
-        },
-        onError: (err) => {
-          toast.error(getErrorMessage(err, t));
         },
       }
     );
