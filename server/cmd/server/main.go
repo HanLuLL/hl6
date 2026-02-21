@@ -81,7 +81,7 @@ func seedDefaults(db *gorm.DB) {
 
 	// 4. Ensure registration_bonus_credits config exists
 	var cfg model.SystemConfig
-	if db.Where("`key` = ?", "registration_bonus_credits").First(&cfg).Error != nil {
+	if db.Where("\"key\" = ?", "registration_bonus_credits").First(&cfg).Error != nil {
 		db.Create(&model.SystemConfig{Key: "registration_bonus_credits", Value: "0"})
 	}
 }
