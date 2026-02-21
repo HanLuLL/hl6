@@ -42,6 +42,7 @@ export default function AdminUsersPage() {
       const res = await api.adminListUsers(page, 20);
       return { users: res.data, total: res.total };
     },
+    staleTime: 30_000,
   });
 
   const { data: groups } = useQuery({
@@ -50,6 +51,7 @@ export default function AdminUsersPage() {
       const res = await api.adminListGroups();
       return res.data;
     },
+    staleTime: 30_000,
   });
 
   const [grantUserId, setGrantUserId] = useState<number | null>(null);

@@ -9,6 +9,7 @@ export function useDNSRecords(subdomainId: number) {
       return res.data;
     },
     enabled: !!subdomainId,
+    staleTime: 30_000,
   });
 }
 

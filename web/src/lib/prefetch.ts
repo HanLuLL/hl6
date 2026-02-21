@@ -26,6 +26,6 @@ export function prefetchRouteData(queryClient: QueryClient, href: string) {
   const queries = routeQueries[href];
   if (!queries) return;
   for (const q of queries) {
-    queryClient.prefetchQuery({ queryKey: q.queryKey, queryFn: q.queryFn, staleTime: 5000 });
+    queryClient.prefetchQuery({ queryKey: q.queryKey, queryFn: q.queryFn, staleTime: 30_000 });
   }
 }

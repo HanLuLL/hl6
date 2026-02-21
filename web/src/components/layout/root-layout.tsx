@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { prefetchRouteData } from "@/lib/prefetch";
+import { PageTransition } from "./page-transition";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./language-toggle";
 import { Button } from "@/components/ui/button";
@@ -92,7 +93,6 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut, credits } = useAuth();
   const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const location = useLocation();
 
   return (
     <div className="flex min-h-screen">
@@ -148,9 +148,9 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
 
         {/* Main content */}
         <main className="flex-1 p-4 lg:p-6">
-          <div key={location.pathname} className="animate-page-enter">
+          <PageTransition>
             {children}
-          </div>
+          </PageTransition>
         </main>
       </div>
     </div>

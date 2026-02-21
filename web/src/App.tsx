@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { RootLayout } from "@/components/layout/root-layout";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +15,7 @@ import AdminAuditLogsPage from "@/pages/admin/audit-logs";
 import AdminGroupsPage from "@/pages/admin/groups";
 import AdminSettingsPage from "@/pages/admin/settings";
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -54,15 +54,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/" replace />;
   }
 
-  return <RootLayout>{children}</RootLayout>;
+  return <RootLayout><Outlet /></RootLayout>;
 }
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
+function AdminRoute() {
   const { user } = useAuth();
   if (user && user.role !== "admin") {
     return <Navigate to="/dashboard" replace />;
   }
-  return <>{children}</>;
+  return <Outlet />;
 }
 
 export default function App() {
@@ -71,16 +71,20 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/callback" element={<CallbackPage />} />
-        <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-        <Route path="/domains" element={<ProtectedRoute><DomainsPage /></ProtectedRoute>} />
-        <Route path="/subdomains" element={<ProtectedRoute><SubdomainsPage /></ProtectedRoute>} />
-        <Route path="/subdomains/:id" element={<ProtectedRoute><SubdomainDetailPage /></ProtectedRoute>} />
-        <Route path="/credits" element={<ProtectedRoute><CreditsPage /></ProtectedRoute>} />
-        <Route path="/admin/domains" element={<ProtectedRoute><AdminRoute><AdminDomainsPage /></AdminRoute></ProtectedRoute>} />
-        <Route path="/admin/users" element={<ProtectedRoute><AdminRoute><AdminUsersPage /></AdminRoute></ProtectedRoute>} />
-        <Route path="/admin/audit-logs" element={<ProtectedRoute><AdminRoute><AdminAuditLogsPage /></AdminRoute></ProtectedRoute>} />
-        <Route path="/admin/groups" element={<ProtectedRoute><AdminRoute><AdminGroupsPage /></AdminRoute></ProtectedRoute>} />
-        <Route path="/admin/settings" element={<ProtectedRoute><AdminRoute><AdminSettingsPage /></AdminRoute></ProtectedRoute>} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/domains" element={<DomainsPage />} />
+          <Route path="/subdomains" element={<SubdomainsPage />} />
+          <Route path="/subdomains/:id" element={<SubdomainDetailPage />} />
+          <Route path="/credits" element={<CreditsPage />} />
+          <Route element={<AdminRoute />}>
+            <Route path="/admin/domains" element={<AdminDomainsPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
+            <Route path="/admin/groups" element={<AdminGroupsPage />} />
+            <Route path="/admin/settings" element={<AdminSettingsPage />} />
+          </Route>
+        </Route>
       </Routes>
     </BrowserRouter>
   );

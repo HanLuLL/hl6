@@ -42,6 +42,7 @@ export default function AdminGroupsPage() {
       const res = await api.adminListGroups();
       return res.data;
     },
+    staleTime: 30_000,
   });
 
   const [showAdd, setShowAdd] = useState(false);

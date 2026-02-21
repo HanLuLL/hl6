@@ -8,6 +8,7 @@ export function useCredits() {
       const res = await api.getCredits();
       return res.data;
     },
+    staleTime: 30_000,
   });
 }
 
@@ -18,5 +19,6 @@ export function useTransactions(page = 1, perPage = 20) {
       const res = await api.listTransactions(page, perPage);
       return { data: res.data, total: res.total, page: res.page, perPage: res.per_page };
     },
+    staleTime: 30_000,
   });
 }

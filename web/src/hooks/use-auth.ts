@@ -21,6 +21,7 @@ export function useAuth() {
     queryKey: ["me"],
     queryFn: () => api.getMe(),
     enabled: isAuthenticated,
+    staleTime: 30_000,
   });
 
   const syncMutation = useMutation({

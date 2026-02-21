@@ -59,6 +59,7 @@ export default function AdminDomainsPage() {
       const res = await api.adminListDomainsFull();
       return res.data;
     },
+    staleTime: 30_000,
   });
 
   const { data: groups } = useQuery({
@@ -67,6 +68,7 @@ export default function AdminDomainsPage() {
       const res = await api.adminListGroups();
       return res.data;
     },
+    staleTime: 30_000,
   });
 
   const [showAdd, setShowAdd] = useState(false);
@@ -394,6 +396,7 @@ function ZoneCombobox({ value, onSelect, enabled }: {
       return res.data;
     },
     enabled,
+    staleTime: 30_000,
   });
 
   return (

@@ -18,6 +18,7 @@ export default function AdminSettingsPage() {
       const res = await api.adminGetConfig();
       return res.data;
     },
+    staleTime: 30_000,
   });
 
   const [bonusCredits, setBonusCredits] = useState("0");

@@ -24,6 +24,7 @@ export default function AdminAuditLogsPage() {
       const res = await api.adminListAuditLogs(page, 20);
       return { logs: res.data, total: res.total };
     },
+    staleTime: 30_000,
   });
 
   if (isLoading) {

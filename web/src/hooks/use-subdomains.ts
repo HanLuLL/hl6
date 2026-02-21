@@ -8,6 +8,7 @@ export function useDomains() {
       const res = await api.listDomains();
       return res.data;
     },
+    staleTime: 30_000,
   });
 }
 
@@ -18,6 +19,7 @@ export function useSubdomains() {
       const res = await api.listSubdomains();
       return res.data;
     },
+    staleTime: 30_000,
   });
 }
 
@@ -29,6 +31,7 @@ export function useSubdomain(id: number) {
       return res.data;
     },
     enabled: !!id,
+    staleTime: 30_000,
   });
 }
 
