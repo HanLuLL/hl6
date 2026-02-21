@@ -182,6 +182,7 @@
     "addGroupAccess": "Add Group",
     "addAllGroups": "Add All",
     "allGroups": "All Groups",
+    "negativeCostHint": "Negative price: users will earn credits when claiming this domain",
     "noGroupAccess": "No groups have access. Add at least one group."
   },
   "auditLogs": {

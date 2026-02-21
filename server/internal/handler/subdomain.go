@@ -100,15 +100,25 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 
 	fqdn := fmt.Sprintf("%s.%s", body.Name, domain.Name)
 	tx := h.repo.DB.Begin()
-	desc := fmt.Sprintf("Claim subdomain %s", fqdn)
-	if err := h.repo.DeductCredits(tx, user.ID, creditCost, desc); err != nil {
-		tx.Rollback()
-		if err == gorm.ErrInvalidData {
-			response.Error(c, http.StatusPaymentRequired, "insufficient credits")
+
+	if creditCost > 0 {
+		desc := fmt.Sprintf("Claim subdomain %s", fqdn)
+		if err := h.repo.DeductCredits(tx, user.ID, creditCost, desc); err != nil {
+			tx.Rollback()
+			if err == gorm.ErrInvalidData {
+				response.Error(c, http.StatusPaymentRequired, "insufficient credits")
+				return
+			}
+			response.Error(c, http.StatusInternalServerError, "failed to deduct credits")
 			return
 		}
-		response.Error(c, http.StatusInternalServerError, "failed to deduct credits")
-		return
+	} else if creditCost < 0 {
+		desc := fmt.Sprintf("Reward for claiming subdomain %s", fqdn)
+		if err := h.repo.GrantCredits(tx, user.ID, -creditCost, desc); err != nil {
+			tx.Rollback()
+			response.Error(c, http.StatusInternalServerError, "failed to grant credits")
+			return
+		}
 	}
 
 	sub := &model.Subdomain{

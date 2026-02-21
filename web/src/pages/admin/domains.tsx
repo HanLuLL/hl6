@@ -255,7 +255,6 @@ function GroupAccessEditor({ groups, value, onChange }: {
         <span className="text-sm min-w-24 font-medium">{t("adminDomains.allGroups")}</span>
         <Input
           type="number"
-          min="0"
           step="any"
           className="w-24"
           value={bulkCost}
@@ -289,11 +288,10 @@ function GroupAccessEditor({ groups, value, onChange }: {
         {value.map((entry, idx) => {
           const group = groups.find((g) => g.id === entry.group_id);
           return (
-            <div key={entry.group_id} className="flex items-center gap-2">
+            <div key={entry.group_id} className="flex items-center gap-2 flex-wrap">
               <span className="text-sm min-w-24 truncate">{group?.name ?? `#${entry.group_id}`}</span>
               <Input
                 type="number"
-                min="0"
                 step="any"
                 className="w-24"
                 value={entry.credit_cost}
@@ -309,6 +307,9 @@ function GroupAccessEditor({ groups, value, onChange }: {
               }}>
                 <X className="h-4 w-4" />
               </Button>
+              {entry.credit_cost < 0 && (
+                <p className="text-xs text-green-600 basis-full">{t("adminDomains.negativeCostHint")}</p>
+              )}
             </div>
           );
         })}

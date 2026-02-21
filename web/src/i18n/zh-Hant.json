@@ -182,6 +182,7 @@
     "addGroupAccess": "新增群組",
     "addAllGroups": "新增全部",
     "allGroups": "統一定價",
+    "negativeCostHint": "負價格：使用者認領該網域時將獲得積分",
     "noGroupAccess": "暫無群組存取權限，請至少新增一個群組。"
   },
   "auditLogs": {

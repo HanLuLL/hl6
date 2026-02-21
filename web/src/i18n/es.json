@@ -182,6 +182,7 @@
     "addGroupAccess": "Añadir grupo",
     "addAllGroups": "Añadir todos",
     "allGroups": "Precio único",
+    "negativeCostHint": "Precio negativo: los usuarios ganarán créditos al reclamar este dominio",
     "noGroupAccess": "Ningún grupo tiene acceso. Añade al menos un grupo."
   },
   "auditLogs": {

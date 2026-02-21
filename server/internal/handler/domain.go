@@ -74,14 +74,10 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	}
 
 	for _, ga := range body.GroupAccess {
-		cost := ga.CreditCost
-		if cost <= 0 {
-			cost = 1
-		}
 		access := model.DomainGroupAccess{
 			DomainID:   domain.ID,
 			GroupID:    ga.GroupID,
-			CreditCost: cost,
+			CreditCost: ga.CreditCost,
 		}
 		if err := tx.Create(&access).Error; err != nil {
 			tx.Rollback()
@@ -135,13 +131,9 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 	if body.GroupAccess != nil {
 		var accesses []model.DomainGroupAccess
 		for _, ga := range body.GroupAccess {
-			cost := ga.CreditCost
-			if cost <= 0 {
-				cost = 1
-			}
 			accesses = append(accesses, model.DomainGroupAccess{
 				GroupID:    ga.GroupID,
-				CreditCost: cost,
+				CreditCost: ga.CreditCost,
 			})
 		}
 		if err := h.repo.ReplaceDomainGroupAccess(tx, domain.ID, accesses); err != nil {

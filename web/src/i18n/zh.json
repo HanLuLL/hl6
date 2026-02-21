@@ -182,6 +182,7 @@
     "addGroupAccess": "添加用户组",
     "addAllGroups": "添加全部",
     "allGroups": "统一定价",
+    "negativeCostHint": "负价格：用户认领该域名时将获得积分",
     "noGroupAccess": "暂无用户组访问权限，请至少添加一个用户组。"
   },
   "auditLogs": {

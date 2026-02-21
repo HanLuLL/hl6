@@ -182,6 +182,7 @@
     "addGroupAccess": "グループを追加",
     "addAllGroups": "すべて追加",
     "allGroups": "一括料金",
+    "negativeCostHint": "マイナス価格：ユーザーはこのドメインを取得するとクレジットを獲得します",
     "noGroupAccess": "アクセス権のあるグループがありません。少なくとも1つ追加してください。"
   },
   "auditLogs": {
