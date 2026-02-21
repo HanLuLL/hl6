@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Markdown from "react-markdown";
 import type { Domain } from "@/types";
 
 interface SubdomainCardProps {
@@ -17,7 +18,9 @@ export function SubdomainCard({ domain, onClaim }: SubdomainCardProps) {
           <Badge variant="secondary">{domain.credit_cost} credit{domain.credit_cost > 1 ? "s" : ""}</Badge>
         </div>
         {domain.description && (
-          <CardDescription>{domain.description}</CardDescription>
+          <div className="text-sm text-muted-foreground prose prose-sm prose-neutral dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+            <Markdown>{domain.description}</Markdown>
+          </div>
         )}
       </CardHeader>
       <CardContent>

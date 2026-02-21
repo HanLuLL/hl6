@@ -20,10 +20,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import type { Domain } from "@/types";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Domain, CloudflareZone } from "@/types";
 
 export default function AdminDomainsPage() {
   const queryClient = useQueryClient();
@@ -37,7 +48,9 @@ export default function AdminDomainsPage() {
 
   const [showAdd, setShowAdd] = useState(false);
   const [editDomain, setEditDomain] = useState<Domain | null>(null);
-  const [form, setForm] = useState({ name: "", cloudflare_zone_id: "", credit_cost: "1", description: "" });
+  const [selectedZone, setSelectedZone] = useState<CloudflareZone | null>(null);
+  const [creditCost, setCreditCost] = useState("1");
+  const [description, setDescription] = useState("");
 
   const createMutation = useMutation({
     mutationFn: api.adminCreateDomain,
@@ -45,7 +58,9 @@ export default function AdminDomainsPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-domains"] });
       toast.success("Domain created");
       setShowAdd(false);
-      setForm({ name: "", cloudflare_zone_id: "", credit_cost: "1", description: "" });
+      setSelectedZone(null);
+      setCreditCost("1");
+      setDescription("");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -116,37 +131,47 @@ export default function AdminDomainsPage() {
       </Card>
 
       {/* Add Dialog */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      <Dialog open={showAdd} onOpenChange={(open) => {
+        setShowAdd(open);
+        if (!open) {
+          setSelectedZone(null);
+          setCreditCost("1");
+          setDescription("");
+        }
+      }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Add Domain</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Domain Name</Label>
-              <Input placeholder="example.com" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Cloudflare Zone ID</Label>
-              <Input placeholder="abc123..." value={form.cloudflare_zone_id} onChange={(e) => setForm({ ...form, cloudflare_zone_id: e.target.value })} />
+              <Label>Domain</Label>
+              <ZoneCombobox
+                value={selectedZone}
+                onSelect={setSelectedZone}
+                enabled={showAdd}
+              />
             </div>
             <div className="space-y-2">
               <Label>Credit Cost</Label>
-              <Input type="number" min="1" value={form.credit_cost} onChange={(e) => setForm({ ...form, credit_cost: e.target.value })} />
+              <Input type="number" min="1" value={creditCost} onChange={(e) => setCreditCost(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Description</Label>
-              <Textarea placeholder="Optional description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <Textarea placeholder="Optional description" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
             <Button
-              onClick={() => createMutation.mutate({
-                name: form.name,
-                cloudflare_zone_id: form.cloudflare_zone_id,
-                credit_cost: parseInt(form.credit_cost) || 1,
-                description: form.description,
-              })}
-              disabled={!form.name || !form.cloudflare_zone_id || createMutation.isPending}
+              onClick={() => {
+                if (!selectedZone) return;
+                createMutation.mutate({
+                  name: selectedZone.name,
+                  cloudflare_zone_id: selectedZone.id,
+                  credit_cost: parseInt(creditCost) || 1,
+                  description,
+                });
+              }}
+              disabled={!selectedZone || createMutation.isPending}
             >
               {createMutation.isPending ? "Creating..." : "Create"}
             </Button>
@@ -168,6 +193,65 @@ export default function AdminDomainsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function ZoneCombobox({ value, onSelect, enabled }: {
+  value: CloudflareZone | null;
+  onSelect: (zone: CloudflareZone | null) => void;
+  enabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const { data: zones, isLoading } = useQuery({
+    queryKey: ["admin-cloudflare-zones"],
+    queryFn: async () => {
+      const res = await api.adminListCloudflareZones();
+      return res.data;
+    },
+    enabled,
+  });
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+        >
+          {value ? value.name : "Select a domain..."}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" onWheel={(e) => e.stopPropagation()}>
+        <Command>
+          <CommandInput placeholder="Search domains..." />
+          <CommandList>
+            <CommandEmpty>
+              {isLoading ? "Loading..." : "No domains found."}
+            </CommandEmpty>
+            <CommandGroup>
+              {zones?.map((zone) => (
+                <CommandItem
+                  key={zone.id}
+                  value={zone.name}
+                  onSelect={() => {
+                    onSelect(value?.id === zone.id ? null : zone);
+                    setOpen(false);
+                  }}
+                >
+                  <Check className={cn("mr-2 h-4 w-4", value?.id === zone.id ? "opacity-100" : "opacity-0")} />
+                  <span className="flex-1">{zone.name}</span>
+                  <Badge variant="secondary" className="ml-2 text-xs">{zone.status}</Badge>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 

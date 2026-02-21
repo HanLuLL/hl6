@@ -78,6 +78,8 @@ export const api = {
     request<ApiResponse<import("@/types").Domain>>("/admin/domains", { method: "POST", body: JSON.stringify(data) }),
   adminUpdateDomain: (id: number, data: Partial<import("@/types").Domain>) =>
     request<ApiResponse<import("@/types").Domain>>(`/admin/domains/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminListCloudflareZones: () =>
+    request<ApiResponse<import("@/types").CloudflareZone[]>>("/admin/cloudflare/zones"),
   adminGrantCredits: (data: { user_id: number; amount: number; description: string }) =>
     request<ApiResponse<{ user_id: number; granted: number; balance: number }>>("/admin/credits/grant", { method: "POST", body: JSON.stringify(data) }),
   adminListUsers: (page = 1, perPage = 20) =>

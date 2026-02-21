@@ -22,7 +22,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	rl := middleware.NewRateLimiter(100, time.Minute)
 
 	authH := handler.NewAuthHandler(repo, cfg)
-	domainH := handler.NewDomainHandler(repo)
+	domainH := handler.NewDomainHandler(repo, cf)
 	subdomainH := handler.NewSubdomainHandler(repo, cf)
 	dnsH := handler.NewDNSHandler(repo, cf)
 	creditH := handler.NewCreditHandler(repo)
@@ -54,6 +54,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.Use(middleware.AdminRequired(db))
 	admin.POST("/domains", domainH.AdminCreate)
 	admin.PUT("/domains/:id", domainH.AdminUpdate)
+	admin.GET("/cloudflare/zones", domainH.AdminListZones)
 	admin.POST("/credits/grant", creditH.AdminGrant)
 	admin.GET("/users", adminH.ListUsers)
 	admin.GET("/stats", adminH.Stats)

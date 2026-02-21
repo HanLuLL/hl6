@@ -89,3 +89,9 @@ export interface AuditLog {
   user?: User;
   created_at: string;
 }
+
+export interface CloudflareZone {
+  id: string;
+  name: string;
+  status: string;
+}

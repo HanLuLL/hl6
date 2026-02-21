@@ -7,15 +7,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
 )
 
 type DomainHandler struct {
 	repo *repository.Repository
+	cf   *service.CloudflareService
 }
 
-func NewDomainHandler(repo *repository.Repository) *DomainHandler {
-	return &DomainHandler{repo: repo}
+func NewDomainHandler(repo *repository.Repository, cf *service.CloudflareService) *DomainHandler {
+	return &DomainHandler{repo: repo, cf: cf}
 }
 
 func (h *DomainHandler) List(c *gin.Context) {
@@ -89,4 +91,13 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		return
 	}
 	response.OK(c, domain)
+}
+
+func (h *DomainHandler) AdminListZones(c *gin.Context) {
+	zones, err := h.cf.ListZones(c.Request.Context())
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "failed to list cloudflare zones")
+		return
+	}
+	response.OK(c, zones)
 }

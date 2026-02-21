@@ -7,7 +7,14 @@ import (
 	"github.com/cloudflare/cloudflare-go/v4"
 	"github.com/cloudflare/cloudflare-go/v4/dns"
 	"github.com/cloudflare/cloudflare-go/v4/option"
+	"github.com/cloudflare/cloudflare-go/v4/zones"
 )
+
+type ZoneInfo struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
 
 type CloudflareService struct {
 	client *cloudflare.Client
@@ -107,6 +114,27 @@ func (s *CloudflareService) UpdateRecord(ctx context.Context, zoneID, recordID, 
 		return fmt.Errorf("cloudflare update record: %w", err)
 	}
 	return nil
+}
+
+func (s *CloudflareService) ListZones(ctx context.Context) ([]ZoneInfo, error) {
+	if s.client == nil {
+		return []ZoneInfo{{ID: "mock-zone-id", Name: "example.com", Status: "active"}}, nil
+	}
+
+	var result []ZoneInfo
+	pager := s.client.Zones.ListAutoPaging(ctx, zones.ZoneListParams{})
+	for pager.Next() {
+		zone := pager.Current()
+		result = append(result, ZoneInfo{
+			ID:     zone.ID,
+			Name:   zone.Name,
+			Status: string(zone.Status),
+		})
+	}
+	if err := pager.Err(); err != nil {
+		return nil, fmt.Errorf("cloudflare list zones: %w", err)
+	}
+	return result, nil
 }
 
 func (s *CloudflareService) DeleteRecord(ctx context.Context, zoneID, recordID string) error {
