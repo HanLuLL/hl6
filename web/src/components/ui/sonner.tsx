@@ -17,7 +17,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const toastEl = (e.target as HTMLElement).closest(
-        '[data-sonner-toast][data-type="error"]'
+        "[data-sonner-toast]"
       ) as HTMLElement | null
       if (!toastEl) return
 
@@ -30,32 +30,54 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
       navigator.clipboard.writeText(text)
 
-      // Animate: slide old text up, then slide "copied" text in from below
       contentEl.style.overflow = "hidden"
       contentEl.style.transition = "none"
-      const h = contentEl.offsetHeight
-      contentEl.style.height = `${h}px`
+      contentEl.style.height = `${contentEl.offsetHeight}px`
 
       const inner = contentEl.querySelector("[data-title]") as HTMLElement | null
       const target = inner || contentEl
+      const originalContent = target.textContent || ""
+
+      // 1. 提示文本向上滚出
       target.style.transition = "transform 0.2s ease-in, opacity 0.2s ease-in"
       target.style.transform = "translateY(-100%)"
       target.style.opacity = "0"
 
       setTimeout(() => {
-        if (inner) {
-          inner.textContent = t("common.copied")
-        } else {
-          contentEl.textContent = t("common.copied")
-        }
+        // 2. "已复制"从下方进入
+        if (inner) inner.textContent = t("common.copied")
+        else contentEl.textContent = t("common.copied")
         target.style.transition = "none"
         target.style.transform = "translateY(100%)"
         target.style.opacity = "0"
-
         requestAnimationFrame(() => {
           target.style.transition = "transform 0.2s ease-out, opacity 0.2s ease-out"
           target.style.transform = "translateY(0)"
           target.style.opacity = "1"
+
+          // 3. 停留 500ms 后，"已复制"向上滚出
+          setTimeout(() => {
+            target.style.transition = "transform 0.2s ease-in, opacity 0.2s ease-in"
+            target.style.transform = "translateY(-100%)"
+            target.style.opacity = "0"
+
+            setTimeout(() => {
+              // 4. 提示文本从下方进入
+              if (inner) inner.textContent = originalContent
+              else contentEl.textContent = originalContent
+              target.style.transition = "none"
+              target.style.transform = "translateY(100%)"
+              target.style.opacity = "0"
+              requestAnimationFrame(() => {
+                target.style.transition = "transform 0.2s ease-out, opacity 0.2s ease-out"
+                target.style.transform = "translateY(0)"
+                target.style.opacity = "1"
+                delete toastEl.dataset.copied
+                contentEl.style.overflow = ""
+                contentEl.style.height = ""
+              })
+            }, 200)
+          }, 500)
         })
       }, 200)
     }

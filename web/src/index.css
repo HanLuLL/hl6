@@ -104,6 +104,10 @@
   --warning-text: oklch(0.80 0.14 65);
 }
 
+[data-sonner-toaster] {
+  pointer-events: auto !important;
+}
+
 [data-sonner-toast] {
   padding-inline: 20px !important;
   transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -117,7 +121,7 @@
               opacity 0.2s ease !important;
 }
 
-[data-sonner-toast][data-type='error'] {
+[data-sonner-toast] {
   cursor: pointer;
 }
 

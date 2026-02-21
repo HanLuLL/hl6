@@ -151,7 +151,7 @@ export default function AdminGroupsPage() {
         setShowAdd(open);
         if (!open) { setAddName(""); setAddIsDefault(false); }
       }}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{t("adminGroups.addGroup")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -173,7 +173,7 @@ export default function AdminGroupsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editGroup} onOpenChange={(open) => !open && setEditGroup(null)}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{t("common.edit")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -201,7 +201,7 @@ export default function AdminGroupsPage() {
       <Dialog open={!!deleteGroup} onOpenChange={(open) => {
         if (!open) { setDeleteGroup(null); setMigrateTo(""); }
       }}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{t("adminGroups.deleteGroup")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">

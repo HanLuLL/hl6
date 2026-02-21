@@ -151,7 +151,7 @@ export default function AdminUsersPage() {
 
       {/* Grant Credits Dialog */}
       <Dialog open={grantUserId !== null} onOpenChange={(open) => !open && setGrantUserId(null)}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{t("adminUsers.grantCredits")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -183,7 +183,7 @@ export default function AdminUsersPage() {
       <Dialog open={changeGroupUserId !== null} onOpenChange={(open) => {
         if (!open) { setChangeGroupUserId(null); setSelectedGroupId(""); }
       }}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{t("adminUsers.changeGroup")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">

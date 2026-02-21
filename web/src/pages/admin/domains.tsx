@@ -178,7 +178,7 @@ export default function AdminDomainsPage() {
           setGroupAccess([]);
         }
       }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{t("adminDomains.addDomain")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -221,7 +221,7 @@ export default function AdminDomainsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editDomain} onOpenChange={(open) => !open && setEditDomain(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{t("adminDomains.editDomain", { name: editDomain?.name })}</DialogTitle></DialogHeader>
           {editDomain && (
             <EditDomainForm
