@@ -34,7 +34,7 @@ export default function LandingPage() {
       <section className="flex flex-col items-center justify-center px-6 py-24 text-center">
         <h1 className="text-4xl font-bold tracking-tight sm:text-6xl max-w-3xl">
           {t("landing.heroTitle")}
-          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-[#2D5AF6] to-[#6366f1] bg-clip-text text-transparent">
             {t("landing.heroHighlight")}
           </span>
         </h1>
