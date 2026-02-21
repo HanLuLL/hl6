@@ -1,0 +1,63 @@
+package router
+
+import (
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"hl6-server/internal/config"
+	"hl6-server/internal/handler"
+	"hl6-server/internal/middleware"
+	"hl6-server/internal/repository"
+	"hl6-server/internal/service"
+)
+
+func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
+	r := gin.Default()
+	r.Use(middleware.CORS())
+
+	repo := repository.New(db)
+	cf := service.NewCloudflareService(cfg.CloudflareToken)
+	auth := middleware.NewAuthMiddleware(cfg.LogtoEndpoint, cfg.LogtoAPIResource)
+	rl := middleware.NewRateLimiter(100, time.Minute)
+
+	authH := handler.NewAuthHandler(repo, cfg)
+	domainH := handler.NewDomainHandler(repo)
+	subdomainH := handler.NewSubdomainHandler(repo, cf)
+	dnsH := handler.NewDNSHandler(repo, cf)
+	creditH := handler.NewCreditHandler(repo)
+	adminH := handler.NewAdminHandler(repo)
+
+	api := r.Group("/api/v1")
+	api.Use(rl.Handler())
+
+	authed := api.Group("", auth.Required())
+	authed.GET("/auth/me", authH.Me)
+	authed.POST("/auth/sync", authH.Sync)
+
+	authed.GET("/domains", domainH.List)
+
+	authed.GET("/subdomains", subdomainH.List)
+	authed.POST("/subdomains", subdomainH.Claim)
+	authed.GET("/subdomains/:id", subdomainH.Get)
+	authed.DELETE("/subdomains/:id", subdomainH.Release)
+
+	authed.GET("/subdomains/:id/records", dnsH.ListRecords)
+	authed.POST("/subdomains/:id/records", dnsH.CreateRecord)
+	authed.PUT("/subdomains/:id/records/:recordId", dnsH.UpdateRecord)
+	authed.DELETE("/subdomains/:id/records/:recordId", dnsH.DeleteRecord)
+
+	authed.GET("/credits", creditH.GetBalance)
+	authed.GET("/credits/transactions", creditH.ListTransactions)
+
+	admin := authed.Group("/admin")
+	admin.Use(middleware.AdminRequired(db))
+	admin.POST("/domains", domainH.AdminCreate)
+	admin.PUT("/domains/:id", domainH.AdminUpdate)
+	admin.POST("/credits/grant", creditH.AdminGrant)
+	admin.GET("/users", adminH.ListUsers)
+	admin.GET("/stats", adminH.Stats)
+	admin.GET("/audit-logs", adminH.AuditLogs)
+
+	return r
+}
