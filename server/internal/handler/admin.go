@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -88,17 +89,29 @@ func (h *AdminHandler) CreateGroup(c *gin.Context) {
 		Name: body.Name,
 	}
 
+	if err := h.repo.CreateUserGroup(group); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create group", "error.failedToCreateGroup")
+		return
+	}
+
 	if body.IsDefault {
-		if err := h.repo.SetDefaultUserGroup(0); err != nil {
+		if err := h.repo.SetDefaultUserGroup(group.ID); err != nil {
 			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update default group", "error.failedToUpdateDefaultGroup")
 			return
 		}
 		group.IsDefault = true
 	}
 
-	if err := h.repo.CreateUserGroup(group); err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create group", "error.failedToCreateGroup")
-		return
+	adminUser, _ := c.Get("db_user")
+	if admin, ok := adminUser.(model.User); ok {
+		details, _ := json.Marshal(map[string]interface{}{"group_name": body.Name})
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:     admin.ID,
+			Action:     "admin_create_group",
+			Resource:   "user_group",
+			ResourceID: group.ID,
+			Details:    details,
+		})
 	}
 	response.Created(c, group)
 }
@@ -134,6 +147,17 @@ func (h *AdminHandler) UpdateGroup(c *gin.Context) {
 	if err := h.repo.UpdateUserGroup(group); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update group", "error.failedToUpdateGroup")
 		return
+	}
+	adminUser, _ := c.Get("db_user")
+	if admin, ok := adminUser.(model.User); ok {
+		details, _ := json.Marshal(map[string]interface{}{"group_name": group.Name})
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:     admin.ID,
+			Action:     "admin_update_group",
+			Resource:   "user_group",
+			ResourceID: group.ID,
+			Details:    details,
+		})
 	}
 	response.OK(c, group)
 }
@@ -206,6 +230,17 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 	}
 
 	tx.Commit()
+	adminUser, _ := c.Get("db_user")
+	if admin, ok := adminUser.(model.User); ok {
+		details, _ := json.Marshal(map[string]interface{}{"group_name": group.Name, "migrated_to": targetGroup.Name})
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:     admin.ID,
+			Action:     "admin_delete_group",
+			Resource:   "user_group",
+			ResourceID: group.ID,
+			Details:    details,
+		})
+	}
 	response.OK(c, gin.H{"message": "group deleted and users migrated"})
 }
 
@@ -230,6 +265,17 @@ func (h *AdminHandler) UpdateUserGroup(c *gin.Context) {
 	if err := h.repo.UpdateUserGroupID(uint(userID), body.GroupID); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update user group", "error.failedToUpdateUserGroup")
 		return
+	}
+	adminUser, _ := c.Get("db_user")
+	if admin, ok := adminUser.(model.User); ok {
+		details, _ := json.Marshal(map[string]interface{}{"target_user_id": userID, "new_group_id": body.GroupID})
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:     admin.ID,
+			Action:     "admin_change_user_group",
+			Resource:   "user",
+			ResourceID: uint(userID),
+			Details:    details,
+		})
 	}
 	response.OK(c, gin.H{"message": "user group updated"})
 }
@@ -257,6 +303,16 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
 			return
 		}
+	}
+	adminUser, _ := c.Get("db_user")
+	if admin, ok := adminUser.(model.User); ok {
+		details, _ := json.Marshal(body)
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:   admin.ID,
+			Action:   "admin_update_config",
+			Resource: "system_config",
+			Details:  details,
+		})
 	}
 	response.OK(c, gin.H{"message": "config updated"})
 }

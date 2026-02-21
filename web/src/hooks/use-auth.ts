@@ -1,57 +1,34 @@
-import { useLogto } from "@logto/react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { api, setTokenGetter } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 export function useAuth() {
-  const { isAuthenticated, isLoading, signIn, signOut, getAccessToken, fetchUserInfo } = useLogto();
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      const resource = import.meta.env.VITE_LOGTO_API_RESOURCE;
-      setTokenGetter(async () => {
-        const token = await getAccessToken(resource);
-        return token ?? "";
-      });
-    }
-  }, [isAuthenticated, getAccessToken]);
-
-  const { data: meData, isLoading: isMeLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["me"],
     queryFn: () => api.getMe(),
-    enabled: isAuthenticated,
     staleTime: 30_000,
+    retry: false,
   });
 
-  const syncMutation = useMutation({
-    mutationFn: api.syncUser,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["me"] }),
-  });
-
-  useEffect(() => {
-    if (!isAuthenticated || meData === undefined) return;
-    // Sync on first login (code === -1) or when user info is incomplete
-    const needsSync = meData?.code === -1 || !meData?.data?.user?.email;
-    if (needsSync) {
-      fetchUserInfo().then((info) => {
-        if (!info) return;
-        syncMutation.mutate({
-          email: info.email ?? "",
-          name: info.name ?? info.username ?? "",
-          avatar_url: info.picture ?? "",
-        });
-      });
-    }
-  }, [isAuthenticated, meData]);
+  const isAuthenticated = !error && !!data?.data?.user;
 
   return {
     isAuthenticated,
-    isLoading: isLoading || (isAuthenticated && isMeLoading),
-    user: meData?.data?.user ?? null,
-    credits: meData?.data?.credits ?? 0,
-    signIn: () => signIn(window.location.origin + "/callback"),
-    signOut: () => signOut(window.location.origin),
-    syncUser: syncMutation.mutate,
+    isLoading,
+    user: data?.data?.user ?? null,
+    credits: data?.data?.credits ?? 0,
+    signIn: () => { window.location.href = "/api/v1/auth/login"; },
+    signOut: async () => {
+      try {
+        const res = await api.logout();
+        const logoutUrl = res?.data?.logout_url;
+        if (logoutUrl) {
+          window.location.href = logoutUrl;
+        } else {
+          window.location.href = "/";
+        }
+      } catch {
+        window.location.href = "/";
+      }
+    },
   };
 }

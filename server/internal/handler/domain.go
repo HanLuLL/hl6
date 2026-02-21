@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -61,7 +62,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	domain := &model.Domain{
 		Name:             body.Name,
 		CloudflareZoneID: body.CloudflareZoneID,
-		CreditCost:       1,
+		CreditCost:       model.CreditFromFloat(1),
 		IsActive:         true,
 		Description:      body.Description,
 	}
@@ -77,7 +78,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		access := model.DomainGroupAccess{
 			DomainID:   domain.ID,
 			GroupID:    ga.GroupID,
-			CreditCost: ga.CreditCost,
+			CreditCost: model.CreditFromFloat(ga.CreditCost),
 		}
 		if err := tx.Create(&access).Error; err != nil {
 			tx.Rollback()
@@ -87,6 +88,19 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	}
 
 	tx.Commit()
+
+	// Audit log
+	adminUser, _ := c.Get("db_user")
+	if admin, ok := adminUser.(model.User); ok {
+		details, _ := json.Marshal(map[string]interface{}{"domain_name": body.Name, "zone_id": body.CloudflareZoneID})
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:     admin.ID,
+			Action:     "admin_create_domain",
+			Resource:   "domain",
+			ResourceID: domain.ID,
+			Details:    details,
+		})
+	}
 
 	// Return domain with group access
 	accesses, _ := h.repo.ListDomainGroupAccess(domain.ID)
@@ -133,7 +147,7 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		for _, ga := range body.GroupAccess {
 			accesses = append(accesses, model.DomainGroupAccess{
 				GroupID:    ga.GroupID,
-				CreditCost: ga.CreditCost,
+				CreditCost: model.CreditFromFloat(ga.CreditCost),
 			})
 		}
 		if err := h.repo.ReplaceDomainGroupAccess(tx, domain.ID, accesses); err != nil {
@@ -144,6 +158,18 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 	}
 
 	tx.Commit()
+
+	adminUser, _ := c.Get("db_user")
+	if admin, ok := adminUser.(model.User); ok {
+		details, _ := json.Marshal(map[string]interface{}{"domain_name": domain.Name})
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:     admin.ID,
+			Action:     "admin_update_domain",
+			Resource:   "domain",
+			ResourceID: domain.ID,
+			Details:    details,
+		})
+	}
 
 	accessList, _ := h.repo.ListDomainGroupAccess(domain.ID)
 	response.OK(c, gin.H{"domain": domain, "group_access": accessList})
@@ -156,15 +182,20 @@ func (h *DomainHandler) AdminListDomainsFull(c *gin.Context) {
 		return
 	}
 
+	accessMap, _ := h.repo.ListAllDomainGroupAccess()
+
 	type domainWithAccess struct {
 		model.Domain
 		GroupAccess []model.DomainGroupAccess `json:"group_access"`
 	}
 
-	var result []domainWithAccess
-	for _, d := range domains {
-		accesses, _ := h.repo.ListDomainGroupAccess(d.ID)
-		result = append(result, domainWithAccess{Domain: d, GroupAccess: accesses})
+	result := make([]domainWithAccess, len(domains))
+	for i, d := range domains {
+		accesses := accessMap[d.ID]
+		if accesses == nil {
+			accesses = []model.DomainGroupAccess{}
+		}
+		result[i] = domainWithAccess{Domain: d, GroupAccess: accesses}
 	}
 	response.OK(c, result)
 }
@@ -176,4 +207,52 @@ func (h *DomainHandler) AdminListZones(c *gin.Context) {
 		return
 	}
 	response.OK(c, zones)
+}
+
+func (h *DomainHandler) AdminDelete(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid ID", "error.invalidID")
+		return
+	}
+
+	domain, err := h.repo.FindDomain(uint(id))
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusNotFound, "domain not found", "error.domainNotFound")
+		return
+	}
+
+	// Check no active subdomains
+	count, err := h.repo.CountSubdomainsByDomain(domain.ID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
+	if count > 0 {
+		response.ErrorWithKey(c, http.StatusConflict, "cannot delete domain with active subdomains", "error.domainHasSubdomains")
+		return
+	}
+
+	tx := h.repo.DB.Begin()
+	if err := h.repo.DeleteDomain(tx, domain.ID); err != nil {
+		tx.Rollback()
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete domain", "error.failedToDeleteDomain")
+		return
+	}
+
+	// Audit log
+	adminUser, _ := c.Get("db_user")
+	if admin, ok := adminUser.(model.User); ok {
+		details, _ := json.Marshal(map[string]interface{}{"domain_name": domain.Name})
+		tx.Create(&model.AuditLog{
+			UserID:     admin.ID,
+			Action:     "admin_delete_domain",
+			Resource:   "domain",
+			ResourceID: domain.ID,
+			Details:    details,
+		})
+	}
+
+	tx.Commit()
+	response.OK(c, gin.H{"message": "domain deleted"})
 }

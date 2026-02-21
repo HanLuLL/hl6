@@ -2,12 +2,14 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
@@ -133,6 +135,12 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 	}
 	if err := tx.Create(sub).Error; err != nil {
 		tx.Rollback()
+		// Check for PostgreSQL unique constraint violation (code 23505)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			response.ErrorWithKey(c, http.StatusConflict, "subdomain already taken", "error.subdomainAlreadyTaken")
+			return
+		}
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create subdomain", "error.failedToCreateSubdomain")
 		return
 	}
@@ -166,9 +174,13 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 		return
 	}
 
+	// Delete all CF records first - all must succeed before DB cleanup
 	for _, record := range sub.DNSRecords {
 		if record.CloudflareRecordID != "" {
-			_ = h.cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID)
+			if err := h.cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
+				response.ErrorWithKey(c, http.StatusBadGateway, "failed to delete DNS record from Cloudflare", "error.cloudflareDeleteFailed")
+				return
+			}
 		}
 	}
 

@@ -234,7 +234,9 @@
     "rewardClaimSubdomain": "サブドメイン {{fqdn}} 取得の報酬",
     "registrationBonus": "登録ボーナス",
     "adminGrant": "管理者による付与",
-    "adminGrantCustom": "管理者による付与：{{description}}"
+    "adminGrantCustom": "管理者による付与：{{description}}",
+    "adminDeduct": "管理者による減額",
+    "adminDeductCustom": "管理者による減額: {{description}}"
   },
   "error": {
     "userNotFound": "ユーザーが見つかりません",
@@ -303,6 +305,11 @@
     "failedToCreateUser": "ユーザーの作成に失敗しました",
     "failedToFetchJWKS": "認証の検証に失敗しました",
     "migrateToRequired": "移行先の指定が必要です",
-    "invalidMigrateTo": "無効な移行先"
+    "invalidMigrateTo": "無効な移行先",
+    "invalidID": "無効な ID",
+    "cloudflareDeleteFailed": "Cloudflare から DNS レコードの削除に失敗しました",
+    "domainHasSubdomains": "アクティブなサブドメインがあるドメインは削除できません",
+    "failedToDeleteDomain": "ドメインの削除に失敗しました",
+    "amountCannotBeZero": "金額はゼロにできません"
   }
 }

@@ -64,6 +64,19 @@ func (r *Repository) UpdateDomain(domain *model.Domain) error {
 	return r.DB.Save(domain).Error
 }
 
+func (r *Repository) CountSubdomainsByDomain(domainID uint) (int64, error) {
+	var count int64
+	err := r.DB.Model(&model.Subdomain{}).Where("domain_id = ?", domainID).Count(&count).Error
+	return count, err
+}
+
+func (r *Repository) DeleteDomain(tx *gorm.DB, domainID uint) error {
+	if err := tx.Where("domain_id = ?", domainID).Delete(&model.DomainGroupAccess{}).Error; err != nil {
+		return err
+	}
+	return tx.Delete(&model.Domain{}, domainID).Error
+}
+
 // Subdomain
 func (r *Repository) ListSubdomainsByUser(userID uint) ([]model.Subdomain, error) {
 	var subs []model.Subdomain
@@ -153,7 +166,7 @@ func (r *Repository) EnsureCreditBalance(userID uint) (*model.CreditBalance, err
 	return &balance, err
 }
 
-func (r *Repository) DeductCredits(tx *gorm.DB, userID uint, amount float64, descriptionKey string, descriptionParams json.RawMessage) error {
+func (r *Repository) DeductCredits(tx *gorm.DB, userID uint, amount model.Credit, descriptionKey string, descriptionParams json.RawMessage) error {
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		return err
@@ -176,7 +189,7 @@ func (r *Repository) DeductCredits(tx *gorm.DB, userID uint, amount float64, des
 	return tx.Create(&txn).Error
 }
 
-func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount float64, descriptionKey string, descriptionParams json.RawMessage) error {
+func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount model.Credit, descriptionKey string, descriptionParams json.RawMessage) error {
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		balance = model.CreditBalance{UserID: userID, Balance: 0}
@@ -199,7 +212,7 @@ func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount float64, desc
 	return tx.Create(&txn).Error
 }
 
-func (r *Repository) RefundCredits(tx *gorm.DB, userID uint, amount float64, descriptionKey string, descriptionParams json.RawMessage) error {
+func (r *Repository) RefundCredits(tx *gorm.DB, userID uint, amount model.Credit, descriptionKey string, descriptionParams json.RawMessage) error {
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		return err
@@ -265,17 +278,14 @@ type UserGroupWithCount struct {
 }
 
 func (r *Repository) ListUserGroups() ([]UserGroupWithCount, error) {
-	var groups []model.UserGroup
-	if err := r.DB.Order("id ASC").Find(&groups).Error; err != nil {
-		return nil, err
-	}
-	result := make([]UserGroupWithCount, len(groups))
-	for i, g := range groups {
-		var count int64
-		r.DB.Model(&model.User{}).Where("group_id = ?", g.ID).Count(&count)
-		result[i] = UserGroupWithCount{UserGroup: g, UserCount: count}
-	}
-	return result, nil
+	var results []UserGroupWithCount
+	err := r.DB.Table("user_groups").
+		Select("user_groups.*, COALESCE(COUNT(users.id), 0) as user_count").
+		Joins("LEFT JOIN users ON users.group_id = user_groups.id").
+		Group("user_groups.id").
+		Order("user_groups.id ASC").
+		Scan(&results).Error
+	return results, err
 }
 
 func (r *Repository) FindUserGroup(id uint) (*model.UserGroup, error) {
@@ -332,6 +342,18 @@ func (r *Repository) ListDomainGroupAccess(domainID uint) ([]model.DomainGroupAc
 	return accesses, err
 }
 
+func (r *Repository) ListAllDomainGroupAccess() (map[uint][]model.DomainGroupAccess, error) {
+	var accesses []model.DomainGroupAccess
+	if err := r.DB.Preload("Group").Order("domain_id ASC").Find(&accesses).Error; err != nil {
+		return nil, err
+	}
+	result := make(map[uint][]model.DomainGroupAccess)
+	for _, a := range accesses {
+		result[a.DomainID] = append(result[a.DomainID], a)
+	}
+	return result, nil
+}
+
 func (r *Repository) ReplaceDomainGroupAccess(tx *gorm.DB, domainID uint, accesses []model.DomainGroupAccess) error {
 	if err := tx.Where("domain_id = ?", domainID).Delete(&model.DomainGroupAccess{}).Error; err != nil {
 		return err
@@ -354,7 +376,7 @@ func (r *Repository) FindDomainGroupAccess(domainID, groupID uint) (*model.Domai
 
 type DomainWithGroupCost struct {
 	model.Domain
-	GroupCreditCost float64 `json:"credit_cost"`
+	GroupCreditCost model.Credit `json:"credit_cost"`
 }
 
 func (r *Repository) ListDomainsForGroup(groupID uint) ([]DomainWithGroupCost, error) {

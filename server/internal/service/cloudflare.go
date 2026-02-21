@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/cloudflare/cloudflare-go/v4"
 	"github.com/cloudflare/cloudflare-go/v4/dns"
@@ -105,11 +106,18 @@ func (s *CloudflareService) CreateRecord(ctx context.Context, zoneID, recordType
 		return "mock-record-id", nil
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
 	record, err := s.client.DNS.Records.New(ctx, dns.RecordNewParams{
 		ZoneID: cloudflare.F(zoneID),
 		Body:   s.buildNewBody(recordType, name, content, ttl, proxied),
 	})
 	if err != nil {
+		// Idempotent: check if same record already exists
+		if existingID, findErr := s.FindRecord(ctx, zoneID, recordType, name, content); findErr == nil {
+			return existingID, nil
+		}
 		return "", fmt.Errorf("cloudflare create record: %w", err)
 	}
 	return record.ID, nil
@@ -119,6 +127,9 @@ func (s *CloudflareService) UpdateRecord(ctx context.Context, zoneID, recordID, 
 	if s.client == nil {
 		return nil
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
 
 	_, err := s.client.DNS.Records.Update(ctx, recordID, dns.RecordUpdateParams{
 		ZoneID: cloudflare.F(zoneID),
@@ -134,6 +145,9 @@ func (s *CloudflareService) ListZones(ctx context.Context) ([]ZoneInfo, error) {
 	if s.client == nil {
 		return []ZoneInfo{{ID: "mock-zone-id", Name: "example.com", Status: "active"}}, nil
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
 
 	var result []ZoneInfo
 	pager := s.client.Zones.ListAutoPaging(ctx, zones.ZoneListParams{})
@@ -156,11 +170,59 @@ func (s *CloudflareService) DeleteRecord(ctx context.Context, zoneID, recordID s
 		return nil
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
 	_, err := s.client.DNS.Records.Delete(ctx, recordID, dns.RecordDeleteParams{
 		ZoneID: cloudflare.F(zoneID),
 	})
 	if err != nil {
+		// Idempotent: if record no longer exists, treat as success
+		if !s.RecordExists(ctx, zoneID, recordID) {
+			return nil
+		}
 		return fmt.Errorf("cloudflare delete record: %w", err)
 	}
 	return nil
+}
+
+// FindRecord searches for an existing record by type, name, and content.
+func (s *CloudflareService) FindRecord(ctx context.Context, zoneID, recordType, name, content string) (string, error) {
+	if s.client == nil {
+		return "", fmt.Errorf("record not found")
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	pager := s.client.DNS.Records.ListAutoPaging(ctx, dns.RecordListParams{
+		ZoneID: cloudflare.F(zoneID),
+		Type:   cloudflare.F(dns.RecordListParamsType(recordType)),
+		Name:   cloudflare.F(dns.RecordListParamsName{Exact: cloudflare.F(name)}),
+	})
+	for pager.Next() {
+		rec := pager.Current()
+		if rec.Content == content {
+			return rec.ID, nil
+		}
+	}
+	if err := pager.Err(); err != nil {
+		return "", fmt.Errorf("cloudflare search: %w", err)
+	}
+	return "", fmt.Errorf("record not found")
+}
+
+// RecordExists checks if a specific record still exists in Cloudflare.
+func (s *CloudflareService) RecordExists(ctx context.Context, zoneID, recordID string) bool {
+	if s.client == nil {
+		return false
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	_, err := s.client.DNS.Records.Get(ctx, recordID, dns.RecordGetParams{
+		ZoneID: cloudflare.F(zoneID),
+	})
+	return err == nil
 }

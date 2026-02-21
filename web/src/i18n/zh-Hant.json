@@ -234,7 +234,9 @@
     "rewardClaimSubdomain": "認領子網域 {{fqdn}} 的獎勵",
     "registrationBonus": "註冊獎勵",
     "adminGrant": "管理員發放",
-    "adminGrantCustom": "管理員發放：{{description}}"
+    "adminGrantCustom": "管理員發放：{{description}}",
+    "adminDeduct": "管理員扣減",
+    "adminDeductCustom": "管理員扣減：{{description}}"
   },
   "error": {
     "userNotFound": "使用者未找到",
@@ -303,6 +305,11 @@
     "failedToCreateUser": "建立使用者失敗",
     "failedToFetchJWKS": "驗證身分失敗",
     "migrateToRequired": "需要指定遷移目標",
-    "invalidMigrateTo": "無效的遷移目標"
+    "invalidMigrateTo": "無效的遷移目標",
+    "invalidID": "無效的 ID",
+    "cloudflareDeleteFailed": "無法從 Cloudflare 刪除 DNS 記錄",
+    "domainHasSubdomains": "無法刪除有活躍子域名的域名",
+    "failedToDeleteDomain": "刪除域名失敗",
+    "amountCannotBeZero": "金額不能為零"
   }
 }

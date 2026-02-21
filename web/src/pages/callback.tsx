@@ -1,20 +1,16 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useHandleSignInCallback } from "@logto/react";
 
 export default function CallbackPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { isLoading } = useHandleSignInCallback(() => {
-    navigate("/dashboard", { replace: true });
-  });
 
   useEffect(() => {
-    if (!isLoading) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [isLoading, navigate]);
+    // Backend handles callback and redirects to /dashboard.
+    // This page is a fallback if user navigates here directly.
+    navigate("/dashboard", { replace: true });
+  }, [navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center">

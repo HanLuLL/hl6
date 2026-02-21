@@ -234,7 +234,9 @@
     "rewardClaimSubdomain": "认领子域名 {{fqdn}} 的奖励",
     "registrationBonus": "注册奖励",
     "adminGrant": "管理员发放",
-    "adminGrantCustom": "管理员发放：{{description}}"
+    "adminGrantCustom": "管理员发放：{{description}}",
+    "adminDeduct": "管理员扣减",
+    "adminDeductCustom": "管理员扣减：{{description}}"
   },
   "error": {
     "userNotFound": "用户未找到",
@@ -303,6 +305,11 @@
     "failedToCreateUser": "创建用户失败",
     "failedToFetchJWKS": "验证身份失败",
     "migrateToRequired": "需要指定迁移目标",
-    "invalidMigrateTo": "无效的迁移目标"
+    "invalidMigrateTo": "无效的迁移目标",
+    "invalidID": "无效的 ID",
+    "cloudflareDeleteFailed": "无法从 Cloudflare 删除 DNS 记录",
+    "domainHasSubdomains": "无法删除有活跃子域名的域名",
+    "failedToDeleteDomain": "删除域名失败",
+    "amountCannotBeZero": "金额不能为零"
   }
 }

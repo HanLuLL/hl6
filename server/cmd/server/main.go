@@ -22,6 +22,8 @@ func main() {
 		log.Fatal("failed to connect database:", err)
 	}
 
+	migrateCreditsToInt(db)
+
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.UserGroup{},
@@ -84,4 +86,46 @@ func seedDefaults(db *gorm.DB) {
 	if db.Where("\"key\" = ?", "registration_bonus_credits").First(&cfg).Error != nil {
 		db.Create(&model.SystemConfig{Key: "registration_bonus_credits", Value: "0"})
 	}
+}
+
+func migrateCreditsToInt(db *gorm.DB) {
+	// Check if migration already done
+	var cfg model.SystemConfig
+	if db.Where("\"key\" = ?", "credits_migrated_to_int").First(&cfg).Error == nil {
+		return // already migrated
+	}
+
+	// Check if tables exist and columns are float type
+	var colType string
+	row := db.Raw("SELECT data_type FROM information_schema.columns WHERE table_name = 'credit_balances' AND column_name = 'balance'").Row()
+	if row == nil {
+		return // table doesn't exist yet
+	}
+	if err := row.Scan(&colType); err != nil {
+		return // table doesn't exist yet
+	}
+	if colType == "bigint" {
+		// Already int type, just mark as done
+		db.Create(&model.SystemConfig{Key: "credits_migrated_to_int", Value: "1"})
+		return
+	}
+
+	log.Println("Migrating credit columns from float to integer...")
+
+	// Convert float values to int (multiply by 10)
+	db.Exec("UPDATE credit_balances SET balance = ROUND(balance * 10)")
+	db.Exec("ALTER TABLE credit_balances ALTER COLUMN balance TYPE bigint USING balance::bigint")
+
+	db.Exec("UPDATE credit_transactions SET amount = ROUND(amount * 10), balance_after = ROUND(balance_after * 10)")
+	db.Exec("ALTER TABLE credit_transactions ALTER COLUMN amount TYPE bigint USING amount::bigint")
+	db.Exec("ALTER TABLE credit_transactions ALTER COLUMN balance_after TYPE bigint USING balance_after::bigint")
+
+	db.Exec("UPDATE domain_group_accesses SET credit_cost = ROUND(credit_cost * 10)")
+	db.Exec("ALTER TABLE domain_group_accesses ALTER COLUMN credit_cost TYPE bigint USING credit_cost::bigint")
+
+	db.Exec("UPDATE domains SET credit_cost = ROUND(credit_cost * 10)")
+	db.Exec("ALTER TABLE domains ALTER COLUMN credit_cost TYPE bigint USING credit_cost::bigint")
+
+	db.Create(&model.SystemConfig{Key: "credits_migrated_to_int", Value: "1"})
+	log.Println("Credit migration complete")
 }

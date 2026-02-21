@@ -234,7 +234,9 @@
     "rewardClaimSubdomain": "Награда за регистрацию поддомена {{fqdn}}",
     "registrationBonus": "Бонус за регистрацию",
     "adminGrant": "Начисление администратором",
-    "adminGrantCustom": "Начисление администратором: {{description}}"
+    "adminGrantCustom": "Начисление администратором: {{description}}",
+    "adminDeduct": "Списание администратором",
+    "adminDeductCustom": "Списание администратором: {{description}}"
   },
   "error": {
     "userNotFound": "Пользователь не найден",
@@ -303,6 +305,11 @@
     "failedToCreateUser": "Не удалось создать пользователя",
     "failedToFetchJWKS": "Не удалось проверить аутентификацию",
     "migrateToRequired": "Необходимо указать цель миграции",
-    "invalidMigrateTo": "Недопустимая цель миграции"
+    "invalidMigrateTo": "Недопустимая цель миграции",
+    "invalidID": "Недействительный ID",
+    "cloudflareDeleteFailed": "Не удалось удалить DNS-запись из Cloudflare",
+    "domainHasSubdomains": "Невозможно удалить домен с активными поддоменами",
+    "failedToDeleteDomain": "Не удалось удалить домен",
+    "amountCannotBeZero": "Сумма не может быть нулевой"
   }
 }

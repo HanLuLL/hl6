@@ -234,7 +234,9 @@
     "rewardClaimSubdomain": "Reward for claiming subdomain {{fqdn}}",
     "registrationBonus": "Registration bonus",
     "adminGrant": "Admin grant",
-    "adminGrantCustom": "Admin grant: {{description}}"
+    "adminGrantCustom": "Admin grant: {{description}}",
+    "adminDeduct": "Admin deduction",
+    "adminDeductCustom": "Admin deduction: {{description}}"
   },
   "error": {
     "userNotFound": "User not found",
@@ -303,6 +305,11 @@
     "failedToCreateUser": "Failed to create user",
     "failedToFetchJWKS": "Failed to verify authentication",
     "migrateToRequired": "Migration target is required",
-    "invalidMigrateTo": "Invalid migration target"
+    "invalidMigrateTo": "Invalid migration target",
+    "invalidID": "Invalid ID",
+    "cloudflareDeleteFailed": "Failed to delete DNS record from Cloudflare",
+    "domainHasSubdomains": "Cannot delete domain with active subdomains",
+    "failedToDeleteDomain": "Failed to delete domain",
+    "amountCannotBeZero": "Amount cannot be zero"
   }
 }

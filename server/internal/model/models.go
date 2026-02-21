@@ -30,7 +30,7 @@ type DomainGroupAccess struct {
 	ID         uint      `json:"id" gorm:"primaryKey"`
 	DomainID   uint      `json:"domain_id" gorm:"uniqueIndex:idx_domain_group;not null"`
 	GroupID    uint      `json:"group_id" gorm:"uniqueIndex:idx_domain_group;not null"`
-	CreditCost float64  `json:"credit_cost" gorm:"not null;default:1"`
+	CreditCost Credit   `json:"credit_cost" gorm:"type:bigint;not null;default:10"`
 	Group      UserGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
@@ -47,7 +47,7 @@ type Domain struct {
 	ID               uint      `json:"id" gorm:"primaryKey"`
 	Name             string    `json:"name" gorm:"uniqueIndex;not null"`
 	CloudflareZoneID string    `json:"cloudflare_zone_id" gorm:"not null"`
-	CreditCost       float64   `json:"credit_cost" gorm:"default:1"`
+	CreditCost       Credit    `json:"credit_cost" gorm:"type:bigint;default:10"`
 	IsActive         bool      `json:"is_active" gorm:"default:true"`
 	Description      string    `json:"description"`
 	CreatedAt        time.Time `json:"created_at"`
@@ -83,18 +83,18 @@ type DNSRecord struct {
 type CreditBalance struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	UserID    uint      `json:"user_id" gorm:"uniqueIndex;not null"`
-	Balance   float64   `json:"balance" gorm:"default:0"`
+	Balance   Credit    `json:"balance" gorm:"type:bigint;default:0"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type CreditTransaction struct {
 	ID                uint            `json:"id" gorm:"primaryKey"`
 	UserID            uint            `json:"user_id" gorm:"index;not null"`
-	Amount            float64         `json:"amount" gorm:"not null"`
+	Amount            Credit          `json:"amount" gorm:"type:bigint;not null"`
 	Type              string          `json:"type" gorm:"not null"`
 	DescriptionKey    string          `json:"description_key"`
 	DescriptionParams json.RawMessage `json:"description_params,omitempty" gorm:"type:jsonb"`
-	BalanceAfter      float64         `json:"balance_after"`
+	BalanceAfter      Credit          `json:"balance_after" gorm:"type:bigint"`
 	CreatedAt         time.Time       `json:"created_at"`
 }
 

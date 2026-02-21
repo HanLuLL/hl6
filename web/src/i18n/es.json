@@ -234,7 +234,9 @@
     "rewardClaimSubdomain": "Recompensa por reclamar subdominio {{fqdn}}",
     "registrationBonus": "Bonificación de registro",
     "adminGrant": "Concesión del administrador",
-    "adminGrantCustom": "Concesión del administrador: {{description}}"
+    "adminGrantCustom": "Concesión del administrador: {{description}}",
+    "adminDeduct": "Deducción del administrador",
+    "adminDeductCustom": "Deducción del administrador: {{description}}"
   },
   "error": {
     "userNotFound": "Usuario no encontrado",
@@ -303,6 +305,11 @@
     "failedToCreateUser": "Error al crear usuario",
     "failedToFetchJWKS": "Error al verificar autenticación",
     "migrateToRequired": "Se requiere destino de migración",
-    "invalidMigrateTo": "Destino de migración inválido"
+    "invalidMigrateTo": "Destino de migración inválido",
+    "invalidID": "ID no válido",
+    "cloudflareDeleteFailed": "Error al eliminar el registro DNS de Cloudflare",
+    "domainHasSubdomains": "No se puede eliminar un dominio con subdominios activos",
+    "failedToDeleteDomain": "Error al eliminar el dominio",
+    "amountCannotBeZero": "La cantidad no puede ser cero"
   }
 }

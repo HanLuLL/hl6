@@ -1,12 +1,6 @@
 import type { ApiResponse, PaginatedResponse } from "@/types";
 
-let getAccessToken: (() => Promise<string>) | null = null;
-
-export function setTokenGetter(fn: () => Promise<string>) {
-  getAccessToken = fn;
-}
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+const BASE_URL = "/api/v1";
 
 export class ApiError extends Error {
   messageKey?: string;
@@ -34,21 +28,19 @@ async function request<T>(
     ...(options.headers as Record<string, string>),
   };
 
-  if (getAccessToken) {
-    try {
-      const token = await getAccessToken();
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-    } catch {
-      // token fetch failed, proceed without auth
-    }
-  }
-
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers,
+    credentials: "include",
   });
+
+  if (res.status === 401) {
+    // Don't auto-redirect for /auth/me — let the app handle auth state
+    if (!path.includes("/auth/me")) {
+      window.location.href = "/api/v1/auth/login";
+    }
+    throw new ApiError("Not authenticated", "error.missingToken");
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
@@ -61,8 +53,7 @@ async function request<T>(
 export const api = {
   // Auth
   getMe: () => request<ApiResponse<{ user: import("@/types").User; credits: number }>>("/auth/me"),
-  syncUser: (data: { email: string; name: string; avatar_url: string }) =>
-    request<ApiResponse<import("@/types").User>>("/auth/sync", { method: "POST", body: JSON.stringify(data) }),
+  logout: () => request<ApiResponse<{ logout_url: string }>>("/auth/logout", { method: "POST" }),
 
   // Domains
   listDomains: () => request<ApiResponse<import("@/types").Domain[]>>("/domains"),
@@ -95,6 +86,8 @@ export const api = {
     request<ApiResponse<{ domain: import("@/types").Domain; group_access: import("@/types").DomainGroupAccess[] }>>("/admin/domains", { method: "POST", body: JSON.stringify(data) }),
   adminUpdateDomain: (id: number, data: { cloudflare_zone_id?: string; is_active?: boolean; description?: string; group_access?: { group_id: number; credit_cost: number }[] }) =>
     request<ApiResponse<{ domain: import("@/types").Domain; group_access: import("@/types").DomainGroupAccess[] }>>(`/admin/domains/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminDeleteDomain: (id: number) =>
+    request<ApiResponse<{ message: string }>>(`/admin/domains/${id}`, { method: "DELETE" }),
   adminListDomainsFull: () =>
     request<ApiResponse<import("@/types").DomainWithGroupAccess[]>>("/admin/domains-full"),
   adminListCloudflareZones: () =>

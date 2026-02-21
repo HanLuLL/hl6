@@ -14,14 +14,15 @@ import (
 
 func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	r := gin.Default()
-	r.Use(middleware.CORS())
+	r.Use(middleware.CORS(cfg.AllowedOrigins))
 
 	repo := repository.New(db)
 	cf := service.NewCloudflareService(cfg.CloudflareToken)
-	auth := middleware.NewAuthMiddleware(cfg.LogtoEndpoint, cfg.LogtoAPIResource)
+	auth := middleware.NewAuthMiddleware(cfg.SessionSecret)
 	rl := middleware.NewRateLimiter(100, time.Minute)
 
-	authH := handler.NewAuthHandler(repo, cfg)
+	authH := handler.NewAuthHandler(repo)
+	oidcH := handler.NewOIDCHandler(repo, cfg)
 	domainH := handler.NewDomainHandler(repo, cf)
 	subdomainH := handler.NewSubdomainHandler(repo, cf)
 	dnsH := handler.NewDNSHandler(repo, cf)
@@ -31,9 +32,14 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	api := r.Group("/api/v1")
 	api.Use(rl.Handler())
 
+	// Public auth routes
+	api.GET("/auth/login", oidcH.Login)
+	api.GET("/auth/callback", oidcH.Callback)
+
+	// Authenticated routes
 	authed := api.Group("", auth.Required())
 	authed.GET("/auth/me", authH.Me)
-	authed.POST("/auth/sync", authH.Sync)
+	authed.POST("/auth/logout", oidcH.Logout)
 
 	authed.GET("/domains", domainH.List)
 
@@ -54,6 +60,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.Use(middleware.AdminRequired(db))
 	admin.POST("/domains", domainH.AdminCreate)
 	admin.PUT("/domains/:id", domainH.AdminUpdate)
+	admin.DELETE("/domains/:id", domainH.AdminDelete)
 	admin.GET("/domains-full", domainH.AdminListDomainsFull)
 	admin.GET("/cloudflare/zones", domainH.AdminListZones)
 	admin.POST("/credits/grant", creditH.AdminGrant)
