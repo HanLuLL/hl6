@@ -47,7 +47,9 @@
     "admin": "Admin",
     "adminUsers": "Admin Users",
     "adminDomains": "Admin Domains",
-    "auditLogs": "Audit Logs"
+    "auditLogs": "Audit Logs",
+    "adminGroups": "User Groups",
+    "adminSettings": "Settings"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -152,7 +154,11 @@
     "descriptionOptional": "Description (optional)",
     "adminGrant": "Admin grant",
     "granting": "Granting...",
-    "grantSuccess": "Granted {{amount}} credits. New balance: {{balance}}"
+    "grantSuccess": "Granted {{amount}} credits. New balance: {{balance}}",
+    "group": "Group",
+    "changeGroup": "Change Group",
+    "selectGroup": "Select group",
+    "groupChanged": "User group updated"
   },
   "adminDomains": {
     "title": "Manage Domains",
@@ -171,7 +177,10 @@
     "optionalDescription": "Optional description",
     "editDomain": "Edit Domain: {{name}}",
     "domainCreated": "Domain created",
-    "domainUpdated": "Domain updated"
+    "domainUpdated": "Domain updated",
+    "groupAccess": "Group Access & Pricing",
+    "addGroupAccess": "Add Group",
+    "noGroupAccess": "No groups have access. Add at least one group."
   },
   "auditLogs": {
     "title": "Audit Logs",
@@ -182,5 +191,30 @@
     "resource": "Resource",
     "details": "Details",
     "time": "Time"
+  },
+  "adminGroups": {
+    "title": "User Groups",
+    "subtitle": "Manage user groups and access levels",
+    "addGroup": "Add Group",
+    "groupName": "Group Name",
+    "userCount": "Users",
+    "status": "Status",
+    "actions": "Actions",
+    "default": "Default",
+    "setAsDefault": "Set as Default",
+    "deleteGroup": "Delete Group",
+    "deleteConfirm": "Delete group \"{{name}}\"? All {{count}} users will be migrated to the target group.",
+    "migrateTarget": "Migrate users to",
+    "cannotDeleteLast": "Cannot delete the last group",
+    "groupCreated": "Group created",
+    "groupUpdated": "Group updated",
+    "groupDeleted": "Group deleted and users migrated"
+  },
+  "adminSettings": {
+    "title": "Settings",
+    "subtitle": "System configuration",
+    "registrationBonus": "Registration Bonus Credits",
+    "registrationBonusDesc": "Credits automatically granted to new users upon registration",
+    "saved": "Settings saved"
   }
 }

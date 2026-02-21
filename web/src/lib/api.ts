@@ -74,10 +74,12 @@ export const api = {
     request<PaginatedResponse<import("@/types").CreditTransaction[]>>(`/credits/transactions?page=${page}&per_page=${perPage}`),
 
   // Admin
-  adminCreateDomain: (data: { name: string; cloudflare_zone_id: string; credit_cost: number; description: string }) =>
-    request<ApiResponse<import("@/types").Domain>>("/admin/domains", { method: "POST", body: JSON.stringify(data) }),
-  adminUpdateDomain: (id: number, data: Partial<import("@/types").Domain>) =>
-    request<ApiResponse<import("@/types").Domain>>(`/admin/domains/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminCreateDomain: (data: { name: string; cloudflare_zone_id: string; description: string; group_access: { group_id: number; credit_cost: number }[] }) =>
+    request<ApiResponse<{ domain: import("@/types").Domain; group_access: import("@/types").DomainGroupAccess[] }>>("/admin/domains", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdateDomain: (id: number, data: { cloudflare_zone_id?: string; is_active?: boolean; description?: string; group_access?: { group_id: number; credit_cost: number }[] }) =>
+    request<ApiResponse<{ domain: import("@/types").Domain; group_access: import("@/types").DomainGroupAccess[] }>>(`/admin/domains/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminListDomainsFull: () =>
+    request<ApiResponse<import("@/types").DomainWithGroupAccess[]>>("/admin/domains-full"),
   adminListCloudflareZones: () =>
     request<ApiResponse<import("@/types").CloudflareZone[]>>("/admin/cloudflare/zones"),
   adminGrantCredits: (data: { user_id: number; amount: number; description: string }) =>
@@ -87,4 +89,22 @@ export const api = {
   adminGetStats: () => request<ApiResponse<import("@/types").Stats>>("/admin/stats"),
   adminListAuditLogs: (page = 1, perPage = 20) =>
     request<PaginatedResponse<import("@/types").AuditLog[]>>(`/admin/audit-logs?page=${page}&per_page=${perPage}`),
+
+  // Admin: User Groups
+  adminListGroups: () =>
+    request<ApiResponse<import("@/types").UserGroup[]>>("/admin/groups"),
+  adminCreateGroup: (data: { name: string; is_default?: boolean }) =>
+    request<ApiResponse<import("@/types").UserGroup>>("/admin/groups", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdateGroup: (id: number, data: { name?: string; is_default?: boolean }) =>
+    request<ApiResponse<import("@/types").UserGroup>>(`/admin/groups/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminDeleteGroup: (id: number, migrateTo: number) =>
+    request<ApiResponse<{ message: string }>>(`/admin/groups/${id}?migrate_to=${migrateTo}`, { method: "DELETE" }),
+  adminUpdateUserGroup: (userId: number, groupId: number) =>
+    request<ApiResponse<{ message: string }>>(`/admin/users/${userId}/group`, { method: "PUT", body: JSON.stringify({ group_id: groupId }) }),
+
+  // Admin: System Config
+  adminGetConfig: () =>
+    request<ApiResponse<Record<string, string>>>("/admin/config"),
+  adminUpdateConfig: (data: Record<string, string>) =>
+    request<ApiResponse<{ message: string }>>("/admin/config", { method: "PUT", body: JSON.stringify(data) }),
 };

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -59,11 +60,32 @@ func (h *AuthHandler) Sync(c *gin.Context) {
 		if h.cfg.IsAdminEmail(body.Email) {
 			user.Role = "admin"
 		}
+
+		// Assign default user group
+		if defaultGroup, err := h.repo.GetDefaultUserGroup(); err == nil {
+			user.GroupID = &defaultGroup.ID
+		}
+
 		if err := h.repo.CreateUser(user); err != nil {
 			response.Error(c, http.StatusInternalServerError, "failed to create user")
 			return
 		}
 		h.repo.EnsureCreditBalance(user.ID)
+
+		// Grant registration bonus credits
+		if bonusStr, err := h.repo.GetSystemConfig("registration_bonus_credits"); err == nil {
+			if bonus, err := strconv.Atoi(bonusStr); err == nil && bonus > 0 {
+				tx := h.repo.DB.Begin()
+				if err := h.repo.GrantCredits(tx, user.ID, bonus, "Registration bonus"); err != nil {
+					tx.Rollback()
+				} else {
+					tx.Commit()
+				}
+			}
+		}
+
+		// Reload user with group
+		user, _ = h.repo.FindUserByLogtoID(logtoID)
 		response.Created(c, user)
 		return
 	}

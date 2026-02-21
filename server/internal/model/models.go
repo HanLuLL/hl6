@@ -6,13 +6,40 @@ import (
 )
 
 type User struct {
+	ID        uint       `json:"id" gorm:"primaryKey"`
+	LogtoID   string     `json:"logto_id" gorm:"uniqueIndex;not null"`
+	Email     string     `json:"email"`
+	Name      string     `json:"name"`
+	AvatarURL string     `json:"avatar_url"`
+	Role      string     `json:"role" gorm:"default:user"`
+	GroupID   *uint      `json:"group_id" gorm:"index"`
+	Group     *UserGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+}
+
+type UserGroup struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
-	LogtoID   string    `json:"logto_id" gorm:"uniqueIndex;not null"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name"`
-	AvatarURL string    `json:"avatar_url"`
-	Role      string    `json:"role" gorm:"default:user"`
+	Name      string    `json:"name" gorm:"uniqueIndex;not null"`
+	IsDefault bool      `json:"is_default" gorm:"default:false"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type DomainGroupAccess struct {
+	ID         uint      `json:"id" gorm:"primaryKey"`
+	DomainID   uint      `json:"domain_id" gorm:"uniqueIndex:idx_domain_group;not null"`
+	GroupID    uint      `json:"group_id" gorm:"uniqueIndex:idx_domain_group;not null"`
+	CreditCost int      `json:"credit_cost" gorm:"not null;default:1"`
+	Group      UserGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+type SystemConfig struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	Key       string    `json:"key" gorm:"uniqueIndex;not null"`
+	Value     string    `json:"value" gorm:"not null"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 

@@ -47,7 +47,9 @@
     "admin": "Administración",
     "adminUsers": "Gestión de usuarios",
     "adminDomains": "Gestión de dominios",
-    "auditLogs": "Registros de auditoría"
+    "auditLogs": "Registros de auditoría",
+    "adminGroups": "Grupos de usuarios",
+    "adminSettings": "Configuración"
   },
   "dashboard": {
     "title": "Panel de control",
@@ -152,7 +154,11 @@
     "descriptionOptional": "Descripción (opcional)",
     "adminGrant": "Otorgamiento administrativo",
     "granting": "Otorgando...",
-    "grantSuccess": "Se han otorgado {{amount}} créditos. Nuevo saldo: {{balance}}"
+    "grantSuccess": "Se han otorgado {{amount}} créditos. Nuevo saldo: {{balance}}",
+    "group": "Grupo",
+    "changeGroup": "Cambiar grupo",
+    "selectGroup": "Seleccionar grupo",
+    "groupChanged": "Grupo de usuario actualizado"
   },
   "adminDomains": {
     "title": "Gestión de dominios",
@@ -171,7 +177,10 @@
     "optionalDescription": "Descripción opcional",
     "editDomain": "Editar dominio: {{name}}",
     "domainCreated": "Dominio creado",
-    "domainUpdated": "Dominio actualizado"
+    "domainUpdated": "Dominio actualizado",
+    "groupAccess": "Acceso por grupo y precios",
+    "addGroupAccess": "Añadir grupo",
+    "noGroupAccess": "Ningún grupo tiene acceso. Añade al menos un grupo."
   },
   "auditLogs": {
     "title": "Registros de auditoría",
@@ -182,5 +191,30 @@
     "resource": "Recurso",
     "details": "Detalles",
     "time": "Hora"
+  },
+  "adminGroups": {
+    "title": "Grupos de usuarios",
+    "subtitle": "Gestiona grupos de usuarios y niveles de acceso",
+    "addGroup": "Añadir grupo",
+    "groupName": "Nombre del grupo",
+    "userCount": "Usuarios",
+    "status": "Estado",
+    "actions": "Acciones",
+    "default": "Predeterminado",
+    "setAsDefault": "Establecer como predeterminado",
+    "deleteGroup": "Eliminar grupo",
+    "deleteConfirm": "¿Eliminar el grupo \"{{name}}\"? Los {{count}} usuarios serán migrados al grupo destino.",
+    "migrateTarget": "Migrar usuarios a",
+    "cannotDeleteLast": "No se puede eliminar el último grupo",
+    "groupCreated": "Grupo creado",
+    "groupUpdated": "Grupo actualizado",
+    "groupDeleted": "Grupo eliminado y usuarios migrados"
+  },
+  "adminSettings": {
+    "title": "Configuración",
+    "subtitle": "Configuración del sistema",
+    "registrationBonus": "Créditos de bienvenida",
+    "registrationBonusDesc": "Créditos otorgados automáticamente a los nuevos usuarios al registrarse",
+    "saved": "Configuración guardada"
   }
 }

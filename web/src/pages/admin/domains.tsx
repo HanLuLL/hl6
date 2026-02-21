@@ -13,6 +13,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -33,9 +40,14 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Domain, CloudflareZone } from "@/types";
+import type { CloudflareZone, DomainWithGroupAccess, UserGroup } from "@/types";
+
+interface GroupAccessEntry {
+  group_id: number;
+  credit_cost: number;
+}
 
 export default function AdminDomainsPage() {
   const queryClient = useQueryClient();
@@ -43,16 +55,24 @@ export default function AdminDomainsPage() {
   const { data: domains, isLoading } = useQuery({
     queryKey: ["admin-domains"],
     queryFn: async () => {
-      const res = await api.listDomains();
+      const res = await api.adminListDomainsFull();
+      return res.data;
+    },
+  });
+
+  const { data: groups } = useQuery({
+    queryKey: ["admin-groups"],
+    queryFn: async () => {
+      const res = await api.adminListGroups();
       return res.data;
     },
   });
 
   const [showAdd, setShowAdd] = useState(false);
-  const [editDomain, setEditDomain] = useState<Domain | null>(null);
+  const [editDomain, setEditDomain] = useState<DomainWithGroupAccess | null>(null);
   const [selectedZone, setSelectedZone] = useState<CloudflareZone | null>(null);
-  const [creditCost, setCreditCost] = useState("1");
   const [description, setDescription] = useState("");
+  const [groupAccess, setGroupAccess] = useState<GroupAccessEntry[]>([]);
 
   const createMutation = useMutation({
     mutationFn: api.adminCreateDomain,
@@ -61,17 +81,18 @@ export default function AdminDomainsPage() {
       toast.success(t("adminDomains.domainCreated"));
       setShowAdd(false);
       setSelectedZone(null);
-      setCreditCost("1");
       setDescription("");
+      setGroupAccess([]);
     },
     onError: (err) => toast.error(err.message),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...data }: { id: number; credit_cost?: number; is_active?: boolean; description?: string }) =>
+    mutationFn: ({ id, ...data }: { id: number; is_active?: boolean; description?: string; group_access?: GroupAccessEntry[] }) =>
       api.adminUpdateDomain(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-domains"] });
+      queryClient.invalidateQueries({ queryKey: ["domains"] });
       toast.success(t("adminDomains.domainUpdated"));
       setEditDomain(null);
     },
@@ -89,7 +110,10 @@ export default function AdminDomainsPage() {
           <h1 className="text-2xl font-bold tracking-tight">{t("adminDomains.title")}</h1>
           <p className="text-muted-foreground">{t("adminDomains.subtitle")}</p>
         </div>
-        <Button onClick={() => setShowAdd(true)}>{t("adminDomains.addDomain")}</Button>
+        <Button onClick={() => {
+          setGroupAccess([]);
+          setShowAdd(true);
+        }}>{t("adminDomains.addDomain")}</Button>
       </div>
 
       <Card>
@@ -99,7 +123,7 @@ export default function AdminDomainsPage() {
               <TableRow>
                 <TableHead>{t("adminDomains.domain")}</TableHead>
                 <TableHead>{t("adminDomains.zoneId")}</TableHead>
-                <TableHead>{t("adminDomains.cost")}</TableHead>
+                <TableHead>{t("adminDomains.groupAccess")}</TableHead>
                 <TableHead>{t("adminDomains.status")}</TableHead>
                 <TableHead className="text-right">{t("adminDomains.actions")}</TableHead>
               </TableRow>
@@ -109,14 +133,27 @@ export default function AdminDomainsPage() {
                 <TableRow key={domain.id}>
                   <TableCell className="font-medium">{domain.name}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">{domain.cloudflare_zone_id.slice(0, 12)}...</TableCell>
-                  <TableCell>{domain.credit_cost}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {domain.group_access?.map((ga) => (
+                        <Badge key={ga.group_id} variant="outline" className="text-xs">
+                          {ga.group?.name ?? `#${ga.group_id}`}: {ga.credit_cost}
+                        </Badge>
+                      ))}
+                      {(!domain.group_access || domain.group_access.length === 0) && (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={domain.is_active ? "default" : "secondary"}>
                       {domain.is_active ? t("common.active") : t("common.inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => setEditDomain(domain)}>{t("common.edit")}</Button>
+                    <Button variant="ghost" size="sm" onClick={() => {
+                      setEditDomain(domain);
+                    }}>{t("common.edit")}</Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -137,11 +174,11 @@ export default function AdminDomainsPage() {
         setShowAdd(open);
         if (!open) {
           setSelectedZone(null);
-          setCreditCost("1");
           setDescription("");
+          setGroupAccess([]);
         }
       }}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{t("adminDomains.addDomain")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -153,13 +190,14 @@ export default function AdminDomainsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>{t("adminDomains.creditCost")}</Label>
-              <Input type="number" min="1" value={creditCost} onChange={(e) => setCreditCost(e.target.value)} />
-            </div>
-            <div className="space-y-2">
               <Label>{t("adminDomains.description")}</Label>
               <Textarea placeholder={t("adminDomains.optionalDescription")} value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
+            <GroupAccessEditor
+              groups={groups ?? []}
+              value={groupAccess}
+              onChange={setGroupAccess}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAdd(false)}>{t("common.cancel")}</Button>
@@ -169,8 +207,8 @@ export default function AdminDomainsPage() {
                 createMutation.mutate({
                   name: selectedZone.name,
                   cloudflare_zone_id: selectedZone.id,
-                  credit_cost: parseInt(creditCost) || 1,
                   description,
+                  group_access: groupAccess,
                 });
               }}
               disabled={!selectedZone || createMutation.isPending}
@@ -183,17 +221,84 @@ export default function AdminDomainsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editDomain} onOpenChange={(open) => !open && setEditDomain(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{t("adminDomains.editDomain", { name: editDomain?.name })}</DialogTitle></DialogHeader>
           {editDomain && (
             <EditDomainForm
               domain={editDomain}
+              groups={groups ?? []}
               onSave={(data) => updateMutation.mutate({ id: editDomain.id, ...data })}
               isPending={updateMutation.isPending}
             />
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function GroupAccessEditor({ groups, value, onChange }: {
+  groups: UserGroup[];
+  value: GroupAccessEntry[];
+  onChange: (v: GroupAccessEntry[]) => void;
+}) {
+  const { t } = useTranslation();
+  const usedGroupIds = new Set(value.map((v) => v.group_id));
+  const availableGroups = groups.filter((g) => !usedGroupIds.has(g.id));
+
+  return (
+    <div className="space-y-2">
+      <Label>{t("adminDomains.groupAccess")}</Label>
+      <div className="space-y-2">
+        {value.map((entry, idx) => {
+          const group = groups.find((g) => g.id === entry.group_id);
+          return (
+            <div key={entry.group_id} className="flex items-center gap-2">
+              <span className="text-sm min-w-24 truncate">{group?.name ?? `#${entry.group_id}`}</span>
+              <Input
+                type="number"
+                min="1"
+                className="w-24"
+                value={entry.credit_cost}
+                onChange={(e) => {
+                  const next = [...value];
+                  next[idx] = { ...entry, credit_cost: parseInt(e.target.value) || 1 };
+                  onChange(next);
+                }}
+              />
+              <span className="text-xs text-muted-foreground">{t("adminDomains.creditCost")}</span>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => {
+                onChange(value.filter((_, i) => i !== idx));
+              }}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+      {availableGroups.length > 0 && (
+        <Select onValueChange={(v) => {
+          const groupId = parseInt(v);
+          onChange([...value, { group_id: groupId, credit_cost: 1 }]);
+        }}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t("adminDomains.addGroupAccess")} />
+          </SelectTrigger>
+          <SelectContent>
+            {availableGroups.map((g) => (
+              <SelectItem key={g.id} value={String(g.id)}>
+                <div className="flex items-center gap-2">
+                  <Plus className="h-3 w-3" />
+                  {g.name}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      {value.length === 0 && (
+        <p className="text-xs text-muted-foreground">{t("adminDomains.noGroupAccess")}</p>
+      )}
     </div>
   );
 }
@@ -258,29 +363,33 @@ function ZoneCombobox({ value, onSelect, enabled }: {
   );
 }
 
-function EditDomainForm({ domain, onSave, isPending }: {
-  domain: Domain;
-  onSave: (data: { credit_cost: number; description: string }) => void;
+function EditDomainForm({ domain, groups, onSave, isPending }: {
+  domain: DomainWithGroupAccess;
+  groups: UserGroup[];
+  onSave: (data: { description: string; group_access: GroupAccessEntry[] }) => void;
   isPending: boolean;
 }) {
-  const [cost, setCost] = useState(String(domain.credit_cost));
   const [desc, setDesc] = useState(domain.description);
+  const [access, setAccess] = useState<GroupAccessEntry[]>(
+    domain.group_access?.map((ga) => ({ group_id: ga.group_id, credit_cost: ga.credit_cost })) ?? []
+  );
   const { t } = useTranslation();
 
   return (
     <>
       <div className="space-y-4 py-4">
         <div className="space-y-2">
-          <Label>{t("adminDomains.creditCost")}</Label>
-          <Input type="number" min="1" value={cost} onChange={(e) => setCost(e.target.value)} />
-        </div>
-        <div className="space-y-2">
           <Label>{t("adminDomains.description")}</Label>
           <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} />
         </div>
+        <GroupAccessEditor
+          groups={groups}
+          value={access}
+          onChange={setAccess}
+        />
       </div>
       <DialogFooter>
-        <Button onClick={() => onSave({ credit_cost: parseInt(cost) || 1, description: desc })} disabled={isPending}>
+        <Button onClick={() => onSave({ description: desc, group_access: access })} disabled={isPending}>
           {isPending ? t("common.saving") : t("common.save")}
         </Button>
       </DialogFooter>

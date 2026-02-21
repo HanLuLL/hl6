@@ -47,7 +47,9 @@
     "admin": "管理",
     "adminUsers": "ユーザー管理",
     "adminDomains": "ドメイン管理",
-    "auditLogs": "監査ログ"
+    "auditLogs": "監査ログ",
+    "adminGroups": "ユーザーグループ",
+    "adminSettings": "設定"
   },
   "dashboard": {
     "title": "ダッシュボード",
@@ -152,7 +154,11 @@
     "descriptionOptional": "説明（任意）",
     "adminGrant": "管理者による付与",
     "granting": "付与中...",
-    "grantSuccess": "{{amount}} クレジットを付与しました。新しい残高：{{balance}}"
+    "grantSuccess": "{{amount}} クレジットを付与しました。新しい残高：{{balance}}",
+    "group": "グループ",
+    "changeGroup": "グループを変更",
+    "selectGroup": "グループを選択",
+    "groupChanged": "ユーザーグループを更新しました"
   },
   "adminDomains": {
     "title": "ドメイン管理",
@@ -171,7 +177,10 @@
     "optionalDescription": "任意の説明",
     "editDomain": "ドメインを編集：{{name}}",
     "domainCreated": "ドメインを作成しました",
-    "domainUpdated": "ドメインを更新しました"
+    "domainUpdated": "ドメインを更新しました",
+    "groupAccess": "グループアクセスと料金",
+    "addGroupAccess": "グループを追加",
+    "noGroupAccess": "アクセス権のあるグループがありません。少なくとも1つ追加してください。"
   },
   "auditLogs": {
     "title": "監査ログ",
@@ -182,5 +191,30 @@
     "resource": "リソース",
     "details": "詳細",
     "time": "時刻"
+  },
+  "adminGroups": {
+    "title": "ユーザーグループ管理",
+    "subtitle": "ユーザーグループとアクセスレベルを管理",
+    "addGroup": "グループを追加",
+    "groupName": "グループ名",
+    "userCount": "ユーザー数",
+    "status": "ステータス",
+    "actions": "操作",
+    "default": "デフォルト",
+    "setAsDefault": "デフォルトに設定",
+    "deleteGroup": "グループを削除",
+    "deleteConfirm": "グループ「{{name}}」を削除しますか？{{count}} 人のユーザーが対象グループに移行されます。",
+    "migrateTarget": "ユーザーの移行先",
+    "cannotDeleteLast": "最後のグループは削除できません",
+    "groupCreated": "グループを作成しました",
+    "groupUpdated": "グループを更新しました",
+    "groupDeleted": "グループを削除し、ユーザーを移行しました"
+  },
+  "adminSettings": {
+    "title": "設定",
+    "subtitle": "システム設定",
+    "registrationBonus": "登録ボーナスクレジット",
+    "registrationBonusDesc": "新規ユーザー登録時に自動的に付与されるクレジット数",
+    "saved": "設定を保存しました"
   }
 }

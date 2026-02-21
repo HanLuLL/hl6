@@ -12,6 +12,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -20,12 +27,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users", page],
@@ -35,15 +43,39 @@ export default function AdminUsersPage() {
     },
   });
 
+  const { data: groups } = useQuery({
+    queryKey: ["admin-groups"],
+    queryFn: async () => {
+      const res = await api.adminListGroups();
+      return res.data;
+    },
+  });
+
   const [grantUserId, setGrantUserId] = useState<number | null>(null);
   const [grantAmount, setGrantAmount] = useState("10");
   const [grantDesc, setGrantDesc] = useState("");
+
+  const [changeGroupUserId, setChangeGroupUserId] = useState<number | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
 
   const grantMutation = useMutation({
     mutationFn: api.adminGrantCredits,
     onSuccess: (res) => {
       toast.success(t("adminUsers.grantSuccess", { amount: res.data.granted, balance: res.data.balance }));
       setGrantUserId(null);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const changeGroupMutation = useMutation({
+    mutationFn: ({ userId, groupId }: { userId: number; groupId: number }) =>
+      api.adminUpdateUserGroup(userId, groupId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-groups"] });
+      toast.success(t("adminUsers.groupChanged"));
+      setChangeGroupUserId(null);
+      setSelectedGroupId("");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -71,6 +103,7 @@ export default function AdminUsersPage() {
               <TableRow>
                 <TableHead>{t("adminUsers.name")}</TableHead>
                 <TableHead>{t("adminUsers.email")}</TableHead>
+                <TableHead>{t("adminUsers.group")}</TableHead>
                 <TableHead>{t("adminUsers.role")}</TableHead>
                 <TableHead>{t("adminUsers.joined")}</TableHead>
                 <TableHead className="text-right">{t("adminUsers.actions")}</TableHead>
@@ -82,12 +115,21 @@ export default function AdminUsersPage() {
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell className="text-muted-foreground">{user.email}</TableCell>
                   <TableCell>
+                    <Badge variant="outline">{user.group?.name ?? "-"}</Badge>
+                  </TableCell>
+                  <TableCell>
                     <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right space-x-1">
+                    <Button variant="ghost" size="sm" onClick={() => {
+                      setChangeGroupUserId(user.id);
+                      setSelectedGroupId(user.group_id ? String(user.group_id) : "");
+                    }}>
+                      {t("adminUsers.changeGroup")}
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => setGrantUserId(user.id)}>
                       {t("adminUsers.grantCredits")}
                     </Button>
@@ -107,6 +149,7 @@ export default function AdminUsersPage() {
         </div>
       )}
 
+      {/* Grant Credits Dialog */}
       <Dialog open={grantUserId !== null} onOpenChange={(open) => !open && setGrantUserId(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>{t("adminUsers.grantCredits")}</DialogTitle></DialogHeader>
@@ -131,6 +174,42 @@ export default function AdminUsersPage() {
               disabled={grantMutation.isPending}
             >
               {grantMutation.isPending ? t("adminUsers.granting") : t("credits.grant")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Group Dialog */}
+      <Dialog open={changeGroupUserId !== null} onOpenChange={(open) => {
+        if (!open) { setChangeGroupUserId(null); setSelectedGroupId(""); }
+      }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{t("adminUsers.changeGroup")}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t("adminUsers.selectGroup")}</Label>
+              <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("adminUsers.selectGroup")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups?.map((g) => (
+                    <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setChangeGroupUserId(null)}>{t("common.cancel")}</Button>
+            <Button
+              onClick={() => changeGroupUserId && selectedGroupId && changeGroupMutation.mutate({
+                userId: changeGroupUserId,
+                groupId: parseInt(selectedGroupId),
+              })}
+              disabled={!selectedGroupId || changeGroupMutation.isPending}
+            >
+              {changeGroupMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>

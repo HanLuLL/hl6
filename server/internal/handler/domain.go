@@ -21,7 +21,19 @@ func NewDomainHandler(repo *repository.Repository, cf *service.CloudflareService
 }
 
 func (h *DomainHandler) List(c *gin.Context) {
-	domains, err := h.repo.ListDomains(true)
+	logtoID := c.GetString("user_id")
+	user, err := h.repo.FindUserByLogtoID(logtoID)
+	if err != nil {
+		response.Error(c, http.StatusUnauthorized, "user not found")
+		return
+	}
+
+	if user.GroupID == nil {
+		response.OK(c, []interface{}{})
+		return
+	}
+
+	domains, err := h.repo.ListDomainsForGroup(*user.GroupID)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "failed to list domains")
 		return
@@ -29,32 +41,60 @@ func (h *DomainHandler) List(c *gin.Context) {
 	response.OK(c, domains)
 }
 
+type groupAccessInput struct {
+	GroupID    uint `json:"group_id" binding:"required"`
+	CreditCost int `json:"credit_cost"`
+}
+
 func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	var body struct {
-		Name             string `json:"name" binding:"required"`
-		CloudflareZoneID string `json:"cloudflare_zone_id" binding:"required"`
-		CreditCost       int    `json:"credit_cost"`
-		Description      string `json:"description"`
+		Name             string             `json:"name" binding:"required"`
+		CloudflareZoneID string             `json:"cloudflare_zone_id" binding:"required"`
+		Description      string             `json:"description"`
+		GroupAccess      []groupAccessInput `json:"group_access"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.Error(c, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if body.CreditCost <= 0 {
-		body.CreditCost = 1
-	}
+
 	domain := &model.Domain{
 		Name:             body.Name,
 		CloudflareZoneID: body.CloudflareZoneID,
-		CreditCost:       body.CreditCost,
+		CreditCost:       1,
 		IsActive:         true,
 		Description:      body.Description,
 	}
-	if err := h.repo.CreateDomain(domain); err != nil {
+
+	tx := h.repo.DB.Begin()
+	if err := tx.Create(domain).Error; err != nil {
+		tx.Rollback()
 		response.Error(c, http.StatusInternalServerError, "failed to create domain")
 		return
 	}
-	response.Created(c, domain)
+
+	for _, ga := range body.GroupAccess {
+		cost := ga.CreditCost
+		if cost <= 0 {
+			cost = 1
+		}
+		access := model.DomainGroupAccess{
+			DomainID:   domain.ID,
+			GroupID:    ga.GroupID,
+			CreditCost: cost,
+		}
+		if err := tx.Create(&access).Error; err != nil {
+			tx.Rollback()
+			response.Error(c, http.StatusInternalServerError, "failed to create group access")
+			return
+		}
+	}
+
+	tx.Commit()
+
+	// Return domain with group access
+	accesses, _ := h.repo.ListDomainGroupAccess(domain.ID)
+	response.Created(c, gin.H{"domain": domain, "group_access": accesses})
 }
 
 func (h *DomainHandler) AdminUpdate(c *gin.Context) {
@@ -65,20 +105,20 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		return
 	}
 	var body struct {
-		CloudflareZoneID *string `json:"cloudflare_zone_id"`
-		CreditCost       *int    `json:"credit_cost"`
-		IsActive         *bool   `json:"is_active"`
-		Description      *string `json:"description"`
+		CloudflareZoneID *string            `json:"cloudflare_zone_id"`
+		IsActive         *bool              `json:"is_active"`
+		Description      *string            `json:"description"`
+		GroupAccess      []groupAccessInput `json:"group_access"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.Error(c, http.StatusBadRequest, "invalid request body")
 		return
 	}
+
+	tx := h.repo.DB.Begin()
+
 	if body.CloudflareZoneID != nil {
 		domain.CloudflareZoneID = *body.CloudflareZoneID
-	}
-	if body.CreditCost != nil {
-		domain.CreditCost = *body.CreditCost
 	}
 	if body.IsActive != nil {
 		domain.IsActive = *body.IsActive
@@ -86,11 +126,55 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 	if body.Description != nil {
 		domain.Description = *body.Description
 	}
-	if err := h.repo.UpdateDomain(domain); err != nil {
+	if err := tx.Save(domain).Error; err != nil {
+		tx.Rollback()
 		response.Error(c, http.StatusInternalServerError, "failed to update domain")
 		return
 	}
-	response.OK(c, domain)
+
+	if body.GroupAccess != nil {
+		var accesses []model.DomainGroupAccess
+		for _, ga := range body.GroupAccess {
+			cost := ga.CreditCost
+			if cost <= 0 {
+				cost = 1
+			}
+			accesses = append(accesses, model.DomainGroupAccess{
+				GroupID:    ga.GroupID,
+				CreditCost: cost,
+			})
+		}
+		if err := h.repo.ReplaceDomainGroupAccess(tx, domain.ID, accesses); err != nil {
+			tx.Rollback()
+			response.Error(c, http.StatusInternalServerError, "failed to update group access")
+			return
+		}
+	}
+
+	tx.Commit()
+
+	accessList, _ := h.repo.ListDomainGroupAccess(domain.ID)
+	response.OK(c, gin.H{"domain": domain, "group_access": accessList})
+}
+
+func (h *DomainHandler) AdminListDomainsFull(c *gin.Context) {
+	domains, err := h.repo.ListDomains(false)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "failed to list domains")
+		return
+	}
+
+	type domainWithAccess struct {
+		model.Domain
+		GroupAccess []model.DomainGroupAccess `json:"group_access"`
+	}
+
+	var result []domainWithAccess
+	for _, d := range domains {
+		accesses, _ := h.repo.ListDomainGroupAccess(d.ID)
+		result = append(result, domainWithAccess{Domain: d, GroupAccess: accesses})
+	}
+	response.OK(c, result)
 }
 
 func (h *DomainHandler) AdminListZones(c *gin.Context) {

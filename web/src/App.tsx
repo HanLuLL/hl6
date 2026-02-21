@@ -11,6 +11,8 @@ import CreditsPage from "@/pages/credits";
 import AdminDomainsPage from "@/pages/admin/domains";
 import AdminUsersPage from "@/pages/admin/users";
 import AdminAuditLogsPage from "@/pages/admin/audit-logs";
+import AdminGroupsPage from "@/pages/admin/groups";
+import AdminSettingsPage from "@/pages/admin/settings";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -52,6 +54,8 @@ export default function App() {
         <Route path="/admin/domains" element={<ProtectedRoute><AdminRoute><AdminDomainsPage /></AdminRoute></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute><AdminRoute><AdminUsersPage /></AdminRoute></ProtectedRoute>} />
         <Route path="/admin/audit-logs" element={<ProtectedRoute><AdminRoute><AdminAuditLogsPage /></AdminRoute></ProtectedRoute>} />
+        <Route path="/admin/groups" element={<ProtectedRoute><AdminRoute><AdminGroupsPage /></AdminRoute></ProtectedRoute>} />
+        <Route path="/admin/settings" element={<ProtectedRoute><AdminRoute><AdminSettingsPage /></AdminRoute></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

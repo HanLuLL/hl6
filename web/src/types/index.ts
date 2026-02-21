@@ -1,3 +1,12 @@
+export interface UserGroup {
+  id: number;
+  name: string;
+  is_default: boolean;
+  user_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface User {
   id: number;
   logto_id: string;
@@ -5,6 +14,8 @@ export interface User {
   name: string;
   avatar_url: string;
   role: "user" | "admin";
+  group_id?: number;
+  group?: UserGroup;
   created_at: string;
   updated_at: string;
 }
@@ -77,6 +88,7 @@ export interface Stats {
   domains: number;
   subdomains: number;
   dns_records: number;
+  user_groups: number;
 }
 
 export interface AuditLog {
@@ -94,4 +106,18 @@ export interface CloudflareZone {
   id: string;
   name: string;
   status: string;
+}
+
+export interface DomainGroupAccess {
+  id: number;
+  domain_id: number;
+  group_id: number;
+  credit_cost: number;
+  group?: UserGroup;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DomainWithGroupAccess extends Domain {
+  group_access: DomainGroupAccess[];
 }

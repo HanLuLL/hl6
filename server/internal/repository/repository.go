@@ -18,7 +18,7 @@ func New(db *gorm.DB) *Repository {
 // User
 func (r *Repository) FindUserByLogtoID(logtoID string) (*model.User, error) {
 	var user model.User
-	err := r.DB.Where("logto_id = ?", logtoID).First(&user).Error
+	err := r.DB.Preload("Group").Where("logto_id = ?", logtoID).First(&user).Error
 	return &user, err
 }
 
@@ -34,7 +34,7 @@ func (r *Repository) ListUsers(page, perPage int) ([]model.User, int64, error) {
 	var users []model.User
 	var total int64
 	r.DB.Model(&model.User{}).Count(&total)
-	err := r.DB.Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
+	err := r.DB.Preload("Group").Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
 	return users, total, err
 }
 
@@ -228,14 +228,162 @@ func (r *Repository) ListAuditLogs(page, perPage int) ([]model.AuditLog, int64, 
 // Stats
 func (r *Repository) GetStats() (map[string]int64, error) {
 	stats := make(map[string]int64)
-	var users, domains, subdomains, dnsRecords int64
+	var users, domains, subdomains, dnsRecords, userGroups int64
 	r.DB.Model(&model.User{}).Count(&users)
 	r.DB.Model(&model.Domain{}).Where("is_active = ?", true).Count(&domains)
 	r.DB.Model(&model.Subdomain{}).Count(&subdomains)
 	r.DB.Model(&model.DNSRecord{}).Count(&dnsRecords)
+	r.DB.Model(&model.UserGroup{}).Count(&userGroups)
 	stats["users"] = users
 	stats["domains"] = domains
 	stats["subdomains"] = subdomains
 	stats["dns_records"] = dnsRecords
+	stats["user_groups"] = userGroups
 	return stats, nil
+}
+
+// UserGroup
+type UserGroupWithCount struct {
+	model.UserGroup
+	UserCount int64 `json:"user_count"`
+}
+
+func (r *Repository) ListUserGroups() ([]UserGroupWithCount, error) {
+	var groups []model.UserGroup
+	if err := r.DB.Order("id ASC").Find(&groups).Error; err != nil {
+		return nil, err
+	}
+	result := make([]UserGroupWithCount, len(groups))
+	for i, g := range groups {
+		var count int64
+		r.DB.Model(&model.User{}).Where("group_id = ?", g.ID).Count(&count)
+		result[i] = UserGroupWithCount{UserGroup: g, UserCount: count}
+	}
+	return result, nil
+}
+
+func (r *Repository) FindUserGroup(id uint) (*model.UserGroup, error) {
+	var group model.UserGroup
+	err := r.DB.First(&group, id).Error
+	return &group, err
+}
+
+func (r *Repository) CreateUserGroup(group *model.UserGroup) error {
+	return r.DB.Create(group).Error
+}
+
+func (r *Repository) UpdateUserGroup(group *model.UserGroup) error {
+	return r.DB.Save(group).Error
+}
+
+func (r *Repository) DeleteUserGroup(id uint) error {
+	return r.DB.Delete(&model.UserGroup{}, id).Error
+}
+
+func (r *Repository) GetDefaultUserGroup() (*model.UserGroup, error) {
+	var group model.UserGroup
+	err := r.DB.Where("is_default = ?", true).First(&group).Error
+	return &group, err
+}
+
+func (r *Repository) SetDefaultUserGroup(id uint) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.UserGroup{}).Where("is_default = ?", true).Update("is_default", false).Error; err != nil {
+			return err
+		}
+		return tx.Model(&model.UserGroup{}).Where("id = ?", id).Update("is_default", true).Error
+	})
+}
+
+func (r *Repository) CountUserGroups() (int64, error) {
+	var count int64
+	err := r.DB.Model(&model.UserGroup{}).Count(&count).Error
+	return count, err
+}
+
+func (r *Repository) MigrateUsersToGroup(fromGroupID, toGroupID uint) error {
+	return r.DB.Model(&model.User{}).Where("group_id = ?", fromGroupID).Update("group_id", toGroupID).Error
+}
+
+func (r *Repository) UpdateUserGroupID(userID, groupID uint) error {
+	return r.DB.Model(&model.User{}).Where("id = ?", userID).Update("group_id", groupID).Error
+}
+
+// DomainGroupAccess
+func (r *Repository) ListDomainGroupAccess(domainID uint) ([]model.DomainGroupAccess, error) {
+	var accesses []model.DomainGroupAccess
+	err := r.DB.Preload("Group").Where("domain_id = ?", domainID).Find(&accesses).Error
+	return accesses, err
+}
+
+func (r *Repository) ReplaceDomainGroupAccess(tx *gorm.DB, domainID uint, accesses []model.DomainGroupAccess) error {
+	if err := tx.Where("domain_id = ?", domainID).Delete(&model.DomainGroupAccess{}).Error; err != nil {
+		return err
+	}
+	for i := range accesses {
+		accesses[i].DomainID = domainID
+		accesses[i].ID = 0
+		if err := tx.Create(&accesses[i]).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *Repository) FindDomainGroupAccess(domainID, groupID uint) (*model.DomainGroupAccess, error) {
+	var access model.DomainGroupAccess
+	err := r.DB.Where("domain_id = ? AND group_id = ?", domainID, groupID).First(&access).Error
+	return &access, err
+}
+
+type DomainWithGroupCost struct {
+	model.Domain
+	GroupCreditCost int `json:"credit_cost"`
+}
+
+func (r *Repository) ListDomainsForGroup(groupID uint) ([]DomainWithGroupCost, error) {
+	var results []DomainWithGroupCost
+	err := r.DB.Table("domains").
+		Select("domains.*, domain_group_accesses.credit_cost as group_credit_cost").
+		Joins("INNER JOIN domain_group_accesses ON domain_group_accesses.domain_id = domains.id").
+		Where("domain_group_accesses.group_id = ? AND domains.is_active = ?", groupID, true).
+		Order("domains.name ASC").
+		Scan(&results).Error
+	return results, err
+}
+
+func (r *Repository) DeleteDomainGroupAccessByGroup(tx *gorm.DB, groupID uint) error {
+	return tx.Where("group_id = ?", groupID).Delete(&model.DomainGroupAccess{}).Error
+}
+
+// SystemConfig
+func (r *Repository) GetSystemConfig(key string) (string, error) {
+	var cfg model.SystemConfig
+	err := r.DB.Where("`key` = ?", key).First(&cfg).Error
+	if err != nil {
+		return "", err
+	}
+	return cfg.Value, nil
+}
+
+func (r *Repository) SetSystemConfig(key, value string) error {
+	var cfg model.SystemConfig
+	err := r.DB.Where("`key` = ?", key).First(&cfg).Error
+	if err != nil {
+		return r.DB.Create(&model.SystemConfig{Key: key, Value: value}).Error
+	}
+	cfg.Value = value
+	return r.DB.Save(&cfg).Error
+}
+
+func (r *Repository) GetAllSystemConfigs() (map[string]string, error) {
+	var configs []model.SystemConfig
+	if err := r.DB.Find(&configs).Error; err != nil {
+		return nil, err
+	}
+	result := make(map[string]string)
+	for _, c := range configs {
+		result[c.Key] = c.Value
+	}
+	return result, nil
 }

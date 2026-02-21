@@ -81,6 +81,18 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 		return
 	}
 
+	// Check group access and get group-specific cost
+	if user.GroupID == nil {
+		response.Error(c, http.StatusForbidden, "user has no group assigned")
+		return
+	}
+	access, err := h.repo.FindDomainGroupAccess(domain.ID, *user.GroupID)
+	if err != nil {
+		response.Error(c, http.StatusForbidden, "your group does not have access to this domain")
+		return
+	}
+	creditCost := access.CreditCost
+
 	if _, err := h.repo.FindSubdomainByName(domain.ID, body.Name); err == nil {
 		response.Error(c, http.StatusConflict, "subdomain already taken")
 		return
@@ -89,7 +101,7 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 	fqdn := fmt.Sprintf("%s.%s", body.Name, domain.Name)
 	tx := h.repo.DB.Begin()
 	desc := fmt.Sprintf("Claim subdomain %s", fqdn)
-	if err := h.repo.DeductCredits(tx, user.ID, domain.CreditCost, desc); err != nil {
+	if err := h.repo.DeductCredits(tx, user.ID, creditCost, desc); err != nil {
 		tx.Rollback()
 		if err == gorm.ErrInvalidData {
 			response.Error(c, http.StatusPaymentRequired, "insufficient credits")
@@ -111,7 +123,7 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 		return
 	}
 
-	details, _ := json.Marshal(map[string]interface{}{"fqdn": fqdn, "cost": domain.CreditCost})
+	details, _ := json.Marshal(map[string]interface{}{"fqdn": fqdn, "cost": creditCost})
 	tx.Create(&model.AuditLog{
 		UserID:     user.ID,
 		Action:     "claim_subdomain",

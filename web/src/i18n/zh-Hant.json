@@ -47,7 +47,9 @@
     "admin": "管理",
     "adminUsers": "使用者管理",
     "adminDomains": "網域管理",
-    "auditLogs": "稽核日誌"
+    "auditLogs": "稽核日誌",
+    "adminGroups": "使用者群組",
+    "adminSettings": "系統設定"
   },
   "dashboard": {
     "title": "控制台",
@@ -152,7 +154,11 @@
     "descriptionOptional": "描述（選填）",
     "adminGrant": "管理員發放",
     "granting": "發放中...",
-    "grantSuccess": "已發放 {{amount}} 積分。新餘額：{{balance}}"
+    "grantSuccess": "已發放 {{amount}} 積分。新餘額：{{balance}}",
+    "group": "使用者群組",
+    "changeGroup": "修改群組",
+    "selectGroup": "選擇群組",
+    "groupChanged": "使用者群組已更新"
   },
   "adminDomains": {
     "title": "網域管理",
@@ -171,7 +177,10 @@
     "optionalDescription": "選填描述",
     "editDomain": "編輯網域：{{name}}",
     "domainCreated": "網域已建立",
-    "domainUpdated": "網域已更新"
+    "domainUpdated": "網域已更新",
+    "groupAccess": "群組存取與定價",
+    "addGroupAccess": "新增群組",
+    "noGroupAccess": "暫無群組存取權限，請至少新增一個群組。"
   },
   "auditLogs": {
     "title": "稽核日誌",
@@ -182,5 +191,30 @@
     "resource": "資源",
     "details": "詳情",
     "time": "時間"
+  },
+  "adminGroups": {
+    "title": "使用者群組管理",
+    "subtitle": "管理使用者群組和存取級別",
+    "addGroup": "新增群組",
+    "groupName": "群組名稱",
+    "userCount": "使用者數",
+    "status": "狀態",
+    "actions": "操作",
+    "default": "預設",
+    "setAsDefault": "設為預設",
+    "deleteGroup": "刪除群組",
+    "deleteConfirm": "刪除群組「{{name}}」？該群組下的 {{count}} 個使用者將遷移到目標群組。",
+    "migrateTarget": "遷移使用者到",
+    "cannotDeleteLast": "無法刪除最後一個群組",
+    "groupCreated": "群組已建立",
+    "groupUpdated": "群組已更新",
+    "groupDeleted": "群組已刪除，使用者已遷移"
+  },
+  "adminSettings": {
+    "title": "系統設定",
+    "subtitle": "系統設定",
+    "registrationBonus": "註冊贈送積分",
+    "registrationBonusDesc": "新使用者註冊時自動贈送的積分數量",
+    "saved": "設定已儲存"
   }
 }

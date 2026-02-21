@@ -47,7 +47,9 @@
     "admin": "\u7ba1\u7406",
     "adminUsers": "\u7528\u6237\u7ba1\u7406",
     "adminDomains": "\u57df\u540d\u7ba1\u7406",
-    "auditLogs": "\u5ba1\u8ba1\u65e5\u5fd7"
+    "auditLogs": "\u5ba1\u8ba1\u65e5\u5fd7",
+    "adminGroups": "\u7528\u6237\u7ec4",
+    "adminSettings": "\u7cfb\u7edf\u8bbe\u7f6e"
   },
   "dashboard": {
     "title": "\u63a7\u5236\u53f0",
@@ -152,7 +154,11 @@
     "descriptionOptional": "\u63cf\u8ff0\uff08\u53ef\u9009\uff09",
     "adminGrant": "\u7ba1\u7406\u5458\u53d1\u653e",
     "granting": "\u53d1\u653e\u4e2d...",
-    "grantSuccess": "\u5df2\u53d1\u653e {{amount}} \u79ef\u5206\u3002\u65b0\u4f59\u989d\uff1a{{balance}}"
+    "grantSuccess": "\u5df2\u53d1\u653e {{amount}} \u79ef\u5206\u3002\u65b0\u4f59\u989d\uff1a{{balance}}",
+    "group": "\u7528\u6237\u7ec4",
+    "changeGroup": "\u4fee\u6539\u7528\u6237\u7ec4",
+    "selectGroup": "\u9009\u62e9\u7528\u6237\u7ec4",
+    "groupChanged": "\u7528\u6237\u7ec4\u5df2\u66f4\u65b0"
   },
   "adminDomains": {
     "title": "\u57df\u540d\u7ba1\u7406",
@@ -171,7 +177,10 @@
     "optionalDescription": "\u53ef\u9009\u63cf\u8ff0",
     "editDomain": "\u7f16\u8f91\u57df\u540d\uff1a{{name}}",
     "domainCreated": "\u57df\u540d\u5df2\u521b\u5efa",
-    "domainUpdated": "\u57df\u540d\u5df2\u66f4\u65b0"
+    "domainUpdated": "\u57df\u540d\u5df2\u66f4\u65b0",
+    "groupAccess": "\u7528\u6237\u7ec4\u8bbf\u95ee\u4e0e\u5b9a\u4ef7",
+    "addGroupAccess": "\u6dfb\u52a0\u7528\u6237\u7ec4",
+    "noGroupAccess": "\u6682\u65e0\u7528\u6237\u7ec4\u8bbf\u95ee\u6743\u9650\uff0c\u8bf7\u81f3\u5c11\u6dfb\u52a0\u4e00\u4e2a\u7528\u6237\u7ec4\u3002"
   },
   "auditLogs": {
     "title": "\u5ba1\u8ba1\u65e5\u5fd7",
@@ -182,5 +191,30 @@
     "resource": "\u8d44\u6e90",
     "details": "\u8be6\u60c5",
     "time": "\u65f6\u95f4"
+  },
+  "adminGroups": {
+    "title": "\u7528\u6237\u7ec4\u7ba1\u7406",
+    "subtitle": "\u7ba1\u7406\u7528\u6237\u7ec4\u548c\u8bbf\u95ee\u7ea7\u522b",
+    "addGroup": "\u6dfb\u52a0\u7528\u6237\u7ec4",
+    "groupName": "\u7528\u6237\u7ec4\u540d\u79f0",
+    "userCount": "\u7528\u6237\u6570",
+    "status": "\u72b6\u6001",
+    "actions": "\u64cd\u4f5c",
+    "default": "\u9ed8\u8ba4",
+    "setAsDefault": "\u8bbe\u4e3a\u9ed8\u8ba4",
+    "deleteGroup": "\u5220\u9664\u7528\u6237\u7ec4",
+    "deleteConfirm": "\u5220\u9664\u7528\u6237\u7ec4\u300c{{name}}\u300d\uff1f\u8be5\u7ec4\u4e0b\u7684 {{count}} \u4e2a\u7528\u6237\u5c06\u8fc1\u79fb\u5230\u76ee\u6807\u7528\u6237\u7ec4\u3002",
+    "migrateTarget": "\u8fc1\u79fb\u7528\u6237\u5230",
+    "cannotDeleteLast": "\u65e0\u6cd5\u5220\u9664\u6700\u540e\u4e00\u4e2a\u7528\u6237\u7ec4",
+    "groupCreated": "\u7528\u6237\u7ec4\u5df2\u521b\u5efa",
+    "groupUpdated": "\u7528\u6237\u7ec4\u5df2\u66f4\u65b0",
+    "groupDeleted": "\u7528\u6237\u7ec4\u5df2\u5220\u9664\uff0c\u7528\u6237\u5df2\u8fc1\u79fb"
+  },
+  "adminSettings": {
+    "title": "\u7cfb\u7edf\u8bbe\u7f6e",
+    "subtitle": "\u7cfb\u7edf\u914d\u7f6e",
+    "registrationBonus": "\u6ce8\u518c\u8d60\u9001\u79ef\u5206",
+    "registrationBonusDesc": "\u65b0\u7528\u6237\u6ce8\u518c\u65f6\u81ea\u52a8\u8d60\u9001\u7684\u79ef\u5206\u6570\u91cf",
+    "saved": "\u8bbe\u7f6e\u5df2\u4fdd\u5b58"
   }
 }
