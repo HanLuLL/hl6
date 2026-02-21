@@ -178,9 +178,11 @@
     "editDomain": "\u7f16\u8f91\u57df\u540d\uff1a{{name}}",
     "domainCreated": "\u57df\u540d\u5df2\u521b\u5efa",
     "domainUpdated": "\u57df\u540d\u5df2\u66f4\u65b0",
-    "groupAccess": "\u7528\u6237\u7ec4\u8bbf\u95ee\u4e0e\u5b9a\u4ef7",
-    "addGroupAccess": "\u6dfb\u52a0\u7528\u6237\u7ec4",
-    "noGroupAccess": "\u6682\u65e0\u7528\u6237\u7ec4\u8bbf\u95ee\u6743\u9650\uff0c\u8bf7\u81f3\u5c11\u6dfb\u52a0\u4e00\u4e2a\u7528\u6237\u7ec4\u3002"
+    "groupAccess": "用户组访问与定价",
+    "addGroupAccess": "添加用户组",
+    "addAllGroups": "添加全部",
+    "allGroups": "统一定价",
+    "noGroupAccess": "暂无用户组访问权限，请至少添加一个用户组。"
   },
   "auditLogs": {
     "title": "\u5ba1\u8ba1\u65e5\u5fd7",

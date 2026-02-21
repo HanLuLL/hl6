@@ -156,7 +156,7 @@ export default function AdminUsersPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>{t("adminUsers.amount")}</Label>
-              <Input type="number" min="1" value={grantAmount} onChange={(e) => setGrantAmount(e.target.value)} />
+              <Input type="number" min="0" step="any" value={grantAmount} onChange={(e) => setGrantAmount(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>{t("adminUsers.descriptionOptional")}</Label>
@@ -168,7 +168,7 @@ export default function AdminUsersPage() {
             <Button
               onClick={() => grantMutation.mutate({
                 user_id: grantUserId!,
-                amount: parseInt(grantAmount) || 1,
+                amount: parseFloat(grantAmount) || 1,
                 description: grantDesc || t("adminUsers.adminGrant"),
               })}
               disabled={grantMutation.isPending}

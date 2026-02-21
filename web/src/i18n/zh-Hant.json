@@ -180,6 +180,8 @@
     "domainUpdated": "網域已更新",
     "groupAccess": "群組存取與定價",
     "addGroupAccess": "新增群組",
+    "addAllGroups": "新增全部",
+    "allGroups": "統一定價",
     "noGroupAccess": "暫無群組存取權限，請至少新增一個群組。"
   },
   "auditLogs": {

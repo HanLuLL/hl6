@@ -56,9 +56,9 @@ func (h *CreditHandler) ListTransactions(c *gin.Context) {
 
 func (h *CreditHandler) AdminGrant(c *gin.Context) {
 	var body struct {
-		UserID      uint   `json:"user_id" binding:"required"`
-		Amount      int    `json:"amount" binding:"required"`
-		Description string `json:"description"`
+		UserID      uint    `json:"user_id" binding:"required"`
+		Amount      float64 `json:"amount" binding:"required"`
+		Description string  `json:"description"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.Error(c, http.StatusBadRequest, "invalid request body")

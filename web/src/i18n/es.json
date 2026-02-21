@@ -180,6 +180,8 @@
     "domainUpdated": "Dominio actualizado",
     "groupAccess": "Acceso por grupo y precios",
     "addGroupAccess": "Añadir grupo",
+    "addAllGroups": "Añadir todos",
+    "allGroups": "Precio único",
     "noGroupAccess": "Ningún grupo tiene acceso. Añade al menos un grupo."
   },
   "auditLogs": {

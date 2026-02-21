@@ -243,12 +243,48 @@ function GroupAccessEditor({ groups, value, onChange }: {
   onChange: (v: GroupAccessEntry[]) => void;
 }) {
   const { t } = useTranslation();
+  const [bulkCost, setBulkCost] = useState("1");
   const usedGroupIds = new Set(value.map((v) => v.group_id));
   const availableGroups = groups.filter((g) => !usedGroupIds.has(g.id));
 
   return (
     <div className="space-y-2">
       <Label>{t("adminDomains.groupAccess")}</Label>
+      {/* Bulk price row */}
+      <div className="flex items-center gap-2 rounded-md border border-dashed p-2">
+        <span className="text-sm min-w-24 font-medium">{t("adminDomains.allGroups")}</span>
+        <Input
+          type="number"
+          min="0"
+          step="any"
+          className="w-24"
+          value={bulkCost}
+          onChange={(e) => {
+            setBulkCost(e.target.value);
+            const cost = parseFloat(e.target.value) || 0;
+            if (value.length > 0) {
+              onChange(value.map((entry) => ({ ...entry, credit_cost: cost })));
+            }
+          }}
+        />
+        <span className="text-xs text-muted-foreground">{t("adminDomains.creditCost")}</span>
+        {availableGroups.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto shrink-0"
+            onClick={() => {
+              const cost = parseFloat(bulkCost) || 1;
+              const newEntries = availableGroups.map((g) => ({ group_id: g.id, credit_cost: cost }));
+              onChange([...value, ...newEntries]);
+            }}
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            {t("adminDomains.addAllGroups")}
+          </Button>
+        )}
+      </div>
+      {/* Per-group rows */}
       <div className="space-y-2">
         {value.map((entry, idx) => {
           const group = groups.find((g) => g.id === entry.group_id);
@@ -257,12 +293,13 @@ function GroupAccessEditor({ groups, value, onChange }: {
               <span className="text-sm min-w-24 truncate">{group?.name ?? `#${entry.group_id}`}</span>
               <Input
                 type="number"
-                min="1"
+                min="0"
+                step="any"
                 className="w-24"
                 value={entry.credit_cost}
                 onChange={(e) => {
                   const next = [...value];
-                  next[idx] = { ...entry, credit_cost: parseInt(e.target.value) || 1 };
+                  next[idx] = { ...entry, credit_cost: parseFloat(e.target.value) || 0 };
                   onChange(next);
                 }}
               />
@@ -279,7 +316,8 @@ function GroupAccessEditor({ groups, value, onChange }: {
       {availableGroups.length > 0 && (
         <Select onValueChange={(v) => {
           const groupId = parseInt(v);
-          onChange([...value, { group_id: groupId, credit_cost: 1 }]);
+          const cost = parseFloat(bulkCost) || 1;
+          onChange([...value, { group_id: groupId, credit_cost: cost }]);
         }}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder={t("adminDomains.addGroupAccess")} />

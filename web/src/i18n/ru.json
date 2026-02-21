@@ -180,6 +180,8 @@
     "domainUpdated": "Домен обновлён",
     "groupAccess": "Доступ групп и цены",
     "addGroupAccess": "Добавить группу",
+    "addAllGroups": "Добавить все",
+    "allGroups": "Единая цена",
     "noGroupAccess": "Нет групп с доступом. Добавьте хотя бы одну группу."
   },
   "auditLogs": {

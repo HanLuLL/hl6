@@ -180,6 +180,8 @@
     "domainUpdated": "ドメインを更新しました",
     "groupAccess": "グループアクセスと料金",
     "addGroupAccess": "グループを追加",
+    "addAllGroups": "すべて追加",
+    "allGroups": "一括料金",
     "noGroupAccess": "アクセス権のあるグループがありません。少なくとも1つ追加してください。"
   },
   "auditLogs": {

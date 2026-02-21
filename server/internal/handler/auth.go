@@ -74,7 +74,7 @@ func (h *AuthHandler) Sync(c *gin.Context) {
 
 		// Grant registration bonus credits
 		if bonusStr, err := h.repo.GetSystemConfig("registration_bonus_credits"); err == nil {
-			if bonus, err := strconv.Atoi(bonusStr); err == nil && bonus > 0 {
+			if bonus, err := strconv.ParseFloat(bonusStr, 64); err == nil && bonus > 0 {
 				tx := h.repo.DB.Begin()
 				if err := h.repo.GrantCredits(tx, user.ID, bonus, "Registration bonus"); err != nil {
 					tx.Rollback()

@@ -140,7 +140,7 @@ func (r *Repository) EnsureCreditBalance(userID uint) (*model.CreditBalance, err
 	return &balance, err
 }
 
-func (r *Repository) DeductCredits(tx *gorm.DB, userID uint, amount int, description string) error {
+func (r *Repository) DeductCredits(tx *gorm.DB, userID uint, amount float64, description string) error {
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		return err
@@ -162,7 +162,7 @@ func (r *Repository) DeductCredits(tx *gorm.DB, userID uint, amount int, descrip
 	return tx.Create(&txn).Error
 }
 
-func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount int, description string) error {
+func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount float64, description string) error {
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		balance = model.CreditBalance{UserID: userID, Balance: 0}
@@ -184,7 +184,7 @@ func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount int, descript
 	return tx.Create(&txn).Error
 }
 
-func (r *Repository) RefundCredits(tx *gorm.DB, userID uint, amount int, description string) error {
+func (r *Repository) RefundCredits(tx *gorm.DB, userID uint, amount float64, description string) error {
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		return err
@@ -338,7 +338,7 @@ func (r *Repository) FindDomainGroupAccess(domainID, groupID uint) (*model.Domai
 
 type DomainWithGroupCost struct {
 	model.Domain
-	GroupCreditCost int `json:"credit_cost"`
+	GroupCreditCost float64 `json:"credit_cost"`
 }
 
 func (r *Repository) ListDomainsForGroup(groupID uint) ([]DomainWithGroupCost, error) {

@@ -42,8 +42,8 @@ func (h *DomainHandler) List(c *gin.Context) {
 }
 
 type groupAccessInput struct {
-	GroupID    uint `json:"group_id" binding:"required"`
-	CreditCost int `json:"credit_cost"`
+	GroupID    uint    `json:"group_id" binding:"required"`
+	CreditCost float64 `json:"credit_cost"`
 }
 
 func (h *DomainHandler) AdminCreate(c *gin.Context) {

@@ -180,6 +180,8 @@
     "domainUpdated": "Domain updated",
     "groupAccess": "Group Access & Pricing",
     "addGroupAccess": "Add Group",
+    "addAllGroups": "Add All",
+    "allGroups": "All Groups",
     "noGroupAccess": "No groups have access. Add at least one group."
   },
   "auditLogs": {
