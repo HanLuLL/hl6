@@ -8,8 +8,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const languages = [
-  { code: "zh", label: "中文" },
+  { code: "zh", label: "简体中文" },
+  { code: "zh-Hant", label: "繁體中文" },
   { code: "en", label: "English" },
+  { code: "es", label: "Español" },
+  { code: "ru", label: "Русский" },
+  { code: "ja", label: "日本語" },
 ];
 
 export function LanguageToggle() {
