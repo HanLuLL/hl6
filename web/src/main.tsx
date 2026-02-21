@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { LogtoProvider, type LogtoConfig } from "@logto/react";
+import { LogtoProvider, type LogtoConfig, UserScope } from "@logto/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +12,7 @@ const logtoConfig: LogtoConfig = {
   endpoint: import.meta.env.VITE_LOGTO_ENDPOINT || "",
   appId: import.meta.env.VITE_LOGTO_APP_ID || "",
   resources: [import.meta.env.VITE_LOGTO_API_RESOURCE || ""],
+  scopes: [UserScope.Email],
 };
 
 const queryClient = new QueryClient({

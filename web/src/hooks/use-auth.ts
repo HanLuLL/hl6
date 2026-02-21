@@ -29,7 +29,10 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    if (isAuthenticated && meData?.code === -1) {
+    if (!isAuthenticated || meData === undefined) return;
+    // Sync on first login (code === -1) or when user info is incomplete
+    const needsSync = meData?.code === -1 || !meData?.data?.user?.email;
+    if (needsSync) {
       fetchUserInfo().then((info) => {
         if (!info) return;
         syncMutation.mutate({
