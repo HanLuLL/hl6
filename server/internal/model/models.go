@@ -45,14 +45,15 @@ type SystemConfig struct {
 }
 
 type Domain struct {
-	ID               uint      `json:"id" gorm:"primaryKey"`
-	Name             string    `json:"name" gorm:"uniqueIndex;not null"`
-	CloudflareZoneID string    `json:"cloudflare_zone_id" gorm:"not null"`
-	CreditCost       Credit    `json:"credit_cost" gorm:"type:bigint;default:10"`
-	IsActive         bool      `json:"is_active" gorm:"default:true"`
-	Description      string    `json:"description"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	ID                  uint      `json:"id" gorm:"primaryKey"`
+	Name                string    `json:"name" gorm:"uniqueIndex;not null"`
+	CloudflareZoneID    string    `json:"cloudflare_zone_id" gorm:"not null"`
+	CloudflareAccountID uint      `json:"cloudflare_account_id" gorm:"not null;default:0"`
+	CreditCost          Credit    `json:"credit_cost" gorm:"type:bigint;default:10"`
+	IsActive            bool      `json:"is_active" gorm:"default:true"`
+	Description         string    `json:"description"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
 }
 
 type Subdomain struct {
@@ -108,4 +109,34 @@ type AuditLog struct {
 	Details    json.RawMessage  `json:"details" gorm:"type:jsonb"`
 	User       User             `json:"user,omitempty" gorm:"foreignKey:UserID"`
 	CreatedAt  time.Time        `json:"created_at"`
+}
+
+type CloudflareAccount struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	Name      string    `json:"name" gorm:"not null"`
+	ApiToken  string    `json:"-" gorm:"not null"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type CloudflareAccountView struct {
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	TokenHint string    `json:"token_hint"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (a *CloudflareAccount) ToView() CloudflareAccountView {
+	hint := ""
+	if len(a.ApiToken) >= 4 {
+		hint = "..." + a.ApiToken[len(a.ApiToken)-4:]
+	}
+	return CloudflareAccountView{
+		ID:        a.ID,
+		Name:      a.Name,
+		TokenHint: hint,
+		CreatedAt: a.CreatedAt,
+		UpdatedAt: a.UpdatedAt,
+	}
 }

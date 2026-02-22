@@ -42,7 +42,7 @@ import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { CloudflareZone, DomainWithGroupAccess, UserGroup } from "@/types";
+import type { CloudflareZone, CloudflareAccount, DomainWithGroupAccess, UserGroup } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface GroupAccessEntry {
@@ -74,9 +74,19 @@ export default function AdminDomainsPage() {
 
   const [showAdd, setShowAdd] = useState(false);
   const [editDomain, setEditDomain] = useState<DomainWithGroupAccess | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<CloudflareAccount | null>(null);
   const [selectedZone, setSelectedZone] = useState<CloudflareZone | null>(null);
   const [description, setDescription] = useState("");
   const [groupAccess, setGroupAccess] = useState<GroupAccessEntry[]>([]);
+
+  const { data: cfAccounts } = useQuery({
+    queryKey: ["admin-cloudflare-accounts"],
+    queryFn: async () => {
+      const res = await api.adminListCloudflareAccounts();
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
 
   const createMutation = useMutation({
     mutationFn: api.adminCreateDomain,
@@ -84,6 +94,7 @@ export default function AdminDomainsPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-domains"] });
       toast.success(t("adminDomains.domainCreated"));
       setShowAdd(false);
+      setSelectedAccount(null);
       setSelectedZone(null);
       setDescription("");
       setGroupAccess([]);
@@ -152,6 +163,7 @@ export default function AdminDomainsPage() {
         </div>
         <Button onClick={() => {
           setGroupAccess([]);
+          setSelectedAccount(null);
           setShowAdd(true);
         }}>{t("adminDomains.addDomain")}</Button>
       </div>
@@ -213,6 +225,7 @@ export default function AdminDomainsPage() {
       <Dialog open={showAdd} onOpenChange={(open) => {
         setShowAdd(open);
         if (!open) {
+          setSelectedAccount(null);
           setSelectedZone(null);
           setDescription("");
           setGroupAccess([]);
@@ -222,11 +235,22 @@ export default function AdminDomainsPage() {
           <DialogHeader><DialogTitle>{t("adminDomains.addDomain")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
+              <Label>{t("adminCloudflare.selectAccount")}</Label>
+              <AccountCombobox
+                accounts={cfAccounts ?? []}
+                value={selectedAccount}
+                onSelect={(account) => {
+                  setSelectedAccount(account);
+                  setSelectedZone(null);
+                }}
+              />
+            </div>
+            <div className="space-y-2">
               <Label>{t("adminDomains.domain")}</Label>
               <ZoneCombobox
                 value={selectedZone}
                 onSelect={setSelectedZone}
-                enabled={showAdd}
+                accountId={selectedAccount?.id ?? null}
               />
             </div>
             <div className="space-y-2">
@@ -243,15 +267,16 @@ export default function AdminDomainsPage() {
             <Button variant="outline" onClick={() => setShowAdd(false)}>{t("common.cancel")}</Button>
             <Button
               onClick={() => {
-                if (!selectedZone) return;
+                if (!selectedZone || !selectedAccount) return;
                 createMutation.mutate({
                   name: selectedZone.name,
                   cloudflare_zone_id: selectedZone.id,
+                  cloudflare_account_id: selectedAccount.id,
                   description,
                   group_access: groupAccess,
                 });
               }}
-              disabled={!selectedZone || createMutation.isPending}
+              disabled={!selectedZone || !selectedAccount || createMutation.isPending}
             >
               {createMutation.isPending ? t("common.creating") : t("common.create")}
             </Button>
@@ -420,23 +445,13 @@ function GroupAccessEditor({ groups, value, onChange }: {
   );
 }
 
-function ZoneCombobox({ value, onSelect, enabled }: {
-  value: CloudflareZone | null;
-  onSelect: (zone: CloudflareZone | null) => void;
-  enabled: boolean;
+function AccountCombobox({ accounts, value, onSelect }: {
+  accounts: CloudflareAccount[];
+  value: CloudflareAccount | null;
+  onSelect: (account: CloudflareAccount | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
-
-  const { data: zones, isLoading } = useQuery({
-    queryKey: ["admin-cloudflare-zones"],
-    queryFn: async () => {
-      const res = await api.adminListCloudflareZones();
-      return res.data;
-    },
-    enabled,
-    staleTime: 30_000,
-  });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -447,7 +462,67 @@ function ZoneCombobox({ value, onSelect, enabled }: {
           aria-expanded={open}
           className="w-full justify-between font-normal"
         >
-          {value ? value.name : t("adminDomains.selectDomain")}
+          {value ? value.name : t("adminCloudflare.selectAccount")}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={t("adminCloudflare.selectAccount")} />
+          <CommandList>
+            <CommandEmpty>{t("adminCloudflare.noAccounts")}</CommandEmpty>
+            <CommandGroup>
+              {accounts.map((account) => (
+                <CommandItem
+                  key={account.id}
+                  value={account.name}
+                  onSelect={() => {
+                    onSelect(value?.id === account.id ? null : account);
+                    setOpen(false);
+                  }}
+                >
+                  <Check className={cn("mr-2 h-4 w-4", value?.id === account.id ? "opacity-100" : "opacity-0")} />
+                  <span className="flex-1">{account.name}</span>
+                  <span className="text-xs text-muted-foreground ml-2">{account.token_hint}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function ZoneCombobox({ value, onSelect, accountId }: {
+  value: CloudflareZone | null;
+  onSelect: (zone: CloudflareZone | null) => void;
+  accountId: number | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
+
+  const { data: zones, isLoading } = useQuery({
+    queryKey: ["admin-cloudflare-zones", accountId],
+    queryFn: async () => {
+      const res = await api.adminListCloudflareZones(accountId!);
+      return res.data;
+    },
+    enabled: !!accountId,
+    staleTime: 30_000,
+  });
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={!accountId}
+          className="w-full justify-between font-normal"
+        >
+          {value ? value.name : (accountId ? t("adminDomains.selectDomain") : t("adminCloudflare.selectAccountFirst"))}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

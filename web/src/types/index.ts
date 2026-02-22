@@ -24,6 +24,7 @@ export interface Domain {
   id: number;
   name: string;
   cloudflare_zone_id: string;
+  cloudflare_account_id: number;
   credit_cost: number;
   is_active: boolean;
   description: string;
@@ -108,6 +109,14 @@ export interface CloudflareZone {
   id: string;
   name: string;
   status: string;
+}
+
+export interface CloudflareAccount {
+  id: number;
+  name: string;
+  token_hint: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DomainGroupAccess {

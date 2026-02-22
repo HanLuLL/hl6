@@ -13,18 +13,16 @@ import (
 	"gorm.io/gorm"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
-	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
 	"hl6-server/pkg/validator"
 )
 
 type SubdomainHandler struct {
 	repo *repository.Repository
-	cf   *service.CloudflareService
 }
 
-func NewSubdomainHandler(repo *repository.Repository, cf *service.CloudflareService) *SubdomainHandler {
-	return &SubdomainHandler{repo: repo, cf: cf}
+func NewSubdomainHandler(repo *repository.Repository) *SubdomainHandler {
+	return &SubdomainHandler{repo: repo}
 }
 
 func (h *SubdomainHandler) List(c *gin.Context) {
@@ -175,11 +173,18 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 	}
 
 	// Delete all CF records first - all must succeed before DB cleanup
-	for _, record := range sub.DNSRecords {
-		if record.CloudflareRecordID != "" {
-			if err := h.cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
-				response.ErrorWithKey(c, http.StatusBadGateway, "failed to delete DNS record from Cloudflare", "error.cloudflareDeleteFailed")
-				return
+	if len(sub.DNSRecords) > 0 {
+		cf, err := cfForAccount(h.repo, sub.Domain.CloudflareAccountID)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+			return
+		}
+		for _, record := range sub.DNSRecords {
+			if record.CloudflareRecordID != "" {
+				if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
+					response.ErrorWithKey(c, http.StatusBadGateway, "failed to delete DNS record from Cloudflare", "error.cloudflareDeleteFailed")
+					return
+				}
 			}
 		}
 	}

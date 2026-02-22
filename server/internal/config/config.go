@@ -14,7 +14,6 @@ type Config struct {
 	SessionSecret   string
 	FrontendURL     string
 	AllowedOrigins  []string
-	CloudflareToken string
 	AdminEmails     []string
 }
 
@@ -28,7 +27,6 @@ func Load() *Config {
 		SessionSecret:   getEnv("SESSION_SECRET", ""),
 		FrontendURL:     getEnv("FRONTEND_URL", "http://localhost:5173"),
 		AllowedOrigins:  parseList(getEnv("ALLOWED_ORIGINS", "")),
-		CloudflareToken: getEnv("CLOUDFLARE_API_TOKEN", ""),
 		AdminEmails:     parseListLower(getEnv("ADMIN_EMAILS", "")),
 	}
 }

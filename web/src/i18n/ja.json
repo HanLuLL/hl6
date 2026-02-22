@@ -51,6 +51,7 @@
     "adminDomains": "ドメイン管理",
     "auditLogs": "監査ログ",
     "adminGroups": "ユーザーグループ",
+    "adminCloudflare": "Cloudflare アカウント",
     "adminSettings": "設定"
   },
   "dashboard": {
@@ -231,6 +232,25 @@
     "registrationBonusDesc": "新規ユーザー登録時に自動的に付与されるクレジット数",
     "saved": "設定を保存しました"
   },
+  "adminCloudflare": {
+    "title": "Cloudflare アカウント管理",
+    "subtitle": "DNS管理用のCloudflare APIアカウントを管理",
+    "addAccount": "アカウントを追加",
+    "editAccount": "アカウントを編集",
+    "accountName": "アカウント名",
+    "apiToken": "API Token",
+    "apiTokenHint": "空欄の場合は現在のTokenを維持",
+    "tokenHint": "Token",
+    "domains": "ドメイン数",
+    "noAccounts": "Cloudflareアカウントはまだ設定されていません",
+    "accountCreated": "アカウントを作成しました",
+    "accountUpdated": "アカウントを更新しました",
+    "accountDeleted": "アカウントを削除しました",
+    "deleteConfirm": "Cloudflareアカウント「{{name}}」を削除しますか？",
+    "accountHasDomains": "関連するドメインがあるアカウントは削除できません",
+    "selectAccount": "アカウントを選択...",
+    "selectAccountFirst": "先にCloudflareアカウントを選択してください"
+  },
   "txn": {
     "claimSubdomain": "サブドメイン {{fqdn}} の取得",
     "rewardClaimSubdomain": "サブドメイン {{fqdn}} 取得の報酬",
@@ -313,6 +333,12 @@
     "cloudflareDeleteFailed": "Cloudflare から DNS レコードの削除に失敗しました",
     "domainHasSubdomains": "アクティブなサブドメインがあるドメインは削除できません",
     "failedToDeleteDomain": "ドメインの削除に失敗しました",
-    "amountCannotBeZero": "金額はゼロにできません"
+    "amountCannotBeZero": "金額はゼロにできません",
+    "cloudflareAccountNotFound": "Cloudflareアカウントが見つかりません",
+    "cloudflareAccountHasDomains": "関連するドメインがあるアカウントは削除できません",
+    "failedToListCloudflareAccounts": "Cloudflareアカウントの一覧取得に失敗しました",
+    "failedToCreateCloudflareAccount": "Cloudflareアカウントの作成に失敗しました",
+    "failedToUpdateCloudflareAccount": "Cloudflareアカウントの更新に失敗しました",
+    "failedToDeleteCloudflareAccount": "Cloudflareアカウントの削除に失敗しました"
   }
 }

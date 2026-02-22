@@ -51,6 +51,7 @@
     "adminDomains": "Admin Domains",
     "auditLogs": "Audit Logs",
     "adminGroups": "User Groups",
+    "adminCloudflare": "Cloudflare Accounts",
     "adminSettings": "Settings"
   },
   "dashboard": {
@@ -231,6 +232,25 @@
     "registrationBonusDesc": "Credits automatically granted to new users upon registration",
     "saved": "Settings saved"
   },
+  "adminCloudflare": {
+    "title": "Cloudflare Accounts",
+    "subtitle": "Manage Cloudflare API accounts for DNS management",
+    "addAccount": "Add Account",
+    "editAccount": "Edit Account",
+    "accountName": "Account Name",
+    "apiToken": "API Token",
+    "apiTokenHint": "Leave empty to keep the current token",
+    "tokenHint": "Token",
+    "domains": "Domains",
+    "noAccounts": "No Cloudflare accounts configured yet",
+    "accountCreated": "Account created",
+    "accountUpdated": "Account updated",
+    "accountDeleted": "Account deleted",
+    "deleteConfirm": "Delete Cloudflare account \"{{name}}\"?",
+    "accountHasDomains": "Cannot delete account with associated domains",
+    "selectAccount": "Select account...",
+    "selectAccountFirst": "Select a Cloudflare account first"
+  },
   "txn": {
     "claimSubdomain": "Claim subdomain {{fqdn}}",
     "rewardClaimSubdomain": "Reward for claiming subdomain {{fqdn}}",
@@ -313,6 +333,12 @@
     "cloudflareDeleteFailed": "Failed to delete DNS record from Cloudflare",
     "domainHasSubdomains": "Cannot delete domain with active subdomains",
     "failedToDeleteDomain": "Failed to delete domain",
-    "amountCannotBeZero": "Amount cannot be zero"
+    "amountCannotBeZero": "Amount cannot be zero",
+    "cloudflareAccountNotFound": "Cloudflare account not found",
+    "cloudflareAccountHasDomains": "Cannot delete account with associated domains",
+    "failedToListCloudflareAccounts": "Failed to list Cloudflare accounts",
+    "failedToCreateCloudflareAccount": "Failed to create Cloudflare account",
+    "failedToUpdateCloudflareAccount": "Failed to update Cloudflare account",
+    "failedToDeleteCloudflareAccount": "Failed to delete Cloudflare account"
   }
 }

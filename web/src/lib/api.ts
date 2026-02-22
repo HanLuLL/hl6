@@ -82,16 +82,16 @@ export const api = {
     request<PaginatedResponse<import("@/types").CreditTransaction[]>>(`/credits/transactions?page=${page}&per_page=${perPage}`),
 
   // Admin
-  adminCreateDomain: (data: { name: string; cloudflare_zone_id: string; description: string; group_access: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
+  adminCreateDomain: (data: { name: string; cloudflare_zone_id: string; cloudflare_account_id: number; description: string; group_access: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
     request<ApiResponse<{ domain: import("@/types").Domain; group_access: import("@/types").DomainGroupAccess[] }>>("/admin/domains", { method: "POST", body: JSON.stringify(data) }),
-  adminUpdateDomain: (id: number, data: { cloudflare_zone_id?: string; is_active?: boolean; description?: string; group_access?: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
+  adminUpdateDomain: (id: number, data: { cloudflare_zone_id?: string; cloudflare_account_id?: number; is_active?: boolean; description?: string; group_access?: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
     request<ApiResponse<{ domain: import("@/types").Domain; group_access: import("@/types").DomainGroupAccess[] }>>(`/admin/domains/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   adminDeleteDomain: (id: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/domains/${id}`, { method: "DELETE" }),
   adminListDomainsFull: () =>
     request<ApiResponse<import("@/types").DomainWithGroupAccess[]>>("/admin/domains-full"),
-  adminListCloudflareZones: () =>
-    request<ApiResponse<import("@/types").CloudflareZone[]>>("/admin/cloudflare/zones"),
+  adminListCloudflareZones: (accountId: number) =>
+    request<ApiResponse<import("@/types").CloudflareZone[]>>(`/admin/cloudflare/accounts/${accountId}/zones`),
   adminGrantCredits: (data: { user_id: number; amount: number; description: string }) =>
     request<ApiResponse<{ user_id: number; granted: number; balance: number }>>("/admin/credits/grant", { method: "POST", body: JSON.stringify(data) }),
   adminListUsers: (page = 1, perPage = 20) =>
@@ -117,4 +117,14 @@ export const api = {
     request<ApiResponse<Record<string, string>>>("/admin/config"),
   adminUpdateConfig: (data: Record<string, string>) =>
     request<ApiResponse<{ message: string }>>("/admin/config", { method: "PUT", body: JSON.stringify(data) }),
+
+  // Admin: Cloudflare Accounts
+  adminListCloudflareAccounts: () =>
+    request<ApiResponse<import("@/types").CloudflareAccount[]>>("/admin/cloudflare/accounts"),
+  adminCreateCloudflareAccount: (data: { name: string; api_token: string }) =>
+    request<ApiResponse<import("@/types").CloudflareAccount>>("/admin/cloudflare/accounts", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdateCloudflareAccount: (id: number, data: { name: string; api_token?: string }) =>
+    request<ApiResponse<import("@/types").CloudflareAccount>>(`/admin/cloudflare/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminDeleteCloudflareAccount: (id: number) =>
+    request<ApiResponse<{ message: string }>>(`/admin/cloudflare/accounts/${id}`, { method: "DELETE" }),
 };

@@ -10,18 +10,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
-	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
 	"hl6-server/pkg/validator"
 )
 
 type DNSHandler struct {
 	repo *repository.Repository
-	cf   *service.CloudflareService
 }
 
-func NewDNSHandler(repo *repository.Repository, cf *service.CloudflareService) *DNSHandler {
-	return &DNSHandler{repo: repo, cf: cf}
+func NewDNSHandler(repo *repository.Repository) *DNSHandler {
+	return &DNSHandler{repo: repo}
 }
 
 func (h *DNSHandler) ListRecords(c *gin.Context) {
@@ -109,7 +107,13 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 		body.TTL = 1
 	}
 
-	cfID, err := h.cf.CreateRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, body.Type, sub.FQDN, body.Content, body.TTL, body.Proxied)
+	cf, err := cfForAccount(h.repo, sub.Domain.CloudflareAccountID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+		return
+	}
+
+	cfID, err := cf.CreateRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, body.Type, sub.FQDN, body.Content, body.TTL, body.Proxied)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err), "error.cloudflareError")
 		return
@@ -189,7 +193,13 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 		body.TTL = 1
 	}
 
-	if err := h.cf.UpdateRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID, record.Type, sub.FQDN, body.Content, body.TTL, body.Proxied); err != nil {
+	cf, err := cfForAccount(h.repo, sub.Domain.CloudflareAccountID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+		return
+	}
+
+	if err := cf.UpdateRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID, record.Type, sub.FQDN, body.Content, body.TTL, body.Proxied); err != nil {
 		response.ErrorWithKey(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err), "error.cloudflareError")
 		return
 	}
@@ -214,7 +224,12 @@ func (h *DNSHandler) DeleteRecord(c *gin.Context) {
 	}
 
 	if record.CloudflareRecordID != "" {
-		if err := h.cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
+		cf, err := cfForAccount(h.repo, sub.Domain.CloudflareAccountID)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+			return
+		}
+		if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
 			response.ErrorWithKey(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err), "error.cloudflareError")
 			return
 		}

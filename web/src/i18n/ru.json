@@ -51,6 +51,7 @@
     "adminDomains": "Управление доменами",
     "auditLogs": "Журнал аудита",
     "adminGroups": "Группы пользователей",
+    "adminCloudflare": "Аккаунты Cloudflare",
     "adminSettings": "Настройки"
   },
   "dashboard": {
@@ -231,6 +232,25 @@
     "registrationBonusDesc": "Кредиты, автоматически начисляемые новым пользователям при регистрации",
     "saved": "Настройки сохранены"
   },
+  "adminCloudflare": {
+    "title": "Аккаунты Cloudflare",
+    "subtitle": "Управление API-аккаунтами Cloudflare для работы с DNS",
+    "addAccount": "Добавить аккаунт",
+    "editAccount": "Редактировать аккаунт",
+    "accountName": "Название аккаунта",
+    "apiToken": "API Token",
+    "apiTokenHint": "Оставьте пустым, чтобы сохранить текущий токен",
+    "tokenHint": "Токен",
+    "domains": "Домены",
+    "noAccounts": "Аккаунты Cloudflare ещё не настроены",
+    "accountCreated": "Аккаунт создан",
+    "accountUpdated": "Аккаунт обновлён",
+    "accountDeleted": "Аккаунт удалён",
+    "deleteConfirm": "Удалить аккаунт Cloudflare «{{name}}»?",
+    "accountHasDomains": "Невозможно удалить аккаунт с привязанными доменами",
+    "selectAccount": "Выберите аккаунт...",
+    "selectAccountFirst": "Сначала выберите аккаунт Cloudflare"
+  },
   "txn": {
     "claimSubdomain": "Регистрация поддомена {{fqdn}}",
     "rewardClaimSubdomain": "Награда за регистрацию поддомена {{fqdn}}",
@@ -313,6 +333,12 @@
     "cloudflareDeleteFailed": "Не удалось удалить DNS-запись из Cloudflare",
     "domainHasSubdomains": "Невозможно удалить домен с активными поддоменами",
     "failedToDeleteDomain": "Не удалось удалить домен",
-    "amountCannotBeZero": "Сумма не может быть нулевой"
+    "amountCannotBeZero": "Сумма не может быть нулевой",
+    "cloudflareAccountNotFound": "Аккаунт Cloudflare не найден",
+    "cloudflareAccountHasDomains": "Невозможно удалить аккаунт с привязанными доменами",
+    "failedToListCloudflareAccounts": "Не удалось загрузить список аккаунтов Cloudflare",
+    "failedToCreateCloudflareAccount": "Не удалось создать аккаунт Cloudflare",
+    "failedToUpdateCloudflareAccount": "Не удалось обновить аккаунт Cloudflare",
+    "failedToDeleteCloudflareAccount": "Не удалось удалить аккаунт Cloudflare"
   }
 }

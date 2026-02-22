@@ -51,6 +51,7 @@
     "adminDomains": "網域管理",
     "auditLogs": "稽核日誌",
     "adminGroups": "使用者群組",
+    "adminCloudflare": "Cloudflare 帳號",
     "adminSettings": "系統設定"
   },
   "dashboard": {
@@ -231,6 +232,25 @@
     "registrationBonusDesc": "新使用者註冊時自動贈送的積分數量",
     "saved": "設定已儲存"
   },
+  "adminCloudflare": {
+    "title": "Cloudflare 帳號管理",
+    "subtitle": "管理用於 DNS 管理的 Cloudflare API 帳號",
+    "addAccount": "新增帳號",
+    "editAccount": "編輯帳號",
+    "accountName": "帳號名稱",
+    "apiToken": "API Token",
+    "apiTokenHint": "留空則保留目前 Token",
+    "tokenHint": "Token",
+    "domains": "網域數",
+    "noAccounts": "暫無 Cloudflare 帳號",
+    "accountCreated": "帳號已建立",
+    "accountUpdated": "帳號已更新",
+    "accountDeleted": "帳號已刪除",
+    "deleteConfirm": "確定刪除 Cloudflare 帳號「{{name}}」？",
+    "accountHasDomains": "無法刪除有關聯網域的帳號",
+    "selectAccount": "選擇帳號...",
+    "selectAccountFirst": "請先選擇 Cloudflare 帳號"
+  },
   "txn": {
     "claimSubdomain": "認領子網域 {{fqdn}}",
     "rewardClaimSubdomain": "認領子網域 {{fqdn}} 的獎勵",
@@ -313,6 +333,12 @@
     "cloudflareDeleteFailed": "無法從 Cloudflare 刪除 DNS 記錄",
     "domainHasSubdomains": "無法刪除有活躍子域名的域名",
     "failedToDeleteDomain": "刪除域名失敗",
-    "amountCannotBeZero": "金額不能為零"
+    "amountCannotBeZero": "金額不能為零",
+    "cloudflareAccountNotFound": "Cloudflare 帳號未找到",
+    "cloudflareAccountHasDomains": "無法刪除有關聯網域的帳號",
+    "failedToListCloudflareAccounts": "取得 Cloudflare 帳號清單失敗",
+    "failedToCreateCloudflareAccount": "建立 Cloudflare 帳號失敗",
+    "failedToUpdateCloudflareAccount": "更新 Cloudflare 帳號失敗",
+    "failedToDeleteCloudflareAccount": "刪除 Cloudflare 帳號失敗"
   }
 }

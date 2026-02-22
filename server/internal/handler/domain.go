@@ -8,17 +8,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
-	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
 )
 
 type DomainHandler struct {
 	repo *repository.Repository
-	cf   *service.CloudflareService
 }
 
-func NewDomainHandler(repo *repository.Repository, cf *service.CloudflareService) *DomainHandler {
-	return &DomainHandler{repo: repo, cf: cf}
+func NewDomainHandler(repo *repository.Repository) *DomainHandler {
+	return &DomainHandler{repo: repo}
 }
 
 func (h *DomainHandler) List(c *gin.Context) {
@@ -50,10 +48,11 @@ type groupAccessInput struct {
 
 func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	var body struct {
-		Name             string             `json:"name" binding:"required"`
-		CloudflareZoneID string             `json:"cloudflare_zone_id" binding:"required"`
-		Description      string             `json:"description"`
-		GroupAccess      []groupAccessInput `json:"group_access"`
+		Name                string             `json:"name" binding:"required"`
+		CloudflareZoneID    string             `json:"cloudflare_zone_id" binding:"required"`
+		CloudflareAccountID uint               `json:"cloudflare_account_id" binding:"required"`
+		Description         string             `json:"description"`
+		GroupAccess         []groupAccessInput `json:"group_access"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
@@ -61,11 +60,12 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	}
 
 	domain := &model.Domain{
-		Name:             body.Name,
-		CloudflareZoneID: body.CloudflareZoneID,
-		CreditCost:       model.CreditFromFloat(1),
-		IsActive:         true,
-		Description:      body.Description,
+		Name:                body.Name,
+		CloudflareZoneID:    body.CloudflareZoneID,
+		CloudflareAccountID: body.CloudflareAccountID,
+		CreditCost:          model.CreditFromFloat(1),
+		IsActive:            true,
+		Description:         body.Description,
 	}
 
 	tx := h.repo.DB.Begin()
@@ -117,10 +117,11 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		return
 	}
 	var body struct {
-		CloudflareZoneID *string            `json:"cloudflare_zone_id"`
-		IsActive         *bool              `json:"is_active"`
-		Description      *string            `json:"description"`
-		GroupAccess      []groupAccessInput `json:"group_access"`
+		CloudflareZoneID    *string            `json:"cloudflare_zone_id"`
+		CloudflareAccountID *uint              `json:"cloudflare_account_id"`
+		IsActive            *bool              `json:"is_active"`
+		Description         *string            `json:"description"`
+		GroupAccess         []groupAccessInput `json:"group_access"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
@@ -131,6 +132,9 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 
 	if body.CloudflareZoneID != nil {
 		domain.CloudflareZoneID = *body.CloudflareZoneID
+	}
+	if body.CloudflareAccountID != nil {
+		domain.CloudflareAccountID = *body.CloudflareAccountID
 	}
 	if body.IsActive != nil {
 		domain.IsActive = *body.IsActive
@@ -201,15 +205,6 @@ func (h *DomainHandler) AdminListDomainsFull(c *gin.Context) {
 		result[i] = domainWithAccess{Domain: d, GroupAccess: accesses}
 	}
 	response.OK(c, result)
-}
-
-func (h *DomainHandler) AdminListZones(c *gin.Context) {
-	zones, err := h.cf.ListZones(c.Request.Context())
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list cloudflare zones", "error.failedToListCloudflareZones")
-		return
-	}
-	response.OK(c, zones)
 }
 
 func (h *DomainHandler) AdminDelete(c *gin.Context) {

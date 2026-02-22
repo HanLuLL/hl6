@@ -9,7 +9,6 @@ import (
 	"hl6-server/internal/handler"
 	"hl6-server/internal/middleware"
 	"hl6-server/internal/repository"
-	"hl6-server/internal/service"
 )
 
 func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
@@ -17,17 +16,17 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
 
 	repo := repository.New(db)
-	cf := service.NewCloudflareService(cfg.CloudflareToken)
 	auth := middleware.NewAuthMiddleware(cfg.SessionSecret)
 	rl := middleware.NewRateLimiter(100, time.Minute)
 
 	authH := handler.NewAuthHandler(repo)
 	oidcH := handler.NewOIDCHandler(repo, cfg)
-	domainH := handler.NewDomainHandler(repo, cf)
-	subdomainH := handler.NewSubdomainHandler(repo, cf)
-	dnsH := handler.NewDNSHandler(repo, cf)
+	domainH := handler.NewDomainHandler(repo)
+	subdomainH := handler.NewSubdomainHandler(repo)
+	dnsH := handler.NewDNSHandler(repo)
 	creditH := handler.NewCreditHandler(repo)
 	adminH := handler.NewAdminHandler(repo)
+	cfAccountH := handler.NewCloudflareAccountHandler(repo)
 
 	api := r.Group("/api/v1")
 	api.Use(rl.Handler())
@@ -62,7 +61,11 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.PUT("/domains/:id", domainH.AdminUpdate)
 	admin.DELETE("/domains/:id", domainH.AdminDelete)
 	admin.GET("/domains-full", domainH.AdminListDomainsFull)
-	admin.GET("/cloudflare/zones", domainH.AdminListZones)
+	admin.GET("/cloudflare/accounts", cfAccountH.List)
+	admin.POST("/cloudflare/accounts", cfAccountH.Create)
+	admin.PUT("/cloudflare/accounts/:id", cfAccountH.Update)
+	admin.DELETE("/cloudflare/accounts/:id", cfAccountH.Delete)
+	admin.GET("/cloudflare/accounts/:id/zones", cfAccountH.ListZones)
 	admin.POST("/credits/grant", creditH.AdminGrant)
 	admin.GET("/users", adminH.ListUsers)
 	admin.PUT("/users/:id/group", adminH.UpdateUserGroup)

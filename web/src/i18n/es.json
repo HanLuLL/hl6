@@ -51,6 +51,7 @@
     "adminDomains": "Gestión de dominios",
     "auditLogs": "Registros de auditoría",
     "adminGroups": "Grupos de usuarios",
+    "adminCloudflare": "Cuentas Cloudflare",
     "adminSettings": "Configuración"
   },
   "dashboard": {
@@ -231,6 +232,25 @@
     "registrationBonusDesc": "Créditos otorgados automáticamente a los nuevos usuarios al registrarse",
     "saved": "Configuración guardada"
   },
+  "adminCloudflare": {
+    "title": "Cuentas de Cloudflare",
+    "subtitle": "Gestiona las cuentas API de Cloudflare para la administración DNS",
+    "addAccount": "Añadir cuenta",
+    "editAccount": "Editar cuenta",
+    "accountName": "Nombre de la cuenta",
+    "apiToken": "API Token",
+    "apiTokenHint": "Dejar vacío para mantener el token actual",
+    "tokenHint": "Token",
+    "domains": "Dominios",
+    "noAccounts": "No hay cuentas de Cloudflare configuradas",
+    "accountCreated": "Cuenta creada",
+    "accountUpdated": "Cuenta actualizada",
+    "accountDeleted": "Cuenta eliminada",
+    "deleteConfirm": "¿Eliminar la cuenta de Cloudflare \"{{name}}\"?",
+    "accountHasDomains": "No se puede eliminar una cuenta con dominios asociados",
+    "selectAccount": "Seleccionar cuenta...",
+    "selectAccountFirst": "Seleccione primero una cuenta de Cloudflare"
+  },
   "txn": {
     "claimSubdomain": "Reclamar subdominio {{fqdn}}",
     "rewardClaimSubdomain": "Recompensa por reclamar subdominio {{fqdn}}",
@@ -313,6 +333,12 @@
     "cloudflareDeleteFailed": "Error al eliminar el registro DNS de Cloudflare",
     "domainHasSubdomains": "No se puede eliminar un dominio con subdominios activos",
     "failedToDeleteDomain": "Error al eliminar el dominio",
-    "amountCannotBeZero": "La cantidad no puede ser cero"
+    "amountCannotBeZero": "La cantidad no puede ser cero",
+    "cloudflareAccountNotFound": "Cuenta de Cloudflare no encontrada",
+    "cloudflareAccountHasDomains": "No se puede eliminar una cuenta con dominios asociados",
+    "failedToListCloudflareAccounts": "Error al listar cuentas de Cloudflare",
+    "failedToCreateCloudflareAccount": "Error al crear cuenta de Cloudflare",
+    "failedToUpdateCloudflareAccount": "Error al actualizar cuenta de Cloudflare",
+    "failedToDeleteCloudflareAccount": "Error al eliminar cuenta de Cloudflare"
   }
 }

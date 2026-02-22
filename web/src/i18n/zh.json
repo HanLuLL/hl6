@@ -51,6 +51,7 @@
     "adminDomains": "\u57df\u540d\u7ba1\u7406",
     "auditLogs": "\u5ba1\u8ba1\u65e5\u5fd7",
     "adminGroups": "\u7528\u6237\u7ec4",
+    "adminCloudflare": "Cloudflare 账号",
     "adminSettings": "\u7cfb\u7edf\u8bbe\u7f6e"
   },
   "dashboard": {
@@ -231,6 +232,25 @@
     "registrationBonusDesc": "\u65b0\u7528\u6237\u6ce8\u518c\u65f6\u81ea\u52a8\u8d60\u9001\u7684\u79ef\u5206\u6570\u91cf",
     "saved": "\u8bbe\u7f6e\u5df2\u4fdd\u5b58"
   },
+  "adminCloudflare": {
+    "title": "Cloudflare 账号管理",
+    "subtitle": "管理用于 DNS 管理的 Cloudflare API 账号",
+    "addAccount": "添加账号",
+    "editAccount": "编辑账号",
+    "accountName": "账号名称",
+    "apiToken": "API Token",
+    "apiTokenHint": "留空则保留当前 Token",
+    "tokenHint": "Token",
+    "domains": "域名数",
+    "noAccounts": "暂无 Cloudflare 账号",
+    "accountCreated": "账号已创建",
+    "accountUpdated": "账号已更新",
+    "accountDeleted": "账号已删除",
+    "deleteConfirm": "确定删除 Cloudflare 账号「{{name}}」？",
+    "accountHasDomains": "无法删除有关联域名的账号",
+    "selectAccount": "选择账号...",
+    "selectAccountFirst": "请先选择 Cloudflare 账号"
+  },
   "txn": {
     "claimSubdomain": "认领子域名 {{fqdn}}",
     "rewardClaimSubdomain": "认领子域名 {{fqdn}} 的奖励",
@@ -313,6 +333,12 @@
     "cloudflareDeleteFailed": "无法从 Cloudflare 删除 DNS 记录",
     "domainHasSubdomains": "无法删除有活跃子域名的域名",
     "failedToDeleteDomain": "删除域名失败",
-    "amountCannotBeZero": "金额不能为零"
+    "amountCannotBeZero": "金额不能为零",
+    "cloudflareAccountNotFound": "Cloudflare 账号未找到",
+    "cloudflareAccountHasDomains": "无法删除有关联域名的账号",
+    "failedToListCloudflareAccounts": "获取 Cloudflare 账号列表失败",
+    "failedToCreateCloudflareAccount": "创建 Cloudflare 账号失败",
+    "failedToUpdateCloudflareAccount": "更新 Cloudflare 账号失败",
+    "failedToDeleteCloudflareAccount": "删除 Cloudflare 账号失败"
   }
 }

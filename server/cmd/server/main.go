@@ -27,6 +27,7 @@ func main() {
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.UserGroup{},
+		&model.CloudflareAccount{},
 		&model.Domain{},
 		&model.DomainGroupAccess{},
 		&model.Subdomain{},
