@@ -192,7 +192,9 @@
     "addAllGroups": "新增全部",
     "allGroups": "統一定價",
     "negativeCostHint": "負價格：使用者認領該網域時將獲得積分",
-    "noGroupAccess": "暫無群組存取權限，請至少新增一個群組。"
+    "noGroupAccess": "暫無群組存取權限，請至少新增一個群組。",
+    "maxDnsRecords": "DNS 記錄上限",
+    "maxDnsRecordsHint": "留空無限制"
   },
   "auditLogs": {
     "title": "稽核日誌",
@@ -269,6 +271,7 @@
     "duplicateRecord": "已存在相同類型和內容的記錄",
     "invalidTXT": "TXT 記錄內容不能為空",
     "txtTooLong": "TXT 記錄內容過長（最多 2048 個字元）",
+    "dnsRecordLimitExceeded": "您的群組 DNS 記錄數已達上限",
     "domainNotFound": "網域未找到",
     "groupNotFound": "群組未找到",
     "targetGroupNotFound": "目標群組未找到",

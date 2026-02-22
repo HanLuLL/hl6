@@ -87,6 +87,20 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 		return
 	}
 
+	// 检查域名+用户组的 DNS 记录数上限
+	user := h.getUserFromContext(c)
+	if user != nil && user.GroupID != nil {
+		access, err := h.repo.FindDomainGroupAccess(sub.DomainID, *user.GroupID)
+		if err == nil && access.MaxDNSRecords != nil {
+			count, _ := h.repo.CountDNSRecordsBySubdomain(sub.ID)
+			if int(count) >= *access.MaxDNSRecords {
+				response.ErrorWithKey(c, http.StatusUnprocessableEntity,
+					"dns record limit exceeded", "error.dnsRecordLimitExceeded")
+				return
+			}
+		}
+	}
+
 	if body.Type == "TXT" {
 		body.Proxied = false
 	}
@@ -115,7 +129,6 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 		return
 	}
 
-	user := h.getUserFromContext(c)
 	if user != nil {
 		details, _ := json.Marshal(map[string]interface{}{
 			"type": body.Type, "content": body.Content, "fqdn": sub.FQDN,

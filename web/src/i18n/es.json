@@ -192,7 +192,9 @@
     "addAllGroups": "Añadir todos",
     "allGroups": "Precio único",
     "negativeCostHint": "Precio negativo: los usuarios ganarán créditos al reclamar este dominio",
-    "noGroupAccess": "Ningún grupo tiene acceso. Añade al menos un grupo."
+    "noGroupAccess": "Ningún grupo tiene acceso. Añade al menos un grupo.",
+    "maxDnsRecords": "Límite de registros DNS",
+    "maxDnsRecordsHint": "Vacío para ilimitado"
   },
   "auditLogs": {
     "title": "Registros de auditoría",
@@ -269,6 +271,7 @@
     "duplicateRecord": "Ya existe un registro con el mismo tipo y contenido",
     "invalidTXT": "El contenido del registro TXT no puede estar vacío",
     "txtTooLong": "El contenido del registro TXT es demasiado largo (máximo 2048 caracteres)",
+    "dnsRecordLimitExceeded": "Se ha alcanzado el límite de registros DNS para su grupo",
     "domainNotFound": "Dominio no encontrado",
     "groupNotFound": "Grupo no encontrado",
     "targetGroupNotFound": "Grupo de destino no encontrado",

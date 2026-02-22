@@ -27,13 +27,14 @@ type UserGroup struct {
 }
 
 type DomainGroupAccess struct {
-	ID         uint      `json:"id" gorm:"primaryKey"`
-	DomainID   uint      `json:"domain_id" gorm:"uniqueIndex:idx_domain_group;not null"`
-	GroupID    uint      `json:"group_id" gorm:"uniqueIndex:idx_domain_group;not null"`
-	CreditCost Credit   `json:"credit_cost" gorm:"type:bigint;not null;default:10"`
-	Group      UserGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID            uint      `json:"id" gorm:"primaryKey"`
+	DomainID      uint      `json:"domain_id" gorm:"uniqueIndex:idx_domain_group;not null"`
+	GroupID       uint      `json:"group_id" gorm:"uniqueIndex:idx_domain_group;not null"`
+	CreditCost    Credit    `json:"credit_cost" gorm:"type:bigint;not null;default:10"`
+	MaxDNSRecords *int      `json:"max_dns_records" gorm:"default:null"` // nil = 无限制
+	Group         UserGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type SystemConfig struct {

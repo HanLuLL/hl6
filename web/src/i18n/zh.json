@@ -192,7 +192,9 @@
     "addAllGroups": "添加全部",
     "allGroups": "统一定价",
     "negativeCostHint": "负价格：用户认领该域名时将获得积分",
-    "noGroupAccess": "暂无用户组访问权限，请至少添加一个用户组。"
+    "noGroupAccess": "暂无用户组访问权限，请至少添加一个用户组。",
+    "maxDnsRecords": "DNS 记录上限",
+    "maxDnsRecordsHint": "留空无限制"
   },
   "auditLogs": {
     "title": "\u5ba1\u8ba1\u65e5\u5fd7",
@@ -269,6 +271,7 @@
     "duplicateRecord": "已存在相同类型和内容的记录",
     "invalidTXT": "TXT 记录内容不能为空",
     "txtTooLong": "TXT 记录内容过长（最多 2048 个字符）",
+    "dnsRecordLimitExceeded": "您的用户组 DNS 记录数已达上限",
     "domainNotFound": "域名未找到",
     "groupNotFound": "用户组未找到",
     "targetGroupNotFound": "目标用户组未找到",

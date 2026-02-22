@@ -115,6 +115,7 @@ export interface DomainGroupAccess {
   domain_id: number;
   group_id: number;
   credit_cost: number;
+  max_dns_records?: number | null;
   group?: UserGroup;
   created_at: string;
   updated_at: string;

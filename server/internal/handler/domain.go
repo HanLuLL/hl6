@@ -43,8 +43,9 @@ func (h *DomainHandler) List(c *gin.Context) {
 }
 
 type groupAccessInput struct {
-	GroupID    uint    `json:"group_id" binding:"required"`
-	CreditCost float64 `json:"credit_cost"`
+	GroupID       uint    `json:"group_id" binding:"required"`
+	CreditCost    float64 `json:"credit_cost"`
+	MaxDNSRecords *int    `json:"max_dns_records"`
 }
 
 func (h *DomainHandler) AdminCreate(c *gin.Context) {
@@ -76,9 +77,10 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 
 	for _, ga := range body.GroupAccess {
 		access := model.DomainGroupAccess{
-			DomainID:   domain.ID,
-			GroupID:    ga.GroupID,
-			CreditCost: model.CreditFromFloat(ga.CreditCost),
+			DomainID:      domain.ID,
+			GroupID:       ga.GroupID,
+			CreditCost:    model.CreditFromFloat(ga.CreditCost),
+			MaxDNSRecords: ga.MaxDNSRecords,
 		}
 		if err := tx.Create(&access).Error; err != nil {
 			tx.Rollback()
@@ -146,8 +148,9 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		var accesses []model.DomainGroupAccess
 		for _, ga := range body.GroupAccess {
 			accesses = append(accesses, model.DomainGroupAccess{
-				GroupID:    ga.GroupID,
-				CreditCost: model.CreditFromFloat(ga.CreditCost),
+				GroupID:       ga.GroupID,
+				CreditCost:    model.CreditFromFloat(ga.CreditCost),
+				MaxDNSRecords: ga.MaxDNSRecords,
 			})
 		}
 		if err := h.repo.ReplaceDomainGroupAccess(tx, domain.ID, accesses); err != nil {

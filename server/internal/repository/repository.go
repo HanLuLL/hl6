@@ -129,6 +129,12 @@ func (r *Repository) DeleteDNSRecord(id uint) error {
 	return r.DB.Delete(&model.DNSRecord{}, id).Error
 }
 
+func (r *Repository) CountDNSRecordsBySubdomain(subdomainID uint) (int64, error) {
+	var count int64
+	err := r.DB.Model(&model.DNSRecord{}).Where("subdomain_id = ?", subdomainID).Count(&count).Error
+	return count, err
+}
+
 func (r *Repository) HasNonCNAMERecords(subdomainID uint) (bool, error) {
 	var count int64
 	err := r.DB.Model(&model.DNSRecord{}).Where("subdomain_id = ? AND type != ?", subdomainID, "CNAME").Count(&count).Error

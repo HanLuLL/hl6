@@ -192,7 +192,9 @@
     "addAllGroups": "Add All",
     "allGroups": "All Groups",
     "negativeCostHint": "Negative price: users will earn credits when claiming this domain",
-    "noGroupAccess": "No groups have access. Add at least one group."
+    "noGroupAccess": "No groups have access. Add at least one group.",
+    "maxDnsRecords": "DNS Record Limit",
+    "maxDnsRecordsHint": "Leave empty for unlimited"
   },
   "auditLogs": {
     "title": "Audit Logs",
@@ -269,6 +271,7 @@
     "duplicateRecord": "A record with the same type and content already exists",
     "invalidTXT": "TXT record content cannot be empty",
     "txtTooLong": "TXT record content is too long (max 2048 characters)",
+    "dnsRecordLimitExceeded": "DNS record limit reached for your group",
     "domainNotFound": "Domain not found",
     "groupNotFound": "Group not found",
     "targetGroupNotFound": "Target group not found",

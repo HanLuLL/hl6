@@ -48,6 +48,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface GroupAccessEntry {
   group_id: number;
   credit_cost: number;
+  max_dns_records?: number | null;
 }
 
 export default function AdminDomainsPage() {
@@ -341,6 +342,19 @@ function GroupAccessEditor({ groups, value, onChange }: {
                 }}
               />
               <span className="text-xs text-muted-foreground">{t("adminDomains.creditCost")}</span>
+              <Input
+                type="number"
+                min={1}
+                className="w-20"
+                value={entry.max_dns_records ?? ""}
+                placeholder={t("adminDomains.maxDnsRecordsHint")}
+                onChange={(e) => {
+                  const next = [...value];
+                  next[idx] = { ...entry, max_dns_records: e.target.value ? parseInt(e.target.value) : null };
+                  onChange(next);
+                }}
+              />
+              <span className="text-xs text-muted-foreground">{t("adminDomains.maxDnsRecords")}</span>
               <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => {
                 onChange(value.filter((_, i) => i !== idx));
               }}>
@@ -450,7 +464,7 @@ function EditDomainForm({ domain, groups, onSave, isPending }: {
 }) {
   const [desc, setDesc] = useState(domain.description);
   const [access, setAccess] = useState<GroupAccessEntry[]>(
-    domain.group_access?.map((ga) => ({ group_id: ga.group_id, credit_cost: ga.credit_cost })) ?? []
+    domain.group_access?.map((ga) => ({ group_id: ga.group_id, credit_cost: ga.credit_cost, max_dns_records: ga.max_dns_records ?? null })) ?? []
   );
   const { t } = useTranslation();
 
