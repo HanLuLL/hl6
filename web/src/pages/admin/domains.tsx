@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -284,7 +284,27 @@ function GroupAccessEditor({ groups, value, onChange }: {
 }) {
   const { t } = useTranslation();
   const [bulkCost, setBulkCost] = useState("1");
+  // 用字符串 state 管理每个用户组的 credit_cost 输入，避免输入 "-" 时被立即重置为 0
+  const [creditInputs, setCreditInputs] = useState<Record<number, string>>({});
   const usedGroupIds = new Set(value.map((v) => v.group_id));
+
+  // 当外部 value 变化（如统一定价更新、新增/删除条目）时同步 creditInputs
+  useEffect(() => {
+    setCreditInputs((prev) => {
+      const next: Record<number, string> = {};
+      value.forEach((e) => {
+        const prevInput = prev[e.group_id];
+        const prevParsed = parseFloat(prevInput ?? "");
+        // 若当前输入处于中间状态（NaN，如只输了"-"），保留用户的输入
+        if (prevInput !== undefined && isNaN(prevParsed)) {
+          next[e.group_id] = prevInput;
+        } else {
+          next[e.group_id] = String(e.credit_cost);
+        }
+      });
+      return next;
+    });
+  }, [value]);
   const availableGroups = groups.filter((g) => !usedGroupIds.has(g.id));
 
   return (
@@ -334,11 +354,16 @@ function GroupAccessEditor({ groups, value, onChange }: {
                 type="number"
                 step="any"
                 className="w-24"
-                value={entry.credit_cost}
+                value={creditInputs[entry.group_id] ?? String(entry.credit_cost)}
                 onChange={(e) => {
-                  const next = [...value];
-                  next[idx] = { ...entry, credit_cost: parseFloat(e.target.value) || 0 };
-                  onChange(next);
+                  const raw = e.target.value;
+                  setCreditInputs((prev) => ({ ...prev, [entry.group_id]: raw }));
+                  const parsed = parseFloat(raw);
+                  if (!isNaN(parsed)) {
+                    const next = [...value];
+                    next[idx] = { ...entry, credit_cost: parsed };
+                    onChange(next);
+                  }
                 }}
               />
               <span className="text-xs text-muted-foreground">{t("adminDomains.creditCost")}</span>
