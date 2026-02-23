@@ -24,7 +24,8 @@
     "active": "\u5df2\u542f\u7528",
     "inactive": "\u5df2\u505c\u7528",
     "copied": "\u5df2\u590d\u5236",
-    "confirm": "确认"
+    "confirm": "确认",
+    "deleting": "删除中..."
   },
   "landing": {
     "dashboard": "\u63a7\u5236\u53f0",
@@ -195,7 +196,18 @@
     "negativeCostHint": "负价格：用户认领该域名时将获得积分",
     "noGroupAccess": "暂无用户组访问权限，请至少添加一个用户组。",
     "maxDnsRecords": "DNS 记录上限",
-    "maxDnsRecordsHint": "留空无限制"
+    "maxDnsRecordsHint": "留空无限制",
+    "deleteDomain": "删除域名",
+    "deleteConfirm": "此操作将删除域名 {{name}} 及其所有子域名和 DNS 记录，不可撤销。",
+    "typeToConfirm": "请输入域名 {{name}} 以确认",
+    "domainDeleted": "域名已删除",
+    "refundCredits": "退还用户积分",
+    "refundCreditsHint": "将退还受影响用户认领子域时消耗的积分（按当前定价计算）",
+    "cfDeleteFailures": "Cloudflare DNS 记录删除失败",
+    "cfDeleteFailuresDesc": "以下记录从 Cloudflare 删除失败。可选择强制删除（仅删除数据库记录，忽略 CF 错误）或取消。",
+    "forceDelete": "强制删除（忽略 CF 错误）",
+    "cfFailureSubdomain": "子域",
+    "cfFailureError": "错误原因"
   },
   "auditLogs": {
     "title": "\u5ba1\u8ba1\u65e5\u5fd7",

@@ -24,7 +24,8 @@
     "active": "已啟用",
     "inactive": "已停用",
     "copied": "已複製",
-    "confirm": "確認"
+    "confirm": "確認",
+    "deleting": "刪除中..."
   },
   "landing": {
     "dashboard": "控制台",
@@ -195,7 +196,18 @@
     "negativeCostHint": "負價格：使用者認領該網域時將獲得積分",
     "noGroupAccess": "暫無群組存取權限，請至少新增一個群組。",
     "maxDnsRecords": "DNS 記錄上限",
-    "maxDnsRecordsHint": "留空無限制"
+    "maxDnsRecordsHint": "留空無限制",
+    "deleteDomain": "刪除網域",
+    "deleteConfirm": "此操作將永久刪除網域 {{name}} 及其所有子網域和 DNS 記錄。",
+    "typeToConfirm": "請輸入網域 {{name}} 以確認",
+    "domainDeleted": "網域已刪除",
+    "refundCredits": "退還用戶積分",
+    "refundCreditsHint": "依當前定價退還受影響用戶的積分",
+    "cfDeleteFailures": "Cloudflare DNS 記錄刪除失敗",
+    "cfDeleteFailuresDesc": "以下記錄從 Cloudflare 刪除失敗。可選擇強制刪除（僅刪除資料庫記錄，忽略 CF 錯誤）或取消。",
+    "forceDelete": "強制刪除（忽略 CF 錯誤）",
+    "cfFailureSubdomain": "子網域",
+    "cfFailureError": "錯誤原因"
   },
   "auditLogs": {
     "title": "稽核日誌",

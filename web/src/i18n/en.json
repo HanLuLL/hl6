@@ -24,7 +24,8 @@
     "active": "Active",
     "inactive": "Inactive",
     "copied": "Copied",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "deleting": "Deleting..."
   },
   "landing": {
     "dashboard": "Dashboard",
@@ -195,7 +196,18 @@
     "negativeCostHint": "Negative price: users will earn credits when claiming this domain",
     "noGroupAccess": "No groups have access. Add at least one group.",
     "maxDnsRecords": "DNS Record Limit",
-    "maxDnsRecordsHint": "Leave empty for unlimited"
+    "maxDnsRecordsHint": "Leave empty for unlimited",
+    "deleteDomain": "Delete Domain",
+    "deleteConfirm": "This action will permanently delete domain {{name}} and all its subdomains and DNS records.",
+    "typeToConfirm": "Type {{name}} to confirm",
+    "domainDeleted": "Domain deleted",
+    "refundCredits": "Refund user credits",
+    "refundCreditsHint": "Refund credits to affected users based on current pricing",
+    "cfDeleteFailures": "Cloudflare DNS record deletion failed",
+    "cfDeleteFailuresDesc": "The following records failed to delete from Cloudflare. You can force delete (removes DB records, ignores CF errors) or cancel.",
+    "forceDelete": "Force Delete (Ignore CF Errors)",
+    "cfFailureSubdomain": "Subdomain",
+    "cfFailureError": "Error"
   },
   "auditLogs": {
     "title": "Audit Logs",

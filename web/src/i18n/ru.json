@@ -24,7 +24,8 @@
     "active": "Активен",
     "inactive": "Неактивен",
     "copied": "Скопировано",
-    "confirm": "Подтвердить"
+    "confirm": "Подтвердить",
+    "deleting": "Удаление..."
   },
   "landing": {
     "dashboard": "Панель управления",
@@ -195,7 +196,18 @@
     "negativeCostHint": "Отрицательная цена: пользователи получат кредиты при регистрации этого домена",
     "noGroupAccess": "Нет групп с доступом. Добавьте хотя бы одну группу.",
     "maxDnsRecords": "Лимит DNS-записей",
-    "maxDnsRecordsHint": "Пусто — без ограничений"
+    "maxDnsRecordsHint": "Пусто — без ограничений",
+    "deleteDomain": "Удалить домен",
+    "deleteConfirm": "Это действие безвозвратно удалит домен {{name}} со всеми поддоменами и DNS-записями.",
+    "typeToConfirm": "Введите {{name}} для подтверждения",
+    "domainDeleted": "Домен удалён",
+    "refundCredits": "Вернуть кредиты",
+    "refundCreditsHint": "Возвращает кредиты затронутым пользователям по текущим ценам",
+    "cfDeleteFailures": "Ошибка удаления DNS-записей Cloudflare",
+    "cfDeleteFailuresDesc": "Следующие записи не удалось удалить из Cloudflare. Можно принудительно удалить или отменить.",
+    "forceDelete": "Принудительно удалить (игнорировать ошибки CF)",
+    "cfFailureSubdomain": "Поддомен",
+    "cfFailureError": "Ошибка"
   },
   "auditLogs": {
     "title": "Журнал аудита",

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -38,7 +39,7 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, getErrorMessage } from "@/lib/api";
+import { api, getErrorMessage, ApiError } from "@/lib/api";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,14 @@ interface GroupAccessEntry {
   group_id: number;
   credit_cost: number;
   max_dns_records?: number | null;
+}
+
+interface CfFailureRecord {
+  subdomain_fqdn: string;
+  record_type: string;
+  record_content: string;
+  cloudflare_record_id: string;
+  error: string;
 }
 
 export default function AdminDomainsPage() {
@@ -78,6 +87,12 @@ export default function AdminDomainsPage() {
   const [selectedZone, setSelectedZone] = useState<CloudflareZone | null>(null);
   const [description, setDescription] = useState("");
   const [groupAccess, setGroupAccess] = useState<GroupAccessEntry[]>([]);
+
+  // 删除域名状态
+  const [deleteDomain, setDeleteDomain] = useState<DomainWithGroupAccess | null>(null);
+  const [refundCredits, setRefundCredits] = useState(false);
+  const [deleteInput, setDeleteInput] = useState("");
+  const [cfFailures, setCfFailures] = useState<CfFailureRecord[] | null>(null);
 
   const { data: cfAccounts } = useQuery({
     queryKey: ["admin-cloudflare-accounts"],
@@ -112,6 +127,26 @@ export default function AdminDomainsPage() {
       setEditDomain(null);
     },
     onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: ({ id, force, refund }: { id: number; force: boolean; refund: boolean }) =>
+      api.adminDeleteDomain(id, { force, refund }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-domains"] });
+      toast.success(t("adminDomains.domainDeleted"));
+      setDeleteDomain(null);
+      setCfFailures(null);
+      setDeleteInput("");
+      setRefundCredits(false);
+    },
+    onError: (err) => {
+      if (err instanceof ApiError && err.data && typeof err.data === "object" && "failed_records" in err.data) {
+        setCfFailures((err.data as { failed_records: CfFailureRecord[] }).failed_records);
+      } else {
+        toast.error(getErrorMessage(err, t));
+      }
+    },
   });
 
   if (isLoading) {
@@ -213,6 +248,19 @@ export default function AdminDomainsPage() {
                     >
                       {domain.is_active ? t("common.disable") : t("common.enable")}
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => {
+                        setDeleteDomain(domain);
+                        setDeleteInput("");
+                        setRefundCredits(false);
+                        setCfFailures(null);
+                      }}
+                    >
+                      {t("common.delete")}
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -296,6 +344,104 @@ export default function AdminDomainsPage() {
               isPending={updateMutation.isPending}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={!!deleteDomain && !cfFailures} onOpenChange={(open) => {
+        if (!open) { setDeleteDomain(null); setDeleteInput(""); setRefundCredits(false); }
+      }}>
+        <DialogContent aria-describedby="delete-domain-desc">
+          <DialogHeader>
+            <DialogTitle>{t("adminDomains.deleteDomain")}</DialogTitle>
+            <DialogDescription id="delete-domain-desc">
+              {t("adminDomains.deleteConfirm", { name: deleteDomain?.name })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">
+                {t("adminDomains.typeToConfirm", { name: deleteDomain?.name })}
+              </label>
+              <Input
+                value={deleteInput}
+                onChange={(e) => setDeleteInput(e.target.value)}
+                placeholder={deleteDomain?.name}
+                autoFocus
+              />
+            </div>
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="refund-toggle"
+                checked={refundCredits}
+                onChange={(e) => setRefundCredits(e.target.checked)}
+                className="mt-0.5 cursor-pointer"
+              />
+              <div>
+                <label htmlFor="refund-toggle" className="text-sm font-medium cursor-pointer">
+                  {t("adminDomains.refundCredits")}
+                </label>
+                <p className="text-xs text-muted-foreground">{t("adminDomains.refundCreditsHint")}</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDeleteDomain(null); setDeleteInput(""); setRefundCredits(false); }} disabled={deleteMutation.isPending}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteInput !== deleteDomain?.name || deleteMutation.isPending}
+              onClick={() => deleteDomain && deleteMutation.mutate({ id: deleteDomain.id, force: false, refund: refundCredits })}
+            >
+              {deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CF Failures Dialog */}
+      <Dialog open={!!cfFailures} onOpenChange={(open) => { if (!open) setCfFailures(null); }}>
+        <DialogContent className="max-w-2xl" aria-describedby="cf-failures-desc">
+          <DialogHeader>
+            <DialogTitle>{t("adminDomains.cfDeleteFailures")}</DialogTitle>
+            <DialogDescription id="cf-failures-desc">
+              {t("adminDomains.cfDeleteFailuresDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-72 overflow-y-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("adminDomains.cfFailureSubdomain")}</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>{t("adminDomains.cfFailureError")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cfFailures?.map((f, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-mono text-xs">{f.subdomain_fqdn}</TableCell>
+                    <TableCell><Badge variant="outline" className="text-xs">{f.record_type}</Badge></TableCell>
+                    <TableCell className="text-xs text-destructive">{f.error}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCfFailures(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteDomain && deleteMutation.mutate({ id: deleteDomain.id, force: true, refund: refundCredits })}
+            >
+              {deleteMutation.isPending ? t("common.deleting") : t("adminDomains.forceDelete")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

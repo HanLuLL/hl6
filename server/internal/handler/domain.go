@@ -11,6 +11,15 @@ import (
 	"hl6-server/pkg/response"
 )
 
+// cfFailureRecord 记录一条 CF DNS 删除失败的信息
+type cfFailureRecord struct {
+	SubdomainFQDN       string `json:"subdomain_fqdn"`
+	RecordType          string `json:"record_type"`
+	RecordContent       string `json:"record_content"`
+	CloudflareRecordID  string `json:"cloudflare_record_id"`
+	Error               string `json:"error"`
+}
+
 type DomainHandler struct {
 	repo *repository.Repository
 }
@@ -214,34 +223,150 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 		return
 	}
 
+	force := c.Query("force") == "true"
+	refund := c.Query("refund") == "true"
+
 	domain, err := h.repo.FindDomain(uint(id))
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusNotFound, "domain not found", "error.domainNotFound")
 		return
 	}
 
-	// Check no active subdomains
-	count, err := h.repo.CountSubdomainsByDomain(domain.ID)
+	// 查询所有子域（含 DNS 记录）
+	subdomains, err := h.repo.ListSubdomainsByDomain(domain.ID)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
 		return
 	}
-	if count > 0 {
-		response.ErrorWithKey(c, http.StatusConflict, "cannot delete domain with active subdomains", "error.domainHasSubdomains")
+
+	// 删除 Cloudflare DNS 记录
+	var failures []cfFailureRecord
+	if domain.CloudflareAccountID != 0 {
+		cf, cfErr := cfForAccount(h.repo, domain.CloudflareAccountID)
+		if cfErr == nil {
+			for _, sub := range subdomains {
+				for _, rec := range sub.DNSRecords {
+					if rec.CloudflareRecordID == "" {
+						continue
+					}
+					if delErr := cf.DeleteRecord(c.Request.Context(), domain.CloudflareZoneID, rec.CloudflareRecordID); delErr != nil {
+						failures = append(failures, cfFailureRecord{
+							SubdomainFQDN:      sub.FQDN,
+							RecordType:         rec.Type,
+							RecordContent:      rec.Content,
+							CloudflareRecordID: rec.CloudflareRecordID,
+							Error:              delErr.Error(),
+						})
+					}
+				}
+			}
+		}
+	}
+
+	// 若有失败且未强制删除，返回 409
+	if len(failures) > 0 && !force {
+		c.JSON(http.StatusConflict, gin.H{
+			"code":    409,
+			"message": "some cloudflare dns records failed to delete",
+			"data":    gin.H{"failed_records": failures},
+		})
 		return
 	}
 
+	// 收集退还积分信息
+	type refundItem struct {
+		userID     uint
+		creditCost model.Credit
+		subFQDN    string
+	}
+	var refundItems []refundItem
+	if refund {
+		for _, sub := range subdomains {
+			if sub.UserID == 0 {
+				continue
+			}
+			// 查找该用户组对此域名的定价
+			user, uErr := h.repo.FindUserByID(sub.UserID)
+			if uErr != nil || user.GroupID == nil {
+				continue
+			}
+			access, aErr := h.repo.FindDomainGroupAccess(domain.ID, *user.GroupID)
+			if aErr != nil {
+				continue
+			}
+			if access.CreditCost != 0 {
+				refundItems = append(refundItems, refundItem{
+					userID:     sub.UserID,
+					creditCost: access.CreditCost,
+					subFQDN:    sub.FQDN,
+				})
+			}
+		}
+	}
+
+	// 收集子域 ID 列表
+	subdomainIDs := make([]uint, len(subdomains))
+	for i, s := range subdomains {
+		subdomainIDs[i] = s.ID
+	}
+
+	// 开启事务进行级联删除
 	tx := h.repo.DB.Begin()
+
+	// 退还积分
+	if refund {
+		for _, item := range refundItems {
+			descParams, _ := json.Marshal(map[string]interface{}{"fqdn": item.subFQDN})
+			if item.creditCost > 0 {
+				// 认领时扣了积分 → 退还
+				if rErr := h.repo.RefundCredits(tx, item.userID, item.creditCost, "credit.subdomainDeletedRefund", descParams); rErr != nil {
+					tx.Rollback()
+					response.ErrorWithKey(c, http.StatusInternalServerError, "failed to refund credits", "error.failedToRefundCredits")
+					return
+				}
+			} else {
+				// 认领时送了积分（负价）→ 逆向扣除
+				if dErr := h.repo.DeductCredits(tx, item.userID, -item.creditCost, "credit.subdomainDeletedDeduct", descParams); dErr != nil {
+					tx.Rollback()
+					response.ErrorWithKey(c, http.StatusInternalServerError, "failed to deduct credits", "error.failedToDeductCredits")
+					return
+				}
+			}
+		}
+	}
+
+	// 批量删除 DNS 记录
+	if len(subdomainIDs) > 0 {
+		if err := tx.Where("subdomain_id IN ?", subdomainIDs).Delete(&model.DNSRecord{}).Error; err != nil {
+			tx.Rollback()
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete dns records", "error.failedToDeleteDNSRecord")
+			return
+		}
+		// 批量删除子域
+		if err := tx.Where("domain_id = ?", domain.ID).Delete(&model.Subdomain{}).Error; err != nil {
+			tx.Rollback()
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete subdomains", "error.failedToDeleteSubdomain")
+			return
+		}
+	}
+
+	// 删除域名（含 DomainGroupAccess）
 	if err := h.repo.DeleteDomain(tx, domain.ID); err != nil {
 		tx.Rollback()
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete domain", "error.failedToDeleteDomain")
 		return
 	}
 
-	// Audit log
+	// 审计日志
 	adminUser, _ := c.Get("db_user")
 	if admin, ok := adminUser.(model.User); ok {
-		details, _ := json.Marshal(map[string]interface{}{"domain_name": domain.Name})
+		details, _ := json.Marshal(map[string]interface{}{
+			"domain_name":       domain.Name,
+			"subdomain_count":   len(subdomains),
+			"dns_record_count":  func() int { n := 0; for _, s := range subdomains { n += len(s.DNSRecords) }; return n }(),
+			"refunded":          refund,
+			"cf_failures_count": len(failures),
+		})
 		tx.Create(&model.AuditLog{
 			UserID:     admin.ID,
 			Action:     "admin_delete_domain",

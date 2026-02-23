@@ -24,7 +24,8 @@
     "active": "有効",
     "inactive": "無効",
     "copied": "コピーしました",
-    "confirm": "確認"
+    "confirm": "確認",
+    "deleting": "削除中..."
   },
   "landing": {
     "dashboard": "ダッシュボード",
@@ -195,7 +196,18 @@
     "negativeCostHint": "マイナス価格：ユーザーはこのドメインを取得するとクレジットを獲得します",
     "noGroupAccess": "アクセス権のあるグループがありません。少なくとも1つ追加してください。",
     "maxDnsRecords": "DNS レコード上限",
-    "maxDnsRecordsHint": "空欄で無制限"
+    "maxDnsRecordsHint": "空欄で無制限",
+    "deleteDomain": "ドメインを削除",
+    "deleteConfirm": "この操作はドメイン {{name}} とすべてのサブドメイン・DNSレコードを完全に削除します。",
+    "typeToConfirm": "確認のため {{name}} を入力してください",
+    "domainDeleted": "ドメインを削除しました",
+    "refundCredits": "クレジットを返金",
+    "refundCreditsHint": "現在の価格に基づいて影響を受けたユーザーにクレジットを返金します",
+    "cfDeleteFailures": "CloudflareのDNSレコード削除に失敗",
+    "cfDeleteFailuresDesc": "以下のレコードがCloudflareから削除できませんでした。強制削除またはキャンセルを選択してください。",
+    "forceDelete": "強制削除（CFエラーを無視）",
+    "cfFailureSubdomain": "サブドメイン",
+    "cfFailureError": "エラー"
   },
   "auditLogs": {
     "title": "監査ログ",

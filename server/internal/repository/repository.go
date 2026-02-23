@@ -23,6 +23,12 @@ func (r *Repository) FindUserByLogtoID(logtoID string) (*model.User, error) {
 	return &user, err
 }
 
+func (r *Repository) FindUserByID(id uint) (*model.User, error) {
+	var user model.User
+	err := r.DB.Preload("Group").First(&user, id).Error
+	return &user, err
+}
+
 func (r *Repository) CreateUser(user *model.User) error {
 	return r.DB.Create(user).Error
 }
@@ -102,6 +108,12 @@ func (r *Repository) CreateSubdomain(sub *model.Subdomain) error {
 
 func (r *Repository) DeleteSubdomain(id uint) error {
 	return r.DB.Delete(&model.Subdomain{}, id).Error
+}
+
+func (r *Repository) ListSubdomainsByDomain(domainID uint) ([]model.Subdomain, error) {
+	var subs []model.Subdomain
+	err := r.DB.Where("domain_id = ?", domainID).Preload("Domain").Preload("DNSRecords").Find(&subs).Error
+	return subs, err
 }
 
 // DNS Records

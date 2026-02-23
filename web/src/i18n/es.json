@@ -24,7 +24,8 @@
     "active": "Activo",
     "inactive": "Inactivo",
     "copied": "Copiado",
-    "confirm": "Confirmar"
+    "confirm": "Confirmar",
+    "deleting": "Eliminando..."
   },
   "landing": {
     "dashboard": "Panel de control",
@@ -195,7 +196,18 @@
     "negativeCostHint": "Precio negativo: los usuarios ganarán créditos al reclamar este dominio",
     "noGroupAccess": "Ningún grupo tiene acceso. Añade al menos un grupo.",
     "maxDnsRecords": "Límite de registros DNS",
-    "maxDnsRecordsHint": "Vacío para ilimitado"
+    "maxDnsRecordsHint": "Vacío para ilimitado",
+    "deleteDomain": "Eliminar dominio",
+    "deleteConfirm": "Esta acción eliminará permanentemente el dominio {{name}} y todos sus subdominios y registros DNS.",
+    "typeToConfirm": "Escribe {{name}} para confirmar",
+    "domainDeleted": "Dominio eliminado",
+    "refundCredits": "Reembolsar créditos",
+    "refundCreditsHint": "Reembolsa créditos a los usuarios afectados según el precio actual",
+    "cfDeleteFailures": "Error al eliminar registros DNS de Cloudflare",
+    "cfDeleteFailuresDesc": "Los siguientes registros no se pudieron eliminar de Cloudflare. Puedes forzar la eliminación o cancelar.",
+    "forceDelete": "Forzar eliminación (ignorar errores CF)",
+    "cfFailureSubdomain": "Subdominio",
+    "cfFailureError": "Error"
   },
   "auditLogs": {
     "title": "Registros de auditoría",

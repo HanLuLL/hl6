@@ -4,9 +4,11 @@ const BASE_URL = "/api/v1";
 
 export class ApiError extends Error {
   messageKey?: string;
-  constructor(message: string, messageKey?: string) {
+  data?: unknown;
+  constructor(message: string, messageKey?: string, data?: unknown) {
     super(message);
     this.messageKey = messageKey;
+    this.data = data;
   }
 }
 
@@ -44,7 +46,7 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
-    throw new ApiError(body.message || res.statusText, body.message_key);
+    throw new ApiError(body.message || res.statusText, body.message_key, body.data);
   }
 
   return res.json();
@@ -86,8 +88,8 @@ export const api = {
     request<ApiResponse<{ domain: import("@/types").Domain; group_access: import("@/types").DomainGroupAccess[] }>>("/admin/domains", { method: "POST", body: JSON.stringify(data) }),
   adminUpdateDomain: (id: number, data: { cloudflare_zone_id?: string; cloudflare_account_id?: number; is_active?: boolean; description?: string; group_access?: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
     request<ApiResponse<{ domain: import("@/types").Domain; group_access: import("@/types").DomainGroupAccess[] }>>(`/admin/domains/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-  adminDeleteDomain: (id: number) =>
-    request<ApiResponse<{ message: string }>>(`/admin/domains/${id}`, { method: "DELETE" }),
+  adminDeleteDomain: (id: number, options?: { force?: boolean; refund?: boolean }) =>
+    request<ApiResponse<{ message: string }>>(`/admin/domains/${id}?force=${options?.force ?? false}&refund=${options?.refund ?? false}`, { method: "DELETE" }),
   adminListDomainsFull: () =>
     request<ApiResponse<import("@/types").DomainWithGroupAccess[]>>("/admin/domains-full"),
   adminListCloudflareZones: (accountId: number) =>
