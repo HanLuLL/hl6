@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,12 +34,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-users", page],
+    queryKey: ["admin-users", page, debouncedSearch],
     queryFn: async () => {
-      const res = await api.adminListUsers(page, 50);
+      const res = await api.adminListUsers(page, 50, debouncedSearch);
       return { users: res.data, total: res.total };
     },
     staleTime: 30_000,
@@ -83,48 +94,6 @@ export default function AdminUsersPage() {
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("adminUsers.title")}</h1>
-          <p className="text-muted-foreground">{t("adminUsers.subtitle")}</p>
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-4 w-32" />
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("adminUsers.name")}</TableHead>
-                  <TableHead>{t("adminUsers.email")}</TableHead>
-                  <TableHead>{t("adminUsers.group")}</TableHead>
-                  <TableHead>{t("adminUsers.role")}</TableHead>
-                  <TableHead>{t("adminUsers.joined")}</TableHead>
-                  <TableHead className="text-right">{t("adminUsers.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[...Array(5)].map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-36" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -133,10 +102,20 @@ export default function AdminUsersPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            {t("adminUsers.totalUsers", { count: data?.total ?? 0 })}
-          </CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          {isLoading ? (
+            <Skeleton className="h-4 w-32" />
+          ) : (
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t("adminUsers.totalUsers", { count: data?.total ?? 0 })}
+            </CardTitle>
+          )}
+          <Input
+            placeholder={t("adminUsers.searchPlaceholder")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-xs"
+          />
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -151,32 +130,45 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.users?.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{user.group?.name ?? "-"}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="sm" onClick={() => {
-                      setChangeGroupUserId(user.id);
-                      setSelectedGroupId(user.group_id ? String(user.group_id) : "");
-                    }}>
-                      {t("adminUsers.changeGroup")}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setGrantUserId(user.id)}>
-                      {t("adminUsers.grantCredits")}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {isLoading ? (
+                [...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                data?.users?.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{user.group?.name ?? "-"}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right space-x-1">
+                      <Button variant="ghost" size="sm" onClick={() => {
+                        setChangeGroupUserId(user.id);
+                        setSelectedGroupId(user.group_id ? String(user.group_id) : "");
+                      }}>
+                        {t("adminUsers.changeGroup")}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setGrantUserId(user.id)}>
+                        {t("adminUsers.grantCredits")}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

@@ -5,29 +5,33 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
+	"hl6-server/internal/config"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/ctxutil"
+	"hl6-server/internal/helpers"
 	"hl6-server/pkg/response"
 	"hl6-server/pkg/validator"
 )
 
 type SubdomainHandler struct {
 	repo *repository.Repository
+	cfg  *config.Config
 }
 
-func NewSubdomainHandler(repo *repository.Repository) *SubdomainHandler {
-	return &SubdomainHandler{repo: repo}
+func NewSubdomainHandler(repo *repository.Repository, cfg *config.Config) *SubdomainHandler {
+	return &SubdomainHandler{repo: repo, cfg: cfg}
 }
 
 func (h *SubdomainHandler) List(c *gin.Context) {
-	user := h.getUser(c)
+	user := ctxutil.GetUser(c)
 	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 	subs, err := h.repo.ListSubdomainsByUser(user.ID)
@@ -39,12 +43,16 @@ func (h *SubdomainHandler) List(c *gin.Context) {
 }
 
 func (h *SubdomainHandler) Get(c *gin.Context) {
-	user := h.getUser(c)
+	user := ctxutil.GetUser(c)
 	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-	sub, err := h.repo.FindSubdomain(uint(id))
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	sub, err := h.repo.FindSubdomain(id)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusNotFound, "subdomain not found", "error.subdomainNotFound")
 		return
@@ -57,8 +65,9 @@ func (h *SubdomainHandler) Get(c *gin.Context) {
 }
 
 func (h *SubdomainHandler) Claim(c *gin.Context) {
-	user := h.getUser(c)
+	user := ctxutil.GetUser(c)
 	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 	var body struct {
@@ -103,7 +112,7 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 	}
 
 	fqdn := fmt.Sprintf("%s.%s", body.Name, domain.Name)
-	tx := h.repo.DB.Begin()
+	tx := h.repo.GetDB().Begin()
 
 	fqdnParams, _ := json.Marshal(map[string]string{"fqdn": fqdn})
 
@@ -126,10 +135,11 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 	}
 
 	sub := &model.Subdomain{
-		DomainID: domain.ID,
-		UserID:   user.ID,
-		Name:     body.Name,
-		FQDN:     fqdn,
+		DomainID:  domain.ID,
+		UserID:    user.ID,
+		Name:      body.Name,
+		FQDN:      fqdn,
+		ClaimCost: creditCost,
 	}
 	if err := tx.Create(sub).Error; err != nil {
 		tx.Rollback()
@@ -157,12 +167,16 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 }
 
 func (h *SubdomainHandler) Release(c *gin.Context) {
-	user := h.getUser(c)
+	user := ctxutil.GetUser(c)
 	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-	sub, err := h.repo.FindSubdomain(uint(id))
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	sub, err := h.repo.FindSubdomain(id)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusNotFound, "subdomain not found", "error.subdomainNotFound")
 		return
@@ -174,7 +188,7 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 
 	// Delete all CF records first - all must succeed before DB cleanup
 	if len(sub.DNSRecords) > 0 {
-		cf, err := cfForAccount(h.repo, sub.Domain.CloudflareAccountID)
+		cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
 		if err != nil {
 			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
 			return
@@ -189,7 +203,7 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 		}
 	}
 
-	tx := h.repo.DB.Begin()
+	tx := h.repo.GetDB().Begin()
 	tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{})
 	tx.Delete(sub)
 
@@ -204,15 +218,4 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 	tx.Commit()
 
 	response.OK(c, gin.H{"message": "subdomain released"})
-}
-
-func (h *SubdomainHandler) getUser(c *gin.Context) *model.User {
-	logtoID := c.GetString("user_id")
-	user, err := h.repo.FindUserByLogtoID(logtoID)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
-		c.Abort()
-		return nil
-	}
-	return user
 }

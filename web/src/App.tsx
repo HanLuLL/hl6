@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { RootLayout } from "@/components/layout/root-layout";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import LandingPage from "@/pages/landing";
 import CallbackPage from "@/pages/callback";
@@ -55,7 +56,7 @@ function ProtectedRoute() {
     return <Navigate to="/" replace />;
   }
 
-  return <RootLayout><Outlet /></RootLayout>;
+  return <RootLayout><ErrorBoundary><Outlet /></ErrorBoundary></RootLayout>;
 }
 
 function AdminRoute() {

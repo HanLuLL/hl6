@@ -25,7 +25,12 @@
     "inactive": "無効",
     "copied": "コピーしました",
     "confirm": "確認",
-    "deleting": "削除中..."
+    "deleting": "削除中...",
+    "search": "検索",
+    "searchPlaceholder": "検索...",
+    "errorTitle": "エラーが発生しました",
+    "errorMessage": "ページの読み込み中に予期しないエラーが発生しました。もう一度お試しください。",
+    "retry": "再試行"
   },
   "landing": {
     "dashboard": "ダッシュボード",
@@ -136,7 +141,10 @@
     "proxied": "プロキシ",
     "update": "更新",
     "recordCreated": "レコードを作成しました",
-    "recordUpdated": "レコードを更新しました"
+    "recordUpdated": "レコードを更新しました",
+    "invalidIPv4": "有効なIPv4アドレスを入力してください",
+    "invalidIPv6": "有効なIPv6アドレスを入力してください",
+    "invalidHostname": "有効なホスト名を入力してください"
   },
   "recordTable": {
     "type": "タイプ",
@@ -169,7 +177,8 @@
     "group": "グループ",
     "changeGroup": "グループを変更",
     "selectGroup": "グループを選択",
-    "groupChanged": "ユーザーグループを更新しました"
+    "groupChanged": "ユーザーグループを更新しました",
+    "searchPlaceholder": "名前またはメールで検索..."
   },
   "adminDomains": {
     "title": "ドメイン管理",
@@ -217,7 +226,8 @@
     "user": "ユーザー",
     "resource": "リソース",
     "details": "詳細",
-    "time": "時刻"
+    "time": "時刻",
+    "searchPlaceholder": "アクションまたはリソースで検索..."
   },
   "adminGroups": {
     "title": "ユーザーグループ管理",

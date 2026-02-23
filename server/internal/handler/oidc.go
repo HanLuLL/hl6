@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -31,12 +32,25 @@ func NewOIDCHandler(repo *repository.Repository, cfg *config.Config) *OIDCHandle
 	return &OIDCHandler{repo: repo, cfg: cfg}
 }
 
+// setSessionCookie sets a cookie with full attributes including SameSite=Lax.
+func (h *OIDCHandler) setSessionCookie(c *gin.Context, name, value string, maxAge int) {
+	secure := strings.HasPrefix(h.cfg.FrontendURL, "https")
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     name,
+		Value:    value,
+		MaxAge:   maxAge,
+		Path:     "/",
+		Secure:   secure,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
 func (h *OIDCHandler) Login(c *gin.Context) {
 	state := generateRandomState()
 
 	// Store state in httpOnly cookie
-	secure := strings.HasPrefix(h.cfg.FrontendURL, "https")
-	c.SetCookie("hl6_state", state, 900, "/", "", secure, true) // 15 min TTL
+	h.setSessionCookie(c, "hl6_state", state, 900) // 15 min TTL
 
 	redirectURI := fmt.Sprintf("%s/api/v1/auth/callback", h.cfg.FrontendURL)
 	authURL := fmt.Sprintf("%s/oidc/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
@@ -61,21 +75,22 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	}
 
 	// Clear state cookie
-	secure := strings.HasPrefix(h.cfg.FrontendURL, "https")
-	c.SetCookie("hl6_state", "", -1, "/", "", secure, true)
+	h.setSessionCookie(c, "hl6_state", "", -1)
 
 	// 2. Exchange code for tokens
 	redirectURI := fmt.Sprintf("%s/api/v1/auth/callback", h.cfg.FrontendURL)
 	tokenResp, err := h.exchangeCode(code, redirectURI)
 	if err != nil {
-		c.String(http.StatusBadGateway, "token exchange failed: %v", err)
+		log.Printf("token exchange failed: %v", err)
+		c.String(http.StatusBadGateway, "authentication failed")
 		return
 	}
 
 	// 3. Parse ID token to get user info
 	idTokenStr, ok := tokenResp["id_token"].(string)
 	if !ok {
-		c.String(http.StatusBadGateway, "no id_token in response")
+		log.Printf("no id_token in OIDC response")
+		c.String(http.StatusBadGateway, "authentication failed")
 		return
 	}
 
@@ -83,7 +98,8 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	jwksURL := h.cfg.LogtoEndpoint + "/oidc/jwks"
 	keySet, err := jwk.Fetch(c.Request.Context(), jwksURL)
 	if err != nil {
-		c.String(http.StatusBadGateway, "failed to fetch JWKS: %v", err)
+		log.Printf("failed to fetch JWKS: %v", err)
+		c.String(http.StatusBadGateway, "authentication failed")
 		return
 	}
 
@@ -93,7 +109,8 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		jwt.WithAcceptableSkew(2*time.Minute),
 	)
 	if err != nil {
-		c.String(http.StatusBadGateway, "invalid id_token: %v", err)
+		log.Printf("invalid id_token: %v", err)
+		c.String(http.StatusBadGateway, "authentication failed")
 		return
 	}
 
@@ -126,7 +143,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 			user.GroupID = &defaultGroup.ID
 		}
 
-		tx := h.repo.DB.Begin()
+		tx := h.repo.GetDB().Begin()
 
 		if err := tx.Create(user).Error; err != nil {
 			tx.Rollback()
@@ -151,7 +168,9 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		if bonusStr, err := h.repo.GetSystemConfig("registration_bonus_credits"); err == nil {
 			if bonus, err := strconv.ParseFloat(bonusStr, 64); err == nil && bonus > 0 {
 				amount := model.CreditFromFloat(bonus)
-				if err := h.repo.GrantCredits(tx, user.ID, amount, "txn.registrationBonus", nil); err == nil {
+				if err := h.repo.GrantCredits(tx, user.ID, amount, "txn.registrationBonus", nil); err != nil {
+					log.Printf("failed to grant registration bonus for user %d: %v", user.ID, err)
+				} else {
 					bonusDetails, _ := json.Marshal(map[string]interface{}{"amount": amount})
 					tx.Create(&model.AuditLog{
 						UserID:     user.ID,
@@ -191,15 +210,14 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 	// 6. Set session cookie
 	maxAge := 7 * 24 * 60 * 60 // 7 days
-	c.SetCookie("hl6_session", sessionToken, maxAge, "/", "", secure, true)
+	h.setSessionCookie(c, "hl6_session", sessionToken, maxAge)
 
 	// 7. Redirect to dashboard
 	c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/dashboard")
 }
 
 func (h *OIDCHandler) Logout(c *gin.Context) {
-	secure := strings.HasPrefix(h.cfg.FrontendURL, "https")
-	c.SetCookie("hl6_session", "", -1, "/", "", secure, true)
+	h.setSessionCookie(c, "hl6_session", "", -1)
 
 	logoutURL := fmt.Sprintf("%s/oidc/session/end?post_logout_redirect_uri=%s",
 		h.cfg.LogtoEndpoint,
@@ -245,6 +263,8 @@ func (h *OIDCHandler) issueSessionJWT(logtoID string) (string, error) {
 	now := time.Now()
 	token, err := jwt.NewBuilder().
 		Subject(logtoID).
+		Issuer("hl6").
+		Audience([]string{"hl6"}).
 		IssuedAt(now).
 		Expiration(now.Add(7 * 24 * time.Hour)).
 		Build()

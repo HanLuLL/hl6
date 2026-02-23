@@ -2,14 +2,21 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/ctxutil"
+	"hl6-server/internal/helpers"
 	"hl6-server/pkg/response"
 )
+
+var allowedConfigKeys = map[string]bool{
+	"registration_bonus_credits": true,
+}
 
 type AdminHandler struct {
 	repo *repository.Repository
@@ -22,6 +29,7 @@ func NewAdminHandler(repo *repository.Repository) *AdminHandler {
 func (h *AdminHandler) ListUsers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "50"))
+	search := c.Query("search")
 	if page < 1 {
 		page = 1
 	}
@@ -29,7 +37,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		perPage = 50
 	}
 
-	users, total, err := h.repo.ListUsers(page, perPage)
+	users, total, err := h.repo.ListUsers(page, perPage, search)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list users", "error.failedToListUsers")
 		return
@@ -49,6 +57,7 @@ func (h *AdminHandler) Stats(c *gin.Context) {
 func (h *AdminHandler) AuditLogs(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "15"))
+	search := c.Query("search")
 	if page < 1 {
 		page = 1
 	}
@@ -56,7 +65,7 @@ func (h *AdminHandler) AuditLogs(c *gin.Context) {
 		perPage = 15
 	}
 
-	logs, total, err := h.repo.ListAuditLogs(page, perPage)
+	logs, total, err := h.repo.ListAuditLogs(page, perPage, search)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list audit logs", "error.failedToListAuditLogs")
 		return
@@ -102,8 +111,7 @@ func (h *AdminHandler) CreateGroup(c *gin.Context) {
 		group.IsDefault = true
 	}
 
-	adminUser, _ := c.Get("db_user")
-	if admin, ok := adminUser.(model.User); ok {
+	if admin := ctxutil.GetUser(c); admin != nil {
 		details, _ := json.Marshal(map[string]interface{}{"group_name": body.Name})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:     admin.ID,
@@ -117,8 +125,11 @@ func (h *AdminHandler) CreateGroup(c *gin.Context) {
 }
 
 func (h *AdminHandler) UpdateGroup(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-	group, err := h.repo.FindUserGroup(uint(id))
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	group, err := h.repo.FindUserGroup(id)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusNotFound, "group not found", "error.groupNotFound")
 		return
@@ -148,8 +159,7 @@ func (h *AdminHandler) UpdateGroup(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update group", "error.failedToUpdateGroup")
 		return
 	}
-	adminUser, _ := c.Get("db_user")
-	if admin, ok := adminUser.(model.User); ok {
+	if admin := ctxutil.GetUser(c); admin != nil {
 		details, _ := json.Marshal(map[string]interface{}{"group_name": group.Name})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:     admin.ID,
@@ -163,7 +173,10 @@ func (h *AdminHandler) UpdateGroup(c *gin.Context) {
 }
 
 func (h *AdminHandler) DeleteGroup(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
 	migrateToStr := c.Query("migrate_to")
 	if migrateToStr == "" {
 		response.ErrorWithKey(c, http.StatusBadRequest, "migrate_to parameter is required", "error.migrateToRequired")
@@ -174,7 +187,7 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid migrate_to parameter", "error.invalidMigrateTo")
 		return
 	}
-	if uint(id) == uint(migrateTo) {
+	if id == uint(migrateTo) {
 		response.ErrorWithKey(c, http.StatusBadRequest, "cannot migrate to the same group being deleted", "error.cannotMigrateToSameGroup")
 		return
 	}
@@ -185,7 +198,7 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 		return
 	}
 
-	group, err := h.repo.FindUserGroup(uint(id))
+	group, err := h.repo.FindUserGroup(id)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusNotFound, "group not found", "error.groupNotFound")
 		return
@@ -197,7 +210,7 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 		return
 	}
 
-	tx := h.repo.DB.Begin()
+	tx := h.repo.GetDB().Begin()
 
 	// Migrate users
 	if err := tx.Model(&model.User{}).Where("group_id = ?", group.ID).Update("group_id", targetGroup.ID).Error; err != nil {
@@ -230,8 +243,7 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 	}
 
 	tx.Commit()
-	adminUser, _ := c.Get("db_user")
-	if admin, ok := adminUser.(model.User); ok {
+	if admin := ctxutil.GetUser(c); admin != nil {
 		details, _ := json.Marshal(map[string]interface{}{"group_name": group.Name, "migrated_to": targetGroup.Name})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:     admin.ID,
@@ -246,7 +258,10 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 
 // Update user's group
 func (h *AdminHandler) UpdateUserGroup(c *gin.Context) {
-	userID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+	userID, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
 
 	var body struct {
 		GroupID uint `json:"group_id" binding:"required"`
@@ -262,18 +277,17 @@ func (h *AdminHandler) UpdateUserGroup(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.UpdateUserGroupID(uint(userID), body.GroupID); err != nil {
+	if err := h.repo.UpdateUserGroupID(userID, body.GroupID); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update user group", "error.failedToUpdateUserGroup")
 		return
 	}
-	adminUser, _ := c.Get("db_user")
-	if admin, ok := adminUser.(model.User); ok {
+	if admin := ctxutil.GetUser(c); admin != nil {
 		details, _ := json.Marshal(map[string]interface{}{"target_user_id": userID, "new_group_id": body.GroupID})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:     admin.ID,
 			Action:     "admin_change_user_group",
 			Resource:   "user",
-			ResourceID: uint(userID),
+			ResourceID: userID,
 			Details:    details,
 		})
 	}
@@ -298,14 +312,20 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 		return
 	}
 
+	for key := range body {
+		if !allowedConfigKeys[key] {
+			response.Error(c, http.StatusBadRequest, fmt.Sprintf("config key %q is not allowed", key))
+			return
+		}
+	}
+
 	for key, value := range body {
 		if err := h.repo.SetSystemConfig(key, value); err != nil {
 			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
 			return
 		}
 	}
-	adminUser, _ := c.Get("db_user")
-	if admin, ok := adminUser.(model.User); ok {
+	if admin := ctxutil.GetUser(c); admin != nil {
 		details, _ := json.Marshal(body)
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:   admin.ID,

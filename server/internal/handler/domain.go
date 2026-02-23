@@ -3,35 +3,37 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"hl6-server/internal/config"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/ctxutil"
+	"hl6-server/internal/helpers"
 	"hl6-server/pkg/response"
 )
 
 // cfFailureRecord 记录一条 CF DNS 删除失败的信息
 type cfFailureRecord struct {
-	SubdomainFQDN       string `json:"subdomain_fqdn"`
-	RecordType          string `json:"record_type"`
-	RecordContent       string `json:"record_content"`
-	CloudflareRecordID  string `json:"cloudflare_record_id"`
-	Error               string `json:"error"`
+	SubdomainFQDN      string `json:"subdomain_fqdn"`
+	RecordType         string `json:"record_type"`
+	RecordContent      string `json:"record_content"`
+	CloudflareRecordID string `json:"cloudflare_record_id"`
+	Error              string `json:"error"`
 }
 
 type DomainHandler struct {
 	repo *repository.Repository
+	cfg  *config.Config
 }
 
-func NewDomainHandler(repo *repository.Repository) *DomainHandler {
-	return &DomainHandler{repo: repo}
+func NewDomainHandler(repo *repository.Repository, cfg *config.Config) *DomainHandler {
+	return &DomainHandler{repo: repo, cfg: cfg}
 }
 
 func (h *DomainHandler) List(c *gin.Context) {
-	logtoID := c.GetString("user_id")
-	user, err := h.repo.FindUserByLogtoID(logtoID)
-	if err != nil {
+	user := ctxutil.GetUser(c)
+	if user == nil {
 		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
@@ -51,8 +53,8 @@ func (h *DomainHandler) List(c *gin.Context) {
 
 type groupAccessInput struct {
 	GroupID       uint    `json:"group_id" binding:"required"`
-	CreditCost    float64 `json:"credit_cost"`
-	MaxDNSRecords *int    `json:"max_dns_records"`
+	CreditCost   float64 `json:"credit_cost"`
+	MaxDNSRecords *int   `json:"max_dns_records"`
 }
 
 func (h *DomainHandler) AdminCreate(c *gin.Context) {
@@ -77,7 +79,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		Description:         body.Description,
 	}
 
-	tx := h.repo.DB.Begin()
+	tx := h.repo.GetDB().Begin()
 	if err := tx.Create(domain).Error; err != nil {
 		tx.Rollback()
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create domain", "error.failedToCreateDomain")
@@ -101,8 +103,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	tx.Commit()
 
 	// Audit log
-	adminUser, _ := c.Get("db_user")
-	if admin, ok := adminUser.(model.User); ok {
+	if admin := ctxutil.GetUser(c); admin != nil {
 		details, _ := json.Marshal(map[string]interface{}{"domain_name": body.Name, "zone_id": body.CloudflareZoneID})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:     admin.ID,
@@ -119,8 +120,11 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 }
 
 func (h *DomainHandler) AdminUpdate(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-	domain, err := h.repo.FindDomain(uint(id))
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	domain, err := h.repo.FindDomain(id)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusNotFound, "domain not found", "error.domainNotFound")
 		return
@@ -137,7 +141,7 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		return
 	}
 
-	tx := h.repo.DB.Begin()
+	tx := h.repo.GetDB().Begin()
 
 	if body.CloudflareZoneID != nil {
 		domain.CloudflareZoneID = *body.CloudflareZoneID
@@ -175,8 +179,7 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 
 	tx.Commit()
 
-	adminUser, _ := c.Get("db_user")
-	if admin, ok := adminUser.(model.User); ok {
+	if admin := ctxutil.GetUser(c); admin != nil {
 		details, _ := json.Marshal(map[string]interface{}{"domain_name": domain.Name})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:     admin.ID,
@@ -217,16 +220,15 @@ func (h *DomainHandler) AdminListDomainsFull(c *gin.Context) {
 }
 
 func (h *DomainHandler) AdminDelete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusBadRequest, "invalid ID", "error.invalidID")
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
 		return
 	}
 
 	force := c.Query("force") == "true"
 	refund := c.Query("refund") == "true"
 
-	domain, err := h.repo.FindDomain(uint(id))
+	domain, err := h.repo.FindDomain(id)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusNotFound, "domain not found", "error.domainNotFound")
 		return
@@ -242,7 +244,7 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 	// 删除 Cloudflare DNS 记录
 	var failures []cfFailureRecord
 	if domain.CloudflareAccountID != 0 {
-		cf, cfErr := cfForAccount(h.repo, domain.CloudflareAccountID)
+		cf, cfErr := cfForAccount(h.repo, h.cfg, domain.CloudflareAccountID)
 		if cfErr == nil {
 			for _, sub := range subdomains {
 				for _, rec := range sub.DNSRecords {
@@ -273,11 +275,11 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 		return
 	}
 
-	// 收集退还积分信息
+	// 收集退还积分信息 — 使用 ClaimCost 而非 re-query 当前组价格
 	type refundItem struct {
-		userID     uint
-		creditCost model.Credit
-		subFQDN    string
+		userID    uint
+		claimCost model.Credit
+		subFQDN   string
 	}
 	var refundItems []refundItem
 	if refund {
@@ -285,22 +287,27 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 			if sub.UserID == 0 {
 				continue
 			}
-			// 查找该用户组对此域名的定价
-			user, uErr := h.repo.FindUserByID(sub.UserID)
-			if uErr != nil || user.GroupID == nil {
+			cost := sub.ClaimCost
+			// Fallback for historical subdomains created before ClaimCost was added
+			if cost == 0 {
+				user, uErr := h.repo.FindUserByID(sub.UserID)
+				if uErr != nil || user.GroupID == nil {
+					continue
+				}
+				access, aErr := h.repo.FindDomainGroupAccess(domain.ID, *user.GroupID)
+				if aErr != nil {
+					continue
+				}
+				cost = access.CreditCost
+			}
+			if cost == 0 {
 				continue
 			}
-			access, aErr := h.repo.FindDomainGroupAccess(domain.ID, *user.GroupID)
-			if aErr != nil {
-				continue
-			}
-			if access.CreditCost != 0 {
-				refundItems = append(refundItems, refundItem{
-					userID:     sub.UserID,
-					creditCost: access.CreditCost,
-					subFQDN:    sub.FQDN,
-				})
-			}
+			refundItems = append(refundItems, refundItem{
+				userID:    sub.UserID,
+				claimCost: cost,
+				subFQDN:   sub.FQDN,
+			})
 		}
 	}
 
@@ -311,22 +318,22 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 	}
 
 	// 开启事务进行级联删除
-	tx := h.repo.DB.Begin()
+	tx := h.repo.GetDB().Begin()
 
 	// 退还积分
 	if refund {
 		for _, item := range refundItems {
 			descParams, _ := json.Marshal(map[string]interface{}{"fqdn": item.subFQDN})
-			if item.creditCost > 0 {
-				// 认领时扣了积分 → 退还
-				if rErr := h.repo.RefundCredits(tx, item.userID, item.creditCost, "txn.subdomainDeletedRefund", descParams); rErr != nil {
+			if item.claimCost > 0 {
+				// 认领时扣了积分 -> 退还
+				if rErr := h.repo.RefundCredits(tx, item.userID, item.claimCost, "txn.subdomainDeletedRefund", descParams); rErr != nil {
 					tx.Rollback()
 					response.ErrorWithKey(c, http.StatusInternalServerError, "failed to refund credits", "error.failedToRefundCredits")
 					return
 				}
 			} else {
-				// 认领时送了积分（负价）→ 逆向扣除
-				if dErr := h.repo.DeductCredits(tx, item.userID, -item.creditCost, "txn.subdomainDeletedDeduct", descParams); dErr != nil {
+				// 认领时送了积分（负价）-> 逆向扣除
+				if dErr := h.repo.DeductCredits(tx, item.userID, -item.claimCost, "txn.subdomainDeletedDeduct", descParams); dErr != nil {
 					tx.Rollback()
 					response.ErrorWithKey(c, http.StatusInternalServerError, "failed to deduct credits", "error.failedToDeductCredits")
 					return
@@ -358,8 +365,7 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 	}
 
 	// 审计日志
-	adminUser, _ := c.Get("db_user")
-	if admin, ok := adminUser.(model.User); ok {
+	if admin := ctxutil.GetUser(c); admin != nil {
 		details, _ := json.Marshal(map[string]interface{}{
 			"domain_name":       domain.Name,
 			"subdomain_count":   len(subdomains),

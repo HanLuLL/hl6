@@ -2,24 +2,27 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"hl6-server/internal/config"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/ctxutil"
+	"hl6-server/internal/helpers"
 	"hl6-server/pkg/response"
 	"hl6-server/pkg/validator"
 )
 
 type DNSHandler struct {
 	repo *repository.Repository
+	cfg  *config.Config
 }
 
-func NewDNSHandler(repo *repository.Repository) *DNSHandler {
-	return &DNSHandler{repo: repo}
+func NewDNSHandler(repo *repository.Repository, cfg *config.Config) *DNSHandler {
+	return &DNSHandler{repo: repo, cfg: cfg}
 }
 
 func (h *DNSHandler) ListRecords(c *gin.Context) {
@@ -86,7 +89,7 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 	}
 
 	// 检查域名+用户组的 DNS 记录数上限
-	user := h.getUserFromContext(c)
+	user := ctxutil.GetUser(c)
 	if user != nil && user.GroupID != nil {
 		access, err := h.repo.FindDomainGroupAccess(sub.DomainID, *user.GroupID)
 		if err == nil && access.MaxDNSRecords != nil {
@@ -107,7 +110,7 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 		body.TTL = 1
 	}
 
-	cf, err := cfForAccount(h.repo, sub.Domain.CloudflareAccountID)
+	cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
 		return
@@ -115,7 +118,8 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 
 	cfID, err := cf.CreateRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, body.Type, sub.FQDN, body.Content, body.TTL, body.Proxied)
 	if err != nil {
-		response.ErrorWithKey(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err), "error.cloudflareError")
+		log.Printf("cloudflare CreateRecord error: %v", err)
+		response.ErrorWithKey(c, http.StatusBadGateway, "cloudflare operation failed", "error.cloudflareError")
 		return
 	}
 
@@ -129,6 +133,10 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 		CloudflareRecordID: cfID,
 	}
 	if err := h.repo.CreateDNSRecord(record); err != nil {
+		// Rollback Cloudflare record
+		if delErr := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, cfID); delErr != nil {
+			log.Printf("failed to rollback cloudflare record %s: %v", cfID, delErr)
+		}
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to save record", "error.failedToSaveRecord")
 		return
 	}
@@ -154,8 +162,11 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 	if sub == nil {
 		return
 	}
-	recordID, _ := strconv.ParseUint(c.Param("recordId"), 10, 64)
-	record, err := h.repo.FindDNSRecord(uint(recordID))
+	recordID, ok := helpers.ParseUintParam(c, "recordId")
+	if !ok {
+		return
+	}
+	record, err := h.repo.FindDNSRecord(recordID)
 	if err != nil || record.SubdomainID != sub.ID {
 		response.ErrorWithKey(c, http.StatusNotFound, "record not found", "error.recordNotFound")
 		return
@@ -193,14 +204,15 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 		body.TTL = 1
 	}
 
-	cf, err := cfForAccount(h.repo, sub.Domain.CloudflareAccountID)
+	cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
 		return
 	}
 
 	if err := cf.UpdateRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID, record.Type, sub.FQDN, body.Content, body.TTL, body.Proxied); err != nil {
-		response.ErrorWithKey(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err), "error.cloudflareError")
+		log.Printf("cloudflare UpdateRecord error: %v", err)
+		response.ErrorWithKey(c, http.StatusBadGateway, "cloudflare operation failed", "error.cloudflareError")
 		return
 	}
 
@@ -216,21 +228,25 @@ func (h *DNSHandler) DeleteRecord(c *gin.Context) {
 	if sub == nil {
 		return
 	}
-	recordID, _ := strconv.ParseUint(c.Param("recordId"), 10, 64)
-	record, err := h.repo.FindDNSRecord(uint(recordID))
+	recordID, ok := helpers.ParseUintParam(c, "recordId")
+	if !ok {
+		return
+	}
+	record, err := h.repo.FindDNSRecord(recordID)
 	if err != nil || record.SubdomainID != sub.ID {
 		response.ErrorWithKey(c, http.StatusNotFound, "record not found", "error.recordNotFound")
 		return
 	}
 
 	if record.CloudflareRecordID != "" {
-		cf, err := cfForAccount(h.repo, sub.Domain.CloudflareAccountID)
+		cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
 		if err != nil {
 			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
 			return
 		}
 		if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
-			response.ErrorWithKey(c, http.StatusBadGateway, fmt.Sprintf("cloudflare error: %v", err), "error.cloudflareError")
+			log.Printf("cloudflare DeleteRecord error: %v", err)
+			response.ErrorWithKey(c, http.StatusBadGateway, "cloudflare operation failed", "error.cloudflareError")
 			return
 		}
 	}
@@ -240,12 +256,18 @@ func (h *DNSHandler) DeleteRecord(c *gin.Context) {
 }
 
 func (h *DNSHandler) getSubdomain(c *gin.Context) *model.Subdomain {
-	user := h.getUserFromContext(c)
+	user := ctxutil.GetUser(c)
 	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
+		c.Abort()
 		return nil
 	}
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-	sub, err := h.repo.FindSubdomain(uint(id))
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		c.Abort()
+		return nil
+	}
+	sub, err := h.repo.FindSubdomain(id)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusNotFound, "subdomain not found", "error.subdomainNotFound")
 		c.Abort()
@@ -257,15 +279,4 @@ func (h *DNSHandler) getSubdomain(c *gin.Context) *model.Subdomain {
 		return nil
 	}
 	return sub
-}
-
-func (h *DNSHandler) getUserFromContext(c *gin.Context) *model.User {
-	logtoID := c.GetString("user_id")
-	user, err := h.repo.FindUserByLogtoID(logtoID)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
-		c.Abort()
-		return nil
-	}
-	return user
 }

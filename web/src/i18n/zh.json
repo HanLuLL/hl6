@@ -25,7 +25,12 @@
     "inactive": "\u5df2\u505c\u7528",
     "copied": "\u5df2\u590d\u5236",
     "confirm": "确认",
-    "deleting": "删除中..."
+    "deleting": "删除中...",
+    "search": "搜索",
+    "searchPlaceholder": "搜索...",
+    "errorTitle": "出错了",
+    "errorMessage": "页面加载时发生了意外错误，请重试。",
+    "retry": "重试"
   },
   "landing": {
     "dashboard": "\u63a7\u5236\u53f0",
@@ -136,7 +141,10 @@
     "proxied": "\u4ee3\u7406",
     "update": "\u66f4\u65b0",
     "recordCreated": "\u8bb0\u5f55\u5df2\u521b\u5efa",
-    "recordUpdated": "\u8bb0\u5f55\u5df2\u66f4\u65b0"
+    "recordUpdated": "\u8bb0\u5f55\u5df2\u66f4\u65b0",
+    "invalidIPv4": "请输入有效的 IPv4 地址",
+    "invalidIPv6": "请输入有效的 IPv6 地址",
+    "invalidHostname": "请输入有效的域名"
   },
   "recordTable": {
     "type": "\u7c7b\u578b",
@@ -169,7 +177,8 @@
     "group": "\u7528\u6237\u7ec4",
     "changeGroup": "\u4fee\u6539\u7528\u6237\u7ec4",
     "selectGroup": "\u9009\u62e9\u7528\u6237\u7ec4",
-    "groupChanged": "\u7528\u6237\u7ec4\u5df2\u66f4\u65b0"
+    "groupChanged": "\u7528\u6237\u7ec4\u5df2\u66f4\u65b0",
+    "searchPlaceholder": "按姓名或邮箱搜索..."
   },
   "adminDomains": {
     "title": "\u57df\u540d\u7ba1\u7406",
@@ -217,7 +226,8 @@
     "user": "\u7528\u6237",
     "resource": "\u8d44\u6e90",
     "details": "\u8be6\u60c5",
-    "time": "\u65f6\u95f4"
+    "time": "\u65f6\u95f4",
+    "searchPlaceholder": "按操作或资源搜索..."
   },
   "adminGroups": {
     "title": "\u7528\u6237\u7ec4\u7ba1\u7406",

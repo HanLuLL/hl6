@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/ctxutil"
 	"hl6-server/pkg/response"
 )
 
@@ -17,9 +18,8 @@ func NewAuthHandler(repo *repository.Repository) *AuthHandler {
 }
 
 func (h *AuthHandler) Me(c *gin.Context) {
-	logtoID := c.GetString("user_id")
-	user, err := h.repo.FindUserByLogtoID(logtoID)
-	if err != nil {
+	user := ctxutil.GetUser(c)
+	if user == nil {
 		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}

@@ -2,21 +2,32 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"hl6-server/internal/config"
+	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
 	"hl6-server/internal/service"
+	"hl6-server/pkg/crypto"
 	"hl6-server/pkg/response"
 )
 
 type CloudflareAccountHandler struct {
 	repo *repository.Repository
+	cfg  *config.Config
 }
 
-func NewCloudflareAccountHandler(repo *repository.Repository) *CloudflareAccountHandler {
-	return &CloudflareAccountHandler{repo: repo}
+func NewCloudflareAccountHandler(repo *repository.Repository, cfg *config.Config) *CloudflareAccountHandler {
+	return &CloudflareAccountHandler{repo: repo, cfg: cfg}
+}
+
+func (h *CloudflareAccountHandler) encryptToken(token string) (string, error) {
+	return crypto.EncryptIfKey(token, h.cfg.EncryptionKey)
+}
+
+func (h *CloudflareAccountHandler) decryptToken(token string) string {
+	return crypto.DecryptOrPlaintext(token, h.cfg.EncryptionKey)
 }
 
 func (h *CloudflareAccountHandler) List(c *gin.Context) {
@@ -27,6 +38,7 @@ func (h *CloudflareAccountHandler) List(c *gin.Context) {
 	}
 	views := make([]model.CloudflareAccountView, len(accounts))
 	for i, a := range accounts {
+		a.ApiToken = h.decryptToken(a.ApiToken)
 		views[i] = a.ToView()
 	}
 	response.OK(c, views)
@@ -42,25 +54,30 @@ func (h *CloudflareAccountHandler) Create(c *gin.Context) {
 		return
 	}
 
+	encToken, err := h.encryptToken(body.ApiToken)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to encrypt token", "error.encryptionFailed")
+		return
+	}
 	account := &model.CloudflareAccount{
 		Name:     body.Name,
-		ApiToken: body.ApiToken,
+		ApiToken: encToken,
 	}
 	if err := h.repo.CreateCloudflareAccount(account); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create account", "error.failedToCreateCloudflareAccount")
 		return
 	}
+	account.ApiToken = body.ApiToken // use plaintext for ToView hint
 	response.Created(c, account.ToView())
 }
 
 func (h *CloudflareAccountHandler) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusBadRequest, "invalid ID", "error.invalidID")
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
 		return
 	}
 
-	account, err := h.repo.FindCloudflareAccount(uint(id))
+	account, err := h.repo.FindCloudflareAccount(id)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusNotFound, "account not found", "error.cloudflareAccountNotFound")
 		return
@@ -77,24 +94,33 @@ func (h *CloudflareAccountHandler) Update(c *gin.Context) {
 
 	account.Name = body.Name
 	if body.ApiToken != "" {
-		account.ApiToken = body.ApiToken
+		encToken, err := h.encryptToken(body.ApiToken)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to encrypt token", "error.encryptionFailed")
+			return
+		}
+		account.ApiToken = encToken
 	}
 
 	if err := h.repo.UpdateCloudflareAccount(account); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update account", "error.failedToUpdateCloudflareAccount")
 		return
 	}
+	if body.ApiToken != "" {
+		account.ApiToken = body.ApiToken // use plaintext for ToView hint
+	} else {
+		account.ApiToken = h.decryptToken(account.ApiToken)
+	}
 	response.OK(c, account.ToView())
 }
 
 func (h *CloudflareAccountHandler) Delete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusBadRequest, "invalid ID", "error.invalidID")
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
 		return
 	}
 
-	count, err := h.repo.CountDomainsByAccount(uint(id))
+	count, err := h.repo.CountDomainsByAccount(id)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
 		return
@@ -104,7 +130,7 @@ func (h *CloudflareAccountHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.DeleteCloudflareAccount(uint(id)); err != nil {
+	if err := h.repo.DeleteCloudflareAccount(id); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete account", "error.failedToDeleteCloudflareAccount")
 		return
 	}
@@ -112,19 +138,18 @@ func (h *CloudflareAccountHandler) Delete(c *gin.Context) {
 }
 
 func (h *CloudflareAccountHandler) ListZones(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusBadRequest, "invalid ID", "error.invalidID")
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
 		return
 	}
 
-	account, err := h.repo.FindCloudflareAccount(uint(id))
+	account, err := h.repo.FindCloudflareAccount(id)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusNotFound, "account not found", "error.cloudflareAccountNotFound")
 		return
 	}
 
-	cf := service.NewCloudflareService(account.ApiToken)
+	cf := service.NewCloudflareService(h.decryptToken(account.ApiToken))
 	zones, err := cf.ListZones(c.Request.Context())
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list cloudflare zones", "error.failedToListCloudflareZones")
@@ -134,10 +159,12 @@ func (h *CloudflareAccountHandler) ListZones(c *gin.Context) {
 }
 
 // cfForAccount is a helper to get a CloudflareService for a given account ID.
-func cfForAccount(repo *repository.Repository, accountID uint) (*service.CloudflareService, error) {
+// It decrypts the token if encryption is configured.
+func cfForAccount(repo *repository.Repository, cfg *config.Config, accountID uint) (*service.CloudflareService, error) {
 	account, err := repo.FindCloudflareAccount(accountID)
 	if err != nil {
 		return nil, err
 	}
-	return service.NewCloudflareService(account.ApiToken), nil
+	token := crypto.DecryptOrPlaintext(account.ApiToken, cfg.EncryptionKey)
+	return service.NewCloudflareService(token), nil
 }

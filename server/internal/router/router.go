@@ -16,17 +16,17 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
 
 	repo := repository.New(db)
-	auth := middleware.NewAuthMiddleware(cfg.SessionSecret)
+	auth := middleware.NewAuthMiddleware(cfg.SessionSecret, repo)
 	rl := middleware.NewRateLimiter(100, time.Minute)
 
 	authH := handler.NewAuthHandler(repo)
 	oidcH := handler.NewOIDCHandler(repo, cfg)
-	domainH := handler.NewDomainHandler(repo)
-	subdomainH := handler.NewSubdomainHandler(repo)
-	dnsH := handler.NewDNSHandler(repo)
+	domainH := handler.NewDomainHandler(repo, cfg)
+	subdomainH := handler.NewSubdomainHandler(repo, cfg)
+	dnsH := handler.NewDNSHandler(repo, cfg)
 	creditH := handler.NewCreditHandler(repo)
 	adminH := handler.NewAdminHandler(repo)
-	cfAccountH := handler.NewCloudflareAccountHandler(repo)
+	cfAccountH := handler.NewCloudflareAccountHandler(repo, cfg)
 
 	api := r.Group("/api/v1")
 	api.Use(rl.Handler())
@@ -56,7 +56,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	authed.GET("/credits/transactions", creditH.ListTransactions)
 
 	admin := authed.Group("/admin")
-	admin.Use(middleware.AdminRequired(db))
+	admin.Use(middleware.AdminRequired())
 	admin.POST("/domains", domainH.AdminCreate)
 	admin.PUT("/domains/:id", domainH.AdminUpdate)
 	admin.DELETE("/domains/:id", domainH.AdminDelete)

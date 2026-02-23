@@ -21,6 +21,31 @@ import {
 import { useCreateRecord, useUpdateRecord } from "@/hooks/use-dns-records";
 import type { DNSRecord } from "@/types";
 
+function validateRecordContent(type: string, content: string): string {
+  if (!content.trim()) return "";
+  switch (type) {
+    case "A": {
+      const ipv4 = /^(\d{1,3}\.){3}\d{1,3}$/;
+      if (!ipv4.test(content)) return "recordForm.invalidIPv4";
+      const parts = content.split(".").map(Number);
+      if (parts.some(p => p > 255)) return "recordForm.invalidIPv4";
+      return "";
+    }
+    case "AAAA": {
+      const ipv6 = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))$/;
+      if (!ipv6.test(content)) return "recordForm.invalidIPv6";
+      return "";
+    }
+    case "CNAME": {
+      const hostname = /^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}\.?$/;
+      if (!hostname.test(content)) return "recordForm.invalidHostname";
+      return "";
+    }
+    default:
+      return "";
+  }
+}
+
 interface RecordFormProps {
   subdomainId: number;
   record?: DNSRecord | null;
@@ -33,6 +58,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
   const [content, setContent] = useState(record?.content || "");
   const [ttl, setTtl] = useState(String(record?.ttl || 1));
   const [proxied, setProxied] = useState(record?.proxied || false);
+  const [validationError, setValidationError] = useState("");
   const { t } = useTranslation();
 
   const create = useCreateRecord(subdomainId);
@@ -82,7 +108,10 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
           {!isEdit && (
             <div className="space-y-2">
               <Label>{t("recordForm.type")}</Label>
-              <Select value={type} onValueChange={setType}>
+              <Select value={type} onValueChange={(v) => {
+                setType(v);
+                setValidationError(validateRecordContent(v, content));
+              }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -100,8 +129,14 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
             <Input
               placeholder={type === "A" ? "1.2.3.4" : type === "AAAA" ? "2001:db8::1" : type === "TXT" ? "v=spf1 include:example.com ~all" : "example.com"}
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => {
+                setContent(e.target.value);
+                setValidationError(validateRecordContent(isEdit ? record!.type : type, e.target.value));
+              }}
             />
+            {validationError && (
+              <p className="text-sm text-destructive">{t(validationError)}</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -140,7 +175,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={handleSubmit} disabled={!content.trim() || create.isPending || update.isPending}>
+          <Button onClick={handleSubmit} disabled={!content.trim() || !!validationError || create.isPending || update.isPending}>
             {create.isPending || update.isPending ? t("common.saving") : isEdit ? t("recordForm.update") : t("common.create")}
           </Button>
         </DialogFooter>

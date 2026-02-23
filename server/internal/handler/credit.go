@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/ctxutil"
 	"hl6-server/pkg/response"
 )
 
@@ -21,8 +22,9 @@ func NewCreditHandler(repo *repository.Repository) *CreditHandler {
 }
 
 func (h *CreditHandler) GetBalance(c *gin.Context) {
-	user := h.getUser(c)
+	user := ctxutil.GetUser(c)
 	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 	balance, _ := h.repo.EnsureCreditBalance(user.ID)
@@ -34,8 +36,9 @@ func (h *CreditHandler) GetBalance(c *gin.Context) {
 }
 
 func (h *CreditHandler) ListTransactions(c *gin.Context) {
-	user := h.getUser(c)
+	user := ctxutil.GetUser(c)
 	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -71,7 +74,7 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 	}
 
 	var user model.User
-	if err := h.repo.DB.First(&user, body.UserID).Error; err != nil {
+	if err := h.repo.GetDB().First(&user, body.UserID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			response.ErrorWithKey(c, http.StatusNotFound, "user not found", "error.userNotFound")
 			return
@@ -82,7 +85,9 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 
 	amount := model.CreditFromFloat(body.Amount)
 
-	tx := h.repo.DB.Begin()
+	tx := h.repo.GetDB().Begin()
+
+	admin := ctxutil.GetUser(c)
 
 	if body.Amount > 0 {
 		// Grant
@@ -98,9 +103,7 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 			return
 		}
 
-		// Audit log
-		adminUser, _ := c.Get("db_user")
-		if admin, ok := adminUser.(model.User); ok {
+		if admin != nil {
 			details, _ := json.Marshal(map[string]interface{}{"target_user_id": body.UserID, "amount": body.Amount, "description": body.Description})
 			tx.Create(&model.AuditLog{
 				UserID:     admin.ID,
@@ -129,9 +132,7 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 			return
 		}
 
-		// Audit log
-		adminUser, _ := c.Get("db_user")
-		if admin, ok := adminUser.(model.User); ok {
+		if admin != nil {
 			details, _ := json.Marshal(map[string]interface{}{"target_user_id": body.UserID, "amount": body.Amount, "description": body.Description})
 			tx.Create(&model.AuditLog{
 				UserID:     admin.ID,
@@ -151,15 +152,4 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 		"granted": body.Amount,
 		"balance": balance.Balance,
 	})
-}
-
-func (h *CreditHandler) getUser(c *gin.Context) *model.User {
-	logtoID := c.GetString("user_id")
-	user, err := h.repo.FindUserByLogtoID(logtoID)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
-		c.Abort()
-		return nil
-	}
-	return user
 }

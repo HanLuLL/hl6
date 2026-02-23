@@ -57,16 +57,17 @@ type Domain struct {
 }
 
 type Subdomain struct {
-	ID         uint       `json:"id" gorm:"primaryKey"`
-	DomainID   uint       `json:"domain_id" gorm:"uniqueIndex:idx_domain_name;not null"`
-	UserID     uint       `json:"user_id" gorm:"index;not null"`
-	Name       string     `json:"name" gorm:"uniqueIndex:idx_domain_name;not null"`
-	FQDN       string     `json:"fqdn" gorm:"uniqueIndex;not null"`
-	Domain     Domain     `json:"domain" gorm:"foreignKey:DomainID"`
-	User       User       `json:"-" gorm:"foreignKey:UserID"`
+	ID         uint        `json:"id" gorm:"primaryKey"`
+	DomainID   uint        `json:"domain_id" gorm:"uniqueIndex:idx_domain_name;not null"`
+	UserID     uint        `json:"user_id" gorm:"index;not null"`
+	Name       string      `json:"name" gorm:"uniqueIndex:idx_domain_name;not null"`
+	FQDN       string      `json:"fqdn" gorm:"uniqueIndex;not null"`
+	ClaimCost  Credit      `json:"claim_cost" gorm:"type:bigint;default:0"`
+	Domain     Domain      `json:"domain" gorm:"foreignKey:DomainID"`
+	User       User        `json:"-" gorm:"foreignKey:UserID"`
 	DNSRecords []DNSRecord `json:"dns_records,omitempty" gorm:"foreignKey:SubdomainID"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
+	CreatedAt  time.Time   `json:"created_at"`
+	UpdatedAt  time.Time   `json:"updated_at"`
 }
 
 type DNSRecord struct {

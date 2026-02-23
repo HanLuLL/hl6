@@ -7,19 +7,22 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
+	"hl6-server/internal/repository"
+	"hl6-server/internal/ctxutil"
 	"hl6-server/pkg/response"
 )
 
 type AuthMiddleware struct {
 	sessionKey jwk.Key
+	repo       *repository.Repository
 }
 
-func NewAuthMiddleware(sessionSecret string) *AuthMiddleware {
+func NewAuthMiddleware(sessionSecret string, repo *repository.Repository) *AuthMiddleware {
 	key, err := jwk.FromRaw([]byte(sessionSecret))
 	if err != nil {
 		panic("invalid session secret: " + err.Error())
 	}
-	return &AuthMiddleware{sessionKey: key}
+	return &AuthMiddleware{sessionKey: key, repo: repo}
 }
 
 func (a *AuthMiddleware) Required() gin.HandlerFunc {
@@ -34,6 +37,8 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 		parsed, err := jwt.Parse([]byte(cookie),
 			jwt.WithKey(jwa.HS256, a.sessionKey),
 			jwt.WithValidate(true),
+			jwt.WithIssuer("hl6"),
+			jwt.WithAudience("hl6"),
 		)
 		if err != nil {
 			response.ErrorWithKey(c, http.StatusUnauthorized, "invalid session", "error.invalidToken")
@@ -41,7 +46,17 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user_id", parsed.Subject())
+		logtoID := parsed.Subject()
+		c.Set("user_id", logtoID)
+
+		user, err := a.repo.FindUserByLogtoID(logtoID)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
+			c.Abort()
+			return
+		}
+		ctxutil.SetUser(c, user)
+
 		c.Next()
 	}
 }

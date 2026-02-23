@@ -25,7 +25,12 @@
     "inactive": "Inactive",
     "copied": "Copied",
     "confirm": "Confirm",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "search": "Search",
+    "searchPlaceholder": "Search...",
+    "errorTitle": "Something went wrong",
+    "errorMessage": "An unexpected error occurred while loading the page. Please try again.",
+    "retry": "Retry"
   },
   "landing": {
     "dashboard": "Dashboard",
@@ -136,7 +141,10 @@
     "proxied": "Proxied",
     "update": "Update",
     "recordCreated": "Record created",
-    "recordUpdated": "Record updated"
+    "recordUpdated": "Record updated",
+    "invalidIPv4": "Please enter a valid IPv4 address",
+    "invalidIPv6": "Please enter a valid IPv6 address",
+    "invalidHostname": "Please enter a valid hostname"
   },
   "recordTable": {
     "type": "Type",
@@ -169,7 +177,8 @@
     "group": "Group",
     "changeGroup": "Change Group",
     "selectGroup": "Select group",
-    "groupChanged": "User group updated"
+    "groupChanged": "User group updated",
+    "searchPlaceholder": "Search by name or email..."
   },
   "adminDomains": {
     "title": "Manage Domains",
@@ -217,7 +226,8 @@
     "user": "User",
     "resource": "Resource",
     "details": "Details",
-    "time": "Time"
+    "time": "Time",
+    "searchPlaceholder": "Search by action or resource..."
   },
   "adminGroups": {
     "title": "User Groups",

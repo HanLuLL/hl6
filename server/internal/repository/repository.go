@@ -3,10 +3,19 @@ package repository
 import (
 	"encoding/json"
 	"hl6-server/internal/model"
+	"strings"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+// escapeLike escapes LIKE/ILIKE pattern characters so user input is treated literally.
+func escapeLike(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
+}
 
 type Repository struct {
 	DB *gorm.DB
@@ -14,6 +23,11 @@ type Repository struct {
 
 func New(db *gorm.DB) *Repository {
 	return &Repository{DB: db}
+}
+
+// GetDB returns the underlying *gorm.DB for cases that need direct access.
+func (r *Repository) GetDB() *gorm.DB {
+	return r.DB
 }
 
 // User
@@ -37,11 +51,16 @@ func (r *Repository) UpdateUser(user *model.User) error {
 	return r.DB.Save(user).Error
 }
 
-func (r *Repository) ListUsers(page, perPage int) ([]model.User, int64, error) {
+func (r *Repository) ListUsers(page, perPage int, search ...string) ([]model.User, int64, error) {
 	var users []model.User
 	var total int64
-	r.DB.Model(&model.User{}).Count(&total)
-	err := r.DB.Preload("Group").Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
+	q := r.DB.Model(&model.User{})
+	if len(search) > 0 && search[0] != "" {
+		like := "%" + escapeLike(search[0]) + "%"
+		q = q.Where("name ILIKE ? OR email ILIKE ?", like, like)
+	}
+	q.Count(&total)
+	err := q.Preload("Group").Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
 	return users, total, err
 }
 
@@ -264,11 +283,16 @@ func (r *Repository) CreateAuditLog(log *model.AuditLog) error {
 	return r.DB.Create(log).Error
 }
 
-func (r *Repository) ListAuditLogs(page, perPage int) ([]model.AuditLog, int64, error) {
+func (r *Repository) ListAuditLogs(page, perPage int, search ...string) ([]model.AuditLog, int64, error) {
 	var logs []model.AuditLog
 	var total int64
-	r.DB.Model(&model.AuditLog{}).Count(&total)
-	err := r.DB.Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Preload("User").Find(&logs).Error
+	q := r.DB.Model(&model.AuditLog{})
+	if len(search) > 0 && search[0] != "" {
+		like := "%" + escapeLike(search[0]) + "%"
+		q = q.Where("action ILIKE ? OR resource ILIKE ?", like, like)
+	}
+	q.Count(&total)
+	err := q.Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Preload("User").Find(&logs).Error
 	return logs, total, err
 }
 

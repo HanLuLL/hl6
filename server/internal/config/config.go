@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/hex"
+	"log"
 	"os"
 	"strings"
 )
@@ -15,10 +17,11 @@ type Config struct {
 	FrontendURL     string
 	AllowedOrigins  []string
 	AdminEmails     []string
+	EncryptionKey   []byte
 }
 
 func Load() *Config {
-	return &Config{
+	cfg := &Config{
 		Port:            getEnv("SERVER_PORT", "8080"),
 		DatabaseURL:     getEnv("DATABASE_URL", "postgres://hl6:hl6dev@localhost:5432/hl6?sslmode=disable"),
 		LogtoEndpoint:   getEnv("LOGTO_ENDPOINT", ""),
@@ -29,6 +32,16 @@ func Load() *Config {
 		AllowedOrigins:  parseList(getEnv("ALLOWED_ORIGINS", "")),
 		AdminEmails:     parseListLower(getEnv("ADMIN_EMAILS", "")),
 	}
+
+	if keyHex := getEnv("ENCRYPTION_KEY", ""); keyHex != "" {
+		key, err := hex.DecodeString(keyHex)
+		if err != nil || len(key) != 32 {
+			log.Fatal("ENCRYPTION_KEY must be a 64-character hex string (32 bytes)")
+		}
+		cfg.EncryptionKey = key
+	}
+
+	return cfg
 }
 
 func (c *Config) IsAdminEmail(email string) bool {

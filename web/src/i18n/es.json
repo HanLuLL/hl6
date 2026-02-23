@@ -25,7 +25,12 @@
     "inactive": "Inactivo",
     "copied": "Copiado",
     "confirm": "Confirmar",
-    "deleting": "Eliminando..."
+    "deleting": "Eliminando...",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar...",
+    "errorTitle": "Algo salió mal",
+    "errorMessage": "Ocurrió un error inesperado al cargar la página. Por favor, inténtelo de nuevo.",
+    "retry": "Reintentar"
   },
   "landing": {
     "dashboard": "Panel de control",
@@ -136,7 +141,10 @@
     "proxied": "Proxy",
     "update": "Actualizar",
     "recordCreated": "Registro creado",
-    "recordUpdated": "Registro actualizado"
+    "recordUpdated": "Registro actualizado",
+    "invalidIPv4": "Ingrese una dirección IPv4 válida",
+    "invalidIPv6": "Ingrese una dirección IPv6 válida",
+    "invalidHostname": "Ingrese un nombre de host válido"
   },
   "recordTable": {
     "type": "Tipo",
@@ -169,7 +177,8 @@
     "group": "Grupo",
     "changeGroup": "Cambiar grupo",
     "selectGroup": "Seleccionar grupo",
-    "groupChanged": "Grupo de usuario actualizado"
+    "groupChanged": "Grupo de usuario actualizado",
+    "searchPlaceholder": "Buscar por nombre o correo..."
   },
   "adminDomains": {
     "title": "Gestión de dominios",
@@ -217,7 +226,8 @@
     "user": "Usuario",
     "resource": "Recurso",
     "details": "Detalles",
-    "time": "Hora"
+    "time": "Hora",
+    "searchPlaceholder": "Buscar por acción o recurso..."
   },
   "adminGroups": {
     "title": "Grupos de usuarios",

@@ -25,7 +25,12 @@
     "inactive": "Неактивен",
     "copied": "Скопировано",
     "confirm": "Подтвердить",
-    "deleting": "Удаление..."
+    "deleting": "Удаление...",
+    "search": "Поиск",
+    "searchPlaceholder": "Поиск...",
+    "errorTitle": "Что-то пошло не так",
+    "errorMessage": "При загрузке страницы произошла непредвиденная ошибка. Пожалуйста, попробуйте снова.",
+    "retry": "Повторить"
   },
   "landing": {
     "dashboard": "Панель управления",
@@ -136,7 +141,10 @@
     "proxied": "Прокси",
     "update": "Обновить",
     "recordCreated": "Запись создана",
-    "recordUpdated": "Запись обновлена"
+    "recordUpdated": "Запись обновлена",
+    "invalidIPv4": "Введите корректный IPv4-адрес",
+    "invalidIPv6": "Введите корректный IPv6-адрес",
+    "invalidHostname": "Введите корректное имя хоста"
   },
   "recordTable": {
     "type": "Тип",
@@ -169,7 +177,8 @@
     "group": "Группа",
     "changeGroup": "Изменить группу",
     "selectGroup": "Выбрать группу",
-    "groupChanged": "Группа пользователя обновлена"
+    "groupChanged": "Группа пользователя обновлена",
+    "searchPlaceholder": "Поиск по имени или email..."
   },
   "adminDomains": {
     "title": "Управление доменами",
@@ -217,7 +226,8 @@
     "user": "Пользователь",
     "resource": "Ресурс",
     "details": "Подробности",
-    "time": "Время"
+    "time": "Время",
+    "searchPlaceholder": "Поиск по действию или ресурсу..."
   },
   "adminGroups": {
     "title": "Управление группами",

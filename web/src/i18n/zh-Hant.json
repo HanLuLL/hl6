@@ -25,7 +25,12 @@
     "inactive": "已停用",
     "copied": "已複製",
     "confirm": "確認",
-    "deleting": "刪除中..."
+    "deleting": "刪除中...",
+    "search": "搜尋",
+    "searchPlaceholder": "搜尋...",
+    "errorTitle": "出錯了",
+    "errorMessage": "載入頁面時發生了意外錯誤，請重試。",
+    "retry": "重試"
   },
   "landing": {
     "dashboard": "控制台",
@@ -136,7 +141,10 @@
     "proxied": "代理",
     "update": "更新",
     "recordCreated": "記錄已建立",
-    "recordUpdated": "記錄已更新"
+    "recordUpdated": "記錄已更新",
+    "invalidIPv4": "請輸入有效的 IPv4 位址",
+    "invalidIPv6": "請輸入有效的 IPv6 位址",
+    "invalidHostname": "請輸入有效的網域名稱"
   },
   "recordTable": {
     "type": "類型",
@@ -169,7 +177,8 @@
     "group": "使用者群組",
     "changeGroup": "修改群組",
     "selectGroup": "選擇群組",
-    "groupChanged": "使用者群組已更新"
+    "groupChanged": "使用者群組已更新",
+    "searchPlaceholder": "按姓名或信箱搜尋..."
   },
   "adminDomains": {
     "title": "網域管理",
@@ -217,7 +226,8 @@
     "user": "使用者",
     "resource": "資源",
     "details": "詳情",
-    "time": "時間"
+    "time": "時間",
+    "searchPlaceholder": "按操作或資源搜尋..."
   },
   "adminGroups": {
     "title": "使用者群組管理",
