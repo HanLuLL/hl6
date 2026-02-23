@@ -90,6 +90,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	idToken, err := jwt.Parse([]byte(idTokenStr),
 		jwt.WithKeySet(keySet),
 		jwt.WithIssuer(h.cfg.LogtoEndpoint+"/oidc"),
+		jwt.WithAcceptableSkew(2*time.Minute),
 	)
 	if err != nil {
 		c.String(http.StatusBadGateway, "invalid id_token: %v", err)

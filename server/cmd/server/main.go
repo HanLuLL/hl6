@@ -22,8 +22,6 @@ func main() {
 		log.Fatal("failed to connect database:", err)
 	}
 
-	migrateCreditsToInt(db)
-
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.UserGroup{},
@@ -41,6 +39,7 @@ func main() {
 	}
 
 	log.Println("Database migrated successfully")
+	migrateCreditsToInt(db)
 	seedDefaults(db)
 
 	r := router.Setup(cfg, db)
