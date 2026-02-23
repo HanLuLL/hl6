@@ -148,3 +148,6 @@ cd web && npm install
 - `LOGTO_APP_ID`
 - `LOGTO_APP_SECRET`
 
+## 许可证
+
+本项目采用 GNU Affero General Public License v3.0（AGPL-3.0）开源协议，详见根目录 `LICENSE` 文件。
