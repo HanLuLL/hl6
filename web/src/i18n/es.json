@@ -270,7 +270,9 @@
     "adminGrant": "Concesión del administrador",
     "adminGrantCustom": "Concesión del administrador: {{description}}",
     "adminDeduct": "Deducción del administrador",
-    "adminDeductCustom": "Deducción del administrador: {{description}}"
+    "adminDeductCustom": "Deducción del administrador: {{description}}",
+    "subdomainDeletedRefund": "Admin eliminó el dominio, reembolso por subdominio {{fqdn}}",
+    "subdomainDeletedDeduct": "Admin eliminó el dominio, créditos de bonificación reclamados por subdominio {{fqdn}}"
   },
   "error": {
     "userNotFound": "Usuario no encontrado",

@@ -270,7 +270,9 @@
     "adminGrant": "管理員發放",
     "adminGrantCustom": "管理員發放：{{description}}",
     "adminDeduct": "管理員扣減",
-    "adminDeductCustom": "管理員扣減：{{description}}"
+    "adminDeductCustom": "管理員扣減：{{description}}",
+    "subdomainDeletedRefund": "管理員刪除網域，退還子網域 {{fqdn}} 的積分",
+    "subdomainDeletedDeduct": "管理員刪除網域，扣回子網域 {{fqdn}} 的獎勵積分"
   },
   "error": {
     "userNotFound": "使用者未找到",

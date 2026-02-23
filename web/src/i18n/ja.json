@@ -270,7 +270,9 @@
     "adminGrant": "管理者による付与",
     "adminGrantCustom": "管理者による付与：{{description}}",
     "adminDeduct": "管理者による減額",
-    "adminDeductCustom": "管理者による減額: {{description}}"
+    "adminDeductCustom": "管理者による減額: {{description}}",
+    "subdomainDeletedRefund": "管理者がドメインを削除、サブドメイン {{fqdn}} のクレジットを返金",
+    "subdomainDeletedDeduct": "管理者がドメインを削除、サブドメイン {{fqdn}} のボーナスクレジットを回収"
   },
   "error": {
     "userNotFound": "ユーザーが見つかりません",

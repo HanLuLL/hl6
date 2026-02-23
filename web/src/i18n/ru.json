@@ -270,7 +270,9 @@
     "adminGrant": "Начисление администратором",
     "adminGrantCustom": "Начисление администратором: {{description}}",
     "adminDeduct": "Списание администратором",
-    "adminDeductCustom": "Списание администратором: {{description}}"
+    "adminDeductCustom": "Списание администратором: {{description}}",
+    "subdomainDeletedRefund": "Домен удалён администратором, возврат кредитов за поддомен {{fqdn}}",
+    "subdomainDeletedDeduct": "Домен удалён администратором, списание бонусных кредитов за поддомен {{fqdn}}"
   },
   "error": {
     "userNotFound": "Пользователь не найден",

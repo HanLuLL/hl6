@@ -270,7 +270,9 @@
     "adminGrant": "管理员发放",
     "adminGrantCustom": "管理员发放：{{description}}",
     "adminDeduct": "管理员扣减",
-    "adminDeductCustom": "管理员扣减：{{description}}"
+    "adminDeductCustom": "管理员扣减：{{description}}",
+    "subdomainDeletedRefund": "管理员删除域名，退还子域名 {{fqdn}} 的积分",
+    "subdomainDeletedDeduct": "管理员删除域名，扣回子域名 {{fqdn}} 的奖励积分"
   },
   "error": {
     "userNotFound": "用户未找到",

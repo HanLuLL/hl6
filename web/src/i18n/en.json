@@ -270,7 +270,9 @@
     "adminGrant": "Admin grant",
     "adminGrantCustom": "Admin grant: {{description}}",
     "adminDeduct": "Admin deduction",
-    "adminDeductCustom": "Admin deduction: {{description}}"
+    "adminDeductCustom": "Admin deduction: {{description}}",
+    "subdomainDeletedRefund": "Admin deleted domain, refund for subdomain {{fqdn}}",
+    "subdomainDeletedDeduct": "Admin deleted domain, bonus credits reclaimed for subdomain {{fqdn}}"
   },
   "error": {
     "userNotFound": "User not found",

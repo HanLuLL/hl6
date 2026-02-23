@@ -319,14 +319,14 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 			descParams, _ := json.Marshal(map[string]interface{}{"fqdn": item.subFQDN})
 			if item.creditCost > 0 {
 				// 认领时扣了积分 → 退还
-				if rErr := h.repo.RefundCredits(tx, item.userID, item.creditCost, "credit.subdomainDeletedRefund", descParams); rErr != nil {
+				if rErr := h.repo.RefundCredits(tx, item.userID, item.creditCost, "txn.subdomainDeletedRefund", descParams); rErr != nil {
 					tx.Rollback()
 					response.ErrorWithKey(c, http.StatusInternalServerError, "failed to refund credits", "error.failedToRefundCredits")
 					return
 				}
 			} else {
 				// 认领时送了积分（负价）→ 逆向扣除
-				if dErr := h.repo.DeductCredits(tx, item.userID, -item.creditCost, "credit.subdomainDeletedDeduct", descParams); dErr != nil {
+				if dErr := h.repo.DeductCredits(tx, item.userID, -item.creditCost, "txn.subdomainDeletedDeduct", descParams); dErr != nil {
 					tx.Rollback()
 					response.ErrorWithKey(c, http.StatusInternalServerError, "failed to deduct credits", "error.failedToDeductCredits")
 					return
