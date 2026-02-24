@@ -34,6 +34,9 @@ func main() {
 		&model.CreditTransaction{},
 		&model.AuditLog{},
 		&model.SystemConfig{},
+		&model.Notification{},
+		&model.NotificationRead{},
+		&model.NotificationImage{},
 	); err != nil {
 		log.Fatal("failed to migrate:", err)
 	}

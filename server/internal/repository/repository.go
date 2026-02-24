@@ -498,3 +498,156 @@ func (r *Repository) CountDomainsByAccount(accountID uint) (int64, error) {
 	err := r.DB.Model(&model.Domain{}).Where("cloudflare_account_id = ?", accountID).Count(&count).Error
 	return count, err
 }
+
+// Notification
+
+type NotificationWithRead struct {
+	model.Notification
+	IsRead bool `json:"is_read"`
+}
+
+func (r *Repository) ListNotificationsForUser(userID, groupID uint, userCreatedAt string, offset, limit int) ([]NotificationWithRead, int64, error) {
+	var results []NotificationWithRead
+	var total int64
+
+	visibilityWhere := `(
+		(n.target_type = 'users' AND n.target_ids @> to_jsonb(?::bigint))
+		OR (n.target_type = 'groups' AND n.target_ids @> to_jsonb(?::bigint) AND (n.visible_to_new = true OR n.created_at >= ?))
+		OR (n.target_type = 'all' AND (n.visible_to_new = true OR n.created_at >= ?))
+	)`
+
+	// Count
+	countSQL := `SELECT COUNT(*) FROM notifications n WHERE ` + visibilityWhere
+	r.DB.Raw(countSQL, userID, groupID, userCreatedAt, userCreatedAt).Scan(&total)
+
+	if total == 0 {
+		return []NotificationWithRead{}, 0, nil
+	}
+
+	// Query with read status and complex ordering
+	querySQL := `SELECT n.*,
+		CASE WHEN nr.id IS NOT NULL THEN true ELSE false END as is_read
+		FROM notifications n
+		LEFT JOIN notification_reads nr ON nr.notification_id = n.id AND nr.user_id = ?
+		WHERE ` + visibilityWhere + `
+		ORDER BY
+			CASE WHEN nr.id IS NULL THEN 0 ELSE 1 END ASC,
+			CASE
+				WHEN nr.id IS NULL THEN
+					CASE n.type WHEN 'urgent' THEN 0 WHEN 'pinned' THEN 1 ELSE 2 END
+				ELSE
+					CASE n.type WHEN 'pinned' THEN 0 ELSE 1 END
+			END ASC,
+			n.created_at DESC
+		OFFSET ? LIMIT ?`
+
+	err := r.DB.Raw(querySQL, userID, userID, groupID, userCreatedAt, userCreatedAt, offset, limit).Scan(&results).Error
+	if results == nil {
+		results = []NotificationWithRead{}
+	}
+	return results, total, err
+}
+
+func (r *Repository) FindNotificationForUser(id, userID, groupID uint, userCreatedAt string) (*NotificationWithRead, error) {
+	var result NotificationWithRead
+
+	visibilityWhere := `(
+		(n.target_type = 'users' AND n.target_ids @> to_jsonb(?::bigint))
+		OR (n.target_type = 'groups' AND n.target_ids @> to_jsonb(?::bigint) AND (n.visible_to_new = true OR n.created_at >= ?))
+		OR (n.target_type = 'all' AND (n.visible_to_new = true OR n.created_at >= ?))
+	)`
+
+	querySQL := `SELECT n.*,
+		CASE WHEN nr.id IS NOT NULL THEN true ELSE false END as is_read
+		FROM notifications n
+		LEFT JOIN notification_reads nr ON nr.notification_id = n.id AND nr.user_id = ?
+		WHERE n.id = ? AND ` + visibilityWhere
+
+	err := r.DB.Raw(querySQL, userID, id, userID, groupID, userCreatedAt, userCreatedAt).Scan(&result).Error
+	if result.ID == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return &result, err
+}
+
+func (r *Repository) HasUnreadNotifications(userID, groupID uint, userCreatedAt string) (bool, error) {
+	var count int64
+
+	querySQL := `SELECT COUNT(*) FROM notifications n
+		WHERE NOT EXISTS (SELECT 1 FROM notification_reads nr WHERE nr.notification_id = n.id AND nr.user_id = ?)
+		AND (
+			(n.target_type = 'users' AND n.target_ids @> to_jsonb(?::bigint))
+			OR (n.target_type = 'groups' AND n.target_ids @> to_jsonb(?::bigint) AND (n.visible_to_new = true OR n.created_at >= ?))
+			OR (n.target_type = 'all' AND (n.visible_to_new = true OR n.created_at >= ?))
+		)`
+
+	err := r.DB.Raw(querySQL, userID, userID, groupID, userCreatedAt, userCreatedAt).Scan(&count).Error
+	return count > 0, err
+}
+
+func (r *Repository) MarkNotificationRead(notificationID, userID uint) error {
+	read := model.NotificationRead{
+		NotificationID: notificationID,
+		UserID:         userID,
+	}
+	return r.DB.Where("notification_id = ? AND user_id = ?", notificationID, userID).
+		FirstOrCreate(&read).Error
+}
+
+func (r *Repository) CreateNotification(n *model.Notification) error {
+	return r.DB.Create(n).Error
+}
+
+func (r *Repository) DeleteNotification(id uint) error {
+	return r.DB.Delete(&model.Notification{}, id).Error
+}
+
+func (r *Repository) FindNotification(id uint) (*model.Notification, error) {
+	var n model.Notification
+	err := r.DB.Preload("Creator").First(&n, id).Error
+	return &n, err
+}
+
+func (r *Repository) ListNotificationsAdmin(page, perPage int) ([]model.Notification, int64, error) {
+	var notifications []model.Notification
+	var total int64
+	q := r.DB.Model(&model.Notification{})
+	q.Count(&total)
+	err := q.Preload("Creator").Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&notifications).Error
+	return notifications, total, err
+}
+
+func (r *Repository) CreateNotificationImage(img *model.NotificationImage) error {
+	return r.DB.Create(img).Error
+}
+
+func (r *Repository) FindNotificationImage(id uint) (*model.NotificationImage, error) {
+	var img model.NotificationImage
+	err := r.DB.First(&img, id).Error
+	return &img, err
+}
+
+// GetNotificationTargetUserIDs resolves target user IDs based on target_type
+func (r *Repository) GetNotificationTargetUserIDs(n *model.Notification) ([]uint, error) {
+	switch n.TargetType {
+	case "users":
+		var ids []uint
+		if err := json.Unmarshal(n.TargetIDs, &ids); err != nil {
+			return nil, err
+		}
+		return ids, nil
+	case "groups":
+		var groupIDs []uint
+		if err := json.Unmarshal(n.TargetIDs, &groupIDs); err != nil {
+			return nil, err
+		}
+		var userIDs []uint
+		err := r.DB.Model(&model.User{}).Where("group_id IN ?", groupIDs).Pluck("id", &userIDs).Error
+		return userIDs, err
+	case "all":
+		// Return empty slice to signal "all users"
+		return nil, nil
+	default:
+		return nil, nil
+	}
+}

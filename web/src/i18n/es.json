@@ -58,7 +58,8 @@
     "auditLogs": "Registros de auditoría",
     "adminGroups": "Grupos de usuarios",
     "adminCloudflare": "Cuentas Cloudflare",
-    "adminSettings": "Configuración"
+    "adminSettings": "Configuración",
+    "adminNotifications": "Notificaciones"
   },
   "dashboard": {
     "title": "Panel de control",
@@ -284,6 +285,42 @@
     "subdomainDeletedRefund": "Admin eliminó el dominio, reembolso por subdominio {{fqdn}}",
     "subdomainDeletedDeduct": "Admin eliminó el dominio, créditos de bonificación reclamados por subdominio {{fqdn}}"
   },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "Sin notificaciones",
+    "markRead": "Marcar como leída",
+    "type_normal": "Normal",
+    "type_urgent": "Urgente",
+    "type_pinned": "Fijada"
+  },
+  "adminNotifications": {
+    "title": "Gestión de notificaciones",
+    "subtitle": "Enviar notificaciones a los usuarios",
+    "totalEntries": "{{count}} notificaciones en total",
+    "create": "Nueva notificación",
+    "createTitle": "Crear notificación",
+    "created": "Notificación enviada",
+    "deleted": "Notificación eliminada",
+    "deleteTitle": "Eliminar notificación",
+    "deleteConfirm": "¿Eliminar la notificación \"{{title}}\"? Esta acción no se puede deshacer.",
+    "targetType": "Destino",
+    "target_all": "Todos los usuarios",
+    "target_users": "Usuarios específicos",
+    "target_groups": "Grupos de usuarios",
+    "selectUsers": "Seleccionar usuarios",
+    "selectGroups": "Seleccionar grupos",
+    "selectedCount": "{{count}} seleccionados",
+    "visibleToNew": "También visible para nuevos usuarios futuros",
+    "notificationType": "Tipo",
+    "titleLabel": "Título",
+    "contentLabel": "Contenido",
+    "sender": "Remitente",
+    "actions": "Acciones",
+    "editorPlaceholder": "Escribir contenido de la notificación...",
+    "fontColor": "Color de fuente",
+    "linkPrompt": "Introducir URL",
+    "uploadFailed": "Error al subir la imagen"
+  },
   "error": {
     "userNotFound": "Usuario no encontrado",
     "userNotFoundPleaseSync": "Usuario no encontrado, sincronice primero",
@@ -363,6 +400,25 @@
     "failedToListCloudflareAccounts": "Error al listar cuentas de Cloudflare",
     "failedToCreateCloudflareAccount": "Error al crear cuenta de Cloudflare",
     "failedToUpdateCloudflareAccount": "Error al actualizar cuenta de Cloudflare",
-    "failedToDeleteCloudflareAccount": "Error al eliminar cuenta de Cloudflare"
+    "failedToDeleteCloudflareAccount": "Error al eliminar cuenta de Cloudflare",
+    "failedToListNotifications": "Error al obtener las notificaciones",
+    "failedToCreateNotification": "Error al crear la notificación",
+    "failedToDeleteNotification": "Error al eliminar la notificación",
+    "notificationNotFound": "Notificación no encontrada",
+    "failedToMarkRead": "Error al marcar como leída",
+    "failedToCheckUnread": "Error al comprobar el estado de lectura",
+    "invalidNotificationType": "Tipo de notificación no válido",
+    "invalidTargetType": "Tipo de destino no válido",
+    "targetIDsRequired": "Se requieren los IDs de destino",
+    "notificationTitleTooLong": "El título no puede superar los 50 caracteres",
+    "notificationContentTooLong": "El contenido no puede superar los 1024 caracteres",
+    "notificationTitleRequired": "El título es obligatorio",
+    "notificationContentRequired": "El contenido es obligatorio",
+    "fileRequired": "Se requiere un archivo",
+    "fileTooLarge": "El archivo es demasiado grande (máx. 20MB)",
+    "invalidImageFormat": "Formato de imagen no válido",
+    "failedToEncodeImage": "Error al codificar la imagen",
+    "failedToSaveImage": "Error al guardar la imagen",
+    "failedToOpenFile": "Error al abrir el archivo"
   }
 }

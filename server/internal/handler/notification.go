@@ -1,0 +1,209 @@
+package handler
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"regexp"
+	"strconv"
+	"unicode/utf8"
+
+	"github.com/gin-gonic/gin"
+	"hl6-server/internal/ctxutil"
+	"hl6-server/internal/helpers"
+	"hl6-server/internal/repository"
+	"hl6-server/pkg/response"
+)
+
+var htmlTagRegexp = regexp.MustCompile(`<[^>]*>`)
+
+func stripHTML(s string) string {
+	return htmlTagRegexp.ReplaceAllString(s, "")
+}
+
+type NotificationHandler struct {
+	repo   *repository.Repository
+	broker *SSEBroker
+}
+
+func NewNotificationHandler(repo *repository.Repository, broker *SSEBroker) *NotificationHandler {
+	return &NotificationHandler{repo: repo, broker: broker}
+}
+
+func (h *NotificationHandler) List(c *gin.Context) {
+	user := ctxutil.GetUser(c)
+	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	if offset < 0 {
+		offset = 0
+	}
+	if limit < 1 || limit > 50 {
+		limit = 20
+	}
+
+	groupID := uint(0)
+	if user.GroupID != nil {
+		groupID = *user.GroupID
+	}
+
+	notifications, total, err := h.repo.ListNotificationsForUser(
+		user.ID, groupID, user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		offset, limit,
+	)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list notifications", "error.failedToListNotifications")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "ok",
+		"data":    notifications,
+		"total":   total,
+		"offset":  offset,
+		"limit":   limit,
+	})
+}
+
+func (h *NotificationHandler) Get(c *gin.Context) {
+	user := ctxutil.GetUser(c)
+	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+
+	groupID := uint(0)
+	if user.GroupID != nil {
+		groupID = *user.GroupID
+	}
+
+	notification, err := h.repo.FindNotificationForUser(
+		id, user.ID, groupID,
+		user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusNotFound, "notification not found", "error.notificationNotFound")
+		return
+	}
+
+	response.OK(c, notification)
+}
+
+func (h *NotificationHandler) MarkRead(c *gin.Context) {
+	user := ctxutil.GetUser(c)
+	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+
+	if err := h.repo.MarkNotificationRead(id, user.ID); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to mark read", "error.failedToMarkRead")
+		return
+	}
+
+	response.OK(c, gin.H{"message": "marked as read"})
+}
+
+func (h *NotificationHandler) UnreadStatus(c *gin.Context) {
+	user := ctxutil.GetUser(c)
+	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+
+	groupID := uint(0)
+	if user.GroupID != nil {
+		groupID = *user.GroupID
+	}
+
+	hasUnread, err := h.repo.HasUnreadNotifications(
+		user.ID, groupID,
+		user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to check unread", "error.failedToCheckUnread")
+		return
+	}
+
+	response.OK(c, gin.H{"has_unread": hasUnread})
+}
+
+func (h *NotificationHandler) SSE(c *gin.Context) {
+	user := ctxutil.GetUser(c)
+	if user == nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	ch := h.broker.Subscribe(user.ID)
+	defer h.broker.Unsubscribe(user.ID, ch)
+
+	c.Stream(func(w io.Writer) bool {
+		select {
+		case event, ok := <-ch:
+			if !ok {
+				return false
+			}
+			c.SSEvent(event.Event, event.Data)
+			return true
+		case <-c.Request.Context().Done():
+			return false
+		}
+	})
+}
+
+func (h *NotificationHandler) GetImage(c *gin.Context) {
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+
+	img, err := h.repo.FindNotificationImage(id)
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	c.Header("Content-Type", "image/webp")
+	c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	c.Header("Content-Length", fmt.Sprintf("%d", img.Size))
+	c.Data(http.StatusOK, "image/webp", img.Data)
+}
+
+// ValidateNotificationContent validates title and content length
+func ValidateNotificationContent(title, content string) (string, bool) {
+	if utf8.RuneCountInString(title) > 50 {
+		return "error.notificationTitleTooLong", false
+	}
+	plainText := stripHTML(content)
+	if utf8.RuneCountInString(plainText) > 1024 {
+		return "error.notificationContentTooLong", false
+	}
+	if title == "" {
+		return "error.notificationTitleRequired", false
+	}
+	if content == "" {
+		return "error.notificationContentRequired", false
+	}
+	return "", true
+}

@@ -58,7 +58,8 @@
     "auditLogs": "監査ログ",
     "adminGroups": "ユーザーグループ",
     "adminCloudflare": "Cloudflare アカウント",
-    "adminSettings": "設定"
+    "adminSettings": "設定",
+    "adminNotifications": "通知管理"
   },
   "dashboard": {
     "title": "ダッシュボード",
@@ -284,6 +285,42 @@
     "subdomainDeletedRefund": "管理者がドメインを削除、サブドメイン {{fqdn}} のクレジットを返金",
     "subdomainDeletedDeduct": "管理者がドメインを削除、サブドメイン {{fqdn}} のボーナスクレジットを回収"
   },
+  "notifications": {
+    "title": "通知",
+    "empty": "通知はありません",
+    "markRead": "既読にする",
+    "type_normal": "通常",
+    "type_urgent": "緊急",
+    "type_pinned": "固定"
+  },
+  "adminNotifications": {
+    "title": "通知管理",
+    "subtitle": "ユーザーに通知を送信",
+    "totalEntries": "全 {{count}} 件の通知",
+    "create": "通知を作成",
+    "createTitle": "通知の作成",
+    "created": "通知を送信しました",
+    "deleted": "通知を削除しました",
+    "deleteTitle": "通知の削除",
+    "deleteConfirm": "通知「{{title}}」を削除しますか？この操作は取り消せません。",
+    "targetType": "送信先",
+    "target_all": "全ユーザー",
+    "target_users": "特定ユーザー",
+    "target_groups": "ユーザーグループ",
+    "selectUsers": "ユーザーを選択",
+    "selectGroups": "グループを選択",
+    "selectedCount": "{{count}} 件選択",
+    "visibleToNew": "今後登録する新規ユーザーにも表示",
+    "notificationType": "種類",
+    "titleLabel": "タイトル",
+    "contentLabel": "内容",
+    "sender": "送信者",
+    "actions": "操作",
+    "editorPlaceholder": "通知内容を入力...",
+    "fontColor": "フォント色",
+    "linkPrompt": "URLを入力",
+    "uploadFailed": "画像のアップロードに失敗しました"
+  },
   "error": {
     "userNotFound": "ユーザーが見つかりません",
     "userNotFoundPleaseSync": "ユーザーが見つかりません。先に同期してください",
@@ -363,6 +400,25 @@
     "failedToListCloudflareAccounts": "Cloudflareアカウントの一覧取得に失敗しました",
     "failedToCreateCloudflareAccount": "Cloudflareアカウントの作成に失敗しました",
     "failedToUpdateCloudflareAccount": "Cloudflareアカウントの更新に失敗しました",
-    "failedToDeleteCloudflareAccount": "Cloudflareアカウントの削除に失敗しました"
+    "failedToDeleteCloudflareAccount": "Cloudflareアカウントの削除に失敗しました",
+    "failedToListNotifications": "通知一覧の取得に失敗しました",
+    "failedToCreateNotification": "通知の作成に失敗しました",
+    "failedToDeleteNotification": "通知の削除に失敗しました",
+    "notificationNotFound": "通知が見つかりません",
+    "failedToMarkRead": "既読にできませんでした",
+    "failedToCheckUnread": "未読状態の確認に失敗しました",
+    "invalidNotificationType": "無効な通知タイプ",
+    "invalidTargetType": "無効な送信先タイプ",
+    "targetIDsRequired": "送信先IDの指定が必要です",
+    "notificationTitleTooLong": "タイトルは50文字以内にしてください",
+    "notificationContentTooLong": "内容は1024文字以内にしてください",
+    "notificationTitleRequired": "タイトルは必須です",
+    "notificationContentRequired": "内容は必須です",
+    "fileRequired": "ファイルが必要です",
+    "fileTooLarge": "ファイルが大きすぎます（最大20MB）",
+    "invalidImageFormat": "無効な画像形式",
+    "failedToEncodeImage": "画像のエンコードに失敗しました",
+    "failedToSaveImage": "画像の保存に失敗しました",
+    "failedToOpenFile": "ファイルを開けませんでした"
   }
 }

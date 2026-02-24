@@ -14,6 +14,8 @@ import type {
   AuditLog,
   UserGroup,
   CloudflareAccount,
+  Notification,
+  OffsetPaginatedResponse,
 } from "@/types";
 
 const BASE_URL = "/api/v1";
@@ -166,4 +168,43 @@ export const api = {
     request<ApiResponse<CloudflareAccount>>(`/admin/cloudflare/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   adminDeleteCloudflareAccount: (id: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/cloudflare/accounts/${id}`, { method: "DELETE" }),
+
+  // Notifications (user)
+  listNotifications: (offset = 0, limit = 20) =>
+    request<OffsetPaginatedResponse<Notification[]>>(`/notifications?offset=${offset}&limit=${limit}`),
+  getNotification: (id: number) =>
+    request<ApiResponse<Notification>>(`/notifications/${id}`),
+  markNotificationRead: (id: number) =>
+    request<ApiResponse<{ message: string }>>(`/notifications/${id}/read`, { method: "POST" }),
+  getUnreadStatus: () =>
+    request<ApiResponse<{ has_unread: boolean }>>("/notifications/unread"),
+
+  // Admin: Notifications
+  adminListNotifications: (page = 1, perPage = 15) =>
+    request<PaginatedResponse<Notification[]>>(`/admin/notifications?page=${page}&per_page=${perPage}`),
+  adminCreateNotification: (data: {
+    title: string;
+    content: string;
+    type: string;
+    target_type: string;
+    target_ids?: number[];
+    visible_to_new?: boolean;
+  }) =>
+    request<ApiResponse<Notification>>("/admin/notifications", { method: "POST", body: JSON.stringify(data) }),
+  adminDeleteNotification: (id: number) =>
+    request<ApiResponse<{ message: string }>>(`/admin/notifications/${id}`, { method: "DELETE" }),
+  adminUploadNotificationImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${BASE_URL}/admin/notifications/images`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ message: res.statusText }));
+      throw new ApiError(body.message || res.statusText, body.message_key);
+    }
+    return res.json() as Promise<ApiResponse<{ id: number; url: string }>>;
+  },
 };

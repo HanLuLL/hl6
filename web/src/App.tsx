@@ -16,6 +16,7 @@ import AdminUsersPage from "@/pages/admin/users";
 import AdminAuditLogsPage from "@/pages/admin/audit-logs";
 import AdminGroupsPage from "@/pages/admin/groups";
 import AdminSettingsPage from "@/pages/admin/settings";
+import AdminNotificationsPage from "@/pages/admin/notifications";
 
 function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -86,6 +87,7 @@ export default function App() {
             <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
             <Route path="/admin/groups" element={<AdminGroupsPage />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
+            <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
           </Route>
         </Route>
       </Routes>

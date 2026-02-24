@@ -58,7 +58,8 @@
     "auditLogs": "\u5ba1\u8ba1\u65e5\u5fd7",
     "adminGroups": "\u7528\u6237\u7ec4",
     "adminCloudflare": "Cloudflare 账号",
-    "adminSettings": "\u7cfb\u7edf\u8bbe\u7f6e"
+    "adminSettings": "系统设置",
+    "adminNotifications": "通知管理"
   },
   "dashboard": {
     "title": "\u63a7\u5236\u53f0",
@@ -284,6 +285,42 @@
     "subdomainDeletedRefund": "管理员删除域名，退还子域名 {{fqdn}} 的积分",
     "subdomainDeletedDeduct": "管理员删除域名，扣回子域名 {{fqdn}} 的奖励积分"
   },
+  "notifications": {
+    "title": "通知",
+    "empty": "暂无通知",
+    "markRead": "标记已读",
+    "type_normal": "普通",
+    "type_urgent": "紧急",
+    "type_pinned": "置顶"
+  },
+  "adminNotifications": {
+    "title": "通知管理",
+    "subtitle": "向用户发送通知",
+    "totalEntries": "共 {{count}} 条通知",
+    "create": "发布通知",
+    "createTitle": "创建通知",
+    "created": "通知已发送",
+    "deleted": "通知已删除",
+    "deleteTitle": "删除通知",
+    "deleteConfirm": "确定删除通知「{{title}}」？此操作不可撤销。",
+    "targetType": "目标",
+    "target_all": "全体用户",
+    "target_users": "指定用户",
+    "target_groups": "用户组",
+    "selectUsers": "选择用户",
+    "selectGroups": "选择用户组",
+    "selectedCount": "已选 {{count}} 个",
+    "visibleToNew": "对未来注册的新用户也可见",
+    "notificationType": "类型",
+    "titleLabel": "标题",
+    "contentLabel": "内容",
+    "sender": "发送者",
+    "actions": "操作",
+    "editorPlaceholder": "编写通知内容...",
+    "fontColor": "字体颜色",
+    "linkPrompt": "输入链接地址",
+    "uploadFailed": "图片上传失败"
+  },
   "error": {
     "userNotFound": "用户未找到",
     "userNotFoundPleaseSync": "用户未找到，请先同步",
@@ -363,6 +400,25 @@
     "failedToListCloudflareAccounts": "获取 Cloudflare 账号列表失败",
     "failedToCreateCloudflareAccount": "创建 Cloudflare 账号失败",
     "failedToUpdateCloudflareAccount": "更新 Cloudflare 账号失败",
-    "failedToDeleteCloudflareAccount": "删除 Cloudflare 账号失败"
+    "failedToDeleteCloudflareAccount": "删除 Cloudflare 账号失败",
+    "failedToListNotifications": "获取通知列表失败",
+    "failedToCreateNotification": "创建通知失败",
+    "failedToDeleteNotification": "删除通知失败",
+    "notificationNotFound": "通知未找到",
+    "failedToMarkRead": "标记已读失败",
+    "failedToCheckUnread": "检查未读状态失败",
+    "invalidNotificationType": "无效的通知类型",
+    "invalidTargetType": "无效的目标类型",
+    "targetIDsRequired": "需要指定目标 ID",
+    "notificationTitleTooLong": "标题不能超过 50 个字符",
+    "notificationContentTooLong": "内容不能超过 1024 个字符",
+    "notificationTitleRequired": "标题不能为空",
+    "notificationContentRequired": "内容不能为空",
+    "fileRequired": "请选择文件",
+    "fileTooLarge": "文件过大（最大 20MB）",
+    "invalidImageFormat": "无效的图片格式",
+    "failedToEncodeImage": "图片编码失败",
+    "failedToSaveImage": "图片保存失败",
+    "failedToOpenFile": "文件打开失败"
   }
 }

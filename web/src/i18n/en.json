@@ -58,7 +58,8 @@
     "auditLogs": "Audit Logs",
     "adminGroups": "User Groups",
     "adminCloudflare": "Cloudflare Accounts",
-    "adminSettings": "Settings"
+    "adminSettings": "Settings",
+    "adminNotifications": "Notifications"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -284,6 +285,42 @@
     "subdomainDeletedRefund": "Admin deleted domain, refund for subdomain {{fqdn}}",
     "subdomainDeletedDeduct": "Admin deleted domain, bonus credits reclaimed for subdomain {{fqdn}}"
   },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "markRead": "Mark as read",
+    "type_normal": "Normal",
+    "type_urgent": "Urgent",
+    "type_pinned": "Pinned"
+  },
+  "adminNotifications": {
+    "title": "Notification Management",
+    "subtitle": "Send notifications to users",
+    "totalEntries": "{{count}} total notifications",
+    "create": "New Notification",
+    "createTitle": "Create Notification",
+    "created": "Notification sent",
+    "deleted": "Notification deleted",
+    "deleteTitle": "Delete Notification",
+    "deleteConfirm": "Delete notification \"{{title}}\"? This action cannot be undone.",
+    "targetType": "Target",
+    "target_all": "All users",
+    "target_users": "Specific users",
+    "target_groups": "User groups",
+    "selectUsers": "Select users",
+    "selectGroups": "Select groups",
+    "selectedCount": "{{count}} selected",
+    "visibleToNew": "Also visible to future new users",
+    "notificationType": "Type",
+    "titleLabel": "Title",
+    "contentLabel": "Content",
+    "sender": "Sender",
+    "actions": "Actions",
+    "editorPlaceholder": "Write notification content...",
+    "fontColor": "Font color",
+    "linkPrompt": "Enter URL",
+    "uploadFailed": "Image upload failed"
+  },
   "error": {
     "userNotFound": "User not found",
     "userNotFoundPleaseSync": "User not found, please sync first",
@@ -363,6 +400,25 @@
     "failedToListCloudflareAccounts": "Failed to list Cloudflare accounts",
     "failedToCreateCloudflareAccount": "Failed to create Cloudflare account",
     "failedToUpdateCloudflareAccount": "Failed to update Cloudflare account",
-    "failedToDeleteCloudflareAccount": "Failed to delete Cloudflare account"
+    "failedToDeleteCloudflareAccount": "Failed to delete Cloudflare account",
+    "failedToListNotifications": "Failed to list notifications",
+    "failedToCreateNotification": "Failed to create notification",
+    "failedToDeleteNotification": "Failed to delete notification",
+    "notificationNotFound": "Notification not found",
+    "failedToMarkRead": "Failed to mark as read",
+    "failedToCheckUnread": "Failed to check unread status",
+    "invalidNotificationType": "Invalid notification type",
+    "invalidTargetType": "Invalid target type",
+    "targetIDsRequired": "Target IDs are required",
+    "notificationTitleTooLong": "Title cannot exceed 50 characters",
+    "notificationContentTooLong": "Content cannot exceed 1024 characters",
+    "notificationTitleRequired": "Title is required",
+    "notificationContentRequired": "Content is required",
+    "fileRequired": "File is required",
+    "fileTooLarge": "File is too large (max 20MB)",
+    "invalidImageFormat": "Invalid image format",
+    "failedToEncodeImage": "Failed to encode image",
+    "failedToSaveImage": "Failed to save image",
+    "failedToOpenFile": "Failed to open file"
   }
 }

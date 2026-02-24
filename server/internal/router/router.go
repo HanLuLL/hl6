@@ -28,6 +28,10 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	adminH := handler.NewAdminHandler(repo)
 	cfAccountH := handler.NewCloudflareAccountHandler(repo, cfg)
 
+	sseBroker := handler.NewSSEBroker()
+	notifH := handler.NewNotificationHandler(repo, sseBroker)
+	notifAdminH := handler.NewNotificationAdminHandler(repo, sseBroker)
+
 	api := r.Group("/api/v1")
 	api.Use(rl.Handler())
 
@@ -55,6 +59,13 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	authed.GET("/credits", creditH.GetBalance)
 	authed.GET("/credits/transactions", creditH.ListTransactions)
 
+	authed.GET("/notifications", notifH.List)
+	authed.GET("/notifications/unread", notifH.UnreadStatus)
+	authed.GET("/notifications/sse", notifH.SSE)
+	authed.GET("/notifications/images/:id", notifH.GetImage)
+	authed.GET("/notifications/:id", notifH.Get)
+	authed.POST("/notifications/:id/read", notifH.MarkRead)
+
 	admin := authed.Group("/admin")
 	admin.Use(middleware.AdminRequired())
 	admin.POST("/domains", domainH.AdminCreate)
@@ -77,6 +88,10 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.PUT("/config", adminH.UpdateConfig)
 	admin.GET("/stats", adminH.Stats)
 	admin.GET("/audit-logs", adminH.AuditLogs)
+	admin.GET("/notifications", notifAdminH.List)
+	admin.POST("/notifications", notifAdminH.Create)
+	admin.DELETE("/notifications/:id", notifAdminH.Delete)
+	admin.POST("/notifications/images", notifAdminH.UploadImage)
 
 	return r
 }

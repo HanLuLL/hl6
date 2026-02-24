@@ -179,3 +179,18 @@
     min-height: 100vh;
   }
 }
+
+@keyframes wobble {
+  0% { transform: rotate(0deg); }
+  15% { transform: rotate(12deg); }
+  30% { transform: rotate(-10deg); }
+  45% { transform: rotate(6deg); }
+  60% { transform: rotate(-4deg); }
+  75% { transform: rotate(2deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.animate-wobble {
+  animation: wobble 0.8s ease-in-out infinite;
+  transform-origin: top center;
+}

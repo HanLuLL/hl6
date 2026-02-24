@@ -58,7 +58,8 @@
     "auditLogs": "稽核日誌",
     "adminGroups": "使用者群組",
     "adminCloudflare": "Cloudflare 帳號",
-    "adminSettings": "系統設定"
+    "adminSettings": "系統設定",
+    "adminNotifications": "通知管理"
   },
   "dashboard": {
     "title": "控制台",
@@ -284,6 +285,42 @@
     "subdomainDeletedRefund": "管理員刪除網域，退還子網域 {{fqdn}} 的積分",
     "subdomainDeletedDeduct": "管理員刪除網域，扣回子網域 {{fqdn}} 的獎勵積分"
   },
+  "notifications": {
+    "title": "通知",
+    "empty": "暫無通知",
+    "markRead": "標記已讀",
+    "type_normal": "普通",
+    "type_urgent": "緊急",
+    "type_pinned": "置頂"
+  },
+  "adminNotifications": {
+    "title": "通知管理",
+    "subtitle": "向使用者發送通知",
+    "totalEntries": "共 {{count}} 條通知",
+    "create": "發佈通知",
+    "createTitle": "建立通知",
+    "created": "通知已發送",
+    "deleted": "通知已刪除",
+    "deleteTitle": "刪除通知",
+    "deleteConfirm": "確定刪除通知「{{title}}」？此操作不可撤銷。",
+    "targetType": "目標",
+    "target_all": "全體使用者",
+    "target_users": "指定使用者",
+    "target_groups": "使用者群組",
+    "selectUsers": "選擇使用者",
+    "selectGroups": "選擇使用者群組",
+    "selectedCount": "已選 {{count}} 個",
+    "visibleToNew": "對未來註冊的新使用者也可見",
+    "notificationType": "類型",
+    "titleLabel": "標題",
+    "contentLabel": "內容",
+    "sender": "發送者",
+    "actions": "操作",
+    "editorPlaceholder": "編寫通知內容...",
+    "fontColor": "字體顏色",
+    "linkPrompt": "輸入連結網址",
+    "uploadFailed": "圖片上傳失敗"
+  },
   "error": {
     "userNotFound": "使用者未找到",
     "userNotFoundPleaseSync": "使用者未找到，請先同步",
@@ -363,6 +400,25 @@
     "failedToListCloudflareAccounts": "取得 Cloudflare 帳號清單失敗",
     "failedToCreateCloudflareAccount": "建立 Cloudflare 帳號失敗",
     "failedToUpdateCloudflareAccount": "更新 Cloudflare 帳號失敗",
-    "failedToDeleteCloudflareAccount": "刪除 Cloudflare 帳號失敗"
+    "failedToDeleteCloudflareAccount": "刪除 Cloudflare 帳號失敗",
+    "failedToListNotifications": "取得通知列表失敗",
+    "failedToCreateNotification": "建立通知失敗",
+    "failedToDeleteNotification": "刪除通知失敗",
+    "notificationNotFound": "通知未找到",
+    "failedToMarkRead": "標記已讀失敗",
+    "failedToCheckUnread": "檢查未讀狀態失敗",
+    "invalidNotificationType": "無效的通知類型",
+    "invalidTargetType": "無效的目標類型",
+    "targetIDsRequired": "需要指定目標 ID",
+    "notificationTitleTooLong": "標題不能超過 50 個字元",
+    "notificationContentTooLong": "內容不能超過 1024 個字元",
+    "notificationTitleRequired": "標題不能為空",
+    "notificationContentRequired": "內容不能為空",
+    "fileRequired": "請選擇檔案",
+    "fileTooLarge": "檔案過大（最大 20MB）",
+    "invalidImageFormat": "無效的圖片格式",
+    "failedToEncodeImage": "圖片編碼失敗",
+    "failedToSaveImage": "圖片儲存失敗",
+    "failedToOpenFile": "檔案開啟失敗"
   }
 }

@@ -58,7 +58,8 @@
     "auditLogs": "Журнал аудита",
     "adminGroups": "Группы пользователей",
     "adminCloudflare": "Аккаунты Cloudflare",
-    "adminSettings": "Настройки"
+    "adminSettings": "Настройки",
+    "adminNotifications": "Уведомления"
   },
   "dashboard": {
     "title": "Панель управления",
@@ -284,6 +285,42 @@
     "subdomainDeletedRefund": "Домен удалён администратором, возврат кредитов за поддомен {{fqdn}}",
     "subdomainDeletedDeduct": "Домен удалён администратором, списание бонусных кредитов за поддомен {{fqdn}}"
   },
+  "notifications": {
+    "title": "Уведомления",
+    "empty": "Нет уведомлений",
+    "markRead": "Отметить как прочитанное",
+    "type_normal": "Обычное",
+    "type_urgent": "Срочное",
+    "type_pinned": "Закреплённое"
+  },
+  "adminNotifications": {
+    "title": "Управление уведомлениями",
+    "subtitle": "Отправка уведомлений пользователям",
+    "totalEntries": "Всего {{count}} уведомлений",
+    "create": "Новое уведомление",
+    "createTitle": "Создать уведомление",
+    "created": "Уведомление отправлено",
+    "deleted": "Уведомление удалено",
+    "deleteTitle": "Удалить уведомление",
+    "deleteConfirm": "Удалить уведомление «{{title}}»? Это действие нельзя отменить.",
+    "targetType": "Получатели",
+    "target_all": "Все пользователи",
+    "target_users": "Конкретные пользователи",
+    "target_groups": "Группы пользователей",
+    "selectUsers": "Выбрать пользователей",
+    "selectGroups": "Выбрать группы",
+    "selectedCount": "Выбрано: {{count}}",
+    "visibleToNew": "Также видно будущим новым пользователям",
+    "notificationType": "Тип",
+    "titleLabel": "Заголовок",
+    "contentLabel": "Содержание",
+    "sender": "Отправитель",
+    "actions": "Действия",
+    "editorPlaceholder": "Напишите содержание уведомления...",
+    "fontColor": "Цвет шрифта",
+    "linkPrompt": "Введите URL",
+    "uploadFailed": "Ошибка загрузки изображения"
+  },
   "error": {
     "userNotFound": "Пользователь не найден",
     "userNotFoundPleaseSync": "Пользователь не найден, сначала синхронизируйтесь",
@@ -363,6 +400,25 @@
     "failedToListCloudflareAccounts": "Не удалось загрузить список аккаунтов Cloudflare",
     "failedToCreateCloudflareAccount": "Не удалось создать аккаунт Cloudflare",
     "failedToUpdateCloudflareAccount": "Не удалось обновить аккаунт Cloudflare",
-    "failedToDeleteCloudflareAccount": "Не удалось удалить аккаунт Cloudflare"
+    "failedToDeleteCloudflareAccount": "Не удалось удалить аккаунт Cloudflare",
+    "failedToListNotifications": "Не удалось загрузить уведомления",
+    "failedToCreateNotification": "Не удалось создать уведомление",
+    "failedToDeleteNotification": "Не удалось удалить уведомление",
+    "notificationNotFound": "Уведомление не найдено",
+    "failedToMarkRead": "Не удалось отметить как прочитанное",
+    "failedToCheckUnread": "Не удалось проверить статус прочтения",
+    "invalidNotificationType": "Недопустимый тип уведомления",
+    "invalidTargetType": "Недопустимый тип получателя",
+    "targetIDsRequired": "Необходимо указать ID получателей",
+    "notificationTitleTooLong": "Заголовок не может превышать 50 символов",
+    "notificationContentTooLong": "Содержание не может превышать 1024 символов",
+    "notificationTitleRequired": "Заголовок обязателен",
+    "notificationContentRequired": "Содержание обязательно",
+    "fileRequired": "Требуется файл",
+    "fileTooLarge": "Файл слишком большой (макс. 20МБ)",
+    "invalidImageFormat": "Недопустимый формат изображения",
+    "failedToEncodeImage": "Не удалось закодировать изображение",
+    "failedToSaveImage": "Не удалось сохранить изображение",
+    "failedToOpenFile": "Не удалось открыть файл"
   }
 }

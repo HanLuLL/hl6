@@ -133,3 +133,26 @@ export interface DomainGroupAccess {
 export interface DomainWithGroupAccess extends Domain {
   group_access: DomainGroupAccess[];
 }
+
+export interface Notification {
+  id: number;
+  title: string;
+  content: string;
+  type: "normal" | "urgent" | "pinned";
+  target_type: "users" | "groups" | "all";
+  target_ids?: number[];
+  visible_to_new: boolean;
+  created_by: number;
+  creator?: User;
+  is_read?: boolean;
+  created_at: string;
+}
+
+export interface OffsetPaginatedResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+  total: number;
+  offset: number;
+  limit: number;
+}
