@@ -31,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { NotificationEditor } from "@/components/notification/notification-editor";
 import { TypeBadge } from "@/components/notification/type-badge";
+import { NotificationDetailDialog } from "@/components/notification/notification-detail-dialog";
 import {
   useAdminNotifications,
   useAdminCreateNotification,
@@ -39,6 +40,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
+import type { Notification } from "@/types";
 
 function stripHTMLForCount(html: string): number {
   const tmp = document.createElement("div");
@@ -70,6 +72,8 @@ export default function AdminNotificationsPage() {
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
+  const [detailNotification, setDetailNotification] = useState<Notification | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [publishProgress, setPublishProgress] = useState<number | null>(null);
   const { t } = useTranslation();
   const pendingImagesRef = useRef(new Map<string, File>());
@@ -431,7 +435,7 @@ export default function AdminNotificationsPage() {
                 ))
               ) : (
                 data?.data?.map((notif) => (
-                  <TableRow key={notif.id}>
+                  <TableRow key={notif.id} className="cursor-pointer" onClick={() => { setDetailNotification(notif); setDetailOpen(true); }}>
                     <TableCell className="text-sm font-medium max-w-[200px] truncate">{notif.title}</TableCell>
                     <TableCell><TypeBadge type={notif.type} /></TableCell>
                     <TableCell><TargetBadge targetType={notif.target_type} /></TableCell>
@@ -442,7 +446,7 @@ export default function AdminNotificationsPage() {
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive"
-                        onClick={() => setDeleteTarget({ id: notif.id, title: notif.title })}
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: notif.id, title: notif.title }); }}
                       >
                         {t("common.delete")}
                       </Button>
@@ -476,6 +480,13 @@ export default function AdminNotificationsPage() {
         }}
         destructive
         loading={deleteMutation.isPending}
+      />
+
+      <NotificationDetailDialog
+        notification={detailNotification}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        showMarkRead={false}
       />
     </div>
   );

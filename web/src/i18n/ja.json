@@ -295,7 +295,12 @@
     "justNow": "たった今",
     "minutesAgo": "{{count}}分前",
     "hoursAgo": "{{count}}時間前",
-    "daysAgo": "{{count}}日前"
+    "daysAgo": "{{count}}日前",
+    "zoomIn": "拡大",
+    "zoomOut": "縮小",
+    "rotateLeft": "左に回転",
+    "rotateRight": "右に回転",
+    "close": "閉じる"
   },
   "adminNotifications": {
     "title": "通知管理",

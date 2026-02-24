@@ -295,7 +295,12 @@
     "justNow": "Только что",
     "minutesAgo": "{{count}} мин. назад",
     "hoursAgo": "{{count}} ч. назад",
-    "daysAgo": "{{count}} дн. назад"
+    "daysAgo": "{{count}} дн. назад",
+    "zoomIn": "Увеличить",
+    "zoomOut": "Уменьшить",
+    "rotateLeft": "Повернуть влево",
+    "rotateRight": "Повернуть вправо",
+    "close": "Закрыть"
   },
   "adminNotifications": {
     "title": "Управление уведомлениями",

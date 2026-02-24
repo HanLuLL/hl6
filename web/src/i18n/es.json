@@ -295,7 +295,12 @@
     "justNow": "Ahora mismo",
     "minutesAgo": "Hace {{count}}m",
     "hoursAgo": "Hace {{count}}h",
-    "daysAgo": "Hace {{count}}d"
+    "daysAgo": "Hace {{count}}d",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "rotateLeft": "Girar a la izquierda",
+    "rotateRight": "Girar a la derecha",
+    "close": "Cerrar"
   },
   "adminNotifications": {
     "title": "Gestión de notificaciones",

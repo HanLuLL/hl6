@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import DOMPurify from "dompurify";
 import {
@@ -8,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { TypeBadge } from "./type-badge";
+import { ImageLightbox } from "./image-lightbox";
 import { useMarkRead } from "@/hooks/use-notifications";
 import type { Notification } from "@/types";
 
@@ -32,11 +34,13 @@ interface NotificationDetailDialogProps {
   notification: Notification | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  showMarkRead?: boolean;
 }
 
-export function NotificationDetailDialog({ notification, open, onOpenChange }: NotificationDetailDialogProps) {
+export function NotificationDetailDialog({ notification, open, onOpenChange, showMarkRead = true }: NotificationDetailDialogProps) {
   const { t } = useTranslation();
   const markRead = useMarkRead();
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   if (!notification) return null;
 
@@ -44,6 +48,17 @@ export function NotificationDetailDialog({ notification, open, onOpenChange }: N
     markRead.mutate(notification.id, {
       onSuccess: () => onOpenChange(false),
     });
+  };
+
+  const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === "IMG") {
+      const src = (target as HTMLImageElement).src;
+      if (src) {
+        e.preventDefault();
+        setLightboxSrc(src);
+      }
+    }
   };
 
   return (
@@ -59,10 +74,11 @@ export function NotificationDetailDialog({ notification, open, onOpenChange }: N
           </p>
         </DialogHeader>
         <div
-          className="flex-1 overflow-y-auto prose prose-sm dark:prose-invert max-w-none"
+          className="flex-1 overflow-y-auto prose prose-sm dark:prose-invert max-w-none [&_img]:cursor-zoom-in"
           dangerouslySetInnerHTML={{ __html: sanitize(notification.content) }}
+          onClick={handleContentClick}
         />
-        {!notification.is_read && (
+        {showMarkRead && !notification.is_read && (
           <div className="flex justify-end pt-2 border-t">
             <Button
               size="sm"
@@ -74,6 +90,12 @@ export function NotificationDetailDialog({ notification, open, onOpenChange }: N
           </div>
         )}
       </DialogContent>
+
+      <ImageLightbox
+        src={lightboxSrc}
+        open={!!lightboxSrc}
+        onOpenChange={(open) => { if (!open) setLightboxSrc(null); }}
+      />
     </Dialog>
   );
 }
