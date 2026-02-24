@@ -34,9 +34,9 @@ func (r *Repository) GetDB() *gorm.DB {
 }
 
 // User
-func (r *Repository) FindUserByLogtoID(logtoID string) (*model.User, error) {
+func (r *Repository) FindUserByExternalID(externalID string) (*model.User, error) {
 	var user model.User
-	err := r.DB.Preload("Group").Where("logto_id = ?", logtoID).First(&user).Error
+	err := r.DB.Preload("Group").Where("external_id = ?", externalID).First(&user).Error
 	return &user, err
 }
 

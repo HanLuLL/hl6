@@ -19,17 +19,19 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"hl6-server/internal/config"
 	"hl6-server/internal/model"
+	"hl6-server/internal/oidc"
 	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
 )
 
 type OIDCHandler struct {
-	repo *repository.Repository
-	cfg  *config.Config
+	repo     *repository.Repository
+	cfg      *config.Config
+	provider *oidc.ProviderConfig
 }
 
-func NewOIDCHandler(repo *repository.Repository, cfg *config.Config) *OIDCHandler {
-	return &OIDCHandler{repo: repo, cfg: cfg}
+func NewOIDCHandler(repo *repository.Repository, cfg *config.Config, provider *oidc.ProviderConfig) *OIDCHandler {
+	return &OIDCHandler{repo: repo, cfg: cfg, provider: provider}
 }
 
 // setSessionCookie sets a cookie with full attributes including SameSite=Lax.
@@ -53,9 +55,9 @@ func (h *OIDCHandler) Login(c *gin.Context) {
 	h.setSessionCookie(c, "hl6_state", state, 900) // 15 min TTL
 
 	redirectURI := fmt.Sprintf("%s/api/v1/auth/callback", h.cfg.FrontendURL)
-	authURL := fmt.Sprintf("%s/oidc/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
-		h.cfg.LogtoEndpoint,
-		url.QueryEscape(h.cfg.LogtoAppID),
+	authURL := fmt.Sprintf("%s?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
+		h.provider.AuthorizationEndpoint,
+		url.QueryEscape(h.cfg.OIDCClientID),
 		url.QueryEscape(redirectURI),
 		url.QueryEscape("openid email profile"),
 		url.QueryEscape(state),
@@ -95,8 +97,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	}
 
 	// Fetch JWKS for verification
-	jwksURL := h.cfg.LogtoEndpoint + "/oidc/jwks"
-	keySet, err := jwk.Fetch(c.Request.Context(), jwksURL)
+	keySet, err := jwk.Fetch(c.Request.Context(), h.provider.JwksURI)
 	if err != nil {
 		log.Printf("failed to fetch JWKS: %v", err)
 		c.String(http.StatusBadGateway, "authentication failed")
@@ -105,7 +106,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 	idToken, err := jwt.Parse([]byte(idTokenStr),
 		jwt.WithKeySet(keySet),
-		jwt.WithIssuer(h.cfg.LogtoEndpoint+"/oidc"),
+		jwt.WithIssuer(h.provider.Issuer),
 		jwt.WithAcceptableSkew(2*time.Minute),
 	)
 	if err != nil {
@@ -124,15 +125,15 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	}
 
 	// 4. Find or create user
-	user, err := h.repo.FindUserByLogtoID(sub)
+	user, err := h.repo.FindUserByExternalID(sub)
 	if err != nil {
 		// New user — create in a single transaction
 		user = &model.User{
-			LogtoID:   sub,
-			Email:     email,
-			Name:      name,
-			AvatarURL: picture,
-			Role:      "user",
+			ExternalID: sub,
+			Email:      email,
+			Name:       name,
+			AvatarURL:  picture,
+			Role:       "user",
 		}
 		if h.cfg.IsAdminEmail(email) {
 			user.Role = "admin"
@@ -186,7 +187,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		tx.Commit()
 
 		// Reload user with group
-		user, _ = h.repo.FindUserByLogtoID(sub)
+		user, _ = h.repo.FindUserByExternalID(sub)
 	} else {
 		// Existing user — update info
 		user.Email = email
@@ -202,7 +203,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	}
 
 	// 5. Issue session JWT
-	sessionToken, err := h.issueSessionJWT(user.LogtoID)
+	sessionToken, err := h.issueSessionJWT(user.ExternalID)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "failed to issue session")
 		return
@@ -219,24 +220,27 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 func (h *OIDCHandler) Logout(c *gin.Context) {
 	h.setSessionCookie(c, "hl6_session", "", -1)
 
-	logoutURL := fmt.Sprintf("%s/oidc/session/end?post_logout_redirect_uri=%s",
-		h.cfg.LogtoEndpoint,
-		url.QueryEscape(h.cfg.FrontendURL),
-	)
-	response.OK(c, gin.H{"logout_url": logoutURL})
+	if h.provider.EndSessionEndpoint != "" {
+		logoutURL := fmt.Sprintf("%s?post_logout_redirect_uri=%s",
+			h.provider.EndSessionEndpoint,
+			url.QueryEscape(h.cfg.FrontendURL),
+		)
+		response.OK(c, gin.H{"logout_url": logoutURL})
+	} else {
+		response.OK(c, gin.H{"logout_url": h.cfg.FrontendURL})
+	}
 }
 
 func (h *OIDCHandler) exchangeCode(code, redirectURI string) (map[string]interface{}, error) {
-	tokenURL := h.cfg.LogtoEndpoint + "/oidc/token"
 	data := url.Values{
 		"grant_type":    {"authorization_code"},
 		"code":          {code},
 		"redirect_uri":  {redirectURI},
-		"client_id":     {h.cfg.LogtoAppID},
-		"client_secret": {h.cfg.LogtoAppSecret},
+		"client_id":     {h.cfg.OIDCClientID},
+		"client_secret": {h.cfg.OIDCClientSecret},
 	}
 
-	resp, err := http.Post(tokenURL, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
+	resp, err := http.Post(h.provider.TokenEndpoint, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("token request failed: %w", err)
 	}
@@ -254,7 +258,7 @@ func (h *OIDCHandler) exchangeCode(code, redirectURI string) (map[string]interfa
 	return result, nil
 }
 
-func (h *OIDCHandler) issueSessionJWT(logtoID string) (string, error) {
+func (h *OIDCHandler) issueSessionJWT(externalID string) (string, error) {
 	key, err := jwk.FromRaw([]byte(h.cfg.SessionSecret))
 	if err != nil {
 		return "", err
@@ -262,7 +266,7 @@ func (h *OIDCHandler) issueSessionJWT(logtoID string) (string, error) {
 
 	now := time.Now()
 	token, err := jwt.NewBuilder().
-		Subject(logtoID).
+		Subject(externalID).
 		Issuer("hl6").
 		Audience([]string{"hl6"}).
 		IssuedAt(now).

@@ -9,7 +9,7 @@ export interface UserGroup {
 
 export interface User {
   id: number;
-  logto_id: string;
+  external_id: string;
   email: string;
   name: string;
   avatar_url: string;

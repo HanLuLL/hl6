@@ -10,9 +10,9 @@ import (
 type Config struct {
 	Port            string
 	DatabaseURL     string
-	LogtoEndpoint   string
-	LogtoAppID      string
-	LogtoAppSecret  string
+	OIDCIssuer      string
+	OIDCClientID    string
+	OIDCClientSecret string
 	SessionSecret   string
 	FrontendURL     string
 	AllowedOrigins  []string
@@ -24,9 +24,9 @@ func Load() *Config {
 	cfg := &Config{
 		Port:            getEnv("SERVER_PORT", "8080"),
 		DatabaseURL:     getEnv("DATABASE_URL", "postgres://hl6:hl6dev@localhost:5432/hl6?sslmode=disable"),
-		LogtoEndpoint:   getEnv("LOGTO_ENDPOINT", ""),
-		LogtoAppID:      getEnv("LOGTO_APP_ID", ""),
-		LogtoAppSecret:  getEnv("LOGTO_APP_SECRET", ""),
+		OIDCIssuer:      getEnv("OIDC_ISSUER", ""),
+		OIDCClientID:    getEnv("OIDC_CLIENT_ID", ""),
+		OIDCClientSecret: getEnv("OIDC_CLIENT_SECRET", ""),
 		SessionSecret:   getEnv("SESSION_SECRET", ""),
 		FrontendURL:     getEnv("FRONTEND_URL", "http://localhost:5173"),
 		AllowedOrigins:  parseList(getEnv("ALLOWED_ORIGINS", "")),

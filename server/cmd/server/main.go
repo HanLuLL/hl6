@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -9,6 +10,7 @@ import (
 	"gorm.io/gorm"
 	"hl6-server/internal/config"
 	"hl6-server/internal/model"
+	"hl6-server/internal/oidc"
 	"hl6-server/internal/router"
 )
 
@@ -20,6 +22,16 @@ func main() {
 	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
 		log.Fatal("failed to connect database:", err)
+	}
+
+	// Rename logto_id column to external_id (idempotent)
+	var colExists bool
+	db.Raw("SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'logto_id')").Scan(&colExists)
+	if colExists {
+		if err := db.Exec("ALTER TABLE users RENAME COLUMN logto_id TO external_id").Error; err != nil {
+			log.Fatal("failed to rename logto_id column:", err)
+		}
+		log.Println("Renamed column users.logto_id → external_id")
 	}
 
 	if err := db.AutoMigrate(
@@ -49,7 +61,14 @@ func main() {
 	migrateCreditsToInt(db)
 	seedDefaults(db)
 
-	r := router.Setup(cfg, db)
+	// OIDC Discovery
+	provider, err := oidc.Discover(context.Background(), cfg.OIDCIssuer)
+	if err != nil {
+		log.Fatal("OIDC discovery failed: ", err)
+	}
+	log.Printf("OIDC provider discovered: issuer=%s", provider.Issuer)
+
+	r := router.Setup(cfg, db, provider)
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("Server starting on %s", addr)
 	if err := r.Run(addr); err != nil {

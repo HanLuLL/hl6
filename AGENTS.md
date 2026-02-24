@@ -4,9 +4,9 @@ HL6 是一个域名/子域名管理平台，用户可以在已注册域名下认
 
 ## Tech Stack
 
-- **Frontend**: React 19 + TypeScript, Vite, Tailwind CSS 4, React Router DOM, TanStack React Query, i18next (6 语言), Logto (OAuth), Shadcn UI
+- **Frontend**: React 19 + TypeScript, Vite, Tailwind CSS 4, React Router DOM, TanStack React Query, i18next (6 语言), OIDC 兼容认证, Shadcn UI
 - **Backend**: Go (Gin + GORM), PostgreSQL 16, Cloudflare API (DNS 管理), JWT 认证 (lestrrat-go/jwx)
-- **Infra**: Docker Compose (PostgreSQL), Logto (OAuth), Cloudflare (DNS)
+- **Infra**: Docker Compose (PostgreSQL), OIDC 兼容认证, Cloudflare (DNS)
 
 ## Development Commands
 
@@ -57,7 +57,7 @@ cd web && npm run lint     # ESLint
 ### Key Patterns
 
 - **API 响应格式**: 统一使用 `ApiResponse{code, message, data}` 包装，列表接口使用 `PaginatedResponse`
-- **认证流程**: 前端 Logto OAuth → JWT token → 后端 middleware 验证
+- **认证流程**: 前端 OIDC OAuth → JWT token → 后端 middleware 验证
 - **数据获取**: 前端通过自定义 hooks 使用 React Query，mutation 后自动 invalidate 相关 query keys
 - **Toast 通知**: 使用 Sonner，mutation 成功/失败时通过 i18n 展示国际化消息
 - **DNS 记录类型**: 支持 A, AAAA, CNAME, TXT，有重复记录拦截和 CNAME 共存规则

@@ -14,7 +14,7 @@ HL6 是一个域名/子域名管理平台。用户可以在已注册域名下认
 
 - 前端：React 19 + TypeScript + Vite + Tailwind CSS 4 + TanStack React Query
 - 后端：Go（Gin + GORM）+ PostgreSQL 16
-- 认证：Logto（OIDC）+ JWT
+- 认证：OIDC 兼容（支持 Logto、Keycloak、Authentik、Google、Zitadel 等）+ JWT
 - 基础设施：Docker Compose（本地 PostgreSQL）
 
 ## 快速开始（`make dev`）
@@ -40,7 +40,7 @@ cp .env.example .env
 - `SERVER_PORT`
 - `FRONTEND_URL`
 - `ALLOWED_ORIGINS`
-- `LOGTO_ENDPOINT` / `LOGTO_APP_ID` / `LOGTO_APP_SECRET`（需要您自部署 logto）
+- `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET`（支持任何标准 OIDC 提供商，详见 [OIDC 配置指南](docs/oidc.md)）
 
 ### 3. 安装前端依赖
 
@@ -99,9 +99,9 @@ make dev-web
 | `DATABASE_URL` | PostgreSQL 连接串 |
 | `SERVER_PORT` | 后端服务端口（默认 `8080`） |
 | `ADMIN_EMAILS` | 管理员邮箱列表（逗号分隔） |
-| `LOGTO_ENDPOINT` | Logto OIDC 地址 |
-| `LOGTO_APP_ID` | Logto 应用 ID |
-| `LOGTO_APP_SECRET` | Logto 应用密钥 |
+| `OIDC_ISSUER` | OIDC 提供商 Issuer URL（如 Logto、Keycloak、Google 等） |
+| `OIDC_CLIENT_ID` | OIDC 应用 Client ID |
+| `OIDC_CLIENT_SECRET` | OIDC 应用 Client Secret |
 | `SESSION_SECRET` | 会话签名密钥 |
 | `FRONTEND_URL` | 前端地址（默认 `http://localhost:5173`） |
 | `ALLOWED_ORIGINS` | CORS 白名单（逗号分隔） |
@@ -123,30 +123,6 @@ make dev-web
 ├── Makefile                # 开发命令入口
 └── .env.example            # 环境变量模板
 ```
-
-## 常见问题
-
-### 1) `make dev` 启动失败，提示 `npm` 相关错误
-
-先执行：
-
-```bash
-cd web && npm install
-```
-
-### 2) 端口冲突（`5173` / `8080` / `5432`）
-
-- 修改 `.env` 中 `SERVER_PORT`
-- 调整前端端口（Vite 启动参数或配置）
-- 修改 `docker-compose.yml` 的数据库端口映射
-
-### 3) 登录相关接口不可用
-
-请确认 `.env` 中 Logto 配置已填写正确：
-
-- `LOGTO_ENDPOINT`
-- `LOGTO_APP_ID`
-- `LOGTO_APP_SECRET`
 
 ## 许可证
 

@@ -8,10 +8,11 @@ import (
 	"hl6-server/internal/config"
 	"hl6-server/internal/handler"
 	"hl6-server/internal/middleware"
+	"hl6-server/internal/oidc"
 	"hl6-server/internal/repository"
 )
 
-func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
+func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
 
@@ -20,7 +21,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	rl := middleware.NewRateLimiter(100, time.Minute)
 
 	authH := handler.NewAuthHandler(repo)
-	oidcH := handler.NewOIDCHandler(repo, cfg)
+	oidcH := handler.NewOIDCHandler(repo, cfg, provider)
 	domainH := handler.NewDomainHandler(repo, cfg)
 	subdomainH := handler.NewSubdomainHandler(repo, cfg)
 	dnsH := handler.NewDNSHandler(repo, cfg)

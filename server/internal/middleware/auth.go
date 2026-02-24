@@ -46,10 +46,10 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 			return
 		}
 
-		logtoID := parsed.Subject()
-		c.Set("user_id", logtoID)
+		externalID := parsed.Subject()
+		c.Set("user_id", externalID)
 
-		user, err := a.repo.FindUserByLogtoID(logtoID)
+		user, err := a.repo.FindUserByExternalID(externalID)
 		if err != nil {
 			response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 			c.Abort()
