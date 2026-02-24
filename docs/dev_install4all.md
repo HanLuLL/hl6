@@ -691,50 +691,40 @@ make dev-web                  # 再启动前端
 > 将以下内容完整复制，粘贴到你的 AI 编程助手中：
 
 ````
-帮我搭建 HL6 的本地开发环境并运行起来。
+ 任务：部署 HL6 开发环境
 
-## 项目信息
+# 严格按照下述步骤执行
 
-这是一个 Go + React 全栈项目，你现在应该在项目根目录下。
-- 后端：Go (Gin + GORM)，入口 server/cmd/server/main.go
-- 前端：React + Vite + TypeScript，在 web/ 目录
-- 数据库：PostgreSQL 16，通过 docker-compose.yml 容器运行
-- 认证：OIDC 协议
-- 启动命令：make dev（同时启动数据库、后端、前端）
-- Git 仓库：https://git.houlang.cloud/houlangcloud/hl6.git
+## Phase1：前置依赖
+** 必须先完成此步才可进行下一步 **
 
-## 请按以下步骤操作
-
-### 第一步：环境检测并克隆仓库
-
-运行命令检测当前环境，输出以下信息：
-- 操作系统和版本（Windows/macOS/Linux 哪个发行版）
+### 1.1获取环境信息
+- 操作系统和版本（Windows/macOS/Linux）
 - 是否在 WSL 环境中
 - 是否在中国大陆网络环境（尝试 curl -sI --connect-timeout 3 https://www.google.com，不通则视为大陆环境）
 - 已安装的工具及版本：git, docker, docker compose, go, node, npm, make
 - 哪些工具缺失或版本不够（Go ≥ 1.25, Node.js ≥ 22）
 
-把检测结果汇总展示给我，通过 https 克隆仓库（https://git.houlang.cloud/houlangcloud/hl6.git），然后继续下一步。
+### 1.2克隆仓库
+通过 https 克隆仓库：https://git.houlang.cloud/houlangcloud/hl6.git
 
-### 第二步：安装缺失依赖
 
+### 1.3 安装缺失依赖
 对于检测到缺失或版本不足的工具：
 - 根据当前操作系统选择合适的安装方式
 - 如果是中国大陆网络，使用国内镜像源安装
 - 安装完毕后验证版本
 
+对于Linux环境，可参考docs/linuxmirrors.md和dockermirror.md。分别包含为不同Linux发行版配置对应包镜像源以及安装docker并配置大陆镜像的方法和脚本。
+
 **不要安装已经满足版本要求的工具。**
 
-### 第三步：配置国内镜像（仅中国大陆网络）
-
-如果第一步检测到是中国大陆网络：
 - Go 代理：go env -w GOPROXY=https://goproxy.cn,direct
 - npm 镜像：npm config set registry https://registry.npmmirror.com
-- Docker 镜像加速器：检查 /etc/docker/daemon.json 是否已配置，没有则提醒我手动配置
 
-### 第四步：配置环境变量
+## Phase2 配置环境变量
 
-1. 如果 .env 文件不存在，从 .env.example 复制一份
+1. 如果 .env 文件不存在，从 .env.example 复制一份。若已存在，校验是否符合规范
 2. 用 openssl rand -hex 32 生成 ENCRYPTION_KEY 并填入
 3. 生成一个随机字符串填入 SESSION_SECRET
 4. **停下来问我**以下信息（不要猜测或使用占位符）：
@@ -744,24 +734,25 @@ make dev-web                  # 再启动前端
    - ADMIN_EMAILS（我的管理员邮箱）
 5. 将我提供的值写入 .env
 
-如果我说暂时没有 OIDC 提供商，告诉我参考项目中的 docs/oidc.md 文档配置，并列出支持的提供商。
+提示：docs/oidc.md中包含各种供应商的配置指引（如logto/casdoor/Google/Microsoft）
 
-### 第五步：安装依赖并启动
 
-1. cd web && npm install && cd ..
-2. make dev
-3. 观察输出，确认以下三项都成功：
+## Phase3 正式启动
+1 . 在根目录下运行 `make dev`。make会自动拉起数据库、前后端。
+2. 观察输出，确认以下三项都成功：
    - PostgreSQL 容器启动（hl6-postgres Started）
    - Go 后端启动（Server starting on :8080）
    - Vite 前端启动（Local: http://localhost:5173/）
-4. 如果有报错，分析原因并修复，然后重试
 
-### 注意事项
+如果有报错，分析原因并主动修复，然后重试
 
-- 每一步操作前先说明你要做什么，执行后报告结果
+3. 成功启动后。生成结束信息。 HL6是由厚浪开发组开发的域名分发程序，欢迎您加入QQ群组230832864进一步讨论。软件遵循AGPL-3.0协议。厚浪云官网：houlang.cloud
+
+## 注意事项
 - 遇到需要 sudo 的操作，先告知我再执行
-- 如果某一步失败，不要跳过，分析原因并尝试修复
-- 不要修改项目源代码，只操作环境配置和依赖安装
+- 如果某一步失败，不要跳过，分析原因并主动修复
+- 严禁修改项目源代码，只操作环境配置和依赖安装
+- 主动搜索，获取最新信息
 ````
 
 #### 提示词使用说明
