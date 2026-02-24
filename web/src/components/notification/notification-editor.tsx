@@ -8,17 +8,16 @@ import { TextStyle, Color } from "@tiptap/extension-text-style";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
-import { toast } from "sonner";
 
 interface NotificationEditorProps {
   content: string;
   onChange: (html: string) => void;
+  onAddImage: (file: File) => string;
   charCount: number;
   maxChars: number;
 }
 
-export function NotificationEditor({ content, onChange, charCount, maxChars }: NotificationEditorProps) {
+export function NotificationEditor({ content, onChange, onAddImage, charCount, maxChars }: NotificationEditorProps) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,17 +46,11 @@ export function NotificationEditor({ content, onChange, charCount, maxChars }: N
 
   if (!editor) return null;
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    try {
-      const res = await api.adminUploadNotificationImage(file);
-      if (res.data?.url) {
-        editor.chain().focus().setImage({ src: res.data.url }).run();
-      }
-    } catch {
-      toast.error(t("adminNotifications.uploadFailed"));
-    }
+    const localURL = onAddImage(file);
+    editor.chain().focus().setImage({ src: localURL }).run();
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 

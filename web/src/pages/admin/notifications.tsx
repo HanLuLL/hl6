@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,12 +37,28 @@ import {
   useAdminDeleteNotification,
 } from "@/hooks/use-notifications";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, getErrorMessage } from "@/lib/api";
+import { toast } from "sonner";
 
 function stripHTMLForCount(html: string): number {
   const tmp = document.createElement("div");
   tmp.innerHTML = html;
   return (tmp.textContent || "").length;
+}
+
+function collectLocalImageSources(html: string): string[] {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  const localSources = new Set<string>();
+
+  tmp.querySelectorAll("img[src]").forEach((node) => {
+    const src = node.getAttribute("src");
+    if (src?.startsWith("blob:")) {
+      localSources.add(src);
+    }
+  });
+
+  return Array.from(localSources);
 }
 
 function TargetBadge({ targetType }: { targetType: string }) {
@@ -54,11 +70,15 @@ export default function AdminNotificationsPage() {
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
+  const [publishProgress, setPublishProgress] = useState<number | null>(null);
   const { t } = useTranslation();
+  const pendingImagesRef = useRef(new Map<string, File>());
+  const pendingImageURLsRef = useRef(new Set<string>());
 
   const { data, isLoading } = useAdminNotifications(page);
   const createMutation = useAdminCreateNotification();
   const deleteMutation = useAdminDeleteNotification();
+  const isPublishing = publishProgress !== null || createMutation.isPending;
 
   // Create form state
   const [title, setTitle] = useState("");
@@ -71,10 +91,31 @@ export default function AdminNotificationsPage() {
   const [userSearch, setUserSearch] = useState("");
   const [debouncedUserSearch, setDebouncedUserSearch] = useState("");
 
+  const clearPendingImages = () => {
+    pendingImageURLsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    pendingImageURLsRef.current.clear();
+    pendingImagesRef.current.clear();
+  };
+
+  const registerPendingImage = (file: File): string => {
+    const localURL = URL.createObjectURL(file);
+    pendingImagesRef.current.set(localURL, file);
+    pendingImageURLsRef.current.add(localURL);
+    return localURL;
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedUserSearch(userSearch), 300);
     return () => clearTimeout(timer);
   }, [userSearch]);
+
+  useEffect(() => {
+    return () => {
+      pendingImageURLsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      pendingImageURLsRef.current.clear();
+      pendingImagesRef.current.clear();
+    };
+  }, []);
 
   const contentCharCount = useMemo(() => stripHTMLForCount(content), [content]);
 
@@ -109,31 +150,63 @@ export default function AdminNotificationsPage() {
     setSelectedGroupIds([]);
     setVisibleToNew(false);
     setUserSearch("");
+    setPublishProgress(null);
+    clearPendingImages();
   };
 
-  const handleCreate = () => {
-    const payload: Parameters<typeof createMutation.mutate>[0] = {
-      title,
-      content,
-      type,
-      target_type: targetType,
-    };
+  const handleCreate = async () => {
+    if (isPublishing) return;
 
-    if (targetType === "users") {
-      payload.target_ids = selectedUserIds;
-    } else if (targetType === "groups") {
-      payload.target_ids = selectedGroupIds;
-      payload.visible_to_new = visibleToNew;
-    } else {
-      payload.visible_to_new = visibleToNew;
+    const localImageSources = collectLocalImageSources(content);
+    const totalSteps = localImageSources.length + 1;
+    let completedSteps = 0;
+    let contentWithUploadedImages = content;
+    let createRequestStarted = false;
+    setPublishProgress(0);
+
+    try {
+      for (const localSource of localImageSources) {
+        const file = pendingImagesRef.current.get(localSource);
+        if (!file) {
+          throw new Error(t("adminNotifications.uploadFailed"));
+        }
+        const res = await api.adminUploadNotificationImage(file);
+        const uploadedURL = res.data?.url;
+        if (!uploadedURL) {
+          throw new Error(t("adminNotifications.uploadFailed"));
+        }
+        contentWithUploadedImages = contentWithUploadedImages.split(localSource).join(uploadedURL);
+        completedSteps += 1;
+        setPublishProgress(Math.round((completedSteps / totalSteps) * 100));
+      }
+
+      const payload: Parameters<typeof createMutation.mutate>[0] = {
+        title,
+        content: contentWithUploadedImages,
+        type,
+        target_type: targetType,
+      };
+
+      if (targetType === "users") {
+        payload.target_ids = selectedUserIds;
+      } else if (targetType === "groups") {
+        payload.target_ids = selectedGroupIds;
+        payload.visible_to_new = visibleToNew;
+      } else {
+        payload.visible_to_new = visibleToNew;
+      }
+
+      createRequestStarted = true;
+      await createMutation.mutateAsync(payload);
+      setPublishProgress(100);
+      setCreateOpen(false);
+      resetForm();
+    } catch (err) {
+      if (!createRequestStarted) {
+        toast.error(getErrorMessage(err, t));
+      }
+      setPublishProgress(null);
     }
-
-    createMutation.mutate(payload, {
-      onSuccess: () => {
-        setCreateOpen(false);
-        resetForm();
-      },
-    });
   };
 
   const canCreate =
@@ -302,17 +375,30 @@ export default function AdminNotificationsPage() {
                   <NotificationEditor
                     content={content}
                     onChange={setContent}
+                    onAddImage={registerPendingImage}
                     charCount={contentCharCount}
                     maxChars={1024}
                   />
                 </div>
 
+                {publishProgress !== null && (
+                  <div className="space-y-1">
+                    <div className="h-2 w-full overflow-hidden rounded bg-muted">
+                      <div
+                        className="h-full bg-primary transition-all duration-200"
+                        style={{ width: `${publishProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-right text-xs text-muted-foreground">{publishProgress}%</p>
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => { setCreateOpen(false); resetForm(); }}>
                     {t("common.cancel")}
                   </Button>
-                  <Button onClick={handleCreate} disabled={!canCreate || createMutation.isPending}>
-                    {createMutation.isPending ? t("common.creating") : t("common.create")}
+                  <Button onClick={handleCreate} disabled={!canCreate || isPublishing}>
+                    {isPublishing ? t("common.creating") : t("common.create")}
                   </Button>
                 </div>
               </div>

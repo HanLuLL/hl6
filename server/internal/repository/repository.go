@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -530,8 +529,8 @@ func (r *Repository) ListNotificationsForUser(userID, groupID uint, userCreatedA
 		return []NotificationWithRead{}, 0, nil
 	}
 
-	// Query with read status and complex ordering (exclude content for list)
-	querySQL := `SELECT n.id, n.title, n.type, n.target_type, n.target_ids, n.visible_to_new, n.created_by, n.created_at,
+	// Query with read status and complex ordering
+	querySQL := `SELECT n.id, n.title, n.content, n.type, n.target_type, n.target_ids, n.visible_to_new, n.created_by, n.created_at,
 		CASE WHEN nr.id IS NOT NULL THEN true ELSE false END as is_read
 		FROM notifications n
 		LEFT JOIN notification_reads nr ON nr.notification_id = n.id AND nr.user_id = ?
@@ -629,10 +628,6 @@ func (r *Repository) CreateNotificationWithImages(n *model.Notification) error {
 				return fmt.Errorf("failed to link images: %w", err)
 			}
 		}
-
-		// Clean up orphan images older than 1 hour
-		cutoff := time.Now().Add(-1 * time.Hour)
-		tx.Where("notification_id IS NULL AND created_at < ?", cutoff).Delete(&model.NotificationImage{})
 
 		return nil
 	})

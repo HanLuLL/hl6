@@ -224,7 +224,10 @@ func (h *NotificationAdminHandler) UploadImage(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid image format", "error.invalidImageFormat")
 		return
 	}
-	if imgCfg.Width*imgCfg.Height > 64_000_000 {
+	const maxPixels int64 = 64_000_000
+	width := int64(imgCfg.Width)
+	height := int64(imgCfg.Height)
+	if width <= 0 || height <= 0 || width > maxPixels || height > maxPixels || width > maxPixels/height {
 		response.ErrorWithKey(c, http.StatusBadRequest, "image dimensions too large", "error.imageDimensionsTooLarge")
 		return
 	}
