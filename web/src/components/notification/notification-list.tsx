@@ -1,37 +1,24 @@
 import { useRef, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNotifications } from "@/hooks/use-notifications";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TypeBadge } from "./type-badge";
 import { NotificationDetailDialog } from "./notification-detail-dialog";
 import type { Notification } from "@/types";
+import type { TFunction } from "i18next";
 
-function formatRelativeTime(dateStr: string): string {
+function formatRelativeTime(dateStr: string, t: TFunction): string {
   const now = Date.now();
   const date = new Date(dateStr).getTime();
   const diff = now - date;
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1) return t("notifications.justNow");
+  if (minutes < 60) return t("notifications.minutesAgo", { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
+  if (hours < 24) return t("notifications.hoursAgo", { count: hours });
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d`;
+  if (days < 30) return t("notifications.daysAgo", { count: days });
   return new Date(dateStr).toLocaleDateString();
-}
-
-function TypeBadge({ type }: { type: Notification["type"] }) {
-  const { t } = useTranslation();
-  const variants: Record<string, "destructive" | "default" | "secondary"> = {
-    urgent: "destructive",
-    pinned: "default",
-    normal: "secondary",
-  };
-  return (
-    <Badge variant={variants[type] || "secondary"} className="text-[10px] px-1.5 py-0">
-      {t(`notifications.type_${type}`)}
-    </Badge>
-  );
 }
 
 export function NotificationList() {
@@ -94,13 +81,13 @@ export function NotificationList() {
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <TypeBadge type={notification.type} />
+                  <TypeBadge type={notification.type} compact />
                   <span className={`text-sm truncate ${!notification.is_read ? "font-semibold" : ""}`}>
                     {notification.title}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {formatRelativeTime(notification.created_at)}
+                  {formatRelativeTime(notification.created_at, t)}
                 </p>
               </div>
               {!notification.is_read && (

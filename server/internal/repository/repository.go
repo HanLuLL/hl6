@@ -2,8 +2,12 @@ package repository
 
 import (
 	"encoding/json"
+	"fmt"
 	"hl6-server/internal/model"
+	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -518,14 +522,16 @@ func (r *Repository) ListNotificationsForUser(userID, groupID uint, userCreatedA
 
 	// Count
 	countSQL := `SELECT COUNT(*) FROM notifications n WHERE ` + visibilityWhere
-	r.DB.Raw(countSQL, userID, groupID, userCreatedAt, userCreatedAt).Scan(&total)
+	if err := r.DB.Raw(countSQL, userID, groupID, userCreatedAt, userCreatedAt).Scan(&total).Error; err != nil {
+		return nil, 0, err
+	}
 
 	if total == 0 {
 		return []NotificationWithRead{}, 0, nil
 	}
 
-	// Query with read status and complex ordering
-	querySQL := `SELECT n.*,
+	// Query with read status and complex ordering (exclude content for list)
+	querySQL := `SELECT n.id, n.title, n.type, n.target_type, n.target_ids, n.visible_to_new, n.created_by, n.created_at,
 		CASE WHEN nr.id IS NOT NULL THEN true ELSE false END as is_read
 		FROM notifications n
 		LEFT JOIN notification_reads nr ON nr.notification_id = n.id AND nr.user_id = ?
@@ -598,8 +604,50 @@ func (r *Repository) CreateNotification(n *model.Notification) error {
 	return r.DB.Create(n).Error
 }
 
+var imageURLRegexp = regexp.MustCompile(`/api/v1/notifications/images/(\d+)`)
+
+func (r *Repository) CreateNotificationWithImages(n *model.Notification) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(n).Error; err != nil {
+			return err
+		}
+
+		// Link referenced images to this notification
+		matches := imageURLRegexp.FindAllStringSubmatch(n.Content, -1)
+		var imageIDs []uint
+		for _, m := range matches {
+			id, err := strconv.ParseUint(m[1], 10, 64)
+			if err != nil {
+				continue
+			}
+			imageIDs = append(imageIDs, uint(id))
+		}
+		if len(imageIDs) > 0 {
+			if err := tx.Model(&model.NotificationImage{}).
+				Where("id IN ? AND notification_id IS NULL", imageIDs).
+				Update("notification_id", n.ID).Error; err != nil {
+				return fmt.Errorf("failed to link images: %w", err)
+			}
+		}
+
+		// Clean up orphan images older than 1 hour
+		cutoff := time.Now().Add(-1 * time.Hour)
+		tx.Where("notification_id IS NULL AND created_at < ?", cutoff).Delete(&model.NotificationImage{})
+
+		return nil
+	})
+}
+
 func (r *Repository) DeleteNotification(id uint) error {
-	return r.DB.Delete(&model.Notification{}, id).Error
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("notification_id = ?", id).Delete(&model.NotificationRead{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("notification_id = ?", id).Delete(&model.NotificationImage{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&model.Notification{}, id).Error
+	})
 }
 
 func (r *Repository) FindNotification(id uint) (*model.Notification, error) {

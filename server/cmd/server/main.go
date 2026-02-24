@@ -42,6 +42,10 @@ func main() {
 	}
 
 	log.Println("Database migrated successfully")
+
+	// GIN index for JSONB target_ids queries
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_notifications_target_ids ON notifications USING GIN (target_ids)")
+
 	migrateCreditsToInt(db)
 	seedDefaults(db)
 

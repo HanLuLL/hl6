@@ -291,7 +291,11 @@
     "markRead": "Отметить как прочитанное",
     "type_normal": "Обычное",
     "type_urgent": "Срочное",
-    "type_pinned": "Закреплённое"
+    "type_pinned": "Закреплённое",
+    "justNow": "Только что",
+    "minutesAgo": "{{count}} мин. назад",
+    "hoursAgo": "{{count}} ч. назад",
+    "daysAgo": "{{count}} дн. назад"
   },
   "adminNotifications": {
     "title": "Управление уведомлениями",
@@ -419,6 +423,9 @@
     "invalidImageFormat": "Недопустимый формат изображения",
     "failedToEncodeImage": "Не удалось закодировать изображение",
     "failedToSaveImage": "Не удалось сохранить изображение",
-    "failedToOpenFile": "Не удалось открыть файл"
+    "failedToOpenFile": "Не удалось открыть файл",
+    "notificationContentTooLarge": "Содержимое слишком большое (макс. 100 КБ)",
+    "imageDimensionsTooLarge": "Размеры изображения слишком большие",
+    "imageTooLargeAfterCompression": "Изображение слишком большое после сжатия"
   }
 }

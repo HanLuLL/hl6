@@ -291,7 +291,11 @@
     "markRead": "标记已读",
     "type_normal": "普通",
     "type_urgent": "紧急",
-    "type_pinned": "置顶"
+    "type_pinned": "置顶",
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}}分钟前",
+    "hoursAgo": "{{count}}小时前",
+    "daysAgo": "{{count}}天前"
   },
   "adminNotifications": {
     "title": "通知管理",
@@ -419,6 +423,9 @@
     "invalidImageFormat": "无效的图片格式",
     "failedToEncodeImage": "图片编码失败",
     "failedToSaveImage": "图片保存失败",
-    "failedToOpenFile": "文件打开失败"
+    "failedToOpenFile": "文件打开失败",
+    "notificationContentTooLarge": "内容过大（最大 100KB）",
+    "imageDimensionsTooLarge": "图片尺寸过大",
+    "imageTooLargeAfterCompression": "图片压缩后仍然过大"
   }
 }

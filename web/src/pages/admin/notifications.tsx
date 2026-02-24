@@ -30,6 +30,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { NotificationEditor } from "@/components/notification/notification-editor";
+import { TypeBadge } from "@/components/notification/type-badge";
 import {
   useAdminNotifications,
   useAdminCreateNotification,
@@ -42,16 +43,6 @@ function stripHTMLForCount(html: string): number {
   const tmp = document.createElement("div");
   tmp.innerHTML = html;
   return (tmp.textContent || "").length;
-}
-
-function TypeBadge({ type }: { type: string }) {
-  const { t } = useTranslation();
-  const variants: Record<string, "destructive" | "default" | "secondary"> = {
-    urgent: "destructive",
-    pinned: "default",
-    normal: "secondary",
-  };
-  return <Badge variant={variants[type] || "secondary"}>{t(`notifications.type_${type}`)}</Badge>;
 }
 
 function TargetBadge({ targetType }: { targetType: string }) {

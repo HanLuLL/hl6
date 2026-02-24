@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
@@ -111,6 +112,16 @@ func (h *NotificationHandler) MarkRead(c *gin.Context) {
 		return
 	}
 
+	// Verify visibility before marking read
+	groupID := uint(0)
+	if user.GroupID != nil {
+		groupID = *user.GroupID
+	}
+	if _, err := h.repo.FindNotificationForUser(id, user.ID, groupID, user.CreatedAt.Format("2006-01-02T15:04:05Z07:00")); err != nil {
+		response.ErrorWithKey(c, http.StatusNotFound, "notification not found", "error.notificationNotFound")
+		return
+	}
+
 	if err := h.repo.MarkNotificationRead(id, user.ID); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to mark read", "error.failedToMarkRead")
 		return
@@ -158,6 +169,9 @@ func (h *NotificationHandler) SSE(c *gin.Context) {
 	ch := h.broker.Subscribe(user.ID)
 	defer h.broker.Unsubscribe(user.ID, ch)
 
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case event, ok := <-ch:
@@ -166,6 +180,9 @@ func (h *NotificationHandler) SSE(c *gin.Context) {
 			}
 			c.SSEvent(event.Event, event.Data)
 			return true
+		case <-ticker.C:
+			c.SSEvent("heartbeat", "")
+			return true
 		case <-c.Request.Context().Done():
 			return false
 		}
@@ -173,6 +190,12 @@ func (h *NotificationHandler) SSE(c *gin.Context) {
 }
 
 func (h *NotificationHandler) GetImage(c *gin.Context) {
+	user := ctxutil.GetUser(c)
+	if user == nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
 	id, ok := helpers.ParseUintParam(c, "id")
 	if !ok {
 		return
@@ -184,14 +207,36 @@ func (h *NotificationHandler) GetImage(c *gin.Context) {
 		return
 	}
 
+	// Permission check
+	if img.NotificationID != nil {
+		// Image is linked to a notification — verify user can see that notification
+		groupID := uint(0)
+		if user.GroupID != nil {
+			groupID = *user.GroupID
+		}
+		if _, err := h.repo.FindNotificationForUser(*img.NotificationID, user.ID, groupID, user.CreatedAt.Format("2006-01-02T15:04:05Z07:00")); err != nil {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+	} else {
+		// Orphan image — only uploader can access
+		if img.CreatedBy != user.ID {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+	}
+
 	c.Header("Content-Type", "image/webp")
-	c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	c.Header("Cache-Control", "private, max-age=31536000, immutable")
 	c.Header("Content-Length", fmt.Sprintf("%d", img.Size))
 	c.Data(http.StatusOK, "image/webp", img.Data)
 }
 
 // ValidateNotificationContent validates title and content length
 func ValidateNotificationContent(title, content string) (string, bool) {
+	if len(content) > 100*1024 {
+		return "error.notificationContentTooLarge", false
+	}
 	if utf8.RuneCountInString(title) > 50 {
 		return "error.notificationTitleTooLong", false
 	}

@@ -18,12 +18,6 @@ interface NotificationEditorProps {
   maxChars: number;
 }
 
-function stripHTMLForCount(html: string): number {
-  const tmp = document.createElement("div");
-  tmp.innerHTML = html;
-  return (tmp.textContent || "").length;
-}
-
 export function NotificationEditor({ content, onChange, charCount, maxChars }: NotificationEditorProps) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);

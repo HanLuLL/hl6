@@ -8,6 +8,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -85,6 +86,11 @@ func (h *NotificationAdminHandler) Create(c *gin.Context) {
 			response.ErrorWithKey(c, http.StatusBadRequest, "target_ids required", "error.targetIDsRequired")
 			return
 		}
+		var ids []uint
+		if err := json.Unmarshal(body.TargetIDs, &ids); err != nil || len(ids) == 0 {
+			response.ErrorWithKey(c, http.StatusBadRequest, "target_ids required", "error.targetIDsRequired")
+			return
+		}
 	}
 
 	// Validate content length
@@ -103,7 +109,7 @@ func (h *NotificationAdminHandler) Create(c *gin.Context) {
 		CreatedBy:    admin.ID,
 	}
 
-	if err := h.repo.CreateNotification(notification); err != nil {
+	if err := h.repo.CreateNotificationWithImages(notification); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create notification", "error.failedToCreateNotification")
 		return
 	}
@@ -212,6 +218,22 @@ func (h *NotificationAdminHandler) UploadImage(c *gin.Context) {
 	}
 	defer f.Close()
 
+	// Check image dimensions first
+	imgCfg, _, err := image.DecodeConfig(f)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid image format", "error.invalidImageFormat")
+		return
+	}
+	if imgCfg.Width*imgCfg.Height > 64_000_000 {
+		response.ErrorWithKey(c, http.StatusBadRequest, "image dimensions too large", "error.imageDimensionsTooLarge")
+		return
+	}
+
+	// Seek back to start for full decode
+	if seeker, ok := f.(io.ReadSeeker); ok {
+		seeker.Seek(0, 0)
+	}
+
 	// Decode image
 	img, _, err := image.Decode(f)
 	if err != nil {
@@ -219,14 +241,26 @@ func (h *NotificationAdminHandler) UploadImage(c *gin.Context) {
 		return
 	}
 
-	// Encode to WebP
-	var buf bytes.Buffer
-	if err := webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: 80}); err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to encode image", "error.failedToEncodeImage")
+	// Encode to WebP with progressive quality reduction
+	const maxSize = 2 * 1024 * 1024 // 2MB
+	qualities := []float32{80, 60, 40, 20}
+	var data []byte
+	for _, q := range qualities {
+		var buf bytes.Buffer
+		if err := webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: q}); err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to encode image", "error.failedToEncodeImage")
+			return
+		}
+		data = buf.Bytes()
+		if len(data) <= maxSize {
+			break
+		}
+	}
+	if len(data) > maxSize {
+		response.ErrorWithKey(c, http.StatusBadRequest, "image too large after compression", "error.imageTooLargeAfterCompression")
 		return
 	}
 
-	data := buf.Bytes()
 	notifImage := &model.NotificationImage{
 		Data:      data,
 		Size:      len(data),

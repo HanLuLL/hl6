@@ -291,7 +291,11 @@
     "markRead": "Marcar como leída",
     "type_normal": "Normal",
     "type_urgent": "Urgente",
-    "type_pinned": "Fijada"
+    "type_pinned": "Fijada",
+    "justNow": "Ahora mismo",
+    "minutesAgo": "Hace {{count}}m",
+    "hoursAgo": "Hace {{count}}h",
+    "daysAgo": "Hace {{count}}d"
   },
   "adminNotifications": {
     "title": "Gestión de notificaciones",
@@ -419,6 +423,9 @@
     "invalidImageFormat": "Formato de imagen no válido",
     "failedToEncodeImage": "Error al codificar la imagen",
     "failedToSaveImage": "Error al guardar la imagen",
-    "failedToOpenFile": "Error al abrir el archivo"
+    "failedToOpenFile": "Error al abrir el archivo",
+    "notificationContentTooLarge": "Contenido demasiado grande (máx. 100KB)",
+    "imageDimensionsTooLarge": "Dimensiones de imagen demasiado grandes",
+    "imageTooLargeAfterCompression": "La imagen sigue siendo demasiado grande después de la compresión"
   }
 }

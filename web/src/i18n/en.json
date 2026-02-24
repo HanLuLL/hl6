@@ -291,7 +291,11 @@
     "markRead": "Mark as read",
     "type_normal": "Normal",
     "type_urgent": "Urgent",
-    "type_pinned": "Pinned"
+    "type_pinned": "Pinned",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
   },
   "adminNotifications": {
     "title": "Notification Management",
@@ -419,6 +423,9 @@
     "invalidImageFormat": "Invalid image format",
     "failedToEncodeImage": "Failed to encode image",
     "failedToSaveImage": "Failed to save image",
-    "failedToOpenFile": "Failed to open file"
+    "failedToOpenFile": "Failed to open file",
+    "notificationContentTooLarge": "Content too large (max 100KB)",
+    "imageDimensionsTooLarge": "Image dimensions too large",
+    "imageTooLargeAfterCompression": "Image still too large after compression"
   }
 }

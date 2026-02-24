@@ -7,12 +7,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { TypeBadge } from "./type-badge";
 import { useMarkRead } from "@/hooks/use-notifications";
 import type { Notification } from "@/types";
 
 const ALLOWED_TAGS = ["p", "br", "strong", "em", "u", "s", "h2", "h3", "ul", "ol", "li", "a", "img", "span"];
 const ALLOWED_ATTR = ["href", "src", "alt", "target", "style"];
+
+DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+  if (node.tagName === "A") {
+    node.setAttribute("rel", "noopener noreferrer");
+  }
+});
 
 function sanitize(html: string) {
   return DOMPurify.sanitize(html, {
@@ -20,20 +26,6 @@ function sanitize(html: string) {
     ALLOWED_ATTR,
     ALLOW_DATA_ATTR: false,
   });
-}
-
-function TypeBadge({ type }: { type: Notification["type"] }) {
-  const { t } = useTranslation();
-  const variants: Record<string, "destructive" | "default" | "secondary"> = {
-    urgent: "destructive",
-    pinned: "default",
-    normal: "secondary",
-  };
-  return (
-    <Badge variant={variants[type] || "secondary"}>
-      {t(`notifications.type_${type}`)}
-    </Badge>
-  );
 }
 
 interface NotificationDetailDialogProps {
@@ -49,7 +41,9 @@ export function NotificationDetailDialog({ notification, open, onOpenChange }: N
   if (!notification) return null;
 
   const handleMarkRead = () => {
-    markRead.mutate(notification.id);
+    markRead.mutate(notification.id, {
+      onSuccess: () => onOpenChange(false),
+    });
   };
 
   return (

@@ -291,7 +291,11 @@
     "markRead": "既読にする",
     "type_normal": "通常",
     "type_urgent": "緊急",
-    "type_pinned": "固定"
+    "type_pinned": "固定",
+    "justNow": "たった今",
+    "minutesAgo": "{{count}}分前",
+    "hoursAgo": "{{count}}時間前",
+    "daysAgo": "{{count}}日前"
   },
   "adminNotifications": {
     "title": "通知管理",
@@ -419,6 +423,9 @@
     "invalidImageFormat": "無効な画像形式",
     "failedToEncodeImage": "画像のエンコードに失敗しました",
     "failedToSaveImage": "画像の保存に失敗しました",
-    "failedToOpenFile": "ファイルを開けませんでした"
+    "failedToOpenFile": "ファイルを開けませんでした",
+    "notificationContentTooLarge": "コンテンツが大きすぎます（最大100KB）",
+    "imageDimensionsTooLarge": "画像の寸法が大きすぎます",
+    "imageTooLargeAfterCompression": "圧縮後も画像が大きすぎます"
   }
 }

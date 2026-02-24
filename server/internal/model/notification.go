@@ -10,7 +10,7 @@ type Notification struct {
 	Title        string          `json:"title" gorm:"type:varchar(50);not null"`
 	Content      string          `json:"content" gorm:"type:text;not null"`
 	Type         string          `json:"type" gorm:"type:varchar(10);not null"`
-	TargetType   string          `json:"target_type" gorm:"type:varchar(10);not null"`
+	TargetType   string          `json:"target_type" gorm:"type:varchar(10);not null;index"`
 	TargetIDs    json.RawMessage `json:"target_ids,omitempty" gorm:"type:jsonb"`
 	VisibleToNew bool            `json:"visible_to_new" gorm:"default:false"`
 	CreatedBy    uint            `json:"created_by"`
@@ -26,9 +26,10 @@ type NotificationRead struct {
 }
 
 type NotificationImage struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	Data      []byte    `json:"-" gorm:"type:bytea;not null"`
-	Size      int       `json:"size" gorm:"not null"`
-	CreatedBy uint      `json:"created_by"`
-	CreatedAt time.Time `json:"created_at"`
+	ID             uint      `json:"id" gorm:"primaryKey"`
+	Data           []byte    `json:"-" gorm:"type:bytea;not null"`
+	Size           int       `json:"size" gorm:"not null"`
+	NotificationID *uint     `json:"notification_id" gorm:"index"`
+	CreatedBy      uint      `json:"created_by"`
+	CreatedAt      time.Time `json:"created_at"`
 }

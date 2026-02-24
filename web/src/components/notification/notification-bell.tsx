@@ -16,7 +16,7 @@ export function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-8 w-8">
+        <Button variant="ghost" size="icon" className="relative h-8 w-8" aria-label="Notifications">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
