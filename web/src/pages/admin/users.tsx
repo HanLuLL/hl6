@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,12 +28,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { GroupsContent } from "./groups";
 
-export default function AdminUsersPage() {
+function UsersContent() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -95,12 +98,7 @@ export default function AdminUsersPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t("adminUsers.title")}</h1>
-        <p className="text-muted-foreground">{t("adminUsers.subtitle")}</p>
-      </div>
-
+    <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           {isLoading ? (
@@ -247,6 +245,43 @@ export default function AdminUsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+}
+
+export default function AdminUsersPage() {
+  const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get("tab") || "users";
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">{t("adminUsers.pageTitle")}</h1>
+        <p className="text-muted-foreground">{t("adminUsers.pageSubtitle")}</p>
+      </div>
+
+      <Tabs
+        value={currentTab}
+        onValueChange={(value) => {
+          if (value === "users") {
+            setSearchParams({});
+          } else {
+            setSearchParams({ tab: value });
+          }
+        }}
+      >
+        <TabsList variant="line">
+          <TabsTrigger value="users">{t("adminUsers.tabUsers")}</TabsTrigger>
+          <TabsTrigger value="groups">{t("adminUsers.tabGroups")}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="users" className="space-y-6 mt-4">
+          <UsersContent />
+        </TabsContent>
+        <TabsContent value="groups" className="mt-4">
+          <GroupsContent />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

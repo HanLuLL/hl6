@@ -14,7 +14,7 @@ import AdminDomainsPage from "@/pages/admin/domains";
 import AdminCloudflareAccountsPage from "@/pages/admin/cloudflare-accounts";
 import AdminUsersPage from "@/pages/admin/users";
 import AdminAuditLogsPage from "@/pages/admin/audit-logs";
-import AdminGroupsPage from "@/pages/admin/groups";
+
 import AdminSettingsPage from "@/pages/admin/settings";
 import AdminNotificationsPage from "@/pages/admin/notifications";
 
@@ -85,7 +85,7 @@ export default function App() {
             <Route path="/admin/cloudflare" element={<AdminCloudflareAccountsPage />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
-            <Route path="/admin/groups" element={<AdminGroupsPage />} />
+            <Route path="/admin/groups" element={<Navigate to="/admin/users?tab=groups" replace />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
             <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
           </Route>

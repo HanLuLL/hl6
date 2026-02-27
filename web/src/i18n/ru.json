@@ -53,10 +53,9 @@
     "mySubdomains": "Мои поддомены",
     "credits": "Кредиты",
     "admin": "Администрирование",
-    "adminUsers": "Управление пользователями",
+    "adminUsers": "Пользователи",
     "adminDomains": "Управление доменами",
     "auditLogs": "Журнал аудита",
-    "adminGroups": "Группы пользователей",
     "adminCloudflare": "Аккаунты Cloudflare",
     "adminSettings": "Настройки",
     "adminNotifications": "Уведомления"
@@ -161,6 +160,10 @@
     "recordDeleted": "Запись удалена"
   },
   "adminUsers": {
+    "pageTitle": "Пользователи",
+    "pageSubtitle": "Управление пользователями, группами и кредитами",
+    "tabUsers": "Управление пользователями",
+    "tabGroups": "Группы пользователей",
     "title": "Управление пользователями",
     "subtitle": "Управляйте пользователями и начисляйте кредиты",
     "totalUsers": "Всего пользователей: {{count}}",

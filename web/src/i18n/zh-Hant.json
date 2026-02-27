@@ -53,10 +53,9 @@
     "mySubdomains": "我的子網域",
     "credits": "積分",
     "admin": "管理",
-    "adminUsers": "使用者管理",
+    "adminUsers": "使用者",
     "adminDomains": "網域管理",
     "auditLogs": "稽核日誌",
-    "adminGroups": "使用者群組",
     "adminCloudflare": "Cloudflare 帳號",
     "adminSettings": "系統設定",
     "adminNotifications": "通知管理"
@@ -161,6 +160,10 @@
     "recordDeleted": "記錄已刪除"
   },
   "adminUsers": {
+    "pageTitle": "使用者",
+    "pageSubtitle": "管理使用者、群組和積分",
+    "tabUsers": "使用者管理",
+    "tabGroups": "使用者群組",
     "title": "使用者管理",
     "subtitle": "管理使用者並發放積分",
     "totalUsers": "共 {{count}} 位使用者",

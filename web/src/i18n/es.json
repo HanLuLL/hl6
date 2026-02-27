@@ -53,10 +53,9 @@
     "mySubdomains": "Mis subdominios",
     "credits": "Créditos",
     "admin": "Administración",
-    "adminUsers": "Gestión de usuarios",
+    "adminUsers": "Usuarios",
     "adminDomains": "Gestión de dominios",
     "auditLogs": "Registros de auditoría",
-    "adminGroups": "Grupos de usuarios",
     "adminCloudflare": "Cuentas Cloudflare",
     "adminSettings": "Configuración",
     "adminNotifications": "Notificaciones"
@@ -161,6 +160,10 @@
     "recordDeleted": "Registro eliminado"
   },
   "adminUsers": {
+    "pageTitle": "Usuarios",
+    "pageSubtitle": "Gestiona usuarios, grupos y créditos",
+    "tabUsers": "Gestión de usuarios",
+    "tabGroups": "Grupos de usuarios",
     "title": "Gestión de usuarios",
     "subtitle": "Gestiona usuarios y otorga créditos",
     "totalUsers": "{{count}} usuarios en total",

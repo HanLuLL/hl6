@@ -33,7 +33,7 @@ import { toast } from "sonner";
 import type { UserGroup } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function AdminGroupsPage() {
+export function GroupsContent() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { data: groups, isLoading } = useQuery({
@@ -94,12 +94,8 @@ export default function AdminGroupsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{t("adminGroups.title")}</h1>
-            <p className="text-muted-foreground">{t("adminGroups.subtitle")}</p>
-          </div>
+      <div className="space-y-4">
+        <div className="flex justify-end">
           <Skeleton className="h-9 w-24" />
         </div>
         <Card>
@@ -131,12 +127,8 @@ export default function AdminGroupsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("adminGroups.title")}</h1>
-          <p className="text-muted-foreground">{t("adminGroups.subtitle")}</p>
-        </div>
+    <div className="space-y-4">
+      <div className="flex justify-end">
         <Button onClick={() => setShowAdd(true)}>{t("adminGroups.addGroup")}</Button>
       </div>
 
