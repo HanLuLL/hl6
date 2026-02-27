@@ -34,6 +34,11 @@ func NewOIDCHandler(repo *repository.Repository, cfg *config.Config, provider *o
 	return &OIDCHandler{repo: repo, cfg: cfg, provider: provider}
 }
 
+func (h *OIDCHandler) callbackURL() string {
+	base := strings.TrimRight(h.cfg.BackendURL, "/")
+	return base + "/api/v1/auth/callback"
+}
+
 // setSessionCookie sets a cookie with full attributes including SameSite=Lax.
 func (h *OIDCHandler) setSessionCookie(c *gin.Context, name, value string, maxAge int) {
 	secure := strings.HasPrefix(h.cfg.FrontendURL, "https")
@@ -54,7 +59,7 @@ func (h *OIDCHandler) Login(c *gin.Context) {
 	// Store state in httpOnly cookie
 	h.setSessionCookie(c, "hl6_state", state, 900) // 15 min TTL
 
-	redirectURI := fmt.Sprintf("%s/api/v1/auth/callback", h.cfg.FrontendURL)
+	redirectURI := h.callbackURL()
 	authURL := fmt.Sprintf("%s?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
 		h.provider.AuthorizationEndpoint,
 		url.QueryEscape(h.cfg.OIDCClientID),
@@ -80,7 +85,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	h.setSessionCookie(c, "hl6_state", "", -1)
 
 	// 2. Exchange code for tokens
-	redirectURI := fmt.Sprintf("%s/api/v1/auth/callback", h.cfg.FrontendURL)
+	redirectURI := h.callbackURL()
 	tokenResp, err := h.exchangeCode(code, redirectURI)
 	if err != nil {
 		log.Printf("token exchange failed: %v", err)

@@ -41,5 +41,6 @@ CI 文件：`/.gitlab-ci.yml`
 
 后端运行环境还需要与 Pages 域名对齐：
 
+- `BACKEND_URL`：后端对外访问地址（用于 OIDC callback，例如 `https://api.example.com`）
 - `FRONTEND_URL`：设置为你的 Pages 访问地址
 - `ALLOWED_ORIGINS`：包含你的 Pages 访问地址（可逗号分隔多个）
