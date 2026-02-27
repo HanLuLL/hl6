@@ -11,10 +11,11 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 	"hl6-server/internal/config"
-	"hl6-server/internal/model"
-	"hl6-server/internal/repository"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
+	"hl6-server/internal/model"
+	"hl6-server/internal/repository"
+	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
 	"hl6-server/pkg/validator"
 )
@@ -109,6 +110,9 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 	if _, err := h.repo.FindSubdomainByName(domain.ID, body.Name); err == nil {
 		response.ErrorWithKey(c, http.StatusConflict, "subdomain already taken", "error.subdomainAlreadyTaken")
 		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
 	}
 
 	fqdn := fmt.Sprintf("%s.%s", body.Name, domain.Name)
@@ -190,7 +194,11 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 	if len(sub.DNSRecords) > 0 {
 		cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
 		if err != nil {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+			if errors.Is(err, service.ErrCloudflareTokenEmpty) {
+				response.Error(c, http.StatusInternalServerError, err.Error())
+			} else {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+			}
 			return
 		}
 		for _, record := range sub.DNSRecords {
@@ -204,8 +212,16 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 	}
 
 	tx := h.repo.GetDB().Begin()
-	tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{})
-	tx.Delete(sub)
+	if err := tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{}).Error; err != nil {
+		tx.Rollback()
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete dns records", "error.databaseError")
+		return
+	}
+	if err := tx.Delete(sub).Error; err != nil {
+		tx.Rollback()
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete subdomain", "error.databaseError")
+		return
+	}
 
 	details, _ := json.Marshal(map[string]interface{}{"fqdn": sub.FQDN})
 	tx.Create(&model.AuditLog{
@@ -215,7 +231,11 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 		ResourceID: sub.ID,
 		Details:    details,
 	})
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to release subdomain", "error.databaseError")
+		return
+	}
 
 	response.OK(c, gin.H{"message": "subdomain released"})
 }

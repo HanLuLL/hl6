@@ -149,7 +149,11 @@ func (h *CloudflareAccountHandler) ListZones(c *gin.Context) {
 		return
 	}
 
-	cf := service.NewCloudflareService(h.decryptToken(account.ApiToken))
+	cf, err := service.NewCloudflareService(h.decryptToken(account.ApiToken))
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 	zones, err := cf.ListZones(c.Request.Context())
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list cloudflare zones", "error.failedToListCloudflareZones")
@@ -166,5 +170,5 @@ func cfForAccount(repo *repository.Repository, cfg *config.Config, accountID uin
 		return nil, err
 	}
 	token := crypto.DecryptOrPlaintext(account.ApiToken, cfg.EncryptionKey)
-	return service.NewCloudflareService(token), nil
+	return service.NewCloudflareService(token)
 }

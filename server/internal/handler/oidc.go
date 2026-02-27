@@ -107,6 +107,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	idToken, err := jwt.Parse([]byte(idTokenStr),
 		jwt.WithKeySet(keySet),
 		jwt.WithIssuer(h.provider.Issuer),
+		jwt.WithAudience(h.cfg.OIDCClientID),
 		jwt.WithAcceptableSkew(2*time.Minute),
 	)
 	if err != nil {
@@ -117,6 +118,15 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 	sub := idToken.Subject()
 	claims := idToken.PrivateClaims()
+	audiences := idToken.Audience()
+	if len(audiences) > 1 {
+		azp, _ := claims["azp"].(string)
+		if azp == "" || azp != h.cfg.OIDCClientID {
+			log.Printf("invalid id_token azp: %v", claims["azp"])
+			c.String(http.StatusBadGateway, "authentication failed")
+			return
+		}
+	}
 	email, _ := claims["email"].(string)
 	name, _ := claims["name"].(string)
 	picture, _ := claims["picture"].(string)

@@ -2,16 +2,18 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"hl6-server/internal/config"
-	"hl6-server/internal/model"
-	"hl6-server/internal/repository"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
+	"hl6-server/internal/model"
+	"hl6-server/internal/repository"
+	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
 	"hl6-server/pkg/validator"
 )
@@ -112,7 +114,11 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 
 	cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
 	if err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+		if errors.Is(err, service.ErrCloudflareTokenEmpty) {
+			response.Error(c, http.StatusInternalServerError, err.Error())
+		} else {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+		}
 		return
 	}
 
@@ -206,7 +212,11 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 
 	cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
 	if err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+		if errors.Is(err, service.ErrCloudflareTokenEmpty) {
+			response.Error(c, http.StatusInternalServerError, err.Error())
+		} else {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+		}
 		return
 	}
 
@@ -219,7 +229,10 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 	record.Content = body.Content
 	record.TTL = body.TTL
 	record.Proxied = body.Proxied
-	h.repo.UpdateDNSRecord(record)
+	if err := h.repo.UpdateDNSRecord(record); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
 	response.OK(c, record)
 }
 
@@ -241,7 +254,11 @@ func (h *DNSHandler) DeleteRecord(c *gin.Context) {
 	if record.CloudflareRecordID != "" {
 		cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
 		if err != nil {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+			if errors.Is(err, service.ErrCloudflareTokenEmpty) {
+				response.Error(c, http.StatusInternalServerError, err.Error())
+			} else {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+			}
 			return
 		}
 		if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
@@ -251,7 +268,10 @@ func (h *DNSHandler) DeleteRecord(c *gin.Context) {
 		}
 	}
 
-	h.repo.DeleteDNSRecord(record.ID)
+	if err := h.repo.DeleteDNSRecord(record.ID); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
 	response.OK(c, gin.H{"message": "record deleted"})
 }
 

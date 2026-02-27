@@ -63,6 +63,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		CloudflareZoneID    string             `json:"cloudflare_zone_id" binding:"required"`
 		CloudflareAccountID uint               `json:"cloudflare_account_id" binding:"required"`
 		Description         string             `json:"description"`
+		CreditCost          *float64           `json:"credit_cost"`
 		GroupAccess         []groupAccessInput `json:"group_access"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -70,11 +71,18 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		return
 	}
 
+	defaultCreditCost := 1.0
+	if body.CreditCost != nil {
+		defaultCreditCost = *body.CreditCost
+	} else if len(body.GroupAccess) > 0 {
+		defaultCreditCost = body.GroupAccess[0].CreditCost
+	}
+
 	domain := &model.Domain{
 		Name:                body.Name,
 		CloudflareZoneID:    body.CloudflareZoneID,
 		CloudflareAccountID: body.CloudflareAccountID,
-		CreditCost:          model.CreditFromFloat(1),
+		CreditCost:          model.CreditFromFloat(defaultCreditCost),
 		IsActive:            true,
 		Description:         body.Description,
 	}

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -21,12 +22,14 @@ type CloudflareService struct {
 	client *cloudflare.Client
 }
 
-func NewCloudflareService(apiToken string) *CloudflareService {
+var ErrCloudflareTokenEmpty = errors.New("cloudflare api token is empty")
+
+func NewCloudflareService(apiToken string) (*CloudflareService, error) {
 	if apiToken == "" {
-		return &CloudflareService{client: nil}
+		return nil, ErrCloudflareTokenEmpty
 	}
 	client := cloudflare.NewClient(option.WithAPIToken(apiToken))
-	return &CloudflareService{client: client}
+	return &CloudflareService{client: client}, nil
 }
 
 func (s *CloudflareService) buildNewBody(recordType, name, content string, ttl int, proxied bool) dns.RecordNewParamsBodyUnion {
@@ -103,7 +106,7 @@ func (s *CloudflareService) buildUpdateBody(recordType, name, content string, tt
 
 func (s *CloudflareService) CreateRecord(ctx context.Context, zoneID, recordType, name, content string, ttl int, proxied bool) (string, error) {
 	if s.client == nil {
-		return "mock-record-id", nil
+		return "", ErrCloudflareTokenEmpty
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
@@ -125,7 +128,7 @@ func (s *CloudflareService) CreateRecord(ctx context.Context, zoneID, recordType
 
 func (s *CloudflareService) UpdateRecord(ctx context.Context, zoneID, recordID, recordType, name, content string, ttl int, proxied bool) error {
 	if s.client == nil {
-		return nil
+		return ErrCloudflareTokenEmpty
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
@@ -143,7 +146,7 @@ func (s *CloudflareService) UpdateRecord(ctx context.Context, zoneID, recordID, 
 
 func (s *CloudflareService) ListZones(ctx context.Context) ([]ZoneInfo, error) {
 	if s.client == nil {
-		return []ZoneInfo{{ID: "mock-zone-id", Name: "example.com", Status: "active"}}, nil
+		return nil, ErrCloudflareTokenEmpty
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
@@ -167,7 +170,7 @@ func (s *CloudflareService) ListZones(ctx context.Context) ([]ZoneInfo, error) {
 
 func (s *CloudflareService) DeleteRecord(ctx context.Context, zoneID, recordID string) error {
 	if s.client == nil {
-		return nil
+		return ErrCloudflareTokenEmpty
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
@@ -189,7 +192,7 @@ func (s *CloudflareService) DeleteRecord(ctx context.Context, zoneID, recordID s
 // FindRecord searches for an existing record by type, name, and content.
 func (s *CloudflareService) FindRecord(ctx context.Context, zoneID, recordType, name, content string) (string, error) {
 	if s.client == nil {
-		return "", fmt.Errorf("record not found")
+		return "", ErrCloudflareTokenEmpty
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
