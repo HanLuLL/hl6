@@ -18,7 +18,23 @@ import type {
   OffsetPaginatedResponse,
 } from "@/types";
 
-const BASE_URL = "/api/v1";
+function normalizeApiBaseUrl(rawValue: string | undefined): string {
+  const value = rawValue?.trim() ?? "";
+  const baseUrl = value.length > 0 ? value : "/api/v1";
+
+  if (baseUrl === "/") {
+    return "";
+  }
+
+  return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+}
+
+export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
+export function buildApiUrl(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+}
 
 export class ApiError extends Error {
   messageKey?: string;
@@ -48,7 +64,7 @@ async function request<T>(
     ...(options.headers as Record<string, string>),
   };
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     ...options,
     headers,
     credentials: "include",
@@ -72,7 +88,7 @@ async function request<T>(
       sessionStorage.setItem(timeKey, String(now));
 
       if (count <= 3) {
-        window.location.href = "/api/v1/auth/login";
+        window.location.href = buildApiUrl("/auth/login");
       }
     }
     throw new ApiError("Not authenticated", "error.missingToken");
@@ -196,7 +212,7 @@ export const api = {
   adminUploadNotificationImage: async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetch(`${BASE_URL}/admin/notifications/images`, {
+    const res = await fetch(buildApiUrl("/admin/notifications/images"), {
       method: "POST",
       body: formData,
       credentials: "include",

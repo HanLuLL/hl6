@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { buildApiUrl } from "@/lib/api";
 
 export function useNotificationSSE(isAuthenticated: boolean) {
   const queryClient = useQueryClient();
@@ -8,7 +9,7 @@ export function useNotificationSSE(isAuthenticated: boolean) {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const es = new EventSource("/api/v1/notifications/sse");
+    const es = new EventSource(buildApiUrl("/notifications/sse"), { withCredentials: true });
     esRef.current = es;
 
     const handleEvent = () => {

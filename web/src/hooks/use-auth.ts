@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, buildApiUrl } from "@/lib/api";
 
 export function useAuth() {
   const { data, isLoading, error } = useQuery({
@@ -16,7 +16,7 @@ export function useAuth() {
     isLoading,
     user: data?.data?.user ?? null,
     credits: data?.data?.credits ?? 0,
-    signIn: () => { window.location.href = "/api/v1/auth/login"; },
+    signIn: () => { window.location.href = buildApiUrl("/auth/login"); },
     signOut: async () => {
       try {
         const res = await api.logout();

@@ -27,3 +27,19 @@ CI 文件：`/.gitlab-ci.yml`
 - `CI_REGISTRY`
 - `CI_REGISTRY_USER`
 - `CI_REGISTRY_PASSWORD`
+
+## 前端后端地址配置
+
+`pages` job 支持在构建时注入 `VITE_API_BASE_URL`：
+
+- 未配置时默认：`/api/v1`（同域反向代理场景）
+- 跨域部署时建议设置为完整地址，例如：`https://api.houlang.cloud/api/v1`
+
+请在 GitLab `Settings -> CI/CD -> Variables` 中添加：
+
+- `VITE_API_BASE_URL`（按你的后端地址填写）
+
+后端运行环境还需要与 Pages 域名对齐：
+
+- `FRONTEND_URL`：设置为你的 Pages 访问地址
+- `ALLOWED_ORIGINS`：包含你的 Pages 访问地址（可逗号分隔多个）
