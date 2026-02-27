@@ -1,0 +1,72 @@
+stages:
+  - build
+
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - when: never
+
+variables:
+  http_proxy: "http://192.168.6.35:7890"
+  https_proxy: "http://192.168.6.35:7890"
+  HTTP_PROXY: "http://192.168.6.35:7890"
+  HTTPS_PROXY: "http://192.168.6.35:7890"
+
+backend:docker:
+  stage: build
+  image:
+    name: c852603567b1aa7e9615cb023b134046.d.1ms.run/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    IMAGE_NAME: "$CI_REGISTRY_IMAGE/server"
+    IMAGE_TAG: "$CI_COMMIT_REF_SLUG"
+  rules:
+    - changes:
+        - server/**/*
+    - when: never
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}"
+      > /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/server/Dockerfile"
+      --build-arg HTTP_PROXY="${HTTP_PROXY}"
+      --build-arg HTTPS_PROXY="${HTTPS_PROXY}"
+      --build-arg http_proxy="${http_proxy}"
+      --build-arg https_proxy="${https_proxy}"
+      --destination "${IMAGE_NAME}:${IMAGE_TAG}"
+      --destination "${IMAGE_NAME}:latest"
+
+pages:
+  stage: build
+  image: node:20-slim
+  variables:
+    FRONTEND_BASE_PATH: "/"
+    PAGES_DIR: public
+    VITE_GIT_BRANCH: "$CI_COMMIT_REF_NAME"
+    VITE_GIT_COMMIT: "$CI_COMMIT_SHORT_SHA"
+  rules:
+    - changes:
+        - web/**/*
+    - when: never
+  cache:
+    key: "$CI_COMMIT_REF_SLUG-web"
+    paths:
+      - web/node_modules/
+  before_script:
+    - cd web
+  script:
+    - npm ci
+    - npm run build -- --base="${FRONTEND_BASE_PATH}"
+    - cd ..
+    - rm -rf "${PAGES_DIR}"
+    - mkdir -p "${PAGES_DIR}"
+    - cp -r web/dist/* "${PAGES_DIR}/"
+    - cp web/dist/index.html "${PAGES_DIR}/404.html"
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
