@@ -642,6 +642,7 @@ export function NotificationsContent() {
                 {isEditPublishing ? t("common.saving") : t("common.save")}
               </Button>
             </div>
+          </div>
           </DialogContent>
       </Dialog>
     </div>
