@@ -331,7 +331,11 @@
     "editorPlaceholder": "编写通知内容...",
     "fontColor": "字体颜色",
     "linkPrompt": "输入链接地址",
-    "uploadFailed": "图片上传失败"
+    "uploadFailed": "图片上传失败",
+    "edit": "编辑",
+    "editTitle": "编辑通知",
+    "updated": "通知已更新",
+    "readCount": "已读"
   },
   "error": {
     "userNotFound": "用户未找到",

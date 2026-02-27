@@ -331,7 +331,11 @@
     "editorPlaceholder": "通知内容を入力...",
     "fontColor": "フォント色",
     "linkPrompt": "URLを入力",
-    "uploadFailed": "画像のアップロードに失敗しました"
+    "uploadFailed": "画像のアップロードに失敗しました",
+    "edit": "編集",
+    "editTitle": "通知の編集",
+    "updated": "通知を更新しました",
+    "readCount": "既読"
   },
   "error": {
     "userNotFound": "ユーザーが見つかりません",

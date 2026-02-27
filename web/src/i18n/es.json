@@ -331,7 +331,11 @@
     "editorPlaceholder": "Escribir contenido de la notificación...",
     "fontColor": "Color de fuente",
     "linkPrompt": "Introducir URL",
-    "uploadFailed": "Error al subir la imagen"
+    "uploadFailed": "Error al subir la imagen",
+    "edit": "Editar",
+    "editTitle": "Editar notificación",
+    "updated": "Notificación actualizada",
+    "readCount": "Leídos"
   },
   "error": {
     "userNotFound": "Usuario no encontrado",

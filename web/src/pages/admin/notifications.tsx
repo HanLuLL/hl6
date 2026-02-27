@@ -35,6 +35,7 @@ import { NotificationDetailDialog } from "@/components/notification/notification
 import {
   useAdminNotifications,
   useAdminCreateNotification,
+  useAdminUpdateNotification,
   useAdminDeleteNotification,
 } from "@/hooks/use-notifications";
 import { useQuery } from "@tanstack/react-query";
@@ -71,6 +72,12 @@ function TargetBadge({ targetType }: { targetType: string }) {
 export default function AdminNotificationsPage() {
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Notification | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editType, setEditType] = useState("normal");
+  const [editProgress, setEditProgress] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
   const [detailNotification, setDetailNotification] = useState<Notification | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -81,8 +88,10 @@ export default function AdminNotificationsPage() {
 
   const { data, isLoading } = useAdminNotifications(page);
   const createMutation = useAdminCreateNotification();
+  const updateMutation = useAdminUpdateNotification();
   const deleteMutation = useAdminDeleteNotification();
   const isPublishing = publishProgress !== null || createMutation.isPending;
+  const isEditPublishing = editProgress !== null || updateMutation.isPending;
 
   // Create form state
   const [title, setTitle] = useState("");
@@ -219,6 +228,75 @@ export default function AdminNotificationsPage() {
     contentCharCount <= 1024 &&
     title.length <= 50 &&
     (targetType === "all" || (targetType === "users" && selectedUserIds.length > 0) || (targetType === "groups" && selectedGroupIds.length > 0));
+
+  const editContentCharCount = useMemo(() => stripHTMLForCount(editContent), [editContent]);
+
+  const canEdit =
+    editTitle.trim() &&
+    editContent.trim() &&
+    editContentCharCount <= 1024 &&
+    editTitle.length <= 50;
+
+  const openEditDialog = (notif: Notification) => {
+    setEditTarget(notif);
+    setEditTitle(notif.title);
+    setEditContent(notif.content);
+    setEditType(notif.type);
+    setEditProgress(null);
+    clearPendingImages();
+    setEditOpen(true);
+  };
+
+  const resetEditForm = () => {
+    setEditTarget(null);
+    setEditTitle("");
+    setEditContent("");
+    setEditType("normal");
+    setEditProgress(null);
+    clearPendingImages();
+  };
+
+  const handleEdit = async () => {
+    if (!editTarget || isEditPublishing) return;
+
+    const localImageSources = collectLocalImageSources(editContent);
+    const totalSteps = localImageSources.length + 1;
+    let completedSteps = 0;
+    let contentWithUploadedImages = editContent;
+    let updateRequestStarted = false;
+    setEditProgress(0);
+
+    try {
+      for (const localSource of localImageSources) {
+        const file = pendingImagesRef.current.get(localSource);
+        if (!file) {
+          throw new Error(t("adminNotifications.uploadFailed"));
+        }
+        const res = await api.adminUploadNotificationImage(file);
+        const uploadedURL = res.data?.url;
+        if (!uploadedURL) {
+          throw new Error(t("adminNotifications.uploadFailed"));
+        }
+        contentWithUploadedImages = contentWithUploadedImages.split(localSource).join(uploadedURL);
+        completedSteps += 1;
+        setEditProgress(Math.round((completedSteps / totalSteps) * 100));
+      }
+
+      updateRequestStarted = true;
+      await updateMutation.mutateAsync({
+        id: editTarget.id,
+        data: { title: editTitle, content: contentWithUploadedImages, type: editType },
+      });
+      setEditProgress(100);
+      setEditOpen(false);
+      resetEditForm();
+    } catch (err) {
+      if (!updateRequestStarted) {
+        toast.error(getErrorMessage(err, t));
+      }
+      setEditProgress(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -416,6 +494,7 @@ export default function AdminNotificationsPage() {
                 <TableHead>{t("adminNotifications.titleLabel")}</TableHead>
                 <TableHead>{t("adminNotifications.notificationType")}</TableHead>
                 <TableHead>{t("adminNotifications.targetType")}</TableHead>
+                <TableHead>{t("adminNotifications.readCount")}</TableHead>
                 <TableHead>{t("adminNotifications.sender")}</TableHead>
                 <TableHead>{t("auditLogs.time")}</TableHead>
                 <TableHead>{t("adminNotifications.actions")}</TableHead>
@@ -428,9 +507,10 @@ export default function AdminNotificationsPage() {
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-10" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                    <TableCell><Skeleton className="h-7 w-14" /></TableCell>
+                    <TableCell><Skeleton className="h-7 w-24" /></TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -439,17 +519,27 @@ export default function AdminNotificationsPage() {
                     <TableCell className="text-sm font-medium max-w-[200px] truncate">{notif.title}</TableCell>
                     <TableCell><TypeBadge type={notif.type} /></TableCell>
                     <TableCell><TargetBadge targetType={notif.target_type} /></TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{notif.read_count ?? 0}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{notif.creator?.name ?? `#${notif.created_by}`}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{new Date(notif.created_at).toLocaleString()}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: notif.id, title: notif.title }); }}
-                      >
-                        {t("common.delete")}
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); openEditDialog(notif); }}
+                        >
+                          {t("adminNotifications.edit")}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: notif.id, title: notif.title }); }}
+                        >
+                          {t("common.delete")}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -488,6 +578,78 @@ export default function AdminNotificationsPage() {
         onOpenChange={setDetailOpen}
         showMarkRead={false}
       />
+
+      <Dialog open={editOpen} onOpenChange={(open) => { setEditOpen(open); if (!open) resetEditForm(); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("adminNotifications.editTitle")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Notification type */}
+            <div className="space-y-2">
+              <Label>{t("adminNotifications.notificationType")}</Label>
+              <Select value={editType} onValueChange={setEditType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">{t("notifications.type_normal")}</SelectItem>
+                  <SelectItem value="urgent">{t("notifications.type_urgent")}</SelectItem>
+                  <SelectItem value="pinned">{t("notifications.type_pinned")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Title */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>{t("adminNotifications.titleLabel")}</Label>
+                <span className={`text-xs ${editTitle.length > 50 ? "text-destructive" : "text-muted-foreground"}`}>
+                  {editTitle.length} / 50
+                </span>
+              </div>
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                maxLength={50}
+              />
+            </div>
+
+            {/* Content (TipTap editor) */}
+            <div className="space-y-2">
+              <Label>{t("adminNotifications.contentLabel")}</Label>
+              <NotificationEditor
+                content={editContent}
+                onChange={setEditContent}
+                onAddImage={registerPendingImage}
+                charCount={editContentCharCount}
+                maxChars={1024}
+              />
+            </div>
+
+            {editProgress !== null && (
+              <div className="space-y-1">
+                <div className="h-2 w-full overflow-hidden rounded bg-muted">
+                  <div
+                    className="h-full bg-primary transition-all duration-200"
+                    style={{ width: `${editProgress}%` }}
+                  />
+                </div>
+                <p className="text-right text-xs text-muted-foreground">{editProgress}%</p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => { setEditOpen(false); resetEditForm(); }}>
+                {t("common.cancel")}
+              </Button>
+              <Button onClick={handleEdit} disabled={!canEdit || isEditPublishing}>
+                {isEditPublishing ? t("common.saving") : t("common.save")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

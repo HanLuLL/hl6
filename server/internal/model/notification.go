@@ -16,6 +16,7 @@ type Notification struct {
 	CreatedBy    uint            `json:"created_by"`
 	Creator      *User           `json:"creator,omitempty" gorm:"foreignKey:CreatedBy"`
 	CreatedAt    time.Time       `json:"created_at" gorm:"index"`
+	UpdatedAt    time.Time       `json:"updated_at"`
 }
 
 type NotificationRead struct {

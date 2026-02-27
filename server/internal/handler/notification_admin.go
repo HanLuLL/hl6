@@ -142,6 +142,82 @@ func (h *NotificationAdminHandler) Create(c *gin.Context) {
 	response.Created(c, notification)
 }
 
+func (h *NotificationAdminHandler) Update(c *gin.Context) {
+	admin := ctxutil.GetUser(c)
+	if admin == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+
+	notification, err := h.repo.FindNotification(id)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusNotFound, "notification not found", "error.notificationNotFound")
+		return
+	}
+
+	var body struct {
+		Title   string `json:"title" binding:"required"`
+		Content string `json:"content" binding:"required"`
+		Type    string `json:"type" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
+		return
+	}
+
+	// Validate type
+	if body.Type != "normal" && body.Type != "urgent" && body.Type != "pinned" {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid notification type", "error.invalidNotificationType")
+		return
+	}
+
+	// Validate content
+	if errKey, ok := ValidateNotificationContent(body.Title, body.Content); !ok {
+		response.ErrorWithKey(c, http.StatusBadRequest, "validation failed", errKey)
+		return
+	}
+
+	notification.Title = body.Title
+	notification.Content = body.Content
+	notification.Type = body.Type
+
+	if err := h.repo.UpdateNotificationWithImages(notification); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update notification", "error.failedToUpdateNotification")
+		return
+	}
+
+	// Audit log
+	details, _ := json.Marshal(map[string]interface{}{
+		"title": body.Title,
+		"type":  body.Type,
+	})
+	h.repo.CreateAuditLog(&model.AuditLog{
+		UserID:     admin.ID,
+		Action:     "admin_update_notification",
+		Resource:   "notification",
+		ResourceID: id,
+		Details:    details,
+	})
+
+	// Send SSE event to target users
+	event := SSEEvent{Event: "update_notification", Data: fmt.Sprintf(`{"id":%d}`, id)}
+	userIDs, err := h.repo.GetNotificationTargetUserIDs(notification)
+	if err == nil {
+		if notification.TargetType == "all" {
+			h.broker.SendToAll(event)
+		} else {
+			h.broker.SendToUsers(userIDs, event)
+		}
+	}
+
+	response.OK(c, notification)
+}
+
 func (h *NotificationAdminHandler) Delete(c *gin.Context) {
 	admin := ctxutil.GetUser(c)
 	if admin == nil {

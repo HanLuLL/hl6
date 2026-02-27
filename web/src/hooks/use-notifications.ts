@@ -86,6 +86,22 @@ export function useAdminCreateNotification() {
   });
 }
 
+export function useAdminUpdateNotification() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Parameters<typeof api.adminUpdateNotification>[1] }) =>
+      api.adminUpdateNotification(id, data),
+    onSuccess: () => {
+      toast.success(t("adminNotifications.updated"));
+      queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, t));
+    },
+  });
+}
+
 export function useAdminDeleteNotification() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();

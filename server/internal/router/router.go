@@ -91,6 +91,7 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	admin.GET("/audit-logs", adminH.AuditLogs)
 	admin.GET("/notifications", notifAdminH.List)
 	admin.POST("/notifications", notifAdminH.Create)
+	admin.PUT("/notifications/:id", notifAdminH.Update)
 	admin.DELETE("/notifications/:id", notifAdminH.Delete)
 	admin.POST("/notifications/images", notifAdminH.UploadImage)
 

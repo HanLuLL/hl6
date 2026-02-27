@@ -331,7 +331,11 @@
     "editorPlaceholder": "編寫通知內容...",
     "fontColor": "字體顏色",
     "linkPrompt": "輸入連結網址",
-    "uploadFailed": "圖片上傳失敗"
+    "uploadFailed": "圖片上傳失敗",
+    "edit": "編輯",
+    "editTitle": "編輯通知",
+    "updated": "通知已更新",
+    "readCount": "已讀"
   },
   "error": {
     "userNotFound": "使用者未找到",

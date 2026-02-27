@@ -651,13 +651,62 @@ func (r *Repository) FindNotification(id uint) (*model.Notification, error) {
 	return &n, err
 }
 
-func (r *Repository) ListNotificationsAdmin(page, perPage int) ([]model.Notification, int64, error) {
-	var notifications []model.Notification
+type NotificationWithReadCount struct {
+	model.Notification
+	ReadCount int64 `json:"read_count"`
+}
+
+func (r *Repository) ListNotificationsAdmin(page, perPage int) ([]NotificationWithReadCount, int64, error) {
 	var total int64
-	q := r.DB.Model(&model.Notification{})
-	q.Count(&total)
-	err := q.Preload("Creator").Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&notifications).Error
-	return notifications, total, err
+	r.DB.Model(&model.Notification{}).Count(&total)
+
+	var results []NotificationWithReadCount
+	err := r.DB.Model(&model.Notification{}).
+		Select("notifications.*, (SELECT COUNT(*) FROM notification_reads nr WHERE nr.notification_id = notifications.id) as read_count").
+		Preload("Creator").
+		Offset((page-1) * perPage).Limit(perPage).
+		Order("created_at DESC").
+		Find(&results).Error
+	return results, total, err
+}
+
+func (r *Repository) UpdateNotificationWithImages(n *model.Notification) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(n).Select("title", "content", "type", "updated_at").Updates(n).Error; err != nil {
+			return err
+		}
+
+		// Collect all image IDs referenced in the updated content
+		matches := imageURLRegexp.FindAllStringSubmatch(n.Content, -1)
+		var imageIDs []uint
+		for _, m := range matches {
+			id, err := strconv.ParseUint(m[1], 10, 64)
+			if err != nil {
+				continue
+			}
+			imageIDs = append(imageIDs, uint(id))
+		}
+
+		// Link new images to this notification
+		if len(imageIDs) > 0 {
+			if err := tx.Model(&model.NotificationImage{}).
+				Where("id IN ? AND notification_id IS NULL", imageIDs).
+				Update("notification_id", n.ID).Error; err != nil {
+				return fmt.Errorf("failed to link images: %w", err)
+			}
+		}
+
+		// Delete orphaned images that belong to this notification but are no longer referenced
+		delQuery := tx.Where("notification_id = ?", n.ID)
+		if len(imageIDs) > 0 {
+			delQuery = delQuery.Where("id NOT IN ?", imageIDs)
+		}
+		if err := delQuery.Delete(&model.NotificationImage{}).Error; err != nil {
+			return fmt.Errorf("failed to delete orphaned images: %w", err)
+		}
+
+		return nil
+	})
 }
 
 func (r *Repository) CreateNotificationImage(img *model.NotificationImage) error {

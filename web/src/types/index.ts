@@ -145,7 +145,9 @@ export interface Notification {
   created_by: number;
   creator?: User;
   is_read?: boolean;
+  read_count?: number;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface OffsetPaginatedResponse<T> {

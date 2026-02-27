@@ -207,6 +207,8 @@ export const api = {
     visible_to_new?: boolean;
   }) =>
     request<ApiResponse<Notification>>("/admin/notifications", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdateNotification: (id: number, data: { title: string; content: string; type: string }) =>
+    request<ApiResponse<Notification>>(`/admin/notifications/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   adminDeleteNotification: (id: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/notifications/${id}`, { method: "DELETE" }),
   adminUploadNotificationImage: async (file: File) => {

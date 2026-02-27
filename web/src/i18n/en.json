@@ -331,7 +331,11 @@
     "editorPlaceholder": "Write notification content...",
     "fontColor": "Font color",
     "linkPrompt": "Enter URL",
-    "uploadFailed": "Image upload failed"
+    "uploadFailed": "Image upload failed",
+    "edit": "Edit",
+    "editTitle": "Edit Notification",
+    "updated": "Notification updated",
+    "readCount": "Read"
   },
   "error": {
     "userNotFound": "User not found",
