@@ -120,7 +120,8 @@
     "claiming": "Solicitando...",
     "claimFor": "Solicitar por {{cost}} crédito",
     "claimFor_other": "Solicitar por {{cost}} créditos",
-    "success": "Se ha solicitado {{fqdn}} correctamente"
+    "success": "Se ha solicitado {{fqdn}} correctamente",
+    "earnCredits": "Recibirás {{gain}} créditos al solicitar"
   },
   "recordForm": {
     "addTitle": "Añadir registro DNS",

@@ -120,7 +120,8 @@
     "claiming": "取得中...",
     "claimFor": "{{cost}} クレジットで取得",
     "claimFor_other": "{{cost}} クレジットで取得",
-    "success": "{{fqdn}} を取得しました"
+    "success": "{{fqdn}} を取得しました",
+    "earnCredits": "取得後に {{gain}} クレジットが付与されます"
   },
   "recordForm": {
     "addTitle": "DNSレコードを追加",

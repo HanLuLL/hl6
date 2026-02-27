@@ -120,7 +120,8 @@
     "claiming": "申請中...",
     "claimFor": "花費 {{cost}} 積分申請",
     "claimFor_other": "花費 {{cost}} 積分申請",
-    "success": "成功申請 {{fqdn}}"
+    "success": "成功申請 {{fqdn}}",
+    "earnCredits": "申請後可獲得 {{gain}} 積分"
   },
   "recordForm": {
     "addTitle": "新增 DNS 記錄",

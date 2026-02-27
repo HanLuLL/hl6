@@ -76,6 +76,11 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
                 />
               </p>
             )}
+            {domain.credit_cost < 0 && (
+              <p className="text-xs text-green-600 dark:text-green-400">
+                {t("claimDialog.earnCredits", { gain: -domain.credit_cost })}
+              </p>
+            )}
           </div>
         </div>
         <DialogFooter>
