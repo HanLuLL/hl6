@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
+import { SiteFooter } from "@/components/layout/site-footer";
 
 export default function LandingPage() {
   const { isAuthenticated, signIn } = useAuth();
@@ -84,7 +85,10 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        {t("landing.copyright", { year: new Date().getFullYear() })}
+        <p>{t("landing.copyright", { year: new Date().getFullYear() })}</p>
+        <div className="mt-3">
+          <SiteFooter withBorder={false} centered />
+        </div>
       </footer>
     </div>
   );

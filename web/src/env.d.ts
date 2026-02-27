@@ -7,3 +7,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+declare const __APP_GIT_BRANCH__: string
+declare const __APP_GIT_COMMIT__: string

@@ -6,6 +6,7 @@ import { prefetchRouteData } from "@/lib/prefetch";
 import { PageTransition } from "./page-transition";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./language-toggle";
+import { SiteFooter } from "./site-footer";
 import { NotificationBell } from "@/components/notification/notification-bell";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -184,6 +185,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
             {children}
           </PageTransition>
         </main>
+        <SiteFooter />
       </div>
     </div>
   );
