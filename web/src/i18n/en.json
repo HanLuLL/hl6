@@ -53,7 +53,7 @@
     "mySubdomains": "My Subdomains",
     "credits": "Credits",
     "admin": "Admin",
-    "adminUsers": "Users",
+    "adminUsers": "Operations",
     "adminDomains": "Admin Domains",
     "auditLogs": "Audit Logs",
     "adminCloudflare": "Cloudflare Accounts",
@@ -160,10 +160,11 @@
     "recordDeleted": "Record deleted"
   },
   "adminUsers": {
-    "pageTitle": "Users",
-    "pageSubtitle": "Manage users, groups and credits",
-    "tabUsers": "User Management",
+    "pageTitle": "Operations",
+    "pageSubtitle": "Manage users, groups, notifications and credits",
+    "tabUsers": "Users",
     "tabGroups": "User Groups",
+    "tabNotifications": "Notifications",
     "title": "Users",
     "subtitle": "Manage users and grant credits",
     "totalUsers": "{{count}} total users",

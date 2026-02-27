@@ -35,7 +35,6 @@ const adminItems = [
   { labelKey: "nav.adminCloudflare", href: "/admin/cloudflare", icon: "M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" },
   { labelKey: "nav.auditLogs", href: "/admin/audit-logs", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
   { labelKey: "nav.adminSettings", href: "/admin/settings", icon: "M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" },
-  { labelKey: "nav.adminNotifications", href: "/admin/notifications", icon: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0" },
 ];
 
 function NavLink({ item, onClick, collapsed }: { item: typeof navItems[0]; onClick?: () => void; collapsed?: boolean }) {

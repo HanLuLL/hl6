@@ -53,7 +53,7 @@
     "mySubdomains": "マイサブドメイン",
     "credits": "クレジット",
     "admin": "管理",
-    "adminUsers": "ユーザー",
+    "adminUsers": "オペレーション",
     "adminDomains": "ドメイン管理",
     "auditLogs": "監査ログ",
     "adminCloudflare": "Cloudflare アカウント",
@@ -160,10 +160,11 @@
     "recordDeleted": "レコードを削除しました"
   },
   "adminUsers": {
-    "pageTitle": "ユーザー",
-    "pageSubtitle": "ユーザー、グループ、クレジットの管理",
-    "tabUsers": "ユーザー管理",
+    "pageTitle": "オペレーション",
+    "pageSubtitle": "ユーザー、グループ、通知、クレジットの管理",
+    "tabUsers": "ユーザー",
     "tabGroups": "ユーザーグループ",
+    "tabNotifications": "通知",
     "title": "ユーザー管理",
     "subtitle": "ユーザーの管理とクレジットの付与",
     "totalUsers": "ユーザー数：{{count}}",

@@ -53,7 +53,7 @@
     "mySubdomains": "\u6211\u7684\u5b50\u57df\u540d",
     "credits": "\u79ef\u5206",
     "admin": "\u7ba1\u7406",
-    "adminUsers": "用户",
+    "adminUsers": "运营",
     "adminDomains": "\u57df\u540d\u7ba1\u7406",
     "auditLogs": "\u5ba1\u8ba1\u65e5\u5fd7",
     "adminCloudflare": "Cloudflare 账号",
@@ -160,10 +160,11 @@
     "recordDeleted": "\u8bb0\u5f55\u5df2\u5220\u9664"
   },
   "adminUsers": {
-    "pageTitle": "用户",
-    "pageSubtitle": "管理用户、用户组和积分",
-    "tabUsers": "用户管理",
+    "pageTitle": "运营",
+    "pageSubtitle": "管理用户、用户组、通知和积分",
+    "tabUsers": "用户",
     "tabGroups": "用户组",
+    "tabNotifications": "通知",
     "title": "\u7528\u6237\u7ba1\u7406",
     "subtitle": "\u7ba1\u7406\u7528\u6237\u5e76\u53d1\u653e\u79ef\u5206",
     "totalUsers": "\u5171 {{count}} \u4e2a\u7528\u6237",

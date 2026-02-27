@@ -34,6 +34,7 @@ import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GroupsContent } from "./groups";
+import { NotificationsContent } from "./notifications";
 
 function UsersContent() {
   const [page, setPage] = useState(1);
@@ -274,12 +275,16 @@ export default function AdminUsersPage() {
         <TabsList variant="line">
           <TabsTrigger value="users">{t("adminUsers.tabUsers")}</TabsTrigger>
           <TabsTrigger value="groups">{t("adminUsers.tabGroups")}</TabsTrigger>
+          <TabsTrigger value="notifications">{t("adminUsers.tabNotifications")}</TabsTrigger>
         </TabsList>
         <TabsContent value="users" className="space-y-6 mt-4">
           <UsersContent />
         </TabsContent>
         <TabsContent value="groups" className="mt-4">
           <GroupsContent />
+        </TabsContent>
+        <TabsContent value="notifications" className="mt-4">
+          <NotificationsContent />
         </TabsContent>
       </Tabs>
     </div>

@@ -69,7 +69,7 @@ function TargetBadge({ targetType }: { targetType: string }) {
   return <Badge variant="outline">{t(`adminNotifications.target_${targetType}`)}</Badge>;
 }
 
-export default function AdminNotificationsPage() {
+export function NotificationsContent() {
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Notification | null>(null);
@@ -300,11 +300,6 @@ export default function AdminNotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t("adminNotifications.title")}</h1>
-        <p className="text-muted-foreground">{t("adminNotifications.subtitle")}</p>
-      </div>
-
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           {isLoading ? (
@@ -318,7 +313,7 @@ export default function AdminNotificationsPage() {
             <DialogTrigger asChild>
               <Button size="sm">{t("adminNotifications.create")}</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>{t("adminNotifications.createTitle")}</DialogTitle>
               </DialogHeader>
@@ -580,7 +575,7 @@ export default function AdminNotificationsPage() {
       />
 
       <Dialog open={editOpen} onOpenChange={(open) => { setEditOpen(open); if (!open) resetEditForm(); }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("adminNotifications.editTitle")}</DialogTitle>
           </DialogHeader>
@@ -647,9 +642,21 @@ export default function AdminNotificationsPage() {
                 {isEditPublishing ? t("common.saving") : t("common.save")}
               </Button>
             </div>
-          </div>
-        </DialogContent>
+          </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+export default function AdminNotificationsPage() {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">{t("adminNotifications.title")}</h1>
+        <p className="text-muted-foreground">{t("adminNotifications.subtitle")}</p>
+      </div>
+      <NotificationsContent />
     </div>
   );
 }
