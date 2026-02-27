@@ -31,7 +31,7 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 
 	sseBroker := handler.NewSSEBroker()
 	notifH := handler.NewNotificationHandler(repo, sseBroker)
-	notifAdminH := handler.NewNotificationAdminHandler(repo, sseBroker)
+	notifAdminH := handler.NewNotificationAdminHandler(repo, sseBroker, cfg)
 
 	api := r.Group("/api/v1")
 	api.Use(rl.Handler())

@@ -11,9 +11,11 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/chai2010/webp"
 	"github.com/gin-gonic/gin"
+	"hl6-server/internal/config"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
@@ -24,10 +26,11 @@ import (
 type NotificationAdminHandler struct {
 	repo   *repository.Repository
 	broker *SSEBroker
+	cfg    *config.Config
 }
 
-func NewNotificationAdminHandler(repo *repository.Repository, broker *SSEBroker) *NotificationAdminHandler {
-	return &NotificationAdminHandler{repo: repo, broker: broker}
+func NewNotificationAdminHandler(repo *repository.Repository, broker *SSEBroker, cfg *config.Config) *NotificationAdminHandler {
+	return &NotificationAdminHandler{repo: repo, broker: broker, cfg: cfg}
 }
 
 func (h *NotificationAdminHandler) List(c *gin.Context) {
@@ -353,6 +356,6 @@ func (h *NotificationAdminHandler) UploadImage(c *gin.Context) {
 
 	response.Created(c, gin.H{
 		"id":  notifImage.ID,
-		"url": fmt.Sprintf("/api/v1/notifications/images/%d", notifImage.ID),
+		"url": fmt.Sprintf("%s/api/v1/notifications/images/%d", strings.TrimRight(h.cfg.BackendURL, "/"), notifImage.ID),
 	})
 }
