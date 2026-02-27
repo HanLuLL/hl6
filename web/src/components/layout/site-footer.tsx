@@ -1,4 +1,5 @@
 import { Code2, GitBranch, GitCommitHorizontal, type LucideIcon } from "lucide-react";
+import type { JSX } from "react";
 import { cn } from "@/lib/utils";
 
 const OPEN_SOURCE_URL = "https://git.houlang.cloud/houlangcloud/hl6";
