@@ -56,7 +56,6 @@
     "adminUsers": "Operations",
     "adminDomains": "Admin Domains",
     "auditLogs": "Audit Logs",
-    "adminCloudflare": "Cloudflare Accounts",
     "adminSettings": "Settings",
     "adminNotifications": "Notifications"
   },
@@ -188,6 +187,9 @@
     "invitedBy": "Invited By"
   },
   "adminDomains": {
+    "tabDnsRecords": "DNS Records",
+    "tabDomains": "Domains",
+    "tabCloudflare": "Cloudflare Accounts",
     "title": "Manage Domains",
     "subtitle": "Add and configure root domains",
     "addDomain": "Add Domain",
@@ -224,6 +226,30 @@
     "forceDelete": "Force Delete (Ignore CF Errors)",
     "cfFailureSubdomain": "Subdomain",
     "cfFailureError": "Error"
+  },
+  "adminDnsRecords": {
+    "searchPlaceholder": "Search by name or content...",
+    "filterByDomain": "All Domains",
+    "filterByGroup": "All Groups",
+    "noRecords": "No DNS records found",
+    "recordDetail": "Record Detail",
+    "deleteRecord": "Delete Record",
+    "deleteConfirm": "This will permanently delete DNS record {{name}} from Cloudflare and the database.",
+    "sendNotification": "Send notification to user",
+    "reason": "Reason",
+    "reasonPlaceholder": "Optional: reason for deletion",
+    "recordDeleted": "Record deleted",
+    "fqdn": "FQDN",
+    "content": "Content",
+    "type": "Type",
+    "userEmail": "User Email",
+    "createdAt": "Created At",
+    "actions": "Actions",
+    "ttl": "TTL",
+    "proxied": "Proxied",
+    "cloudflareId": "Cloudflare ID",
+    "domain": "Domain",
+    "userName": "User Name"
   },
   "auditLogs": {
     "title": "Audit Logs",

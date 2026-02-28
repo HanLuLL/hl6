@@ -56,7 +56,6 @@
     "adminUsers": "Operaciones",
     "adminDomains": "Gestión de dominios",
     "auditLogs": "Registros de auditoría",
-    "adminCloudflare": "Cuentas Cloudflare",
     "adminSettings": "Configuración",
     "adminNotifications": "Notificaciones"
   },
@@ -188,6 +187,9 @@
     "invitedBy": "Invitado por"
   },
   "adminDomains": {
+    "tabDnsRecords": "Registros DNS",
+    "tabDomains": "Dominios",
+    "tabCloudflare": "Cuentas Cloudflare",
     "title": "Gestión de dominios",
     "subtitle": "Añade y configura dominios raíz",
     "addDomain": "Añadir dominio",
@@ -224,6 +226,30 @@
     "forceDelete": "Forzar eliminación (ignorar errores CF)",
     "cfFailureSubdomain": "Subdominio",
     "cfFailureError": "Error"
+  },
+  "adminDnsRecords": {
+    "searchPlaceholder": "Buscar por nombre o contenido...",
+    "filterByDomain": "Todos los dominios",
+    "filterByGroup": "Todos los grupos",
+    "noRecords": "No se encontraron registros DNS",
+    "recordDetail": "Detalle del registro",
+    "deleteRecord": "Eliminar registro",
+    "deleteConfirm": "Esto eliminará permanentemente el registro DNS {{name}} de Cloudflare y la base de datos.",
+    "sendNotification": "Enviar notificación al usuario",
+    "reason": "Razón",
+    "reasonPlaceholder": "Opcional: razón de la eliminación",
+    "recordDeleted": "Registro eliminado",
+    "fqdn": "FQDN",
+    "content": "Contenido",
+    "type": "Tipo",
+    "userEmail": "Email del usuario",
+    "createdAt": "Fecha de creación",
+    "actions": "Acciones",
+    "ttl": "TTL",
+    "proxied": "Proxy",
+    "cloudflareId": "ID de Cloudflare",
+    "domain": "Dominio",
+    "userName": "Nombre de usuario"
   },
   "auditLogs": {
     "title": "Registros de auditoría",

@@ -24,13 +24,13 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	oidcH := handler.NewOIDCHandler(repo, cfg, provider)
 	domainH := handler.NewDomainHandler(repo, cfg)
 	subdomainH := handler.NewSubdomainHandler(repo, cfg)
-	dnsH := handler.NewDNSHandler(repo, cfg)
 	creditH := handler.NewCreditHandler(repo)
 	adminH := handler.NewAdminHandler(repo)
 	referralH := handler.NewReferralHandler(repo)
 	cfAccountH := handler.NewCloudflareAccountHandler(repo, cfg)
 
 	sseBroker := handler.NewSSEBroker()
+	dnsH := handler.NewDNSHandler(repo, cfg, sseBroker)
 	notifH := handler.NewNotificationHandler(repo, sseBroker)
 	notifAdminH := handler.NewNotificationAdminHandler(repo, sseBroker, cfg)
 
@@ -82,6 +82,8 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	admin.DELETE("/cloudflare/accounts/:id", cfAccountH.Delete)
 	admin.GET("/cloudflare/accounts/:id/zones", cfAccountH.ListZones)
 	admin.POST("/credits/grant", creditH.AdminGrant)
+	admin.GET("/dns-records", dnsH.AdminListRecords)
+	admin.DELETE("/dns-records/:id", dnsH.AdminDeleteRecord)
 	admin.GET("/users", adminH.ListUsers)
 	admin.PUT("/users/:id/group", adminH.UpdateUserGroup)
 	admin.GET("/groups", adminH.ListGroups)

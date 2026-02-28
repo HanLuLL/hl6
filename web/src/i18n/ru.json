@@ -56,7 +56,6 @@
     "adminUsers": "Операции",
     "adminDomains": "Управление доменами",
     "auditLogs": "Журнал аудита",
-    "adminCloudflare": "Аккаунты Cloudflare",
     "adminSettings": "Настройки",
     "adminNotifications": "Уведомления"
   },
@@ -188,6 +187,9 @@
     "invitedBy": "Приглашён"
   },
   "adminDomains": {
+    "tabDnsRecords": "DNS записи",
+    "tabDomains": "Домены",
+    "tabCloudflare": "Аккаунты Cloudflare",
     "title": "Управление доменами",
     "subtitle": "Добавление и настройка корневых доменов",
     "addDomain": "Добавить домен",
@@ -224,6 +226,30 @@
     "forceDelete": "Принудительно удалить (игнорировать ошибки CF)",
     "cfFailureSubdomain": "Поддомен",
     "cfFailureError": "Ошибка"
+  },
+  "adminDnsRecords": {
+    "searchPlaceholder": "Поиск по имени или содержимому...",
+    "filterByDomain": "Все домены",
+    "filterByGroup": "Все группы",
+    "noRecords": "DNS записи не найдены",
+    "recordDetail": "Детали записи",
+    "deleteRecord": "Удалить запись",
+    "deleteConfirm": "Это навсегда удалит DNS запись {{name}} из Cloudflare и базы данных.",
+    "sendNotification": "Отправить уведомление пользователю",
+    "reason": "Причина",
+    "reasonPlaceholder": "Необязательно: причина удаления",
+    "recordDeleted": "Запись удалена",
+    "fqdn": "FQDN",
+    "content": "Содержимое",
+    "type": "Тип",
+    "userEmail": "Email пользователя",
+    "createdAt": "Дата создания",
+    "actions": "Действия",
+    "ttl": "TTL",
+    "proxied": "Проксирование",
+    "cloudflareId": "Cloudflare ID",
+    "domain": "Домен",
+    "userName": "Имя пользователя"
   },
   "auditLogs": {
     "title": "Журнал аудита",

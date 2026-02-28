@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage, ApiError } from "@/lib/api";
 import { toast } from "sonner";
@@ -45,6 +47,8 @@ import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CloudflareZone, CloudflareAccount, DomainWithGroupAccess, UserGroup } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DNSRecordsContent } from "./dns-records";
+import { CloudflareAccountsContent } from "./cloudflare-accounts";
 
 interface GroupAccessEntry {
   group_id: number;
@@ -61,6 +65,47 @@ interface CfFailureRecord {
 }
 
 export default function AdminDomainsPage() {
+  const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get("tab") || "dns-records";
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">{t("adminDomains.title")}</h1>
+        <p className="text-muted-foreground">{t("adminDomains.subtitle")}</p>
+      </div>
+
+      <Tabs
+        value={currentTab}
+        onValueChange={(value) => {
+          if (value === "dns-records") {
+            setSearchParams({});
+          } else {
+            setSearchParams({ tab: value });
+          }
+        }}
+      >
+        <TabsList variant="line">
+          <TabsTrigger value="dns-records">{t("adminDomains.tabDnsRecords")}</TabsTrigger>
+          <TabsTrigger value="domains">{t("adminDomains.tabDomains")}</TabsTrigger>
+          <TabsTrigger value="cloudflare">{t("adminDomains.tabCloudflare")}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="dns-records" className="space-y-6 mt-4">
+          <DNSRecordsContent />
+        </TabsContent>
+        <TabsContent value="domains" className="space-y-6 mt-4">
+          <DomainsContent />
+        </TabsContent>
+        <TabsContent value="cloudflare" className="mt-4">
+          <CloudflareAccountsContent />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function DomainsContent() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { data: domains, isLoading } = useQuery({
@@ -152,11 +197,7 @@ export default function AdminDomainsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{t("adminDomains.title")}</h1>
-            <p className="text-muted-foreground">{t("adminDomains.subtitle")}</p>
-          </div>
+        <div className="flex items-center justify-end">
           <Skeleton className="h-9 w-24" />
         </div>
         <Card>
@@ -191,11 +232,7 @@ export default function AdminDomainsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("adminDomains.title")}</h1>
-          <p className="text-muted-foreground">{t("adminDomains.subtitle")}</p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button onClick={() => {
           setGroupAccess([]);
           setSelectedAccount(null);

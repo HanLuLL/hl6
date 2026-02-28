@@ -18,6 +18,7 @@ import type {
   OffsetPaginatedResponse,
   ReferralInfo,
   UserWithInviter,
+  AdminDNSRecord,
 } from "@/types";
 
 function normalizeApiBaseUrl(rawValue: string | undefined): string {
@@ -190,6 +191,17 @@ export const api = {
     request<ApiResponse<CloudflareAccount>>(`/admin/cloudflare/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   adminDeleteCloudflareAccount: (id: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/cloudflare/accounts/${id}`, { method: "DELETE" }),
+
+  // Admin: DNS Records
+  adminListDNSRecords: (page = 1, perPage = 20, search = "", domainId?: number, groupId?: number) => {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    if (search) params.set("search", search);
+    if (domainId) params.set("domain_id", String(domainId));
+    if (groupId) params.set("group_id", String(groupId));
+    return request<PaginatedResponse<AdminDNSRecord[]>>(`/admin/dns-records?${params.toString()}`);
+  },
+  adminDeleteDNSRecord: (id: number, data: { notify: boolean; reason?: string }) =>
+    request<ApiResponse<{ message: string }>>(`/admin/dns-records/${id}`, { method: "DELETE", body: JSON.stringify(data) }),
 
   // Notifications (user)
   listNotifications: (offset = 0, limit = 20) =>

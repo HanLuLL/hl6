@@ -3,8 +3,10 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -19,12 +21,13 @@ import (
 )
 
 type DNSHandler struct {
-	repo *repository.Repository
-	cfg  *config.Config
+	repo   *repository.Repository
+	cfg    *config.Config
+	broker *SSEBroker
 }
 
-func NewDNSHandler(repo *repository.Repository, cfg *config.Config) *DNSHandler {
-	return &DNSHandler{repo: repo, cfg: cfg}
+func NewDNSHandler(repo *repository.Repository, cfg *config.Config, broker *SSEBroker) *DNSHandler {
+	return &DNSHandler{repo: repo, cfg: cfg, broker: broker}
 }
 
 func (h *DNSHandler) ListRecords(c *gin.Context) {
@@ -299,4 +302,135 @@ func (h *DNSHandler) getSubdomain(c *gin.Context) *model.Subdomain {
 		return nil
 	}
 	return sub
+}
+
+func (h *DNSHandler) AdminListRecords(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+	search := c.Query("search")
+
+	var domainID *uint
+	if v := c.Query("domain_id"); v != "" {
+		if id, err := strconv.ParseUint(v, 10, 64); err == nil {
+			uid := uint(id)
+			domainID = &uid
+		}
+	}
+
+	var groupID *uint
+	if v := c.Query("group_id"); v != "" {
+		if id, err := strconv.ParseUint(v, 10, 64); err == nil {
+			uid := uint(id)
+			groupID = &uid
+		}
+	}
+
+	records, total, err := h.repo.AdminListDNSRecords(page, perPage, search, domainID, groupID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list records", "error.failedToListRecords")
+		return
+	}
+	response.Paginated(c, records, total, page, perPage)
+}
+
+func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
+	admin := ctxutil.GetUser(c)
+	if admin == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+
+	recordID, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+
+	var body struct {
+		Notify bool   `json:"notify"`
+		Reason string `json:"reason"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		// Allow empty body
+		body.Notify = false
+		body.Reason = ""
+	}
+
+	record, sub, err := h.repo.FindDNSRecordWithSubdomain(recordID)
+	if err != nil || sub == nil {
+		response.ErrorWithKey(c, http.StatusNotFound, "record not found", "error.recordNotFound")
+		return
+	}
+
+	// Delete from Cloudflare
+	if record.CloudflareRecordID != "" {
+		cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
+		if err != nil {
+			if errors.Is(err, service.ErrCloudflareTokenEmpty) {
+				response.Error(c, http.StatusInternalServerError, err.Error())
+			} else {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+			}
+			return
+		}
+		if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
+			log.Printf("cloudflare DeleteRecord error: %v", err)
+			response.ErrorWithKey(c, http.StatusBadGateway, "cloudflare operation failed", "error.cloudflareError")
+			return
+		}
+	}
+
+	// Delete from database
+	if err := h.repo.DeleteDNSRecord(record.ID); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
+
+	// Send notification if requested
+	if body.Notify {
+		fqdn := record.Name
+		title := fmt.Sprintf("%s 解析已被删除", fqdn)
+		content := fmt.Sprintf("您的解析 %s 已被删除。", fqdn)
+		if body.Reason != "" {
+			content = fmt.Sprintf("您的解析 %s 已被删除。\n原因：%s", fqdn, body.Reason)
+		}
+
+		targetIDs, _ := json.Marshal([]uint{sub.UserID})
+		notification := &model.Notification{
+			Title:      title,
+			Content:    content,
+			Type:       "urgent",
+			TargetType: "users",
+			TargetIDs:  targetIDs,
+			CreatedBy:  admin.ID,
+		}
+		if err := h.repo.CreateNotificationWithImages(notification); err != nil {
+			log.Printf("failed to create notification: %v", err)
+		} else {
+			event := SSEEvent{Event: "new_notification", Data: fmt.Sprintf(`{"id":%d}`, notification.ID)}
+			h.broker.SendToUsers([]uint{sub.UserID}, event)
+		}
+	}
+
+	// Audit log
+	details, _ := json.Marshal(map[string]interface{}{
+		"fqdn":    record.Name,
+		"type":    record.Type,
+		"content": record.Content,
+		"notify":  body.Notify,
+	})
+	h.repo.CreateAuditLog(&model.AuditLog{
+		UserID:     admin.ID,
+		Action:     "admin_delete_dns_record",
+		Resource:   "dns_record",
+		ResourceID: record.ID,
+		Details:    details,
+	})
+
+	response.OK(c, gin.H{"message": "record deleted"})
 }

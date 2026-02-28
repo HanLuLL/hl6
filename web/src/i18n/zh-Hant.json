@@ -56,7 +56,6 @@
     "adminUsers": "運營",
     "adminDomains": "網域管理",
     "auditLogs": "稽核日誌",
-    "adminCloudflare": "Cloudflare 帳號",
     "adminSettings": "系統設定",
     "adminNotifications": "通知管理"
   },
@@ -188,6 +187,9 @@
     "invitedBy": "邀請人"
   },
   "adminDomains": {
+    "tabDnsRecords": "解析列表",
+    "tabDomains": "域名管理",
+    "tabCloudflare": "Cloudflare 帳號",
     "title": "網域管理",
     "subtitle": "新增和設定根網域",
     "addDomain": "新增網域",
@@ -224,6 +226,30 @@
     "forceDelete": "強制刪除（忽略 CF 錯誤）",
     "cfFailureSubdomain": "子網域",
     "cfFailureError": "錯誤原因"
+  },
+  "adminDnsRecords": {
+    "searchPlaceholder": "按名稱或內容搜尋...",
+    "filterByDomain": "全部域名",
+    "filterByGroup": "全部使用者組",
+    "noRecords": "暫無解析記錄",
+    "recordDetail": "解析詳情",
+    "deleteRecord": "刪除解析",
+    "deleteConfirm": "此操作將從 Cloudflare 和資料庫中永久刪除解析記錄 {{name}}，不可撤銷。",
+    "sendNotification": "向使用者發送通知",
+    "reason": "原因",
+    "reasonPlaceholder": "可選：刪除原因",
+    "recordDeleted": "解析記錄已刪除",
+    "fqdn": "完整域名",
+    "content": "記錄值",
+    "type": "類型",
+    "userEmail": "使用者郵箱",
+    "createdAt": "建立時間",
+    "actions": "操作",
+    "ttl": "TTL",
+    "proxied": "代理狀態",
+    "cloudflareId": "Cloudflare ID",
+    "domain": "域名",
+    "userName": "使用者名稱"
   },
   "auditLogs": {
     "title": "稽核日誌",

@@ -26,6 +26,10 @@ import type { CloudflareAccount } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminCloudflareAccountsPage() {
+  return <CloudflareAccountsContent />;
+}
+
+export function CloudflareAccountsContent() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { data: accounts, isLoading } = useQuery({
@@ -83,11 +87,7 @@ export default function AdminCloudflareAccountsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{t("adminCloudflare.title")}</h1>
-            <p className="text-muted-foreground">{t("adminCloudflare.subtitle")}</p>
-          </div>
+        <div className="flex items-center justify-end">
           <Skeleton className="h-9 w-24" />
         </div>
         <Card>
@@ -118,11 +118,7 @@ export default function AdminCloudflareAccountsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("adminCloudflare.title")}</h1>
-          <p className="text-muted-foreground">{t("adminCloudflare.subtitle")}</p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button onClick={() => setShowAdd(true)}>{t("adminCloudflare.addAccount")}</Button>
       </div>
 

@@ -11,7 +11,6 @@ import SubdomainsPage from "@/pages/subdomains";
 import SubdomainDetailPage from "@/pages/subdomain-detail";
 import CreditsPage from "@/pages/credits";
 import AdminDomainsPage from "@/pages/admin/domains";
-import AdminCloudflareAccountsPage from "@/pages/admin/cloudflare-accounts";
 import AdminUsersPage from "@/pages/admin/users";
 import AdminAuditLogsPage from "@/pages/admin/audit-logs";
 
@@ -81,7 +80,7 @@ export default function App() {
           <Route path="/credits" element={<CreditsPage />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin/domains" element={<AdminDomainsPage />} />
-            <Route path="/admin/cloudflare" element={<AdminCloudflareAccountsPage />} />
+            <Route path="/admin/cloudflare" element={<Navigate to="/admin/domains?tab=cloudflare" replace />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
             <Route path="/admin/groups" element={<Navigate to="/admin/users?tab=groups" replace />} />

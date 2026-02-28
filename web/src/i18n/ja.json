@@ -56,7 +56,6 @@
     "adminUsers": "オペレーション",
     "adminDomains": "ドメイン管理",
     "auditLogs": "監査ログ",
-    "adminCloudflare": "Cloudflare アカウント",
     "adminSettings": "設定",
     "adminNotifications": "通知管理"
   },
@@ -188,6 +187,9 @@
     "invitedBy": "招待者"
   },
   "adminDomains": {
+    "tabDnsRecords": "DNS レコード",
+    "tabDomains": "ドメイン管理",
+    "tabCloudflare": "Cloudflare アカウント",
     "title": "ドメイン管理",
     "subtitle": "ルートドメインの追加と設定",
     "addDomain": "ドメインを追加",
@@ -224,6 +226,30 @@
     "forceDelete": "強制削除（CFエラーを無視）",
     "cfFailureSubdomain": "サブドメイン",
     "cfFailureError": "エラー"
+  },
+  "adminDnsRecords": {
+    "searchPlaceholder": "名前またはコンテンツで検索...",
+    "filterByDomain": "すべてのドメイン",
+    "filterByGroup": "すべてのグループ",
+    "noRecords": "DNSレコードが見つかりません",
+    "recordDetail": "レコード詳細",
+    "deleteRecord": "レコード削除",
+    "deleteConfirm": "DNSレコード {{name}} をCloudflareとデータベースから永久に削除します。",
+    "sendNotification": "ユーザーに通知を送信",
+    "reason": "理由",
+    "reasonPlaceholder": "任意: 削除理由",
+    "recordDeleted": "レコードが削除されました",
+    "fqdn": "FQDN",
+    "content": "コンテンツ",
+    "type": "タイプ",
+    "userEmail": "ユーザーメール",
+    "createdAt": "作成日時",
+    "actions": "操作",
+    "ttl": "TTL",
+    "proxied": "プロキシ",
+    "cloudflareId": "Cloudflare ID",
+    "domain": "ドメイン",
+    "userName": "ユーザー名"
   },
   "auditLogs": {
     "title": "監査ログ",

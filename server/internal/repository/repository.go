@@ -744,6 +744,57 @@ func (r *Repository) GetNotificationTargetUserIDs(n *model.Notification) ([]uint
 	}
 }
 
+// Admin DNS Records
+type AdminDNSRecordDTO struct {
+	model.DNSRecord
+	UserID     uint   `json:"user_id"`
+	UserEmail  string `json:"user_email"`
+	UserName   string `json:"user_name"`
+	DomainID   uint   `json:"domain_id"`
+	DomainName string `json:"domain_name"`
+}
+
+func (r *Repository) AdminListDNSRecords(page, perPage int, search string, domainID, groupID *uint) ([]AdminDNSRecordDTO, int64, error) {
+	var results []AdminDNSRecordDTO
+	var total int64
+
+	q := r.DB.Table("dns_records").
+		Select("dns_records.*, subdomains.user_id, users.email as user_email, users.name as user_name, subdomains.domain_id, domains.name as domain_name").
+		Joins("JOIN subdomains ON subdomains.id = dns_records.subdomain_id").
+		Joins("JOIN users ON users.id = subdomains.user_id").
+		Joins("JOIN domains ON domains.id = subdomains.domain_id")
+
+	if search != "" {
+		like := "%" + escapeLike(search) + "%"
+		q = q.Where("dns_records.name ILIKE ? OR dns_records.content ILIKE ?", like, like)
+	}
+	if domainID != nil {
+		q = q.Where("subdomains.domain_id = ?", *domainID)
+	}
+	if groupID != nil {
+		q = q.Where("users.group_id = ?", *groupID)
+	}
+
+	q.Count(&total)
+	err := q.Offset((page - 1) * perPage).Limit(perPage).Order("dns_records.created_at DESC").Scan(&results).Error
+	if results == nil {
+		results = []AdminDNSRecordDTO{}
+	}
+	return results, total, err
+}
+
+func (r *Repository) FindDNSRecordWithSubdomain(id uint) (*model.DNSRecord, *model.Subdomain, error) {
+	var record model.DNSRecord
+	if err := r.DB.First(&record, id).Error; err != nil {
+		return nil, nil, err
+	}
+	var sub model.Subdomain
+	if err := r.DB.Preload("Domain").First(&sub, record.SubdomainID).Error; err != nil {
+		return &record, nil, err
+	}
+	return &record, &sub, nil
+}
+
 // Referral
 func (r *Repository) FindUserByReferralCode(code string) (*model.User, error) {
 	var user model.User

@@ -184,3 +184,11 @@ export interface UserWithInviter extends User {
     name: string;
   };
 }
+
+export interface AdminDNSRecord extends DNSRecord {
+  user_id: number;
+  user_email: string;
+  user_name: string;
+  domain_id: number;
+  domain_name: string;
+}
