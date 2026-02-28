@@ -16,6 +16,8 @@ import type {
   CloudflareAccount,
   Notification,
   OffsetPaginatedResponse,
+  ReferralInfo,
+  UserWithInviter,
 } from "@/types";
 
 function normalizeApiBaseUrl(rawValue: string | undefined): string {
@@ -138,6 +140,10 @@ export const api = {
   listTransactions: (page = 1, perPage = 20) =>
     request<PaginatedResponse<CreditTransaction[]>>(`/credits/transactions?page=${page}&per_page=${perPage}`),
 
+  // Referrals
+  getReferrals: (page = 1, perPage = 20) =>
+    request<ReferralInfo>(`/referrals?page=${page}&per_page=${perPage}`),
+
   // Admin
   adminCreateDomain: (data: { name: string; cloudflare_zone_id: string; cloudflare_account_id: number; description: string; group_access: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
     request<ApiResponse<{ domain: Domain; group_access: DomainGroupAccess[] }>>("/admin/domains", { method: "POST", body: JSON.stringify(data) }),
@@ -152,7 +158,7 @@ export const api = {
   adminGrantCredits: (data: { user_id: number; amount: number; description: string }) =>
     request<ApiResponse<{ user_id: number; granted: number; balance: number }>>("/admin/credits/grant", { method: "POST", body: JSON.stringify(data) }),
   adminListUsers: (page = 1, perPage = 20, search = "") =>
-    request<PaginatedResponse<User[]>>(`/admin/users?page=${page}&per_page=${perPage}${search ? `&search=${encodeURIComponent(search)}` : ""}`),
+    request<PaginatedResponse<UserWithInviter[]>>(`/admin/users?page=${page}&per_page=${perPage}${search ? `&search=${encodeURIComponent(search)}` : ""}`),
   adminGetStats: () => request<ApiResponse<Stats>>("/admin/stats"),
   adminListAuditLogs: (page = 1, perPage = 20, search = "") =>
     request<PaginatedResponse<AuditLog[]>>(`/admin/audit-logs?page=${page}&per_page=${perPage}${search ? `&search=${encodeURIComponent(search)}` : ""}`),

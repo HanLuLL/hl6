@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
@@ -22,10 +23,16 @@ export default function AdminSettingsPage() {
   });
 
   const [bonusCredits, setBonusCredits] = useState("0");
+  const [referralEnabled, setReferralEnabled] = useState(false);
+  const [referralInviterCredits, setReferralInviterCredits] = useState("0");
+  const [referralInviteeCredits, setReferralInviteeCredits] = useState("0");
 
   useEffect(() => {
     if (config) {
       setBonusCredits(config.registration_bonus_credits ?? "0");
+      setReferralEnabled(config.referral_enabled === "true");
+      setReferralInviterCredits(config.referral_inviter_credits ?? "0");
+      setReferralInviteeCredits(config.referral_invitee_credits ?? "0");
     }
   }, [config]);
 
@@ -89,6 +96,54 @@ export default function AdminSettingsPage() {
             </div>
             <Button
               onClick={() => updateMutation.mutate({ registration_bonus_credits: bonusCredits })}
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? t("common.saving") : t("common.save")}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("adminSettings.referralTitle")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("adminSettings.referralDesc")}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>{t("adminSettings.referralEnabled")}</Label>
+            <Switch
+              checked={referralEnabled}
+              onCheckedChange={(checked) => {
+                setReferralEnabled(checked);
+                updateMutation.mutate({ referral_enabled: checked ? "true" : "false" });
+              }}
+            />
+          </div>
+          <div className="flex items-end gap-4">
+            <div className="space-y-2 flex-1 max-w-xs">
+              <Label>{t("adminSettings.referralInviterCredits")}</Label>
+              <Input
+                type="number"
+                min="0"
+                value={referralInviterCredits}
+                onChange={(e) => setReferralInviterCredits(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2 flex-1 max-w-xs">
+              <Label>{t("adminSettings.referralInviteeCredits")}</Label>
+              <Input
+                type="number"
+                min="0"
+                value={referralInviteeCredits}
+                onChange={(e) => setReferralInviteeCredits(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={() => updateMutation.mutate({
+                referral_inviter_credits: referralInviterCredits,
+                referral_invitee_credits: referralInviteeCredits,
+              })}
               disabled={updateMutation.isPending}
             >
               {updateMutation.isPending ? t("common.saving") : t("common.save")}

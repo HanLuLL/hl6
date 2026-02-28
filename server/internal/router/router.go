@@ -27,6 +27,7 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	dnsH := handler.NewDNSHandler(repo, cfg)
 	creditH := handler.NewCreditHandler(repo)
 	adminH := handler.NewAdminHandler(repo)
+	referralH := handler.NewReferralHandler(repo)
 	cfAccountH := handler.NewCloudflareAccountHandler(repo, cfg)
 
 	sseBroker := handler.NewSSEBroker()
@@ -59,6 +60,8 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 
 	authed.GET("/credits", creditH.GetBalance)
 	authed.GET("/credits/transactions", creditH.ListTransactions)
+
+	authed.GET("/referrals", referralH.GetReferralInfo)
 
 	authed.GET("/notifications", notifH.List)
 	authed.GET("/notifications/unread", notifH.UnreadStatus)

@@ -158,3 +158,29 @@ export interface OffsetPaginatedResponse<T> {
   offset: number;
   limit: number;
 }
+
+export interface ReferralRecord {
+  id: number;
+  invitee_name: string;
+  invitee_created_at: string;
+  inviter_credits: number;
+  created_at: string;
+}
+
+export interface ReferralInfo {
+  code: number;
+  message: string;
+  referral_code: string;
+  referral_enabled: boolean;
+  data: ReferralRecord[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface UserWithInviter extends User {
+  invited_by?: {
+    id: number;
+    name: string;
+  };
+}

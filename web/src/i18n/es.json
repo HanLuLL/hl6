@@ -184,7 +184,8 @@
     "changeGroup": "Cambiar grupo",
     "selectGroup": "Seleccionar grupo",
     "groupChanged": "Grupo de usuario actualizado",
-    "searchPlaceholder": "Buscar por nombre o correo..."
+    "searchPlaceholder": "Buscar por nombre o correo...",
+    "invitedBy": "Invitado por"
   },
   "adminDomains": {
     "title": "Gestión de dominios",
@@ -258,7 +259,19 @@
     "subtitle": "Configuración del sistema",
     "registrationBonus": "Créditos de bienvenida",
     "registrationBonusDesc": "Créditos otorgados automáticamente a los nuevos usuarios al registrarse",
-    "saved": "Configuración guardada"
+    "saved": "Configuración guardada",
+    "referralTitle": "Programa de referidos",
+    "referralDesc": "Configurar el programa de referidos y créditos de recompensa",
+    "referralEnabled": "Habilitar programa de referidos",
+    "referralInviterCredits": "Créditos del invitador",
+    "referralInviteeCredits": "Créditos del invitado"
+  },
+  "referral": {
+    "title": "Programa de referidos",
+    "subtitle": "Comparte tu enlace de referido y gana créditos cuando tus amigos se registren",
+    "copy": "Copiar",
+    "records": "Registros de referidos",
+    "noRecords": "No hay registros de referidos aún"
   },
   "adminCloudflare": {
     "title": "Cuentas de Cloudflare",
@@ -288,7 +301,9 @@
     "adminDeduct": "Deducción del administrador",
     "adminDeductCustom": "Deducción del administrador: {{description}}",
     "subdomainDeletedRefund": "Admin eliminó el dominio, reembolso por subdominio {{fqdn}}",
-    "subdomainDeletedDeduct": "Admin eliminó el dominio, créditos de bonificación reclamados por subdominio {{fqdn}}"
+    "subdomainDeletedDeduct": "Admin eliminó el dominio, créditos de bonificación reclamados por subdominio {{fqdn}}",
+    "referralInviter": "Recompensa por invitar a {{name}}",
+    "referralInvitee": "Recompensa por invitación de {{name}}"
   },
   "notifications": {
     "title": "Notificaciones",

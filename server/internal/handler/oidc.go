@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,8 @@ import (
 	"hl6-server/internal/oidc"
 	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
+
+	"gorm.io/gorm"
 )
 
 type OIDCHandler struct {
@@ -58,6 +61,13 @@ func (h *OIDCHandler) Login(c *gin.Context) {
 
 	// Store state in httpOnly cookie
 	h.setSessionCookie(c, "hl6_state", state, 900) // 15 min TTL
+
+	// Store referral code if present
+	if ref := c.Query("ref"); ref != "" {
+		if matched, _ := regexp.MatchString(`^[0-9a-f]{16}$`, ref); matched {
+			h.setSessionCookie(c, "hl6_ref", ref, 900) // 15 min TTL
+		}
+	}
 
 	redirectURI := h.callbackURL()
 	authURL := fmt.Sprintf("%s?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
@@ -144,11 +154,12 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	if err != nil {
 		// New user — create in a single transaction
 		user = &model.User{
-			ExternalID: sub,
-			Email:      email,
-			Name:       name,
-			AvatarURL:  picture,
-			Role:       "user",
+			ExternalID:   sub,
+			Email:        email,
+			Name:         name,
+			AvatarURL:    picture,
+			Role:         "user",
+			ReferralCode: generateReferralCode(),
 		}
 		if h.cfg.IsAdminEmail(email) {
 			user.Role = "admin"
@@ -197,6 +208,12 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 					})
 				}
 			}
+		}
+
+		// Process referral
+		if refCode, err := c.Cookie("hl6_ref"); err == nil && refCode != "" {
+			h.setSessionCookie(c, "hl6_ref", "", -1) // Clear cookie
+			h.processReferral(tx, user, refCode)
 		}
 
 		tx.Commit()
@@ -296,6 +313,78 @@ func (h *OIDCHandler) issueSessionJWT(externalID string) (string, error) {
 		return "", err
 	}
 	return string(signed), nil
+}
+
+func generateReferralCode() string {
+	b := make([]byte, 8)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+func (h *OIDCHandler) processReferral(tx *gorm.DB, newUser *model.User, refCode string) {
+	// Check if referral feature is enabled
+	enabledStr, err := h.repo.GetSystemConfig("referral_enabled")
+	if err != nil || enabledStr != "true" {
+		return
+	}
+
+	// Find inviter by referral code
+	inviter, err := h.repo.FindUserByReferralCode(refCode)
+	if err != nil {
+		return
+	}
+
+	// Prevent self-referral
+	if inviter.ID == newUser.ID {
+		return
+	}
+
+	// Read credit configs
+	inviterCreditsStr, _ := h.repo.GetSystemConfig("referral_inviter_credits")
+	inviteeCreditsStr, _ := h.repo.GetSystemConfig("referral_invitee_credits")
+	inviterCreditsFloat, _ := strconv.ParseFloat(inviterCreditsStr, 64)
+	inviteeCreditsFloat, _ := strconv.ParseFloat(inviteeCreditsStr, 64)
+	inviterCredits := model.CreditFromFloat(inviterCreditsFloat)
+	inviteeCredits := model.CreditFromFloat(inviteeCreditsFloat)
+
+	// Grant credits to inviter
+	if inviterCredits > 0 {
+		inviterParams, _ := json.Marshal(map[string]string{"name": newUser.Name})
+		if err := h.repo.GrantCredits(tx, inviter.ID, inviterCredits, "txn.referralInviter", inviterParams); err != nil {
+			log.Printf("failed to grant referral credits to inviter %d: %v", inviter.ID, err)
+		}
+	}
+
+	// Grant credits to invitee
+	if inviteeCredits > 0 {
+		inviteeParams, _ := json.Marshal(map[string]string{"name": inviter.Name})
+		if err := h.repo.GrantCredits(tx, newUser.ID, inviteeCredits, "txn.referralInvitee", inviteeParams); err != nil {
+			log.Printf("failed to grant referral credits to invitee %d: %v", newUser.ID, err)
+		}
+	}
+
+	// Create referral record
+	tx.Create(&model.UserReferral{
+		InviterID:      inviter.ID,
+		InviteeID:      newUser.ID,
+		InviterCredits: inviterCredits,
+		InviteeCredits: inviteeCredits,
+	})
+
+	// Audit log
+	details, _ := json.Marshal(map[string]interface{}{
+		"inviter_id":      inviter.ID,
+		"invitee_id":      newUser.ID,
+		"inviter_credits": inviterCredits,
+		"invitee_credits": inviteeCredits,
+	})
+	tx.Create(&model.AuditLog{
+		UserID:     newUser.ID,
+		Action:     "user_referral",
+		Resource:   "user",
+		ResourceID: newUser.ID,
+		Details:    details,
+	})
 }
 
 func generateRandomState() string {

@@ -184,7 +184,8 @@
     "changeGroup": "Изменить группу",
     "selectGroup": "Выбрать группу",
     "groupChanged": "Группа пользователя обновлена",
-    "searchPlaceholder": "Поиск по имени или email..."
+    "searchPlaceholder": "Поиск по имени или email...",
+    "invitedBy": "Приглашён"
   },
   "adminDomains": {
     "title": "Управление доменами",
@@ -258,7 +259,19 @@
     "subtitle": "Конфигурация системы",
     "registrationBonus": "Бонусные кредиты при регистрации",
     "registrationBonusDesc": "Кредиты, автоматически начисляемые новым пользователям при регистрации",
-    "saved": "Настройки сохранены"
+    "saved": "Настройки сохранены",
+    "referralTitle": "Реферальная программа",
+    "referralDesc": "Настройка реферальной программы и начисляемых кредитов",
+    "referralEnabled": "Включить реферальную программу",
+    "referralInviterCredits": "Кредиты приглашающему",
+    "referralInviteeCredits": "Кредиты приглашённому"
+  },
+  "referral": {
+    "title": "Реферальная программа",
+    "subtitle": "Поделитесь реферальной ссылкой и получайте кредиты за регистрацию друзей",
+    "copy": "Копировать",
+    "records": "История приглашений",
+    "noRecords": "Приглашений пока нет"
   },
   "adminCloudflare": {
     "title": "Аккаунты Cloudflare",
@@ -288,7 +301,9 @@
     "adminDeduct": "Списание администратором",
     "adminDeductCustom": "Списание администратором: {{description}}",
     "subdomainDeletedRefund": "Домен удалён администратором, возврат кредитов за поддомен {{fqdn}}",
-    "subdomainDeletedDeduct": "Домен удалён администратором, списание бонусных кредитов за поддомен {{fqdn}}"
+    "subdomainDeletedDeduct": "Домен удалён администратором, списание бонусных кредитов за поддомен {{fqdn}}",
+    "referralInviter": "Награда за приглашение {{name}}",
+    "referralInvitee": "Награда за приглашение от {{name}}"
   },
   "notifications": {
     "title": "Уведомления",

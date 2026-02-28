@@ -184,7 +184,8 @@
     "changeGroup": "Change Group",
     "selectGroup": "Select group",
     "groupChanged": "User group updated",
-    "searchPlaceholder": "Search by name or email..."
+    "searchPlaceholder": "Search by name or email...",
+    "invitedBy": "Invited By"
   },
   "adminDomains": {
     "title": "Manage Domains",
@@ -258,7 +259,19 @@
     "subtitle": "System configuration",
     "registrationBonus": "Registration Bonus Credits",
     "registrationBonusDesc": "Credits automatically granted to new users upon registration",
-    "saved": "Settings saved"
+    "saved": "Settings saved",
+    "referralTitle": "Referral Program",
+    "referralDesc": "Configure referral program and reward credits",
+    "referralEnabled": "Enable referral program",
+    "referralInviterCredits": "Inviter credits",
+    "referralInviteeCredits": "Invitee credits"
+  },
+  "referral": {
+    "title": "Referral Program",
+    "subtitle": "Share your referral link and earn credits when friends sign up",
+    "copy": "Copy",
+    "records": "Referral Records",
+    "noRecords": "No referral records yet"
   },
   "adminCloudflare": {
     "title": "Cloudflare Accounts",
@@ -288,7 +301,9 @@
     "adminDeduct": "Admin deduction",
     "adminDeductCustom": "Admin deduction: {{description}}",
     "subdomainDeletedRefund": "Admin deleted domain, refund for subdomain {{fqdn}}",
-    "subdomainDeletedDeduct": "Admin deleted domain, bonus credits reclaimed for subdomain {{fqdn}}"
+    "subdomainDeletedDeduct": "Admin deleted domain, bonus credits reclaimed for subdomain {{fqdn}}",
+    "referralInviter": "Referral reward for inviting {{name}}",
+    "referralInvitee": "Referral reward from {{name}}'s invitation"
   },
   "notifications": {
     "title": "Notifications",

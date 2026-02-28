@@ -16,6 +16,9 @@ import (
 
 var allowedConfigKeys = map[string]bool{
 	"registration_bonus_credits": true,
+	"referral_enabled":           true,
+	"referral_inviter_credits":   true,
+	"referral_invitee_credits":   true,
 }
 
 type AdminHandler struct {
@@ -42,7 +45,35 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list users", "error.failedToListUsers")
 		return
 	}
-	response.Paginated(c, users, total, page, perPage)
+
+	// Batch fetch referral inviters
+	userIDs := make([]uint, len(users))
+	for i, u := range users {
+		userIDs[i] = u.ID
+	}
+	inviterMap, _ := h.repo.GetReferralInvitersForUsers(userIDs)
+
+	type userDTO struct {
+		model.User
+		InvitedBy *struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		} `json:"invited_by"`
+	}
+
+	result := make([]userDTO, len(users))
+	for i, u := range users {
+		dto := userDTO{User: u}
+		if inviter, ok := inviterMap[u.ID]; ok {
+			dto.InvitedBy = &struct {
+				ID   uint   `json:"id"`
+				Name string `json:"name"`
+			}{ID: inviter.ID, Name: inviter.Name}
+		}
+		result[i] = dto
+	}
+
+	response.Paginated(c, result, total, page, perPage)
 }
 
 func (h *AdminHandler) Stats(c *gin.Context) {

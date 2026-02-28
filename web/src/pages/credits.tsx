@@ -5,11 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCredits, useTransactions } from "@/hooks/use-credits";
+import { useReferrals } from "@/hooks/use-referrals";
+import { toast } from "sonner";
 
 export default function CreditsPage() {
   const { data: creditData, isLoading: creditLoading } = useCredits();
   const [page, setPage] = useState(1);
   const { data: txnData, isLoading: txnLoading } = useTransactions(page, 10);
+  const [refPage, setRefPage] = useState(1);
+  const { data: refData, isLoading: refLoading } = useReferrals(refPage, 10);
   const { t } = useTranslation();
 
   const typeBadge = (type: string) => {
@@ -19,6 +23,15 @@ export default function CreditsPage() {
       case "refund": return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{t("credits.refund")}</Badge>;
       default: return <Badge variant="outline">{type}</Badge>;
     }
+  };
+
+  const referralEnabled = refData?.referral_enabled ?? false;
+  const referralCode = refData?.referral_code ?? "";
+  const referralLink = referralCode ? `${window.location.origin}/?ref=${referralCode}` : "";
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(referralLink);
+    toast.success(t("common.copied"));
   };
 
   return (
@@ -41,6 +54,70 @@ export default function CreditsPage() {
           <p className="text-sm text-muted-foreground mt-1">{t("credits.creditsAvailable")}</p>
         </CardContent>
       </Card>
+
+      {referralEnabled && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t("referral.title")}</CardTitle>
+            <p className="text-sm text-muted-foreground">{t("referral.subtitle")}</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {refLoading ? (
+              <Skeleton className="h-9 w-full" />
+            ) : (
+              <div className="flex items-center gap-2">
+                <code className="flex-1 rounded-md border bg-muted px-3 py-2 text-sm truncate">
+                  {referralLink}
+                </code>
+                <Button variant="outline" size="sm" onClick={copyLink}>
+                  {t("referral.copy")}
+                </Button>
+              </div>
+            )}
+
+            {!refLoading && refData && refData.data.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-muted-foreground">{t("referral.records")}</h4>
+                {refData.data.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{r.invitee_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(r.invitee_created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      {r.inviter_credits > 0 && (
+                        <p className="text-sm font-medium text-green-600">+{r.inviter_credits}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                {refData.total > 10 && (
+                  <div className="flex justify-center gap-2 pt-2">
+                    <Button variant="outline" size="sm" disabled={refPage <= 1} onClick={() => setRefPage((p) => p - 1)}>
+                      {t("common.previous")}
+                    </Button>
+                    <span className="flex items-center text-sm text-muted-foreground">
+                      {t("common.pageOf", { page: refPage, total: Math.ceil(refData.total / 10) })}
+                    </span>
+                    <Button variant="outline" size="sm" disabled={refPage >= Math.ceil(refData.total / 10)} onClick={() => setRefPage((p) => p + 1)}>
+                      {t("common.next")}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!refLoading && refData && refData.data.length === 0 && (
+              <p className="text-sm text-muted-foreground">{t("referral.noRecords")}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

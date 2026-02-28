@@ -184,7 +184,8 @@
     "changeGroup": "グループを変更",
     "selectGroup": "グループを選択",
     "groupChanged": "ユーザーグループを更新しました",
-    "searchPlaceholder": "名前またはメールで検索..."
+    "searchPlaceholder": "名前またはメールで検索...",
+    "invitedBy": "招待者"
   },
   "adminDomains": {
     "title": "ドメイン管理",
@@ -258,7 +259,19 @@
     "subtitle": "システム設定",
     "registrationBonus": "登録ボーナスクレジット",
     "registrationBonusDesc": "新規ユーザー登録時に自動的に付与されるクレジット数",
-    "saved": "設定を保存しました"
+    "saved": "設定を保存しました",
+    "referralTitle": "紹介プログラム",
+    "referralDesc": "紹介プログラムと報酬クレジットを設定",
+    "referralEnabled": "紹介プログラムを有効化",
+    "referralInviterCredits": "招待者のクレジット",
+    "referralInviteeCredits": "被招待者のクレジット"
+  },
+  "referral": {
+    "title": "紹介プログラム",
+    "subtitle": "紹介リンクを共有して、友達が登録するとクレジットを獲得できます",
+    "copy": "コピー",
+    "records": "紹介履歴",
+    "noRecords": "紹介履歴はまだありません"
   },
   "adminCloudflare": {
     "title": "Cloudflare アカウント管理",
@@ -288,7 +301,9 @@
     "adminDeduct": "管理者による減額",
     "adminDeductCustom": "管理者による減額: {{description}}",
     "subdomainDeletedRefund": "管理者がドメインを削除、サブドメイン {{fqdn}} のクレジットを返金",
-    "subdomainDeletedDeduct": "管理者がドメインを削除、サブドメイン {{fqdn}} のボーナスクレジットを回収"
+    "subdomainDeletedDeduct": "管理者がドメインを削除、サブドメイン {{fqdn}} のボーナスクレジットを回収",
+    "referralInviter": "{{name}} の招待報酬",
+    "referralInvitee": "{{name}} からの招待報酬"
   },
   "notifications": {
     "title": "通知",

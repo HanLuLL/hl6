@@ -6,16 +6,17 @@ import (
 )
 
 type User struct {
-	ID        uint       `json:"id" gorm:"primaryKey"`
-	ExternalID string     `json:"external_id" gorm:"column:external_id;uniqueIndex;not null"`
-	Email     string     `json:"email"`
-	Name      string     `json:"name"`
-	AvatarURL string     `json:"avatar_url"`
-	Role      string     `json:"role" gorm:"default:user"`
-	GroupID   *uint      `json:"group_id" gorm:"index"`
-	Group     *UserGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID           uint       `json:"id" gorm:"primaryKey"`
+	ExternalID   string     `json:"external_id" gorm:"column:external_id;uniqueIndex;not null"`
+	Email        string     `json:"email"`
+	Name         string     `json:"name"`
+	AvatarURL    string     `json:"avatar_url"`
+	Role         string     `json:"role" gorm:"default:user"`
+	ReferralCode string     `json:"referral_code" gorm:"uniqueIndex;size:16"`
+	GroupID      *uint      `json:"group_id" gorm:"index"`
+	Group        *UserGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
 type UserGroup struct {
@@ -140,4 +141,15 @@ func (a *CloudflareAccount) ToView() CloudflareAccountView {
 		CreatedAt: a.CreatedAt,
 		UpdatedAt: a.UpdatedAt,
 	}
+}
+
+type UserReferral struct {
+	ID             uint      `json:"id" gorm:"primaryKey"`
+	InviterID      uint      `json:"inviter_id" gorm:"index;not null"`
+	InviteeID      uint      `json:"invitee_id" gorm:"uniqueIndex;not null"`
+	InviterCredits Credit    `json:"inviter_credits" gorm:"type:bigint;not null"`
+	InviteeCredits Credit    `json:"invitee_credits" gorm:"type:bigint;not null"`
+	Inviter        User      `json:"-" gorm:"foreignKey:InviterID"`
+	Invitee        User      `json:"-" gorm:"foreignKey:InviteeID"`
+	CreatedAt      time.Time `json:"created_at"`
 }

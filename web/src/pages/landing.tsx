@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -9,6 +9,8 @@ import { SiteFooter } from "@/components/layout/site-footer";
 export default function LandingPage() {
   const { isAuthenticated, signIn } = useAuth();
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const ref = searchParams.get("ref") ?? undefined;
 
   return (
     <div className="min-h-screen">
@@ -26,7 +28,7 @@ export default function LandingPage() {
               <Link to="/dashboard">{t("landing.dashboard")}</Link>
             </Button>
           ) : (
-            <Button onClick={() => signIn()} className="bg-[#2D5AF6] hover:bg-[#2348D4] text-white">{t("common.signIn")}</Button>
+            <Button onClick={() => signIn(ref)} className="bg-[#2D5AF6] hover:bg-[#2348D4] text-white">{t("common.signIn")}</Button>
           )}
         </div>
       </header>
@@ -48,7 +50,7 @@ export default function LandingPage() {
               <Link to="/domains">{t("landing.browseDomains")}</Link>
             </Button>
           ) : (
-            <Button size="lg" onClick={() => signIn()} className="bg-[#2D5AF6] hover:bg-[#2348D4] text-white">
+            <Button size="lg" onClick={() => signIn(ref)} className="bg-[#2D5AF6] hover:bg-[#2348D4] text-white">
               {t("landing.getStarted")}
             </Button>
           )}

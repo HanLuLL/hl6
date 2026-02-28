@@ -125,6 +125,7 @@ function UsersContent() {
                 <TableHead>{t("adminUsers.group")}</TableHead>
                 <TableHead>{t("adminUsers.role")}</TableHead>
                 <TableHead>{t("adminUsers.joined")}</TableHead>
+                <TableHead>{t("adminUsers.invitedBy")}</TableHead>
                 <TableHead className="text-right">{t("adminUsers.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -137,6 +138,7 @@ function UsersContent() {
                     <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
                   </TableRow>
                 ))
@@ -153,6 +155,9 @@ function UsersContent() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {new Date(user.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {user.invited_by?.name ?? "—"}
                     </TableCell>
                     <TableCell className="text-right space-x-1">
                       <Button variant="ghost" size="sm" onClick={() => {

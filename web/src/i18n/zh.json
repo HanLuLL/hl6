@@ -184,7 +184,8 @@
     "changeGroup": "修改用户组",
     "selectGroup": "选择用户组",
     "groupChanged": "用户组已更新",
-    "searchPlaceholder": "按姓名或邮箱搜索..."
+    "searchPlaceholder": "按姓名或邮箱搜索...",
+    "invitedBy": "邀请人"
   },
   "adminDomains": {
     "title": "域名管理",
@@ -258,7 +259,19 @@
     "subtitle": "系统配置",
     "registrationBonus": "注册赠送积分",
     "registrationBonusDesc": "新用户注册时自动赠送的积分数量",
-    "saved": "设置已保存"
+    "saved": "设置已保存",
+    "referralTitle": "邀请注册",
+    "referralDesc": "配置邀请注册功能和奖励积分",
+    "referralEnabled": "启用邀请注册",
+    "referralInviterCredits": "邀请人积分",
+    "referralInviteeCredits": "被邀请人积分"
+  },
+  "referral": {
+    "title": "邀请注册",
+    "subtitle": "分享你的邀请链接，邀请好友注册获得积分",
+    "copy": "复制",
+    "records": "邀请记录",
+    "noRecords": "暂无邀请记录"
   },
   "adminCloudflare": {
     "title": "Cloudflare 账号管理",
@@ -288,7 +301,9 @@
     "adminDeduct": "管理员扣减",
     "adminDeductCustom": "管理员扣减：{{description}}",
     "subdomainDeletedRefund": "管理员删除域名，退还子域名 {{fqdn}} 的积分",
-    "subdomainDeletedDeduct": "管理员删除域名，扣回子域名 {{fqdn}} 的奖励积分"
+    "subdomainDeletedDeduct": "管理员删除域名，扣回子域名 {{fqdn}} 的奖励积分",
+    "referralInviter": "邀请用户 {{name}} 注册奖励",
+    "referralInvitee": "受 {{name}} 邀请注册奖励"
   },
   "notifications": {
     "title": "通知",

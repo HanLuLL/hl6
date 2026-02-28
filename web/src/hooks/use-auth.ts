@@ -16,7 +16,11 @@ export function useAuth() {
     isLoading,
     user: data?.data?.user ?? null,
     credits: data?.data?.credits ?? 0,
-    signIn: () => { window.location.href = buildApiUrl("/auth/login"); },
+    signIn: (ref?: string) => {
+      const url = new URL(buildApiUrl("/auth/login"), window.location.origin);
+      if (ref) url.searchParams.set("ref", ref);
+      window.location.href = url.toString();
+    },
     signOut: async () => {
       try {
         const res = await api.logout();

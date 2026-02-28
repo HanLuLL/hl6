@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log"
 
@@ -49,6 +51,7 @@ func main() {
 		&model.Notification{},
 		&model.NotificationRead{},
 		&model.NotificationImage{},
+		&model.UserReferral{},
 	); err != nil {
 		log.Fatal("failed to migrate:", err)
 	}
@@ -112,6 +115,27 @@ func seedDefaults(db *gorm.DB) {
 	if db.Where("\"key\" = ?", "registration_bonus_credits").First(&cfg).Error != nil {
 		db.Create(&model.SystemConfig{Key: "registration_bonus_credits", Value: "0"})
 	}
+
+	// 5. Seed referral config defaults
+	referralConfigs := map[string]string{
+		"referral_enabled":         "true",
+		"referral_inviter_credits": "0",
+		"referral_invitee_credits": "0",
+	}
+	for key, defaultVal := range referralConfigs {
+		var rc model.SystemConfig
+		if db.Where("\"key\" = ?", key).First(&rc).Error != nil {
+			db.Create(&model.SystemConfig{Key: key, Value: defaultVal})
+		}
+	}
+
+	// 6. Backfill referral_code for existing users
+	var usersWithoutCode []model.User
+	db.Where("referral_code = '' OR referral_code IS NULL").Find(&usersWithoutCode)
+	for _, u := range usersWithoutCode {
+		code := generateReferralCode()
+		db.Model(&model.User{}).Where("id = ?", u.ID).Update("referral_code", code)
+	}
 }
 
 func migrateCreditsToInt(db *gorm.DB) {
@@ -154,4 +178,10 @@ func migrateCreditsToInt(db *gorm.DB) {
 
 	db.Create(&model.SystemConfig{Key: "credits_migrated_to_int", Value: "1"})
 	log.Println("Credit migration complete")
+}
+
+func generateReferralCode() string {
+	b := make([]byte, 8)
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }

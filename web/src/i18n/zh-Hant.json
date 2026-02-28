@@ -184,7 +184,8 @@
     "changeGroup": "修改群組",
     "selectGroup": "選擇群組",
     "groupChanged": "使用者群組已更新",
-    "searchPlaceholder": "按姓名或信箱搜尋..."
+    "searchPlaceholder": "按姓名或信箱搜尋...",
+    "invitedBy": "邀請人"
   },
   "adminDomains": {
     "title": "網域管理",
@@ -258,7 +259,19 @@
     "subtitle": "系統設定",
     "registrationBonus": "註冊贈送積分",
     "registrationBonusDesc": "新使用者註冊時自動贈送的積分數量",
-    "saved": "設定已儲存"
+    "saved": "設定已儲存",
+    "referralTitle": "邀請註冊",
+    "referralDesc": "設定邀請註冊功能和獎勵積分",
+    "referralEnabled": "啟用邀請註冊",
+    "referralInviterCredits": "邀請人積分",
+    "referralInviteeCredits": "被邀請人積分"
+  },
+  "referral": {
+    "title": "邀請註冊",
+    "subtitle": "分享你的邀請連結，邀請好友註冊可獲得積分",
+    "copy": "複製",
+    "records": "邀請記錄",
+    "noRecords": "暫無邀請記錄"
   },
   "adminCloudflare": {
     "title": "Cloudflare 帳號管理",
@@ -288,7 +301,9 @@
     "adminDeduct": "管理員扣減",
     "adminDeductCustom": "管理員扣減：{{description}}",
     "subdomainDeletedRefund": "管理員刪除網域，退還子網域 {{fqdn}} 的積分",
-    "subdomainDeletedDeduct": "管理員刪除網域，扣回子網域 {{fqdn}} 的獎勵積分"
+    "subdomainDeletedDeduct": "管理員刪除網域，扣回子網域 {{fqdn}} 的獎勵積分",
+    "referralInviter": "邀請用戶 {{name}} 註冊獎勵",
+    "referralInvitee": "受 {{name}} 邀請註冊獎勵"
   },
   "notifications": {
     "title": "通知",
