@@ -32,7 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
-import type { AdminDNSRecord, Domain, UserGroup } from "@/types";
+import type { AdminDNSRecord } from "@/types";
 
 export function DNSRecordsContent() {
   const { t } = useTranslation();
