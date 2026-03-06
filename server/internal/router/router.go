@@ -100,5 +100,7 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	admin.DELETE("/notifications/:id", notifAdminH.Delete)
 	admin.POST("/notifications/images", notifAdminH.UploadImage)
 
+	setupFrontendRoutes(r)
+
 	return r
 }

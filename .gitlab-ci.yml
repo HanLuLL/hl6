@@ -40,6 +40,37 @@ backend:docker:
       --destination "${IMAGE_NAME}:${IMAGE_TAG}"
       --destination "${IMAGE_NAME}:latest"
 
+app:docker:
+  stage: build
+  image:
+    name: c852603567b1aa7e9615cb023b134046.d.1ms.run/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    IMAGE_NAME: "$CI_REGISTRY_IMAGE/app"
+    IMAGE_TAG: "$CI_COMMIT_REF_SLUG"
+  rules:
+    - changes:
+        - .dockerignore
+        - Dockerfile
+        - server/**/*
+        - web/**/*
+    - when: never
+  script:
+    - mkdir -p /kaniko/.docker
+    - >
+      echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}"
+      > /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --build-arg HTTP_PROXY="${HTTP_PROXY}"
+      --build-arg HTTPS_PROXY="${HTTPS_PROXY}"
+      --build-arg http_proxy="${http_proxy}"
+      --build-arg https_proxy="${https_proxy}"
+      --destination "${IMAGE_NAME}:${IMAGE_TAG}"
+      --destination "${IMAGE_NAME}:latest"
+
 pages:
   stage: build
   image: node:20-slim

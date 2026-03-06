@@ -22,18 +22,23 @@ type Config struct {
 }
 
 func Load() *Config {
-	frontendURL := getEnv("FRONTEND_URL", "http://localhost:5173")
+	sharedURL := getEnv("APP_URL", "")
+	frontendURL := getEnv("FRONTEND_URL", sharedURL)
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173"
+	}
+
 	cfg := &Config{
-		Port:            getEnv("SERVER_PORT", "8080"),
-		DatabaseURL:     getEnv("DATABASE_URL", "postgres://hl6:hl6dev@localhost:5432/hl6?sslmode=disable"),
-		OIDCIssuer:      getEnv("OIDC_ISSUER", ""),
-		OIDCClientID:    getEnv("OIDC_CLIENT_ID", ""),
+		Port:             getEnv("SERVER_PORT", "8080"),
+		DatabaseURL:      getEnv("DATABASE_URL", "postgres://hl6:hl6dev@localhost:5432/hl6?sslmode=disable"),
+		OIDCIssuer:       getEnv("OIDC_ISSUER", ""),
+		OIDCClientID:     getEnv("OIDC_CLIENT_ID", ""),
 		OIDCClientSecret: getEnv("OIDC_CLIENT_SECRET", ""),
-		SessionSecret:   getEnv("SESSION_SECRET", ""),
-		BackendURL:      getEnv("BACKEND_URL", frontendURL),
-		FrontendURL:     frontendURL,
-		AllowedOrigins:  parseList(getEnv("ALLOWED_ORIGINS", "")),
-		AdminEmails:     parseListLower(getEnv("ADMIN_EMAILS", "")),
+		SessionSecret:    getEnv("SESSION_SECRET", ""),
+		BackendURL:       getEnv("BACKEND_URL", frontendURL),
+		FrontendURL:      frontendURL,
+		AllowedOrigins:   parseList(getEnv("ALLOWED_ORIGINS", "")),
+		AdminEmails:      parseListLower(getEnv("ADMIN_EMAILS", "")),
 	}
 
 	if keyHex := getEnv("ENCRYPTION_KEY", ""); keyHex != "" {

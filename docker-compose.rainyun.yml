@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  main:
+    # Replace this with your published full-stack image before importing into Rainyun.
+    image: your-registry.example.com/hl6-app:latest
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      SERVER_PORT: "8080"
+      # Rainyun import validates ${...} references, so referenced keys must exist in the same container env list.
+      APP_URL: https://hl6.example.com
+      FRONTEND_URL: ${APP_URL}
+      BACKEND_URL: ${APP_URL}
+      ALLOWED_ORIGINS: ${APP_URL}
+      POSTGRES_DB: hl6
+      POSTGRES_USER: hl6
+      POSTGRES_PASSWORD: change-me-db-password
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${rca_svc_postgres_db}:5432/${POSTGRES_DB}?sslmode=disable
+      OIDC_ISSUER: https://your-oidc-provider.example.com
+      OIDC_CLIENT_ID: your-client-id
+      OIDC_CLIENT_SECRET: your-client-secret
+      SESSION_SECRET: change-me-session-secret
+      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      ADMIN_EMAILS: admin@example.com
+    ports:
+      - "8080:8080"
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hl6
+      POSTGRES_USER: hl6
+      POSTGRES_PASSWORD: change-me-db-password
+    expose:
+      - "5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

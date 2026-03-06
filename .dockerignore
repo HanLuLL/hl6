@@ -1,0 +1,11 @@
+.env
+.git
+.gitignore
+.DS_Store
+
+web/node_modules
+web/dist
+
+server/server
+
+public

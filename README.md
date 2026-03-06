@@ -38,7 +38,8 @@ cp .env.example .env
 
 - `DATABASE_URL`
 - `SERVER_PORT`
-- `FRONTEND_URL`
+- `APP_URL`（同域部署时可作为前后端公共访问地址）
+- `FRONTEND_URL` / `BACKEND_URL`（分域部署时分别设置）
 - `ALLOWED_ORIGINS`
 - `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET`（支持任何标准 OIDC 提供商，详见 [OIDC 配置指南](docs/oidc.md)）
 
@@ -99,15 +100,27 @@ make dev-web
 | `DATABASE_URL` | PostgreSQL 连接串 |
 | `SERVER_PORT` | 后端服务端口（默认 `8080`） |
 | `ADMIN_EMAILS` | 管理员邮箱列表（逗号分隔） |
+| `APP_URL` | 同域部署时的公共访问地址；未单独设置 `FRONTEND_URL` 时会优先使用它 |
 | `OIDC_ISSUER` | OIDC 提供商 Issuer URL（如 Logto、Keycloak、Google 等） |
 | `OIDC_CLIENT_ID` | OIDC 应用 Client ID |
 | `OIDC_CLIENT_SECRET` | OIDC 应用 Client Secret |
 | `SESSION_SECRET` | 会话签名密钥 |
 | `FRONTEND_URL` | 前端地址（默认 `http://localhost:5173`） |
+| `BACKEND_URL` | 后端对外地址；未设置时默认跟随 `FRONTEND_URL` |
 | `ALLOWED_ORIGINS` | CORS 白名单（逗号分隔） |
 | `ENCRYPTION_KEY` | 64 位十六进制字符串（32 字节） |
 
 > 注意：Vite 配置使用 `envDir: ".."`，前端会读取项目根目录 `.env`。
+
+## 容器部署
+
+仓库根目录新增了一个全栈 `Dockerfile`，会构建前端并把静态资源打进最终镜像，由 Go 服务同端口托管前端页面和 `/api/v1` 接口。
+
+- 镜像启动后默认监听 `8080`
+- 同域部署时，只需设置 `APP_URL`，并让 `ALLOWED_ORIGINS` 包含该地址
+- 仍然需要独立的 PostgreSQL 实例，`DATABASE_URL` 必填
+
+雨云商店上架建议见 [docs/rainyun.md](docs/rainyun.md)。
 
 ## 项目结构
 
