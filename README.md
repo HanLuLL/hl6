@@ -18,7 +18,7 @@ HL6 是一个域名/子域名管理平台。用户可以在已注册域名下认
 - 基础设施：Docker Compose（本地 PostgreSQL）
 
 ## 云应用一键部署
-[![通过雨云一键部署](https://rainyun-apps.cn-nb1.rains3.com/materials/deploy-on-rainyun-cn.svg)](https://app.rainyun.com/apps/rca/store/5?ref=[UID])
+[![通过雨云一键部署](https://rainyun-apps.cn-nb1.rains3.com/materials/deploy-on-rainyun-cn.svg)](https://app.rainyun.com/apps/rca/store/5?ref=ins_)
 
 ## 快速开始（`make dev`）
 
