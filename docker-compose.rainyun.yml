@@ -17,7 +17,8 @@ services:
       POSTGRES_DB: hl6
       POSTGRES_USER: hl6
       POSTGRES_PASSWORD: change-me-db-password
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${rca_svc_postgres_db}:5432/${POSTGRES_DB}?sslmode=disable
+      # Use the compose service host directly to avoid unresolved rca_svc_* placeholders.
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       OIDC_ISSUER: https://your-oidc-provider.example.com
       OIDC_CLIENT_ID: your-client-id
       OIDC_CLIENT_SECRET: your-client-secret

@@ -57,12 +57,21 @@
 
 - `main` 对外暴露 `8080:8080`
 - `postgres` 只通过 `expose: 5432` 提供内部连接
-- `main` 使用 `${rca_svc_postgres_db}` 获取 PostgreSQL 内网连接地址
+- `main` 默认使用 `postgres:5432` 作为数据库主机名，避免导入时特殊变量未替换导致启动失败
 - `main` 里所有被 `${...}` 引用的变量，都先在同一个容器的环境变量列表里显式定义
 
 导入后请检查一项内容：
 
-- 如果你的容器名或服务名不是 `postgres` / `db`，把 `DATABASE_URL` 里的 `${rca_svc_postgres_db}` 改成对应名称
+- 如果你改了数据库容器名，不是 `postgres`，同步修改 `DATABASE_URL` 里的主机名
+
+常见报错：
+
+- `invalid character "{" in host name`
+
+这表示 `DATABASE_URL` 里的 `${rca_svc_...}` 没有被平台替换。可用两种方式修复：
+
+- 方式 A（推荐，最稳）：直接用容器服务名，例如 `@postgres:5432`
+- 方式 B：确认容器名和服务名完全匹配后，再用 `${rca_svc_[容器名]_[服务名]}` 格式
 
 这是因为在标准 Docker Compose 中多容器一般直接通过服务名互连，而雨云 RCA 官方说明里推荐在模板层使用 `${rca_svc_[容器名]_[服务名]}` 这种特殊环境变量。
 
@@ -79,7 +88,7 @@
 | `FRONTEND_URL` | `${APP_URL}` |
 | `BACKEND_URL` | `${APP_URL}` |
 | `ALLOWED_ORIGINS` | `${APP_URL}` |
-| `DATABASE_URL` | `postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${rca_svc_postgres_db}:5432/${POSTGRES_DB}?sslmode=disable` |
+| `DATABASE_URL` | `postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable` |
 | `OIDC_ISSUER` | `${OIDC_ISSUER}` |
 | `OIDC_CLIENT_ID` | `${OIDC_CLIENT_ID}` |
 | `OIDC_CLIENT_SECRET` | `${OIDC_CLIENT_SECRET}` |
@@ -91,8 +100,8 @@
 
 - `APP_URL` 填应用的公网访问地址，建议使用 `http://` 或 `https://` 的完整 URL。
 - 当前实现是同域部署，前端和 API 共用一个公网地址，所以 `FRONTEND_URL`、`BACKEND_URL` 和 `ALLOWED_ORIGINS` 都可以直接复用 `APP_URL`。
-- `DATABASE_URL` 依赖雨云的多容器内部服务地址能力，这里假设 PostgreSQL 容器名为 `postgres`，服务名为 `db`。
-- 如果你在雨云模板里改了容器名或服务名，`DATABASE_URL` 里的 `${rca_svc_postgres_db}` 也要同步改成对应名称。
+- `DATABASE_URL` 默认按 Compose 服务名互连，这里假设 PostgreSQL 容器名是 `postgres`。
+- 如果你改了数据库容器名，同步修改 `DATABASE_URL` 主机名部分。
 - `SESSION_SECRET` 不能为空，否则 JWT 会话签发和校验会失败。
 - `ENCRYPTION_KEY` 建议必填，并限制为 64 位十六进制字符串；不填时 Cloudflare Token 会以明文形式保存在数据库中。
 

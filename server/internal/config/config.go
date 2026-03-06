@@ -27,10 +27,11 @@ func Load() *Config {
 	if frontendURL == "" {
 		frontendURL = "http://localhost:5173"
 	}
+	databaseURL := expandEnvRefs(getEnv("DATABASE_URL", "postgres://hl6:hl6dev@localhost:5432/hl6?sslmode=disable"))
 
 	cfg := &Config{
 		Port:             getEnv("SERVER_PORT", "8080"),
-		DatabaseURL:      getEnv("DATABASE_URL", "postgres://hl6:hl6dev@localhost:5432/hl6?sslmode=disable"),
+		DatabaseURL:      databaseURL,
 		OIDCIssuer:       getEnv("OIDC_ISSUER", ""),
 		OIDCClientID:     getEnv("OIDC_CLIENT_ID", ""),
 		OIDCClientSecret: getEnv("OIDC_CLIENT_SECRET", ""),
@@ -67,6 +68,16 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func expandEnvRefs(value string) string {
+	return os.Expand(value, func(key string) string {
+		if v, ok := os.LookupEnv(key); ok {
+			return v
+		}
+		// Keep unresolved placeholders untouched for easier troubleshooting.
+		return "${" + key + "}"
+	})
 }
 
 func parseList(s string) []string {
