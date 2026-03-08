@@ -8,17 +8,16 @@ import (
 )
 
 type Config struct {
-	Port            string
-	DatabaseURL     string
-	OIDCIssuer      string
-	OIDCClientID    string
+	Port             string
+	DatabaseURL      string
+	OIDCIssuer       string
+	OIDCClientID     string
 	OIDCClientSecret string
-	SessionSecret   string
-	BackendURL      string
-	FrontendURL     string
-	AllowedOrigins  []string
-	AdminEmails     []string
-	EncryptionKey   []byte
+	SessionSecret    string
+	BackendURL       string
+	FrontendURL      string
+	AllowedOrigins   []string
+	EncryptionKey    []byte
 }
 
 func Load() *Config {
@@ -39,7 +38,6 @@ func Load() *Config {
 		BackendURL:       getEnv("BACKEND_URL", frontendURL),
 		FrontendURL:      frontendURL,
 		AllowedOrigins:   parseList(getEnv("ALLOWED_ORIGINS", "")),
-		AdminEmails:      parseListLower(getEnv("ADMIN_EMAILS", "")),
 	}
 
 	if keyHex := getEnv("ENCRYPTION_KEY", ""); keyHex != "" {
@@ -51,16 +49,6 @@ func Load() *Config {
 	}
 
 	return cfg
-}
-
-func (c *Config) IsAdminEmail(email string) bool {
-	lower := strings.ToLower(email)
-	for _, e := range c.AdminEmails {
-		if e == lower {
-			return true
-		}
-	}
-	return false
 }
 
 func getEnv(key, fallback string) string {
@@ -89,20 +77,6 @@ func parseList(s string) []string {
 	for _, p := range parts {
 		if v := strings.TrimSpace(p); v != "" {
 			result = append(result, v)
-		}
-	}
-	return result
-}
-
-func parseListLower(s string) []string {
-	if s == "" {
-		return nil
-	}
-	parts := strings.Split(s, ",")
-	result := make([]string, 0, len(parts))
-	for _, p := range parts {
-		if v := strings.TrimSpace(p); v != "" {
-			result = append(result, strings.ToLower(v))
 		}
 	}
 	return result

@@ -33,6 +33,8 @@ type OIDCHandler struct {
 	provider *oidc.ProviderConfig
 }
 
+const firstUserAdminLockKey int64 = 19490331
+
 func NewOIDCHandler(repo *repository.Repository, cfg *config.Config, provider *oidc.ProviderConfig) *OIDCHandler {
 	return &OIDCHandler{repo: repo, cfg: cfg, provider: provider}
 }
@@ -161,9 +163,6 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 			Role:         "user",
 			ReferralCode: generateReferralCode(),
 		}
-		if h.cfg.IsAdminEmail(email) {
-			user.Role = "admin"
-		}
 
 		// Assign default group
 		if defaultGroup, err := h.repo.GetDefaultUserGroup(); err == nil {
@@ -171,6 +170,27 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		}
 
 		tx := h.repo.GetDB().Begin()
+		if tx.Error != nil {
+			c.String(http.StatusInternalServerError, "failed to start transaction")
+			return
+		}
+
+		// Serialize first-user role assignment and only grant admin to the first created user.
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", firstUserAdminLockKey).Error; err != nil {
+			tx.Rollback()
+			c.String(http.StatusInternalServerError, "failed to initialize user role")
+			return
+		}
+
+		var userCount int64
+		if err := tx.Model(&model.User{}).Count(&userCount).Error; err != nil {
+			tx.Rollback()
+			c.String(http.StatusInternalServerError, "failed to initialize user role")
+			return
+		}
+		if userCount == 0 {
+			user.Role = "admin"
+		}
 
 		if err := tx.Create(user).Error; err != nil {
 			tx.Rollback()
@@ -216,7 +236,10 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 			h.processReferral(tx, user, refCode)
 		}
 
-		tx.Commit()
+		if err := tx.Commit().Error; err != nil {
+			c.String(http.StatusInternalServerError, "failed to finalize user creation")
+			return
+		}
 
 		// Reload user with group
 		user, _ = h.repo.FindUserByExternalID(sub)
@@ -225,12 +248,6 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		user.Email = email
 		user.Name = name
 		user.AvatarURL = picture
-		// Bidirectional admin sync
-		if h.cfg.IsAdminEmail(email) {
-			user.Role = "admin"
-		} else {
-			user.Role = "user"
-		}
 		h.repo.UpdateUser(user)
 	}
 

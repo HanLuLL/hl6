@@ -381,8 +381,7 @@ DATABASE_URL=postgres://hl6:hl6dev@localhost:5432/hl6?sslmode=disable
 # 服务器端口
 SERVER_PORT=8080
 
-# 管理员邮箱（用于标识管理员用户，填你的 OIDC 登录邮箱）
-ADMIN_EMAILS=your-email@example.com
+# 管理员规则：首个注册用户会自动成为管理员
 
 # OIDC 认证配置（必填）
 OIDC_ISSUER=https://your-oidc-provider.example.com
@@ -729,7 +728,6 @@ make dev-web                  # 再启动前端
    - OIDC_ISSUER 地址
    - OIDC_CLIENT_ID
    - OIDC_CLIENT_SECRET
-   - ADMIN_EMAILS（我的管理员邮箱）
 5. 将我提供的值写入 .env
 
 提示：docs/oidc.md中包含各种供应商的配置指引（如logto/casdoor/Google/Microsoft）

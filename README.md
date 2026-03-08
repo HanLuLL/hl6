@@ -102,7 +102,6 @@ make dev-web
 | --- | --- |
 | `DATABASE_URL` | PostgreSQL 连接串 |
 | `SERVER_PORT` | 后端服务端口（默认 `8080`） |
-| `ADMIN_EMAILS` | 管理员邮箱列表（逗号分隔） |
 | `APP_URL` | 同域部署时的公共访问地址；未单独设置 `FRONTEND_URL` 时会优先使用它 |
 | `OIDC_ISSUER` | OIDC 提供商 Issuer URL（如 Logto、Keycloak、Google 等） |
 | `OIDC_CLIENT_ID` | OIDC 应用 Client ID |
@@ -114,6 +113,7 @@ make dev-web
 | `ENCRYPTION_KEY` | 可选；64 位十六进制字符串（32 字节），有值则加密 Cloudflare Token，无值则明文存储 |
 
 > 注意：Vite 配置使用 `envDir: ".."`，前端会读取项目根目录 `.env`。
+> 注意：系统中首个注册用户会自动成为管理员，后续注册用户默认是普通用户。
 > 注意：服务会在数据库中维护内部会话密钥（`_internal_session_secret`）。首次启动如果该键不存在，会使用 `SESSION_SECRET` 作为一次性种子；若 `SESSION_SECRET` 为空则自动生成随机密钥。后续启动以数据库值为准。
 > 注意：如果数据库数据丢失，内部会话密钥会重建，所有已登录会话将失效并需要重新登录。
 

@@ -26,7 +26,6 @@ services:
       SESSION_SECRET: ""
       # Optional AES key (64 hex chars). Leave empty for plaintext Cloudflare token storage.
       ENCRYPTION_KEY: ""
-      ADMIN_EMAILS: admin@example.com
     ports:
       - "8080:8080"
 

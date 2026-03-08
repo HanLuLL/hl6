@@ -94,7 +94,6 @@
 | `OIDC_CLIENT_SECRET` | `${OIDC_CLIENT_SECRET}` |
 | `SESSION_SECRET` | `${SESSION_SECRET}` |
 | `ENCRYPTION_KEY` | `${ENCRYPTION_KEY}` |
-| `ADMIN_EMAILS` | `${ADMIN_EMAILS}` |
 
 说明：
 
@@ -105,6 +104,7 @@
 - `SESSION_SECRET` 可留空：首次启动会自动生成随机密钥并写入数据库 `system_configs._internal_session_secret`。
 - 若数据库持久化数据丢失，服务会重新生成会话密钥，所有已登录用户需要重新登录。
 - `ENCRYPTION_KEY` 为可选项，限制为 64 位十六进制字符串；不填时 Cloudflare Token 会以明文形式保存在数据库中。
+- 首个注册登录的用户会自动成为管理员，后续用户默认为普通用户。
 
 ### `postgres` 容器
 
@@ -159,7 +159,6 @@
 | 标签 | 环境变量键 | 类型 | 默认值 | 必填 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | 应用访问地址 | `APP_URL` | 文本 | 空 | 是 | 必须是完整 URL |
-| 管理员邮箱 | `ADMIN_EMAILS` | 文本 | 空 | 是 | 支持逗号分隔多个邮箱 |
 | OIDC Issuer | `OIDC_ISSUER` | 文本 | 空 | 是 | 例如 `https://your-provider.example.com/oidc` |
 | OIDC Client ID | `OIDC_CLIENT_ID` | 文本 | 空 | 是 | OIDC 应用 ID |
 | OIDC Client Secret | `OIDC_CLIENT_SECRET` | 文本 | 空 | 是 | OIDC 应用密钥 |
@@ -174,7 +173,7 @@
 - `SESSION_SECRET` 可以留空，让应用在首启时自动生成并写入数据库。
 - 如果你想人为指定首启种子，也可以手动填写 `SESSION_SECRET`（仅在数据库还没有内部密钥时生效）。
 - `ENCRYPTION_KEY` 若使用雨云随机生成功能，请确保长度与字符集符合 64 位十六进制要求。
-- 如果雨云选项支持正则校验，`APP_URL` 建议校验完整 URL 格式，`ADMIN_EMAILS` 可保留文本输入，由用户按逗号分隔填写。
+- 如果雨云选项支持正则校验，`APP_URL` 建议校验完整 URL 格式。
 
 ## 上架说明建议
 
