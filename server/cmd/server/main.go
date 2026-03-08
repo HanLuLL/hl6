@@ -61,6 +61,14 @@ func main() {
 		log.Fatal("failed to migrate:", err)
 	}
 
+	if err := verifyRequiredTables(db, []interface{}{
+		&model.User{},
+		&model.UserGroup{},
+		&model.SystemConfig{},
+	}); err != nil {
+		log.Fatal("database schema verification failed:", err)
+	}
+
 	log.Println("Database migrated successfully")
 
 	// GIN index for JSONB target_ids queries
@@ -155,6 +163,15 @@ func generateHexSecret(byteLen int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
+}
+
+func verifyRequiredTables(db *gorm.DB, tables []interface{}) error {
+	for _, table := range tables {
+		if !db.Migrator().HasTable(table) {
+			return fmt.Errorf("missing table for %T", table)
+		}
+	}
+	return nil
 }
 
 func seedDefaults(db *gorm.DB) {

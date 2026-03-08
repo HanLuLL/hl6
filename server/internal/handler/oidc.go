@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -42,6 +43,11 @@ func NewOIDCHandler(repo *repository.Repository, cfg *config.Config, provider *o
 func (h *OIDCHandler) callbackURL() string {
 	base := strings.TrimRight(h.cfg.BackendURL, "/")
 	return base + "/api/v1/auth/callback"
+}
+
+func (h *OIDCHandler) loginURL() string {
+	base := strings.TrimRight(h.cfg.BackendURL, "/")
+	return base + "/api/v1/auth/login"
 }
 
 // setSessionCookie sets a cookie with full attributes including SameSite=Lax.
@@ -89,6 +95,11 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	state := c.Query("state")
 	cookieState, err := c.Cookie("hl6_state")
 	if err != nil || cookieState != state || state == "" {
+		// Common after refresh/retry of a consumed callback URL; restart login flow.
+		if code != "" {
+			c.Redirect(http.StatusFound, h.loginURL())
+			return
+		}
 		c.String(http.StatusBadRequest, "invalid state")
 		return
 	}
@@ -154,6 +165,12 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	// 4. Find or create user
 	user, err := h.repo.FindUserByExternalID(sub)
 	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("failed to find user by external_id %q: %v", sub, err)
+			c.String(http.StatusInternalServerError, "failed to load user")
+			return
+		}
+
 		// New user — create in a single transaction
 		user = &model.User{
 			ExternalID:   sub,
@@ -167,6 +184,10 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		// Assign default group
 		if defaultGroup, err := h.repo.GetDefaultUserGroup(); err == nil {
 			user.GroupID = &defaultGroup.ID
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("failed to load default user group: %v", err)
+			c.String(http.StatusInternalServerError, "failed to initialize user")
+			return
 		}
 
 		tx := h.repo.GetDB().Begin()
