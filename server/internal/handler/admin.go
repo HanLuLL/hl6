@@ -328,7 +328,11 @@ func (h *AdminHandler) UpdateUserGroup(c *gin.Context) {
 // System Config
 
 func (h *AdminHandler) GetConfig(c *gin.Context) {
-	configs, err := h.repo.GetAllSystemConfigs()
+	keys := make([]string, 0, len(allowedConfigKeys))
+	for key := range allowedConfigKeys {
+		keys = append(keys, key)
+	}
+	configs, err := h.repo.GetSystemConfigsByKeys(keys)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to get config", "error.failedToGetConfig")
 		return

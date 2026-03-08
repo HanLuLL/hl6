@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -15,6 +17,8 @@ import (
 	"hl6-server/internal/oidc"
 	"hl6-server/internal/router"
 )
+
+const internalSessionSecretKey = "_internal_session_secret"
 
 func main() {
 	godotenv.Load("../.env")
@@ -63,6 +67,7 @@ func main() {
 
 	migrateCreditsToInt(db)
 	seedDefaults(db)
+	bootstrapSessionSecret(db, cfg)
 
 	// OIDC Discovery
 	provider, err := oidc.Discover(context.Background(), cfg.OIDCIssuer)
@@ -77,6 +82,78 @@ func main() {
 	if err := r.Run(addr); err != nil {
 		log.Fatal("failed to start server:", err)
 	}
+}
+
+func bootstrapSessionSecret(db *gorm.DB, cfg *config.Config) {
+	seed := strings.TrimSpace(cfg.SessionSecret)
+	secret, source, err := resolveSessionSecret(db, seed)
+	if err != nil {
+		log.Fatal("failed to bootstrap session secret:", err)
+	}
+	if seed != "" && source == "database" && seed != secret {
+		log.Println("SESSION_SECRET env is ignored because database session secret already exists")
+	}
+	cfg.SessionSecret = secret
+	log.Printf("Session secret loaded from %s", source)
+}
+
+func resolveSessionSecret(db *gorm.DB, seed string) (string, string, error) {
+	existing, err := getSystemConfigValue(db, internalSessionSecretKey)
+	if err == nil {
+		if existing == "" {
+			return "", "", errors.New("stored session secret is empty")
+		}
+		return existing, "database", nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return "", "", err
+	}
+
+	secret := seed
+	source := "generated random secret"
+	if secret == "" {
+		generated, genErr := generateHexSecret(32)
+		if genErr != nil {
+			return "", "", genErr
+		}
+		secret = generated
+	} else {
+		source = "SESSION_SECRET env seed"
+	}
+
+	createErr := db.Create(&model.SystemConfig{
+		Key:   internalSessionSecretKey,
+		Value: secret,
+	}).Error
+	if createErr == nil {
+		return secret, source, nil
+	}
+
+	// If another instance raced to create the row, read the existing value.
+	existing, readErr := getSystemConfigValue(db, internalSessionSecretKey)
+	if readErr != nil {
+		return "", "", fmt.Errorf("failed to save session secret: %w (fallback read failed: %v)", createErr, readErr)
+	}
+	if existing == "" {
+		return "", "", errors.New("stored session secret is empty")
+	}
+	return existing, "database", nil
+}
+
+func getSystemConfigValue(db *gorm.DB, key string) (string, error) {
+	var cfg model.SystemConfig
+	if err := db.Where("\"key\" = ?", key).First(&cfg).Error; err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(cfg.Value), nil
+}
+
+func generateHexSecret(byteLen int) (string, error) {
+	b := make([]byte, byteLen)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 func seedDefaults(db *gorm.DB) {

@@ -22,8 +22,10 @@ services:
       OIDC_ISSUER: https://your-oidc-provider.example.com
       OIDC_CLIENT_ID: your-client-id
       OIDC_CLIENT_SECRET: your-client-secret
-      SESSION_SECRET: change-me-session-secret
-      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      # Optional first-start seed. Leave empty to auto-generate and persist in DB.
+      SESSION_SECRET: ""
+      # Optional AES key (64 hex chars). Leave empty for plaintext Cloudflare token storage.
+      ENCRYPTION_KEY: ""
       ADMIN_EMAILS: admin@example.com
     ports:
       - "8080:8080"

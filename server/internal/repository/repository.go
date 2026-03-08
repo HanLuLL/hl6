@@ -459,12 +459,16 @@ func (r *Repository) SetSystemConfig(key, value string) error {
 	return r.DB.Save(&cfg).Error
 }
 
-func (r *Repository) GetAllSystemConfigs() (map[string]string, error) {
+func (r *Repository) GetSystemConfigsByKeys(keys []string) (map[string]string, error) {
+	result := make(map[string]string)
+	if len(keys) == 0 {
+		return result, nil
+	}
+
 	var configs []model.SystemConfig
-	if err := r.DB.Find(&configs).Error; err != nil {
+	if err := r.DB.Where("\"key\" IN ?", keys).Find(&configs).Error; err != nil {
 		return nil, err
 	}
-	result := make(map[string]string)
 	for _, c := range configs {
 		result[c.Key] = c.Value
 	}

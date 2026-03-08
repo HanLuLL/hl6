@@ -107,13 +107,15 @@ make dev-web
 | `OIDC_ISSUER` | OIDC 提供商 Issuer URL（如 Logto、Keycloak、Google 等） |
 | `OIDC_CLIENT_ID` | OIDC 应用 Client ID |
 | `OIDC_CLIENT_SECRET` | OIDC 应用 Client Secret |
-| `SESSION_SECRET` | 会话签名密钥 |
+| `SESSION_SECRET` | 会话密钥首启种子（可留空；仅在数据库未初始化密钥时使用） |
 | `FRONTEND_URL` | 前端地址（默认 `http://localhost:5173`） |
 | `BACKEND_URL` | 后端对外地址；未设置时默认跟随 `FRONTEND_URL` |
 | `ALLOWED_ORIGINS` | CORS 白名单（逗号分隔） |
-| `ENCRYPTION_KEY` | 64 位十六进制字符串（32 字节） |
+| `ENCRYPTION_KEY` | 可选；64 位十六进制字符串（32 字节），有值则加密 Cloudflare Token，无值则明文存储 |
 
 > 注意：Vite 配置使用 `envDir: ".."`，前端会读取项目根目录 `.env`。
+> 注意：服务会在数据库中维护内部会话密钥（`_internal_session_secret`）。首次启动如果该键不存在，会使用 `SESSION_SECRET` 作为一次性种子；若 `SESSION_SECRET` 为空则自动生成随机密钥。后续启动以数据库值为准。
+> 注意：如果数据库数据丢失，内部会话密钥会重建，所有已登录会话将失效并需要重新登录。
 
 ## 容器部署
 

@@ -102,8 +102,9 @@
 - 当前实现是同域部署，前端和 API 共用一个公网地址，所以 `FRONTEND_URL`、`BACKEND_URL` 和 `ALLOWED_ORIGINS` 都可以直接复用 `APP_URL`。
 - `DATABASE_URL` 默认按 Compose 服务名互连，这里假设 PostgreSQL 容器名是 `postgres`。
 - 如果你改了数据库容器名，同步修改 `DATABASE_URL` 主机名部分。
-- `SESSION_SECRET` 不能为空，否则 JWT 会话签发和校验会失败。
-- `ENCRYPTION_KEY` 建议必填，并限制为 64 位十六进制字符串；不填时 Cloudflare Token 会以明文形式保存在数据库中。
+- `SESSION_SECRET` 可留空：首次启动会自动生成随机密钥并写入数据库 `system_configs._internal_session_secret`。
+- 若数据库持久化数据丢失，服务会重新生成会话密钥，所有已登录用户需要重新登录。
+- `ENCRYPTION_KEY` 为可选项，限制为 64 位十六进制字符串；不填时 Cloudflare Token 会以明文形式保存在数据库中。
 
 ### `postgres` 容器
 
@@ -162,16 +163,17 @@
 | OIDC Issuer | `OIDC_ISSUER` | 文本 | 空 | 是 | 例如 `https://your-provider.example.com/oidc` |
 | OIDC Client ID | `OIDC_CLIENT_ID` | 文本 | 空 | 是 | OIDC 应用 ID |
 | OIDC Client Secret | `OIDC_CLIENT_SECRET` | 文本 | 空 | 是 | OIDC 应用密钥 |
-| Session Secret | `SESSION_SECRET` | 文本 | `hl6` | 是 | 建议启用随机生成 |
-| Encryption Key | `ENCRYPTION_KEY` | 文本 | 空 | 是 | 验证规则建议为 `^[a-fA-F0-9]{64}$` |
+| Session Secret | `SESSION_SECRET` | 文本 | 空 | 否 | 可留空，首启自动生成并落库 |
+| Encryption Key | `ENCRYPTION_KEY` | 文本 | 空 | 否 | 可选；有值时加密 Cloudflare Token，建议校验 `^[a-fA-F0-9]{64}$` |
 | PostgreSQL 数据库名 | `POSTGRES_DB` | 文本 | `hl6` | 是 | 数据库名 |
 | PostgreSQL 用户名 | `POSTGRES_USER` | 文本 | `hl6` | 是 | 数据库用户名 |
 | PostgreSQL 密码 | `POSTGRES_PASSWORD` | 文本 | `hl6db` | 是 | 建议自行修改 |
 
 补充建议：
 
-- `SESSION_SECRET` 可以启用“随机生成”，这样安装时会自动带随机后缀。
-- `ENCRYPTION_KEY` 不建议用雨云的“随机生成”直接代替，因为项目要求固定长度的 64 位十六进制字符串。
+- `SESSION_SECRET` 可以留空，让应用在首启时自动生成并写入数据库。
+- 如果你想人为指定首启种子，也可以手动填写 `SESSION_SECRET`（仅在数据库还没有内部密钥时生效）。
+- `ENCRYPTION_KEY` 若使用雨云随机生成功能，请确保长度与字符集符合 64 位十六进制要求。
 - 如果雨云选项支持正则校验，`APP_URL` 建议校验完整 URL 格式，`ADMIN_EMAILS` 可保留文本输入，由用户按逗号分隔填写。
 
 ## 上架说明建议

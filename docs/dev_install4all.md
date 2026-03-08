@@ -28,16 +28,13 @@ git clone https://git.houlang.cloud/houlangcloud/hl6.git && cd hl6
 
 # 2. 环境变量
 cp .env.example .env
-# 编辑 .env，填写 OIDC、ENCRYPTION_KEY 等必要配置
+# 编辑 .env，填写 OIDC 等必要配置（SESSION_SECRET 可留空自动生成）
+# 可选：若要加密 Cloudflare Token，再填写 ENCRYPTION_KEY
 
-# 3. 生成加密密钥
-openssl rand -hex 32
-# 将输出填入 .env 的 ENCRYPTION_KEY
-
-# 4. 安装前端依赖
+# 3. 安装前端依赖
 cd web && npm install && cd ..
 
-# 5. 启动（PostgreSQL + Go 后端 + Vite 前端）
+# 4. 启动（PostgreSQL + Go 后端 + Vite 前端）
 make dev
 ```
 
@@ -394,18 +391,18 @@ OIDC_CLIENT_SECRET=your-client-secret
 
 > **如何填写这三项？** 请参阅 [OIDC 提供商配置指南](./oidc.md)，其中包含 Logto、Casdoor、Keycloak、Authentik、Google、Microsoft Entra ID 等 9 种提供商的详细配置步骤和 Issuer 格式说明。
 
-# Session 密钥（随便填一串随机字符串）
-SESSION_SECRET=any-random-string-here
+# Session 密钥（可留空；首次启动会自动生成并写入数据库）
+SESSION_SECRET=
 
 # 前端地址
 FRONTEND_URL=http://localhost:5173
 ALLOWED_ORIGINS=http://localhost:5173
 
-# 加密密钥（AES-256-GCM，32 字节十六进制）
+# 加密密钥（可选：AES-256-GCM，32 字节十六进制；留空则 Cloudflare Token 明文存储）
 ENCRYPTION_KEY=
 ```
 
-生成 `ENCRYPTION_KEY`：
+如需启用 Cloudflare Token 加密，生成 `ENCRYPTION_KEY`：
 ```bash
 openssl rand -hex 32
 # 将输出复制粘贴到 .env 的 ENCRYPTION_KEY= 后面
@@ -417,6 +414,7 @@ openssl rand -hex 32
 > ```
 
 > **没有 OIDC 提供商？** 你需要一个 OIDC 兼容的身份认证服务才能完成登录流程。推荐自部署 [Logto](https://logto.io/)（开源免费）或 [Casdoor](https://casdoor.org/)。完整的提供商配置教程见 **[OIDC 提供商配置指南](./oidc.md)**。
+> **会话密钥说明**：服务会把内部会话密钥持久化在数据库 `system_configs._internal_session_secret`。数据库重置后会重新生成，会导致所有用户需要重新登录。
 
 ### 3.3 安装前端依赖
 
@@ -725,8 +723,8 @@ make dev-web                  # 再启动前端
 ## Phase2 配置环境变量
 
 1. 如果 .env 文件不存在，从 .env.example 复制一份。若已存在，校验是否符合规范
-2. 用 openssl rand -hex 32 生成 ENCRYPTION_KEY 并填入
-3. 生成一个随机字符串填入 SESSION_SECRET
+2. 可选：若要加密 Cloudflare Token，用 openssl rand -hex 32 生成 ENCRYPTION_KEY 并填入
+3. SESSION_SECRET 可留空（首启自动生成）；如需固定首启种子可手动填随机字符串
 4. **停下来问我**以下信息（不要猜测或使用占位符）：
    - OIDC_ISSUER 地址
    - OIDC_CLIENT_ID
