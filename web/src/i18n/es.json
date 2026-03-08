@@ -198,7 +198,13 @@
     "uploadLogo": "Subir Logo",
     "logoUploaded": "Logo subido y convertido",
     "currentLogo": "Logo actual",
-    "currentFavicon": "Favicon actual"
+    "currentFavicon": "Favicon actual",
+    "cropTitle": "Recortar Logo",
+    "cropConfirm": "Recortar y subir",
+    "deleteLogo": "Eliminar Logo",
+    "logoDeleted": "Logo eliminado",
+    "deleteLogoTitle": "Eliminar Logo",
+    "deleteLogoDesc": "Se eliminarán el logo y el favicon. ¿Confirmar?"
   },
   "adminDomains": {
     "tabDnsRecords": "Registros DNS",

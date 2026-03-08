@@ -223,6 +223,8 @@ export const api = {
     }
     return res.json() as Promise<ApiResponse<BrandingResponse>>;
   },
+  adminDeleteBrandingLogo: () =>
+    request<ApiResponse<BrandingResponse>>("/admin/branding/logo", { method: "DELETE" }),
 
   // Notifications (user)
   listNotifications: (offset = 0, limit = 20) =>

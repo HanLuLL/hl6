@@ -198,7 +198,13 @@
     "uploadLogo": "Upload Logo",
     "logoUploaded": "Logo uploaded and converted",
     "currentLogo": "Current Logo",
-    "currentFavicon": "Current Favicon"
+    "currentFavicon": "Current Favicon",
+    "cropTitle": "Crop Logo",
+    "cropConfirm": "Crop & Upload",
+    "deleteLogo": "Delete Logo",
+    "logoDeleted": "Logo deleted",
+    "deleteLogoTitle": "Delete Logo",
+    "deleteLogoDesc": "This will remove the logo and favicon. Are you sure?"
   },
   "adminDomains": {
     "tabDnsRecords": "DNS Records",

@@ -202,6 +202,35 @@ func (h *BrandingHandler) AdminUploadLogo(c *gin.Context) {
 	response.OK(c, branding)
 }
 
+func (h *BrandingHandler) AdminDeleteLogo(c *gin.Context) {
+	admin := ctxutil.GetUser(c)
+	if admin == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+
+	if err := h.repo.DeleteBrandingAssets([]string{
+		model.BrandingAssetTypeLogoWebP,
+		model.BrandingAssetTypeFaviconICO,
+	}); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete logo", "error.databaseError")
+		return
+	}
+
+	h.repo.CreateAuditLog(&model.AuditLog{
+		UserID:   admin.ID,
+		Action:   "admin_delete_branding_logo",
+		Resource: "branding",
+	})
+
+	branding, err := h.loadBranding()
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load branding", "error.databaseError")
+		return
+	}
+	response.OK(c, branding)
+}
+
 func (h *BrandingHandler) serveBrandingAsset(c *gin.Context, assetType, contentType string) {
 	asset, err := h.repo.FindBrandingAssetByType(assetType)
 	if err != nil {

@@ -524,6 +524,13 @@ func (r *Repository) UpsertBrandingAsset(assetType string, data []byte) error {
 	}).Create(&asset).Error
 }
 
+func (r *Repository) DeleteBrandingAssets(assetTypes []string) error {
+	if len(assetTypes) == 0 {
+		return nil
+	}
+	return r.DB.Where("asset_type IN ?", assetTypes).Delete(&model.BrandingAsset{}).Error
+}
+
 // CloudflareAccount
 func (r *Repository) ListCloudflareAccounts() ([]model.CloudflareAccount, error) {
 	var accounts []model.CloudflareAccount

@@ -198,7 +198,13 @@
     "uploadLogo": "Logo をアップロード",
     "logoUploaded": "Logo をアップロードして変換しました",
     "currentLogo": "現在の Logo",
-    "currentFavicon": "現在の Favicon"
+    "currentFavicon": "現在の Favicon",
+    "cropTitle": "Logo を切り抜く",
+    "cropConfirm": "切り抜いてアップロード",
+    "deleteLogo": "Logo を削除",
+    "logoDeleted": "Logo を削除しました",
+    "deleteLogoTitle": "Logo を削除",
+    "deleteLogoDesc": "Logo と Favicon が削除されます。続行しますか？"
   },
   "adminDomains": {
     "tabDnsRecords": "DNS レコード",

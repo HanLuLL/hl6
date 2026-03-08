@@ -198,7 +198,13 @@
     "uploadLogo": "Загрузить Logo",
     "logoUploaded": "Logo загружен и конвертирован",
     "currentLogo": "Текущий Logo",
-    "currentFavicon": "Текущий Favicon"
+    "currentFavicon": "Текущий Favicon",
+    "cropTitle": "Обрезать Logo",
+    "cropConfirm": "Обрезать и загрузить",
+    "deleteLogo": "Удалить Logo",
+    "logoDeleted": "Logo удалён",
+    "deleteLogoTitle": "Удалить Logo",
+    "deleteLogoDesc": "Logo и favicon будут удалены. Подтвердить?"
   },
   "adminDomains": {
     "tabDnsRecords": "DNS записи",

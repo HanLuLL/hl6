@@ -75,10 +75,8 @@ function SidebarContent({ onNavigate, collapsed, branding }: { onNavigate?: () =
     <div className="flex h-full flex-col">
       <div className={`flex h-14 items-center border-b ${collapsed ? "justify-center px-2" : "px-4"}`}>
         <Link to="/dashboard" className="flex items-center gap-2 font-semibold" onClick={onNavigate}>
-          {branding.logo_url ? (
+          {branding.logo_url && (
             <img src={branding.logo_url} alt={branding.name} className="h-5 w-5 shrink-0 rounded-sm object-contain" />
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
           )}
           {!collapsed && <span>{branding.name}</span>}
         </Link>

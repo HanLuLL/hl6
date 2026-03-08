@@ -198,7 +198,13 @@
     "uploadLogo": "上传 Logo",
     "logoUploaded": "Logo 已上传并转换",
     "currentLogo": "当前 Logo",
-    "currentFavicon": "当前标签页图标"
+    "currentFavicon": "当前标签页图标",
+    "cropTitle": "裁剪 Logo",
+    "cropConfirm": "确认裁剪",
+    "deleteLogo": "删除 Logo",
+    "logoDeleted": "Logo 已删除",
+    "deleteLogoTitle": "删除 Logo",
+    "deleteLogoDesc": "删除后 Logo 和标签页图标将同时移除，确认继续？"
   },
   "adminDomains": {
     "tabDnsRecords": "解析列表",

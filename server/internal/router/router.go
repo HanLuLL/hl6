@@ -105,6 +105,7 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	admin.POST("/notifications/images", notifAdminH.UploadImage)
 	admin.PUT("/branding", brandingH.AdminUpdateBranding)
 	admin.POST("/branding/logo", brandingH.AdminUploadLogo)
+	admin.DELETE("/branding/logo", brandingH.AdminDeleteLogo)
 
 	setupFrontendRoutes(r)
 
