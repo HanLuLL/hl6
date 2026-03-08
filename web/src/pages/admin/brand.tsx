@@ -34,6 +34,7 @@ function ImageCropDialog({
   const containerRef = useRef<HTMLDivElement>(null);
   const [imgBounds, setImgBounds] = useState<ImgBounds | null>(null);
   const [cropBox, setCropBox] = useState<CropBox | null>(null);
+  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const dragRef = useRef<{
     type: "move" | "resize";
     startX: number;
@@ -58,6 +59,7 @@ function ImageCropDialog({
     const by = (cH - rH) / 2;
     const bounds: ImgBounds = { x: bx, y: by, w: rW, h: rH };
     setImgBounds(bounds);
+    setNaturalSize({ w: nW, h: nH });
 
     const s = Math.min(rW, rH) * 0.8;
     setCropBox({ x: bx + (rW - s) / 2, y: by + (rH - s) / 2, size: s });
@@ -162,13 +164,17 @@ function ImageCropDialog({
               onMouseDown={(e) => startDrag(e, "move")}
             >
               <div
-                className="absolute bottom-0 right-0 w-4 h-4 bg-white cursor-se-resize rounded-sm"
-                style={{ transform: "translate(50%, 50%)" }}
+                className="absolute bottom-2 right-2 w-4 h-4 bg-white cursor-se-resize rounded-sm shadow-[0_0_0_1.5px_rgba(0,0,0,0.55),0_2px_6px_rgba(0,0,0,0.3)]"
                 onMouseDown={(e) => startDrag(e, "resize")}
               />
             </div>
           )}
         </div>
+        {cropBox && imgBounds && naturalSize && (
+          <p className="text-center text-xs text-muted-foreground -mt-1">
+            {Math.round(cropBox.size / imgBounds.w * naturalSize.w)} × {Math.round(cropBox.size / imgBounds.h * naturalSize.h)} px
+          </p>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
             {t("common.cancel")}
