@@ -442,8 +442,7 @@ func (r *Repository) DeleteDomainGroupAccessByGroup(tx *gorm.DB, groupID uint) e
 
 // SystemConfig
 func (r *Repository) GetSystemConfig(key string) (string, error) {
-	var cfg model.SystemConfig
-	err := r.DB.Where("\"key\" = ?", key).First(&cfg).Error
+	cfg, err := r.FindSystemConfig(key)
 	if err != nil {
 		return "", err
 	}
@@ -452,17 +451,23 @@ func (r *Repository) GetSystemConfig(key string) (string, error) {
 
 func (r *Repository) FindSystemConfig(key string) (*model.SystemConfig, error) {
 	var cfg model.SystemConfig
-	err := r.DB.Where("\"key\" = ?", key).First(&cfg).Error
-	if err != nil {
-		return nil, err
+	result := r.DB.Where("\"key\" = ?", key).Limit(1).Find(&cfg)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
 	}
 	return &cfg, nil
 }
 
 func (r *Repository) SetSystemConfig(key, value string) error {
 	var cfg model.SystemConfig
-	err := r.DB.Where("\"key\" = ?", key).First(&cfg).Error
-	if err != nil {
+	result := r.DB.Where("\"key\" = ?", key).Limit(1).Find(&cfg)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
 		return r.DB.Create(&model.SystemConfig{Key: key, Value: value}).Error
 	}
 	cfg.Value = value
