@@ -284,7 +284,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	h.setSessionCookie(c, "hl6_session", sessionToken, maxAge)
 
 	// 7. Redirect to dashboard
-	c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/dashboard")
+	c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/dashboard")
 }
 
 func (h *OIDCHandler) Logout(c *gin.Context) {
