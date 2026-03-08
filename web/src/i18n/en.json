@@ -165,6 +165,7 @@
     "tabUsers": "Users",
     "tabGroups": "User Groups",
     "tabNotifications": "Notifications",
+    "tabBrand": "Brand",
     "title": "Users",
     "subtitle": "Manage users and grant credits",
     "totalUsers": "{{count}} total users",
@@ -185,6 +186,19 @@
     "groupChanged": "User group updated",
     "searchPlaceholder": "Search by name or email...",
     "invitedBy": "Invited By"
+  },
+  "adminBrand": {
+    "title": "Branding",
+    "subtitle": "Configure the top-left brand name and icons",
+    "nameLabel": "Brand Name",
+    "namePlaceholder": "Enter brand name",
+    "saveName": "Save Name",
+    "nameSaved": "Brand name saved",
+    "logoLabel": "Brand Icon",
+    "uploadLogo": "Upload Logo",
+    "logoUploaded": "Logo uploaded and converted",
+    "currentLogo": "Current Logo",
+    "currentFavicon": "Current Favicon"
   },
   "adminDomains": {
     "tabDnsRecords": "DNS Records",
@@ -239,7 +253,8 @@
     "reason": "Reason",
     "reasonPlaceholder": "Optional: reason for deletion",
     "recordDeleted": "Record deleted",
-    "fqdn": "FQDN",
+    "fqdn": "Record",
+    "copySuccessSafe": "Copied successfully, please access with caution",
     "content": "Content",
     "type": "Type",
     "userEmail": "User Email",

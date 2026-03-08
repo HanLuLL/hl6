@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -449,6 +450,15 @@ func (r *Repository) GetSystemConfig(key string) (string, error) {
 	return cfg.Value, nil
 }
 
+func (r *Repository) FindSystemConfig(key string) (*model.SystemConfig, error) {
+	var cfg model.SystemConfig
+	err := r.DB.Where("\"key\" = ?", key).First(&cfg).Error
+	if err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
 func (r *Repository) SetSystemConfig(key, value string) error {
 	var cfg model.SystemConfig
 	err := r.DB.Where("\"key\" = ?", key).First(&cfg).Error
@@ -473,6 +483,45 @@ func (r *Repository) GetSystemConfigsByKeys(keys []string) (map[string]string, e
 		result[c.Key] = c.Value
 	}
 	return result, nil
+}
+
+// Branding assets
+func (r *Repository) FindBrandingAssetByType(assetType string) (*model.BrandingAsset, error) {
+	var asset model.BrandingAsset
+	err := r.DB.Where("asset_type = ?", assetType).First(&asset).Error
+	if err != nil {
+		return nil, err
+	}
+	return &asset, nil
+}
+
+func (r *Repository) ListBrandingAssets(assetTypes []string) ([]model.BrandingAsset, error) {
+	var assets []model.BrandingAsset
+	if len(assetTypes) == 0 {
+		return assets, nil
+	}
+	err := r.DB.Select("id", "asset_type", "size", "created_at", "updated_at").
+		Where("asset_type IN ?", assetTypes).
+		Find(&assets).Error
+	return assets, err
+}
+
+func (r *Repository) UpsertBrandingAsset(assetType string, data []byte) error {
+	now := time.Now()
+	asset := model.BrandingAsset{
+		AssetType: assetType,
+		Data:      data,
+		Size:      len(data),
+		UpdatedAt: now,
+	}
+	return r.DB.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "asset_type"}},
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"data":       data,
+			"size":       len(data),
+			"updated_at": now,
+		}),
+	}).Create(&asset).Error
 }
 
 // CloudflareAccount
@@ -668,7 +717,7 @@ func (r *Repository) ListNotificationsAdmin(page, perPage int) ([]NotificationWi
 	err := r.DB.Model(&model.Notification{}).
 		Select("notifications.*, (SELECT COUNT(*) FROM notification_reads nr WHERE nr.notification_id = notifications.id) as read_count").
 		Preload("Creator").
-		Offset((page-1) * perPage).Limit(perPage).
+		Offset((page - 1) * perPage).Limit(perPage).
 		Order("created_at DESC").
 		Find(&results).Error
 	return results, total, err

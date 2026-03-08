@@ -32,6 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
+import { Copy } from "lucide-react";
 import type { AdminDNSRecord } from "@/types";
 
 export function DNSRecordsContent() {
@@ -237,7 +238,25 @@ export function DNSRecordsContent() {
                   className={`cursor-pointer ${idx === selectedIndex ? "bg-accent" : ""}`}
                   onClick={() => setDetailRecord(record)}
                 >
-                  <TableCell className="font-mono text-xs">{record.name}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate">{record.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(record.name).then(() => {
+                            toast.warning(t("adminDnsRecords.copySuccessSafe"));
+                          }).catch(() => {});
+                        }}
+                        aria-label={t("referral.copy")}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
                   <TableCell className="font-mono text-xs max-w-48 truncate">{record.content}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-xs">{record.type}</Badge>

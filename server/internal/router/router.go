@@ -26,6 +26,7 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	subdomainH := handler.NewSubdomainHandler(repo, cfg)
 	creditH := handler.NewCreditHandler(repo)
 	adminH := handler.NewAdminHandler(repo)
+	brandingH := handler.NewBrandingHandler(repo)
 	referralH := handler.NewReferralHandler(repo)
 	cfAccountH := handler.NewCloudflareAccountHandler(repo, cfg)
 
@@ -40,6 +41,9 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	// Public auth routes
 	api.GET("/auth/login", oidcH.Login)
 	api.GET("/auth/callback", oidcH.Callback)
+	api.GET("/branding", brandingH.GetBranding)
+	api.GET("/branding/logo.webp", brandingH.GetLogo)
+	api.GET("/branding/favicon.ico", brandingH.GetFavicon)
 
 	// Authenticated routes
 	authed := api.Group("", auth.Required())
@@ -99,6 +103,8 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	admin.PUT("/notifications/:id", notifAdminH.Update)
 	admin.DELETE("/notifications/:id", notifAdminH.Delete)
 	admin.POST("/notifications/images", notifAdminH.UploadImage)
+	admin.PUT("/branding", brandingH.AdminUpdateBranding)
+	admin.POST("/branding/logo", brandingH.AdminUploadLogo)
 
 	setupFrontendRoutes(r)
 

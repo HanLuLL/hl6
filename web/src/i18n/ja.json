@@ -165,6 +165,7 @@
     "tabUsers": "ユーザー",
     "tabGroups": "ユーザーグループ",
     "tabNotifications": "通知",
+    "tabBrand": "ブランド",
     "title": "ユーザー管理",
     "subtitle": "ユーザーの管理とクレジットの付与",
     "totalUsers": "ユーザー数：{{count}}",
@@ -185,6 +186,19 @@
     "groupChanged": "ユーザーグループを更新しました",
     "searchPlaceholder": "名前またはメールで検索...",
     "invitedBy": "招待者"
+  },
+  "adminBrand": {
+    "title": "ブランド設定",
+    "subtitle": "左上のブランド名とアイコンを設定します",
+    "nameLabel": "ブランド名",
+    "namePlaceholder": "ブランド名を入力",
+    "saveName": "名称を保存",
+    "nameSaved": "ブランド名を保存しました",
+    "logoLabel": "ブランドアイコン",
+    "uploadLogo": "Logo をアップロード",
+    "logoUploaded": "Logo をアップロードして変換しました",
+    "currentLogo": "現在の Logo",
+    "currentFavicon": "現在の Favicon"
   },
   "adminDomains": {
     "tabDnsRecords": "DNS レコード",
@@ -239,7 +253,8 @@
     "reason": "理由",
     "reasonPlaceholder": "任意: 削除理由",
     "recordDeleted": "レコードが削除されました",
-    "fqdn": "FQDN",
+    "fqdn": "解析",
+    "copySuccessSafe": "コピー成功、アクセスは慎重に行ってください",
     "content": "コンテンツ",
     "type": "タイプ",
     "userEmail": "ユーザーメール",

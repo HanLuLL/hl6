@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useBranding } from "@/hooks/use-branding";
 import { prefetchRouteData } from "@/lib/prefetch";
 import { PageTransition } from "./page-transition";
 import { ThemeToggle } from "./theme-toggle";
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
+import type { BrandingResponse } from "@/types";
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
 
@@ -64,7 +66,7 @@ function NavLink({ item, onClick, collapsed }: { item: typeof navItems[0]; onCli
   );
 }
 
-function SidebarContent({ onNavigate, collapsed }: { onNavigate?: () => void; collapsed?: boolean }) {
+function SidebarContent({ onNavigate, collapsed, branding }: { onNavigate?: () => void; collapsed?: boolean; branding: BrandingResponse }) {
   const { user } = useAuth();
   const { t } = useTranslation();
   const isAdmin = user?.role === "admin";
@@ -73,8 +75,12 @@ function SidebarContent({ onNavigate, collapsed }: { onNavigate?: () => void; co
     <div className="flex h-full flex-col">
       <div className={`flex h-14 items-center border-b ${collapsed ? "justify-center px-2" : "px-4"}`}>
         <Link to="/dashboard" className="flex items-center gap-2 font-semibold" onClick={onNavigate}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
-          {!collapsed && <span>SubDomain</span>}
+          {branding.logo_url ? (
+            <img src={branding.logo_url} alt={branding.name} className="h-5 w-5 shrink-0 rounded-sm object-contain" />
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+          )}
+          {!collapsed && <span>{branding.name}</span>}
         </Link>
       </div>
       <nav className={`flex-1 space-y-1 ${collapsed ? "p-2" : "p-4"}`}>
@@ -97,6 +103,7 @@ function SidebarContent({ onNavigate, collapsed }: { onNavigate?: () => void; co
 
 export function RootLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut, credits } = useAuth();
+  const branding = useBranding();
   const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
@@ -112,7 +119,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
       {/* Desktop sidebar */}
       <aside className={`hidden border-r bg-sidebar-background lg:flex lg:flex-col sticky top-0 h-screen transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
         <div className="flex-1 overflow-hidden">
-          <SidebarContent collapsed={collapsed} />
+          <SidebarContent collapsed={collapsed} branding={branding} />
         </div>
         <div className={`border-t p-2 ${collapsed ? "flex justify-center" : "flex justify-end"}`}>
           <Button
@@ -140,7 +147,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <SidebarContent onNavigate={() => setMobileOpen(false)} />
+              <SidebarContent onNavigate={() => setMobileOpen(false)} branding={branding} />
             </SheetContent>
           </Sheet>
 

@@ -55,6 +55,7 @@ func main() {
 		&model.Notification{},
 		&model.NotificationRead{},
 		&model.NotificationImage{},
+		&model.BrandingAsset{},
 		&model.UserReferral{},
 	); err != nil {
 		log.Fatal("failed to migrate:", err)

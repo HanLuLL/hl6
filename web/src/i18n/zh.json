@@ -165,6 +165,7 @@
     "tabUsers": "用户",
     "tabGroups": "用户组",
     "tabNotifications": "通知",
+    "tabBrand": "品牌",
     "title": "用户管理",
     "subtitle": "管理用户并发放积分",
     "totalUsers": "共 {{count}} 个用户",
@@ -185,6 +186,19 @@
     "groupChanged": "用户组已更新",
     "searchPlaceholder": "按姓名或邮箱搜索...",
     "invitedBy": "邀请人"
+  },
+  "adminBrand": {
+    "title": "品牌设置",
+    "subtitle": "配置左上角品牌名称与图标",
+    "nameLabel": "品牌名称",
+    "namePlaceholder": "输入品牌名称",
+    "saveName": "保存名称",
+    "nameSaved": "品牌名称已保存",
+    "logoLabel": "品牌图标",
+    "uploadLogo": "上传 Logo",
+    "logoUploaded": "Logo 已上传并转换",
+    "currentLogo": "当前 Logo",
+    "currentFavicon": "当前标签页图标"
   },
   "adminDomains": {
     "tabDnsRecords": "解析列表",
@@ -239,7 +253,8 @@
     "reason": "原因",
     "reasonPlaceholder": "可选：删除原因",
     "recordDeleted": "解析记录已删除",
-    "fqdn": "完整域名",
+    "fqdn": "解析",
+    "copySuccessSafe": "复制成功，请谨慎访问",
     "content": "记录值",
     "type": "类型",
     "userEmail": "用户邮箱",

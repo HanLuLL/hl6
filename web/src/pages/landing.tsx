@@ -2,12 +2,14 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { useBranding } from "@/hooks/use-branding";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { SiteFooter } from "@/components/layout/site-footer";
 
 export default function LandingPage() {
   const { isAuthenticated, signIn } = useAuth();
+  const branding = useBranding();
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const ref = searchParams.get("ref") ?? undefined;
@@ -17,8 +19,12 @@ export default function LandingPage() {
       {/* Nav */}
       <header className="flex items-center justify-between px-6 py-4 border-b">
         <div className="flex items-center gap-2 font-semibold text-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
-          SubDomain
+          {branding.logo_url ? (
+            <img src={branding.logo_url} alt={branding.name} className="h-6 w-6 rounded-sm object-contain" />
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+          )}
+          {branding.name}
         </div>
         <div className="flex items-center gap-2">
           <LanguageToggle />

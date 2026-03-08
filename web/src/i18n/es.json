@@ -165,6 +165,7 @@
     "tabUsers": "Usuarios",
     "tabGroups": "Grupos de usuarios",
     "tabNotifications": "Notificaciones",
+    "tabBrand": "Marca",
     "title": "Gestión de usuarios",
     "subtitle": "Gestiona usuarios y otorga créditos",
     "totalUsers": "{{count}} usuarios en total",
@@ -185,6 +186,19 @@
     "groupChanged": "Grupo de usuario actualizado",
     "searchPlaceholder": "Buscar por nombre o correo...",
     "invitedBy": "Invitado por"
+  },
+  "adminBrand": {
+    "title": "Marca",
+    "subtitle": "Configura el nombre e iconos de marca en la esquina superior izquierda",
+    "nameLabel": "Nombre de marca",
+    "namePlaceholder": "Introduce el nombre de marca",
+    "saveName": "Guardar nombre",
+    "nameSaved": "Nombre de marca guardado",
+    "logoLabel": "Icono de marca",
+    "uploadLogo": "Subir Logo",
+    "logoUploaded": "Logo subido y convertido",
+    "currentLogo": "Logo actual",
+    "currentFavicon": "Favicon actual"
   },
   "adminDomains": {
     "tabDnsRecords": "Registros DNS",
@@ -239,7 +253,8 @@
     "reason": "Razón",
     "reasonPlaceholder": "Opcional: razón de la eliminación",
     "recordDeleted": "Registro eliminado",
-    "fqdn": "FQDN",
+    "fqdn": "Registro",
+    "copySuccessSafe": "Copiado correctamente, accede con precaución",
     "content": "Contenido",
     "type": "Tipo",
     "userEmail": "Email del usuario",

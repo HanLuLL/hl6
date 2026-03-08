@@ -192,3 +192,10 @@ export interface AdminDNSRecord extends DNSRecord {
   domain_id: number;
   domain_name: string;
 }
+
+export interface BrandingResponse {
+  name: string;
+  logo_url: string | null;
+  favicon_url: string | null;
+  version: string;
+}

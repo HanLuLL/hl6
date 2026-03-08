@@ -16,6 +16,7 @@ import type {
   CloudflareAccount,
   Notification,
   OffsetPaginatedResponse,
+  BrandingResponse,
   ReferralInfo,
   UserWithInviter,
   AdminDNSRecord,
@@ -106,6 +107,10 @@ async function request<T>(
 }
 
 export const api = {
+  // Branding (public)
+  getBranding: (options?: { signal?: AbortSignal }) =>
+    request<ApiResponse<BrandingResponse>>("/branding", { signal: options?.signal }),
+
   // Auth
   getMe: async () => {
     const res = await request<ApiResponse<{ user: User; credits: number }>>("/auth/me");
@@ -202,6 +207,22 @@ export const api = {
   },
   adminDeleteDNSRecord: (id: number, data: { notify: boolean; reason?: string }) =>
     request<ApiResponse<{ message: string }>>(`/admin/dns-records/${id}`, { method: "DELETE", body: JSON.stringify(data) }),
+  adminUpdateBranding: (data: { name: string }) =>
+    request<ApiResponse<BrandingResponse>>("/admin/branding", { method: "PUT", body: JSON.stringify(data) }),
+  adminUploadBrandingLogo: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(buildApiUrl("/admin/branding/logo"), {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ message: res.statusText }));
+      throw new ApiError(body.message || res.statusText, body.message_key);
+    }
+    return res.json() as Promise<ApiResponse<BrandingResponse>>;
+  },
 
   // Notifications (user)
   listNotifications: (offset = 0, limit = 20) =>

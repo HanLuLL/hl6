@@ -165,6 +165,7 @@
     "tabUsers": "Пользователи",
     "tabGroups": "Группы пользователей",
     "tabNotifications": "Уведомления",
+    "tabBrand": "Бренд",
     "title": "Управление пользователями",
     "subtitle": "Управляйте пользователями и начисляйте кредиты",
     "totalUsers": "Всего пользователей: {{count}}",
@@ -185,6 +186,19 @@
     "groupChanged": "Группа пользователя обновлена",
     "searchPlaceholder": "Поиск по имени или email...",
     "invitedBy": "Приглашён"
+  },
+  "adminBrand": {
+    "title": "Бренд",
+    "subtitle": "Настройка названия и иконок бренда в левом верхнем углу",
+    "nameLabel": "Название бренда",
+    "namePlaceholder": "Введите название бренда",
+    "saveName": "Сохранить название",
+    "nameSaved": "Название бренда сохранено",
+    "logoLabel": "Иконка бренда",
+    "uploadLogo": "Загрузить Logo",
+    "logoUploaded": "Logo загружен и конвертирован",
+    "currentLogo": "Текущий Logo",
+    "currentFavicon": "Текущий Favicon"
   },
   "adminDomains": {
     "tabDnsRecords": "DNS записи",
@@ -239,7 +253,8 @@
     "reason": "Причина",
     "reasonPlaceholder": "Необязательно: причина удаления",
     "recordDeleted": "Запись удалена",
-    "fqdn": "FQDN",
+    "fqdn": "Запись",
+    "copySuccessSafe": "Скопировано успешно, пожалуйста, открывайте с осторожностью",
     "content": "Содержимое",
     "type": "Тип",
     "userEmail": "Email пользователя",

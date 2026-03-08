@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GroupsContent } from "./groups";
 import { NotificationsContent } from "./notifications";
+import { BrandContent } from "./brand";
 
 function UsersContent() {
   const [page, setPage] = useState(1);
@@ -281,6 +282,7 @@ export default function AdminUsersPage() {
           <TabsTrigger value="users">{t("adminUsers.tabUsers")}</TabsTrigger>
           <TabsTrigger value="groups">{t("adminUsers.tabGroups")}</TabsTrigger>
           <TabsTrigger value="notifications">{t("adminUsers.tabNotifications")}</TabsTrigger>
+          <TabsTrigger value="brand">{t("adminUsers.tabBrand")}</TabsTrigger>
         </TabsList>
         <TabsContent value="users" className="space-y-6 mt-4">
           <UsersContent />
@@ -290,6 +292,9 @@ export default function AdminUsersPage() {
         </TabsContent>
         <TabsContent value="notifications" className="mt-4">
           <NotificationsContent />
+        </TabsContent>
+        <TabsContent value="brand" className="mt-4">
+          <BrandContent />
         </TabsContent>
       </Tabs>
     </div>
