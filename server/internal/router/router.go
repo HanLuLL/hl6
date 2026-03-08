@@ -26,7 +26,7 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	subdomainH := handler.NewSubdomainHandler(repo, cfg)
 	creditH := handler.NewCreditHandler(repo)
 	adminH := handler.NewAdminHandler(repo)
-	brandingH := handler.NewBrandingHandler(repo)
+	brandingH := handler.NewBrandingHandler(repo, cfg)
 	referralH := handler.NewReferralHandler(repo)
 	cfAccountH := handler.NewCloudflareAccountHandler(repo, cfg)
 

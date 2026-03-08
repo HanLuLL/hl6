@@ -19,6 +19,7 @@ import (
 	"github.com/chai2010/webp"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"hl6-server/internal/config"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
@@ -36,7 +37,8 @@ const (
 )
 
 type BrandingHandler struct {
-	repo *repository.Repository
+	repo       *repository.Repository
+	backendURL string
 }
 
 type brandingResponse struct {
@@ -46,8 +48,11 @@ type brandingResponse struct {
 	Version    string  `json:"version"`
 }
 
-func NewBrandingHandler(repo *repository.Repository) *BrandingHandler {
-	return &BrandingHandler{repo: repo}
+func NewBrandingHandler(repo *repository.Repository, cfg *config.Config) *BrandingHandler {
+	return &BrandingHandler{
+		repo:       repo,
+		backendURL: strings.TrimRight(cfg.BackendURL, "/"),
+	}
 }
 
 func (h *BrandingHandler) GetBranding(c *gin.Context) {
@@ -291,13 +296,13 @@ func (h *BrandingHandler) loadBranding() (*brandingResponse, error) {
 
 	var logoURL *string
 	if hasLogo {
-		url := fmt.Sprintf("%s/logo.webp?v=%s", brandingAPIPrefix, version)
+		url := fmt.Sprintf("%s%s/logo.webp?v=%s", h.backendURL, brandingAPIPrefix, version)
 		logoURL = &url
 	}
 
 	var faviconURL *string
 	if hasFavicon {
-		url := fmt.Sprintf("%s/favicon.ico?v=%s", brandingAPIPrefix, version)
+		url := fmt.Sprintf("%s%s/favicon.ico?v=%s", h.backendURL, brandingAPIPrefix, version)
 		faviconURL = &url
 	}
 
