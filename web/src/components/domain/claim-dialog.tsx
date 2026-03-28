@@ -63,7 +63,12 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
                 placeholder={t("claimDialog.placeholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return;
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                  handleSubmit();
+                }}
+                required
               />
               <span className="text-sm text-muted-foreground whitespace-nowrap">.{domain.name}</span>
             </div>
@@ -87,7 +92,7 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={handleSubmit} disabled={!name.trim() || claim.isPending}>
+          <Button onClick={handleSubmit} disabled={!name.trim() || claim.isPending} data-dialog-primary="true">
             {claim.isPending ? t("claimDialog.claiming") : t("claimDialog.claimFor", { count: domain.credit_cost, cost: domain.credit_cost })}
           </Button>
         </DialogFooter>

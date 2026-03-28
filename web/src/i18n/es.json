@@ -30,7 +30,9 @@
     "searchPlaceholder": "Buscar...",
     "errorTitle": "Algo salió mal",
     "errorMessage": "Ocurrió un error inesperado al cargar la página. Por favor, inténtelo de nuevo.",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "hotkeyGuide": "Atajos: Esc cierra o vuelve atrás; Cmd/Ctrl + Enter confirma o envía. Si falta un campo obligatorio, el foco irá al primero.",
+    "gotIt": "Entendido"
   },
   "landing": {
     "dashboard": "Panel de control",

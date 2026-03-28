@@ -171,11 +171,11 @@ export function CloudflareAccountsContent() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>{t("adminCloudflare.accountName")}</Label>
-              <Input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder={t("adminCloudflare.accountName")} />
+              <Input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder={t("adminCloudflare.accountName")} required />
             </div>
             <div className="space-y-2">
               <Label>{t("adminCloudflare.apiToken")}</Label>
-              <Input type="password" value={addToken} onChange={(e) => setAddToken(e.target.value)} placeholder="API Token" />
+              <Input type="password" value={addToken} onChange={(e) => setAddToken(e.target.value)} placeholder="API Token" required />
             </div>
           </div>
           <DialogFooter>
@@ -183,6 +183,7 @@ export function CloudflareAccountsContent() {
             <Button
               onClick={() => createMutation.mutate({ name: addName, api_token: addToken })}
               disabled={!addName.trim() || !addToken.trim() || createMutation.isPending}
+              data-dialog-primary="true"
             >
               {createMutation.isPending ? t("common.creating") : t("common.create")}
             </Button>
@@ -197,7 +198,7 @@ export function CloudflareAccountsContent() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>{t("adminCloudflare.accountName")}</Label>
-              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label>{t("adminCloudflare.apiToken")}</Label>
@@ -223,6 +224,7 @@ export function CloudflareAccountsContent() {
                 ...(editToken ? { api_token: editToken } : {}),
               })}
               disabled={!editName.trim() || updateMutation.isPending}
+              data-dialog-primary="true"
             >
               {updateMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
@@ -243,6 +245,7 @@ export function CloudflareAccountsContent() {
               variant="destructive"
               onClick={() => deleteAccount && deleteMutation.mutate(deleteAccount.id)}
               disabled={deleteMutation.isPending}
+              data-dialog-primary="true"
             >
               {deleteMutation.isPending ? t("common.delete") + "..." : t("common.delete")}
             </Button>

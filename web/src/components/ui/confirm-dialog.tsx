@@ -66,6 +66,7 @@ export function ConfirmDialog({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={confirmInput}
+              required
               autoFocus
             />
           </div>
@@ -83,6 +84,7 @@ export function ConfirmDialog({
             variant={destructive ? "destructive" : "default"}
             onClick={onConfirm}
             disabled={!canConfirm || loading}
+            data-dialog-primary="true"
           >
             {confirmText || t("common.confirm")}
           </Button>

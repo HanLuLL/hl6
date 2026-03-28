@@ -218,6 +218,7 @@ export default function LandingPage() {
                   onChange={(e) => setOidcIssuer(e.target.value)}
                   placeholder="https://issuer.example.com"
                   disabled={status?.issuer_env_locked}
+                  required={!status?.issuer_env_locked}
                 />
                 {status?.issuer_env_locked && (
                   <p className="text-xs text-muted-foreground">{t("oidcSetup.lockedByEnv")}</p>
@@ -230,6 +231,7 @@ export default function LandingPage() {
                   onChange={(e) => setOidcClientID(e.target.value)}
                   placeholder="client-id"
                   disabled={status?.client_id_env_locked}
+                  required={!status?.client_id_env_locked}
                 />
                 {status?.client_id_env_locked && (
                   <p className="text-xs text-muted-foreground">{t("oidcSetup.lockedByEnv")}</p>
@@ -243,6 +245,7 @@ export default function LandingPage() {
                   onChange={(e) => setOidcClientSecret(e.target.value)}
                   placeholder="client-secret"
                   disabled={status?.client_secret_env_locked}
+                  required={!status?.client_secret_env_locked}
                 />
                 {status?.client_secret_env_locked && (
                   <p className="text-xs text-muted-foreground">{t("oidcSetup.lockedByEnv")}</p>
@@ -259,7 +262,7 @@ export default function LandingPage() {
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   {t("common.cancel")}
                 </Button>
-                <Button onClick={submitOIDCSetup} disabled={submitting}>
+                <Button onClick={submitOIDCSetup} disabled={submitting} data-dialog-primary="true">
                   {submitting ? t("common.saving") : t("oidcSetup.saveAndLogin")}
                 </Button>
               </>

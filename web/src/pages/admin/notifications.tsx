@@ -338,11 +338,19 @@ export function NotificationsContent() {
                   <div className="space-y-2">
                     <Label>{t("adminNotifications.selectUsers")}</Label>
                     <Input
+                      id="admin-notif-user-search"
                       placeholder={t("adminUsers.searchPlaceholder")}
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
                     />
-                    <div className="max-h-32 overflow-y-auto border rounded-md">
+                    <div
+                      className="max-h-32 overflow-y-auto border rounded-md"
+                      id="admin-notif-user-list"
+                      tabIndex={-1}
+                      data-hotkey-required="true"
+                      data-hotkey-filled={selectedUserIds.length > 0 ? "true" : "false"}
+                      data-hotkey-focus-selector="#admin-notif-user-search"
+                    >
                       {usersData?.map((user) => (
                         <label
                           key={user.id}
@@ -376,7 +384,14 @@ export function NotificationsContent() {
                 {targetType === "groups" && (
                   <div className="space-y-2">
                     <Label>{t("adminNotifications.selectGroups")}</Label>
-                    <div className="max-h-32 overflow-y-auto border rounded-md">
+                    <div
+                      className="max-h-32 overflow-y-auto border rounded-md"
+                      id="admin-notif-group-list"
+                      tabIndex={-1}
+                      data-hotkey-required="true"
+                      data-hotkey-filled={selectedGroupIds.length > 0 ? "true" : "false"}
+                      data-hotkey-focus-selector="#admin-notif-group-list input[type='checkbox']"
+                    >
                       {groupsData?.map((group) => (
                         <label
                           key={group.id}
@@ -443,6 +458,7 @@ export function NotificationsContent() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     maxLength={50}
+                    required
                   />
                 </div>
 
@@ -455,6 +471,8 @@ export function NotificationsContent() {
                     onAddImage={registerPendingImage}
                     charCount={contentCharCount}
                     maxChars={1024}
+                    hotkeyRequired
+                    hotkeyFilled={contentCharCount > 0}
                   />
                 </div>
 
@@ -474,7 +492,7 @@ export function NotificationsContent() {
                   <Button variant="outline" onClick={() => { setCreateOpen(false); resetForm(); }}>
                     {t("common.cancel")}
                   </Button>
-                  <Button onClick={handleCreate} disabled={!canCreate || isPublishing}>
+                  <Button onClick={handleCreate} disabled={!canCreate || isPublishing} data-dialog-primary="true">
                     {isPublishing ? t("common.creating") : t("common.create")}
                   </Button>
                 </div>
@@ -607,6 +625,7 @@ export function NotificationsContent() {
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 maxLength={50}
+                required
               />
             </div>
 
@@ -619,6 +638,8 @@ export function NotificationsContent() {
                 onAddImage={registerPendingImage}
                 charCount={editContentCharCount}
                 maxChars={1024}
+                hotkeyRequired
+                hotkeyFilled={editContentCharCount > 0}
               />
             </div>
 
@@ -638,7 +659,7 @@ export function NotificationsContent() {
               <Button variant="outline" onClick={() => { setEditOpen(false); resetEditForm(); }}>
                 {t("common.cancel")}
               </Button>
-              <Button onClick={handleEdit} disabled={!canEdit || isEditPublishing}>
+              <Button onClick={handleEdit} disabled={!canEdit || isEditPublishing} data-dialog-primary="true">
                 {isEditPublishing ? t("common.saving") : t("common.save")}
               </Button>
             </div>

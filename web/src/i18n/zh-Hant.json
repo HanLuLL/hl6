@@ -30,7 +30,9 @@
     "searchPlaceholder": "搜尋...",
     "errorTitle": "出錯了",
     "errorMessage": "載入頁面時發生了意外錯誤，請重試。",
-    "retry": "重試"
+    "retry": "重試",
+    "hotkeyGuide": "快捷鍵：Esc 關閉或返回上一步；Cmd/Ctrl + Enter 確認或提交。若必填項未完成，會自動定位到第一個必填項。",
+    "gotIt": "知道了"
   },
   "landing": {
     "dashboard": "控制台",

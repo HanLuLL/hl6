@@ -84,6 +84,7 @@ export function NotificationDetailDialog({ notification, open, onOpenChange, sho
               size="sm"
               onClick={handleMarkRead}
               disabled={markRead.isPending}
+              data-dialog-primary="true"
             >
               {markRead.isPending ? t("common.loading") : t("notifications.markRead")}
             </Button>

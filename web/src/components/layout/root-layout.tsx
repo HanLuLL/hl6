@@ -157,6 +157,11 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
     setUrlConfirmOpen(shouldShowUrlPrompt);
   }, [shouldShowUrlPrompt]);
 
+  const goToSettings = () => {
+    setUrlConfirmOpen(false);
+    navigate("/admin/settings");
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
@@ -238,7 +243,10 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
       <Dialog open={urlConfirmOpen} onOpenChange={(open) => { if (open) setUrlConfirmOpen(true); }}>
         <DialogContent
           showCloseButton={false}
-          onEscapeKeyDown={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            goToSettings();
+          }}
           onPointerDownOutside={(e) => e.preventDefault()}
         >
           <DialogHeader>
@@ -270,16 +278,14 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setUrlConfirmOpen(false);
-                navigate("/admin/settings");
-              }}
+              onClick={goToSettings}
             >
               {t("adminSettings.goToSettings")}
             </Button>
             <Button
               onClick={() => confirmMutation.mutate()}
               disabled={confirmMutation.isPending}
+              data-dialog-primary="true"
             >
               {confirmMutation.isPending ? t("common.saving") : t("adminSettings.confirmCurrentUrls")}
             </Button>

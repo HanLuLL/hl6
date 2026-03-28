@@ -324,6 +324,7 @@ function DomainsContent() {
               <AccountCombobox
                 accounts={cfAccounts ?? []}
                 value={selectedAccount}
+                required
                 onSelect={(account) => {
                   setSelectedAccount(account);
                   setSelectedZone(null);
@@ -336,6 +337,7 @@ function DomainsContent() {
                 value={selectedZone}
                 onSelect={setSelectedZone}
                 accountId={selectedAccount?.id ?? null}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -362,6 +364,7 @@ function DomainsContent() {
                 });
               }}
               disabled={!selectedZone || !selectedAccount || createMutation.isPending}
+              data-dialog-primary="true"
             >
               {createMutation.isPending ? t("common.creating") : t("common.create")}
             </Button>
@@ -404,6 +407,7 @@ function DomainsContent() {
                 value={deleteInput}
                 onChange={(e) => setDeleteInput(e.target.value)}
                 placeholder={deleteDomain?.name}
+                required
                 autoFocus
               />
             </div>
@@ -431,6 +435,7 @@ function DomainsContent() {
               variant="destructive"
               disabled={deleteInput !== deleteDomain?.name || deleteMutation.isPending}
               onClick={() => deleteDomain && deleteMutation.mutate({ id: deleteDomain.id, force: false, refund: refundCredits })}
+              data-dialog-primary="true"
             >
               {deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
@@ -475,6 +480,7 @@ function DomainsContent() {
               variant="destructive"
               disabled={deleteMutation.isPending}
               onClick={() => deleteDomain && deleteMutation.mutate({ id: deleteDomain.id, force: true, refund: refundCredits })}
+              data-dialog-primary="true"
             >
               {deleteMutation.isPending ? t("common.deleting") : t("adminDomains.forceDelete")}
             </Button>
@@ -628,10 +634,11 @@ function GroupAccessEditor({ groups, value, onChange }: {
   );
 }
 
-function AccountCombobox({ accounts, value, onSelect }: {
+function AccountCombobox({ accounts, value, onSelect, required = false }: {
   accounts: CloudflareAccount[];
   value: CloudflareAccount | null;
   onSelect: (account: CloudflareAccount | null) => void;
+  required?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
@@ -643,6 +650,9 @@ function AccountCombobox({ accounts, value, onSelect }: {
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          data-value={value?.name ?? ""}
+          data-hotkey-required={required ? "true" : undefined}
+          data-hotkey-filled={required ? (value ? "true" : "false") : undefined}
           className="w-full justify-between font-normal"
         >
           {value ? value.name : t("adminCloudflare.selectAccount")}
@@ -677,10 +687,11 @@ function AccountCombobox({ accounts, value, onSelect }: {
   );
 }
 
-function ZoneCombobox({ value, onSelect, accountId }: {
+function ZoneCombobox({ value, onSelect, accountId, required = false }: {
   value: CloudflareZone | null;
   onSelect: (zone: CloudflareZone | null) => void;
   accountId: number | null;
+  required?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
@@ -703,6 +714,9 @@ function ZoneCombobox({ value, onSelect, accountId }: {
           role="combobox"
           aria-expanded={open}
           disabled={!accountId}
+          data-value={value?.name ?? ""}
+          data-hotkey-required={required ? "true" : undefined}
+          data-hotkey-filled={required ? (value ? "true" : "false") : undefined}
           className="w-full justify-between font-normal"
         >
           {value ? value.name : (accountId ? t("adminDomains.selectDomain") : t("adminCloudflare.selectAccountFirst"))}
@@ -765,7 +779,7 @@ function EditDomainForm({ domain, groups, onSave, isPending }: {
         />
       </div>
       <DialogFooter>
-        <Button onClick={() => onSave({ description: desc, group_access: access })} disabled={isPending}>
+        <Button onClick={() => onSave({ description: desc, group_access: access })} disabled={isPending} data-dialog-primary="true">
           {isPending ? t("common.saving") : t("common.save")}
         </Button>
       </DialogFooter>

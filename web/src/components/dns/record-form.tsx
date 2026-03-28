@@ -133,6 +133,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
                 setContent(e.target.value);
                 setValidationError(validateRecordContent(isEdit ? record!.type : type, e.target.value));
               }}
+              required
             />
             {validationError && (
               <p className="text-sm text-destructive">{t(validationError)}</p>
@@ -175,7 +176,7 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={handleSubmit} disabled={!content.trim() || !!validationError || create.isPending || update.isPending}>
+          <Button onClick={handleSubmit} disabled={!content.trim() || !!validationError || create.isPending || update.isPending} data-dialog-primary="true">
             {create.isPending || update.isPending ? t("common.saving") : isEdit ? t("recordForm.update") : t("common.create")}
           </Button>
         </DialogFooter>

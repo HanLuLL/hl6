@@ -184,7 +184,7 @@ export function GroupsContent() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>{t("adminGroups.groupName")}</Label>
-              <Input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder={t("adminGroups.groupName")} />
+              <Input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder={t("adminGroups.groupName")} required />
             </div>
           </div>
           <DialogFooter>
@@ -192,6 +192,7 @@ export function GroupsContent() {
             <Button
               onClick={() => createMutation.mutate({ name: addName, is_default: addIsDefault })}
               disabled={!addName.trim() || createMutation.isPending}
+              data-dialog-primary="true"
             >
               {createMutation.isPending ? t("common.creating") : t("common.create")}
             </Button>
@@ -206,7 +207,7 @@ export function GroupsContent() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>{t("adminGroups.groupName")}</Label>
-              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} required />
             </div>
           </div>
           <DialogFooter>
@@ -217,7 +218,8 @@ export function GroupsContent() {
                 name: editName,
                 is_default: editIsDefault,
               })}
-              disabled={updateMutation.isPending}
+              disabled={!editName.trim() || updateMutation.isPending}
+              data-dialog-primary="true"
             >
               {updateMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
@@ -238,7 +240,10 @@ export function GroupsContent() {
             <div className="space-y-2">
               <Label>{t("adminGroups.migrateTarget")}</Label>
               <Select value={migrateTo} onValueChange={setMigrateTo}>
-                <SelectTrigger>
+                <SelectTrigger
+                  data-hotkey-required="true"
+                  data-hotkey-filled={migrateTo ? "true" : "false"}
+                >
                   <SelectValue placeholder={t("adminGroups.migrateTarget")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -258,6 +263,7 @@ export function GroupsContent() {
                 migrateTo: parseInt(migrateTo),
               })}
               disabled={!migrateTo || deleteMutation.isPending}
+              data-dialog-primary="true"
             >
               {deleteMutation.isPending ? t("common.delete") + "..." : t("common.delete")}
             </Button>

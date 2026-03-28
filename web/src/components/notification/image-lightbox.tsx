@@ -33,6 +33,7 @@ export function ImageLightbox({ src, open, onOpenChange }: ImageLightboxProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
+        showHotkeyGuide={false}
         className="fixed inset-0 z-[60] flex max-w-none translate-x-0 translate-y-0 top-0 left-0 items-center justify-center border-none bg-black/90 p-0 rounded-none sm:max-w-none"
       >
         {src && (
@@ -97,6 +98,7 @@ export function ImageLightbox({ src, open, onOpenChange }: ImageLightboxProps) {
             className="size-8 text-white hover:bg-white/20"
             onClick={() => onOpenChange(false)}
             aria-label={t("notifications.close")}
+            data-dialog-primary="true"
           >
             <X className="size-4" />
           </Button>

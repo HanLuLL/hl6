@@ -15,9 +15,19 @@ interface NotificationEditorProps {
   onAddImage: (file: File) => string;
   charCount: number;
   maxChars: number;
+  hotkeyRequired?: boolean;
+  hotkeyFilled?: boolean;
 }
 
-export function NotificationEditor({ content, onChange, onAddImage, charCount, maxChars }: NotificationEditorProps) {
+export function NotificationEditor({
+  content,
+  onChange,
+  onAddImage,
+  charCount,
+  maxChars,
+  hotkeyRequired = false,
+  hotkeyFilled = true,
+}: NotificationEditorProps) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -80,7 +90,17 @@ export function NotificationEditor({ content, onChange, onAddImage, charCount, m
   );
 
   return (
-    <div className="border rounded-md">
+    <div
+      className="border rounded-md"
+      data-hotkey-required={hotkeyRequired ? "true" : undefined}
+      data-hotkey-filled={hotkeyRequired ? (hotkeyFilled ? "true" : "false") : undefined}
+      tabIndex={hotkeyRequired ? -1 : undefined}
+      onFocus={(event) => {
+        if (event.target === event.currentTarget) {
+          editor.chain().focus().run();
+        }
+      }}
+    >
       <div className="flex flex-wrap items-center gap-0.5 border-b p-1">
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}

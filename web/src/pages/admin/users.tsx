@@ -319,6 +319,7 @@ function UsersContent() {
                 force: deleteResources && forceDelete,
               })}
               disabled={banMutation.isPending}
+              data-dialog-primary="true"
             >
               {banMutation.isPending ? t("common.saving") : t("adminUsers.banUser")}
             </Button>
@@ -349,6 +350,7 @@ function UsersContent() {
                 description: grantDesc || t("adminUsers.adminGrant"),
               })}
               disabled={grantMutation.isPending}
+              data-dialog-primary="true"
             >
               {grantMutation.isPending ? t("adminUsers.granting") : t("credits.grant")}
             </Button>
@@ -366,7 +368,10 @@ function UsersContent() {
             <div className="space-y-2">
               <Label>{t("adminUsers.selectGroup")}</Label>
               <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                <SelectTrigger>
+                <SelectTrigger
+                  data-hotkey-required="true"
+                  data-hotkey-filled={selectedGroupId ? "true" : "false"}
+                >
                   <SelectValue placeholder={t("adminUsers.selectGroup")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -385,6 +390,7 @@ function UsersContent() {
                 groupId: parseInt(selectedGroupId),
               })}
               disabled={!selectedGroupId || changeGroupMutation.isPending}
+              data-dialog-primary="true"
             >
               {changeGroupMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>

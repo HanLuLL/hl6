@@ -120,7 +120,15 @@ export function DNSRecordsContent() {
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedIndex((prev) => Math.max(prev - 1, 0));
-    } else if (e.key === "Enter" && selectedIndex >= 0 && selectedIndex < records.length) {
+    } else if (
+      e.key === "Enter" &&
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.shiftKey &&
+      !e.altKey &&
+      selectedIndex >= 0 &&
+      selectedIndex < records.length
+    ) {
       e.preventDefault();
       setDetailRecord(records[selectedIndex]);
     }
@@ -362,6 +370,7 @@ export function DNSRecordsContent() {
                 notify: sendNotify,
                 reason: sendNotify ? reason : undefined,
               })}
+              data-dialog-primary="true"
             >
               {deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
@@ -383,7 +392,7 @@ function RecordDetailDialog({ record, onClose, onDelete }: {
   useEffect(() => {
     if (!record) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
+      if (e.key === "Enter" && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
         const target = e.target as HTMLElement;
         if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
         e.preventDefault();
@@ -419,6 +428,7 @@ function RecordDetailDialog({ record, onClose, onDelete }: {
           <Button
             variant="destructive"
             onClick={() => record && onDelete(record)}
+            data-dialog-primary="true"
           >
             {t("adminDnsRecords.deleteRecord")}
           </Button>

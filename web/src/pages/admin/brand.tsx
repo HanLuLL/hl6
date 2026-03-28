@@ -179,7 +179,7 @@ function ImageCropDialog({
           <Button variant="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={handleConfirm}>{t("adminBrand.cropConfirm")}</Button>
+          <Button onClick={handleConfirm} data-dialog-primary="true">{t("adminBrand.cropConfirm")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -377,6 +377,7 @@ export function BrandContent() {
               variant="destructive"
               onClick={() => deleteLogoMutation.mutate()}
               disabled={deleteLogoMutation.isPending}
+              data-dialog-primary="true"
             >
               {deleteLogoMutation.isPending ? t("common.saving") : t("adminBrand.deleteLogo")}
             </Button>
