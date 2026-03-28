@@ -160,7 +160,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className={`hidden border-r bg-sidebar-background lg:flex lg:flex-col sticky top-0 h-screen transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
+      <aside className={`hidden border-r bg-sidebar-background lg:flex lg:flex-col shrink-0 sticky top-0 h-screen transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
         <div className="flex-1 overflow-hidden">
           <SidebarContent collapsed={collapsed} branding={branding} />
         </div>
@@ -179,7 +179,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         {/* Header */}
         <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
           {/* Mobile menu */}
@@ -227,7 +227,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 p-4 lg:p-6">
+        <main className="flex-1 min-w-0 p-4 lg:p-6">
           <PageTransition>
             {children}
           </PageTransition>
