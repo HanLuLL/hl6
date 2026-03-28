@@ -15,6 +15,7 @@ import AdminUsersPage from "@/pages/admin/users";
 import AdminAuditLogsPage from "@/pages/admin/audit-logs";
 
 import AdminSettingsPage from "@/pages/admin/settings";
+import NotFoundPage from "@/pages/not-found";
 
 function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -88,6 +89,7 @@ export default function App() {
             <Route path="/admin/notifications" element={<Navigate to="/admin/users?tab=notifications" replace />} />
           </Route>
         </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

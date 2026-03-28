@@ -68,6 +68,12 @@
     "recentTransactions": "Transacciones recientes",
     "viewAll": "Ver todo"
   },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe o fue movida.",
+    "backHome": "Volver al inicio",
+    "backDashboard": "Volver al panel"
+  },
   "domains": {
     "title": "Dominios disponibles",
     "subtitle": "Explora y solicita subdominios",

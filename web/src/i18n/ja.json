@@ -68,6 +68,12 @@
     "recentTransactions": "最近の取引",
     "viewAll": "すべて表示"
   },
+  "notFound": {
+    "title": "ページが見つかりません",
+    "description": "お探しのページは存在しないか、移動されました。",
+    "backHome": "ホームへ戻る",
+    "backDashboard": "ダッシュボードへ戻る"
+  },
   "domains": {
     "title": "利用可能なドメイン",
     "subtitle": "サブドメインの閲覧と取得",

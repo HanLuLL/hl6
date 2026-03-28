@@ -68,6 +68,12 @@
     "recentTransactions": "最近交易",
     "viewAll": "查看全部"
   },
+  "notFound": {
+    "title": "頁面不存在",
+    "description": "你造訪的頁面不存在或已被移動。",
+    "backHome": "返回首頁",
+    "backDashboard": "返回控制台"
+  },
   "domains": {
     "title": "可用網域",
     "subtitle": "瀏覽並申請子網域",

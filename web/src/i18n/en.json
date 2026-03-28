@@ -68,6 +68,12 @@
     "recentTransactions": "Recent Transactions",
     "viewAll": "View all"
   },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you are looking for does not exist or has been moved.",
+    "backHome": "Back to home",
+    "backDashboard": "Back to dashboard"
+  },
   "domains": {
     "title": "Available Domains",
     "subtitle": "Browse and claim subdomains",

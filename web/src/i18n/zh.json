@@ -68,6 +68,12 @@
     "recentTransactions": "最近交易",
     "viewAll": "查看全部"
   },
+  "notFound": {
+    "title": "页面不存在",
+    "description": "你访问的页面不存在或已被移动。",
+    "backHome": "返回首页",
+    "backDashboard": "返回控制台"
+  },
   "domains": {
     "title": "可用域名",
     "subtitle": "浏览并申请子域名",
