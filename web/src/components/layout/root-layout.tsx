@@ -149,7 +149,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
   const shouldShowUrlPrompt = Boolean(
     isAdmin &&
     adminConfig?.url_runtime &&
-    !adminConfig.url_runtime.confirmed &&
+    !adminConfig?.url_runtime?.confirmed &&
     location.pathname !== "/admin/settings"
   );
 
@@ -252,18 +252,18 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
               <span className="font-medium">{t("adminSettings.frontendUrl")}:</span>{" "}
               {adminConfig?.url_runtime.frontend_url}
             </p>
-            {adminConfig?.url_runtime.frontend_urls?.length > 1 && (
+            {(adminConfig?.url_runtime?.frontend_urls?.length ?? 0) > 1 && (
               <p className="text-muted-foreground">
-                {adminConfig.url_runtime.frontend_urls.join(" , ")}
+                {adminConfig?.url_runtime?.frontend_urls?.join(" , ")}
               </p>
             )}
             <p>
               <span className="font-medium">{t("adminSettings.backendUrl")}:</span>{" "}
               {adminConfig?.url_runtime.backend_url}
             </p>
-            {adminConfig?.url_runtime.backend_urls?.length > 1 && (
+            {(adminConfig?.url_runtime?.backend_urls?.length ?? 0) > 1 && (
               <p className="text-muted-foreground">
-                {adminConfig.url_runtime.backend_urls.join(" , ")}
+                {adminConfig?.url_runtime?.backend_urls?.join(" , ")}
               </p>
             )}
           </div>
