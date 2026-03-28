@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"hl6-server/internal/config"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
@@ -20,14 +22,22 @@ var allowedConfigKeys = map[string]bool{
 	"referral_enabled":           true,
 	"referral_inviter_credits":   true,
 	"referral_invitee_credits":   true,
+	"frontend_urls":              true,
+	"frontend_url":               true,
+	"backend_urls":               true,
+	"backend_url":                true,
 }
 
 type AdminHandler struct {
-	repo *repository.Repository
+	repo        *repository.Repository
+	urlResolver *URLResolver
 }
 
-func NewAdminHandler(repo *repository.Repository) *AdminHandler {
-	return &AdminHandler{repo: repo}
+func NewAdminHandler(repo *repository.Repository, cfg *config.Config) *AdminHandler {
+	return &AdminHandler{
+		repo:        repo,
+		urlResolver: NewURLResolver(repo, cfg),
+	}
 }
 
 func (h *AdminHandler) ListUsers(c *gin.Context) {
@@ -330,7 +340,26 @@ func (h *AdminHandler) GetConfig(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to get config", "error.failedToGetConfig")
 		return
 	}
-	response.OK(c, configs)
+	urlState, err := h.urlResolver.Resolve(c)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to resolve runtime url config", "error.failedToGetConfig")
+		return
+	}
+
+	response.OK(c, gin.H{
+		"values": configs,
+		"url_runtime": gin.H{
+			"frontend_urls":       urlState.FrontendURLs,
+			"backend_urls":        urlState.BackendURLs,
+			"frontend_url":        urlState.FrontendURL,
+			"backend_url":         urlState.BackendURL,
+			"frontend_source":     urlState.FrontendSource,
+			"backend_source":      urlState.BackendSource,
+			"frontend_env_locked": urlState.FrontendEnvLocked,
+			"backend_env_locked":  urlState.BackendEnvLocked,
+			"confirmed":           urlState.Confirmed,
+		},
+	})
 }
 
 func (h *AdminHandler) UpdateConfig(c *gin.Context) {
@@ -347,20 +376,122 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 		}
 	}
 
-	for key, value := range body {
-		if err := h.repo.SetSystemConfig(key, value); err != nil {
+	details := make(map[string]string, len(body)+4)
+
+	if raw, ok := pickConfigInput(body, configKeyFrontendURLs, configKeyFrontendURL); ok {
+		if h.urlResolver.cfg.FrontendURLEnvSet {
+			response.Error(c, http.StatusBadRequest, "frontend_urls is controlled by env and cannot be changed")
+			return
+		}
+		parsed, err := config.ParsePublicURLList(raw)
+		if err != nil {
+			response.Error(c, http.StatusBadRequest, "invalid frontend_urls")
+			return
+		}
+		if err := persistURLList(h.repo, configKeyFrontendURLs, configKeyFrontendURL, parsed); err != nil {
 			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
 			return
 		}
+		details[configKeyFrontendURLs] = strings.Join(parsed, ",")
+		details[configKeyFrontendURL] = firstOrEmptyString(parsed)
 	}
+
+	if raw, ok := pickConfigInput(body, configKeyBackendURLs, configKeyBackendURL); ok {
+		if h.urlResolver.cfg.BackendURLEnvSet {
+			response.Error(c, http.StatusBadRequest, "backend_urls is controlled by env and cannot be changed")
+			return
+		}
+		parsed, err := config.ParsePublicURLList(raw)
+		if err != nil {
+			response.Error(c, http.StatusBadRequest, "invalid backend_urls")
+			return
+		}
+		if err := persistURLList(h.repo, configKeyBackendURLs, configKeyBackendURL, parsed); err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
+			return
+		}
+		details[configKeyBackendURLs] = strings.Join(parsed, ",")
+		details[configKeyBackendURL] = firstOrEmptyString(parsed)
+	}
+
+	for key, value := range body {
+		if isURLConfigKey(key) {
+			continue
+		}
+		trimmed := strings.TrimSpace(value)
+		if err := h.repo.SetSystemConfig(key, trimmed); err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
+			return
+		}
+		details[key] = trimmed
+	}
+
 	if admin := ctxutil.GetUser(c); admin != nil {
-		details, _ := json.Marshal(body)
+		detailBytes, _ := json.Marshal(details)
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:   admin.ID,
 			Action:   "admin_update_config",
 			Resource: "system_config",
-			Details:  details,
+			Details:  detailBytes,
 		})
 	}
 	response.OK(c, gin.H{"message": "config updated"})
+}
+
+func (h *AdminHandler) ConfirmURLConfig(c *gin.Context) {
+	urlState, err := h.urlResolver.Resolve(c)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to resolve runtime url config", "error.failedToUpdateConfig")
+		return
+	}
+
+	if err := h.repo.SetSystemConfig(configKeyURLConfirmedSignature, urlState.Signature); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to save config confirmation", "error.failedToUpdateConfig")
+		return
+	}
+
+	if admin := ctxutil.GetUser(c); admin != nil {
+		details, _ := json.Marshal(map[string]interface{}{
+			"frontend_urls":   urlState.FrontendURLs,
+			"backend_urls":    urlState.BackendURLs,
+			"frontend_url":    urlState.FrontendURL,
+			"backend_url":     urlState.BackendURL,
+			"frontend_source": urlState.FrontendSource,
+			"backend_source":  urlState.BackendSource,
+			"signature":       urlState.Signature,
+		})
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:   admin.ID,
+			Action:   "admin_confirm_runtime_url_config",
+			Resource: "system_config",
+			Details:  details,
+		})
+	}
+
+	response.OK(c, gin.H{"message": "url config confirmed"})
+}
+
+func pickConfigInput(body map[string]string, keys ...string) (string, bool) {
+	for _, key := range keys {
+		if value, ok := body[key]; ok {
+			return value, true
+		}
+	}
+	return "", false
+}
+
+func isURLConfigKey(key string) bool {
+	switch key {
+	case configKeyFrontendURL, configKeyFrontendURLs, configKeyBackendURL, configKeyBackendURLs:
+		return true
+	default:
+		return false
+	}
+}
+
+func firstOrEmptyString(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	return values[0]
 }

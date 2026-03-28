@@ -41,8 +41,8 @@ cp .env.example .env
 
 - `DATABASE_URL`
 - `SERVER_PORT`
-- `APP_URL`（同域部署时可作为前后端公共访问地址）
-- `FRONTEND_URL` / `BACKEND_URL`（分域部署时分别设置）
+- `APP_URL`（可选；同域部署时可作为前后端公共访问地址）
+- `FRONTEND_URL` / `BACKEND_URL`（可选；配置后优先级高于数据库配置）
 - `ALLOWED_ORIGINS`
 - `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET`（支持任何标准 OIDC 提供商，详见 [OIDC 配置指南](docs/oidc.md)）
 
@@ -102,18 +102,19 @@ make dev-web
 | --- | --- |
 | `DATABASE_URL` | PostgreSQL 连接串 |
 | `SERVER_PORT` | 后端服务端口（默认 `8080`） |
-| `APP_URL` | 同域部署时的公共访问地址；未单独设置 `FRONTEND_URL` 时会优先使用它 |
+| `APP_URL` | 可选公共地址；当 `FRONTEND_URL` 或 `BACKEND_URL` 未设置时，作为对应侧的兜底值 |
 | `OIDC_ISSUER` | OIDC 提供商 Issuer URL（如 Logto、Keycloak、Google 等） |
 | `OIDC_CLIENT_ID` | OIDC 应用 Client ID |
 | `OIDC_CLIENT_SECRET` | OIDC 应用 Client Secret |
 | `SESSION_SECRET` | 会话密钥首启种子（可留空；仅在数据库未初始化密钥时使用） |
-| `FRONTEND_URL` | 前端地址（默认 `http://localhost:5173`） |
-| `BACKEND_URL` | 后端对外地址；未设置时默认跟随 `FRONTEND_URL` |
+| `FRONTEND_URL` | 可选；前端地址，设置后优先使用环境变量值（支持多地址，逗号/换行分隔） |
+| `BACKEND_URL` | 可选；后端对外地址，设置后优先使用环境变量值（支持多地址，逗号/换行分隔） |
 | `ALLOWED_ORIGINS` | CORS 白名单（逗号分隔） |
 | `ENCRYPTION_KEY` | 可选；64 位十六进制字符串（32 字节），有值则加密 Cloudflare Token，无值则明文存储 |
 
 > 注意：Vite 配置使用 `envDir: ".."`，前端会读取项目根目录 `.env`。
 > 注意：系统中首个注册用户会自动成为管理员，后续注册用户默认是普通用户。
+> 注意：运行时 URL 优先级为 `FRONTEND_URL/BACKEND_URL`（含 `APP_URL` 兜底）> 数据库配置 > 自动探测并落库。管理员首次登录或地址变化时需要在面板确认一次当前生效地址。
 > 注意：服务会在数据库中维护内部会话密钥（`_internal_session_secret`）。首次启动如果该键不存在，会使用 `SESSION_SECRET` 作为一次性种子；若 `SESSION_SECRET` 为空则自动生成随机密钥。后续启动以数据库值为准。
 > 注意：如果数据库数据丢失，内部会话密钥会重建，所有已登录会话将失效并需要重新登录。
 

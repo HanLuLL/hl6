@@ -20,6 +20,7 @@ import type {
   ReferralInfo,
   UserWithInviter,
   AdminDNSRecord,
+  AdminConfigPayload,
 } from "@/types";
 
 function normalizeApiBaseUrl(rawValue: string | undefined): string {
@@ -183,9 +184,11 @@ export const api = {
 
   // Admin: System Config
   adminGetConfig: () =>
-    request<ApiResponse<Record<string, string>>>("/admin/config"),
+    request<ApiResponse<AdminConfigPayload>>("/admin/config"),
   adminUpdateConfig: (data: Record<string, string>) =>
     request<ApiResponse<{ message: string }>>("/admin/config", { method: "PUT", body: JSON.stringify(data) }),
+  adminConfirmUrlConfig: () =>
+    request<ApiResponse<{ message: string }>>("/admin/config/url-confirm", { method: "POST" }),
 
   // Admin: Cloudflare Accounts
   adminListCloudflareAccounts: () =>

@@ -8,36 +8,61 @@ import (
 )
 
 type Config struct {
-	Port             string
-	DatabaseURL      string
-	OIDCIssuer       string
-	OIDCClientID     string
-	OIDCClientSecret string
-	SessionSecret    string
-	BackendURL       string
-	FrontendURL      string
-	AllowedOrigins   []string
-	EncryptionKey    []byte
+	Port              string
+	DatabaseURL       string
+	OIDCIssuer        string
+	OIDCClientID      string
+	OIDCClientSecret  string
+	SessionSecret     string
+	AppURL            string
+	BackendURLs       []string
+	FrontendURLs      []string
+	BackendURL        string
+	FrontendURL       string
+	BackendURLEnvSet  bool
+	FrontendURLEnvSet bool
+	AllowedOrigins    []string
+	EncryptionKey     []byte
 }
 
 func Load() *Config {
-	sharedURL := getEnv("APP_URL", "")
-	frontendURL := getEnv("FRONTEND_URL", sharedURL)
-	if frontendURL == "" {
-		frontendURL = "http://localhost:5173"
+	sharedURL, err := NormalizePublicURL(getEnv("APP_URL", ""))
+	if err != nil {
+		log.Fatalf("invalid APP_URL: %v", err)
 	}
+	frontendURLs, err := ParsePublicURLList(getEnv("FRONTEND_URL", ""))
+	if err != nil {
+		log.Fatalf("invalid FRONTEND_URL: %v", err)
+	}
+	backendURLs, err := ParsePublicURLList(getEnv("BACKEND_URL", ""))
+	if err != nil {
+		log.Fatalf("invalid BACKEND_URL: %v", err)
+	}
+	if len(frontendURLs) == 0 && sharedURL != "" {
+		frontendURLs = []string{sharedURL}
+	}
+	if len(backendURLs) == 0 && sharedURL != "" {
+		backendURLs = []string{sharedURL}
+	}
+	effectiveFrontendURL := firstOrEmpty(frontendURLs)
+	effectiveBackendURL := firstOrEmpty(backendURLs)
 	databaseURL := expandEnvRefs(getEnv("DATABASE_URL", "postgres://hl6:hl6dev@localhost:5432/hl6?sslmode=disable"))
 
 	cfg := &Config{
-		Port:             getEnv("SERVER_PORT", "8080"),
-		DatabaseURL:      databaseURL,
-		OIDCIssuer:       getEnv("OIDC_ISSUER", ""),
-		OIDCClientID:     getEnv("OIDC_CLIENT_ID", ""),
-		OIDCClientSecret: getEnv("OIDC_CLIENT_SECRET", ""),
-		SessionSecret:    getEnv("SESSION_SECRET", ""),
-		BackendURL:       getEnv("BACKEND_URL", frontendURL),
-		FrontendURL:      frontendURL,
-		AllowedOrigins:   parseList(getEnv("ALLOWED_ORIGINS", "")),
+		Port:              getEnv("SERVER_PORT", "8080"),
+		DatabaseURL:       databaseURL,
+		OIDCIssuer:        getEnv("OIDC_ISSUER", ""),
+		OIDCClientID:      getEnv("OIDC_CLIENT_ID", ""),
+		OIDCClientSecret:  getEnv("OIDC_CLIENT_SECRET", ""),
+		SessionSecret:     getEnv("SESSION_SECRET", ""),
+		AppURL:            sharedURL,
+		BackendURLs:       backendURLs,
+		FrontendURLs:      frontendURLs,
+		BackendURL:        effectiveBackendURL,
+		FrontendURL:       effectiveFrontendURL,
+		BackendURLEnvSet:  len(backendURLs) > 0,
+		FrontendURLEnvSet: len(frontendURLs) > 0,
+		AllowedOrigins:    parseList(getEnv("ALLOWED_ORIGINS", "")),
 	}
 
 	if keyHex := getEnv("ENCRYPTION_KEY", ""); keyHex != "" {
@@ -80,4 +105,11 @@ func parseList(s string) []string {
 		}
 	}
 	return result
+}
+
+func firstOrEmpty(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	return values[0]
 }

@@ -24,13 +24,17 @@ import (
 )
 
 type NotificationAdminHandler struct {
-	repo   *repository.Repository
-	broker *SSEBroker
-	cfg    *config.Config
+	repo        *repository.Repository
+	broker      *SSEBroker
+	urlResolver *URLResolver
 }
 
 func NewNotificationAdminHandler(repo *repository.Repository, broker *SSEBroker, cfg *config.Config) *NotificationAdminHandler {
-	return &NotificationAdminHandler{repo: repo, broker: broker, cfg: cfg}
+	return &NotificationAdminHandler{
+		repo:        repo,
+		broker:      broker,
+		urlResolver: NewURLResolver(repo, cfg),
+	}
 }
 
 func (h *NotificationAdminHandler) List(c *gin.Context) {
@@ -356,8 +360,14 @@ func (h *NotificationAdminHandler) UploadImage(c *gin.Context) {
 		return
 	}
 
+	urlState, err := h.urlResolver.Resolve(c)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to resolve runtime url config", "error.databaseError")
+		return
+	}
+
 	response.Created(c, gin.H{
 		"id":  notifImage.ID,
-		"url": fmt.Sprintf("%s/api/v1/notifications/images/%d", strings.TrimRight(h.cfg.BackendURL, "/"), notifImage.ID),
+		"url": fmt.Sprintf("%s/api/v1/notifications/images/%d", strings.TrimRight(urlState.BackendURL, "/"), notifImage.ID),
 	})
 }

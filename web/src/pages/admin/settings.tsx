@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
@@ -26,13 +27,29 @@ export default function AdminSettingsPage() {
   const [referralEnabled, setReferralEnabled] = useState(false);
   const [referralInviterCredits, setReferralInviterCredits] = useState("0");
   const [referralInviteeCredits, setReferralInviteeCredits] = useState("0");
+  const [frontendUrls, setFrontendUrls] = useState("");
+  const [backendUrls, setBackendUrls] = useState("");
 
   useEffect(() => {
     if (config) {
-      setBonusCredits(config.registration_bonus_credits ?? "0");
-      setReferralEnabled(config.referral_enabled === "true");
-      setReferralInviterCredits(config.referral_inviter_credits ?? "0");
-      setReferralInviteeCredits(config.referral_invitee_credits ?? "0");
+      const values = config.values ?? {};
+      setBonusCredits(values.registration_bonus_credits ?? "0");
+      setReferralEnabled(values.referral_enabled === "true");
+      setReferralInviterCredits(values.referral_inviter_credits ?? "0");
+      setReferralInviteeCredits(values.referral_invitee_credits ?? "0");
+
+      const frontendText = values.frontend_urls
+        ?? config.url_runtime.frontend_urls?.join("\n")
+        ?? values.frontend_url
+        ?? config.url_runtime.frontend_url
+        ?? "";
+      const backendText = values.backend_urls
+        ?? config.url_runtime.backend_urls?.join("\n")
+        ?? values.backend_url
+        ?? config.url_runtime.backend_url
+        ?? "";
+      setFrontendUrls(frontendText);
+      setBackendUrls(backendText);
     }
   }, [config]);
 
@@ -44,6 +61,40 @@ export default function AdminSettingsPage() {
     },
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
+
+  const confirmUrlMutation = useMutation({
+    mutationFn: api.adminConfirmUrlConfig,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-config"] });
+      toast.success(t("adminSettings.urlConfirmed"));
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+
+  const frontendLocked = !!config?.url_runtime?.frontend_env_locked;
+  const backendLocked = !!config?.url_runtime?.backend_env_locked;
+  const noEditableUrl = frontendLocked && backendLocked;
+
+  const sourceLabel = (source?: string) => {
+    switch (source) {
+      case "env":
+        return t("adminSettings.urlSourceEnv");
+      case "db":
+        return t("adminSettings.urlSourceDb");
+      case "auto":
+        return t("adminSettings.urlSourceAuto");
+      default:
+        return t("adminSettings.urlSourceFallback");
+    }
+  };
+
+  const saveUrlConfig = () => {
+    const payload: Record<string, string> = {};
+    if (!frontendLocked) payload.frontend_urls = frontendUrls.trim();
+    if (!backendLocked) payload.backend_urls = backendUrls.trim();
+    if (Object.keys(payload).length === 0) return;
+    updateMutation.mutate(payload);
+  };
 
   if (isLoading) {
     return (
@@ -77,6 +128,78 @@ export default function AdminSettingsPage() {
         <h1 className="text-2xl font-bold tracking-tight">{t("adminSettings.title")}</h1>
         <p className="text-muted-foreground">{t("adminSettings.subtitle")}</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("adminSettings.urlTitle")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("adminSettings.urlDesc")}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t("adminSettings.frontendUrl")}</Label>
+              <Textarea
+                value={frontendUrls}
+                onChange={(e) => setFrontendUrls(e.target.value)}
+                placeholder={"https://example.com\nhttps://mirror.example.com"}
+                disabled={frontendLocked}
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">{t("adminSettings.urlMultiInputHint")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("adminSettings.currentSource", { source: sourceLabel(config?.url_runtime.frontend_source) })}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("adminSettings.activeUrl", { url: config?.url_runtime.frontend_url ?? "-" })}
+              </p>
+              {frontendLocked && (
+                <p className="text-xs text-muted-foreground">{t("adminSettings.urlLockedByEnv")}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>{t("adminSettings.backendUrl")}</Label>
+              <Textarea
+                value={backendUrls}
+                onChange={(e) => setBackendUrls(e.target.value)}
+                placeholder={"https://api.example.com\nhttps://api-b.example.com"}
+                disabled={backendLocked}
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">{t("adminSettings.urlMultiInputHint")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("adminSettings.currentSource", { source: sourceLabel(config?.url_runtime.backend_source) })}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("adminSettings.activeUrl", { url: config?.url_runtime.backend_url ?? "-" })}
+              </p>
+              {backendLocked && (
+                <p className="text-xs text-muted-foreground">{t("adminSettings.urlLockedByEnv")}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {!noEditableUrl && (
+              <Button
+                onClick={saveUrlConfig}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? t("common.saving") : t("adminSettings.saveUrls")}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => confirmUrlMutation.mutate()}
+              disabled={confirmUrlMutation.isPending}
+            >
+              {confirmUrlMutation.isPending ? t("common.saving") : t("adminSettings.confirmCurrentUrls")}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              {config?.url_runtime.confirmed ? t("adminSettings.confirmedState") : t("adminSettings.unconfirmedState")}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

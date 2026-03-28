@@ -37,8 +37,8 @@ const (
 )
 
 type BrandingHandler struct {
-	repo       *repository.Repository
-	backendURL string
+	repo        *repository.Repository
+	urlResolver *URLResolver
 }
 
 type brandingResponse struct {
@@ -50,13 +50,13 @@ type brandingResponse struct {
 
 func NewBrandingHandler(repo *repository.Repository, cfg *config.Config) *BrandingHandler {
 	return &BrandingHandler{
-		repo:       repo,
-		backendURL: strings.TrimRight(cfg.BackendURL, "/"),
+		repo:        repo,
+		urlResolver: NewURLResolver(repo, cfg),
 	}
 }
 
 func (h *BrandingHandler) GetBranding(c *gin.Context) {
-	branding, err := h.loadBranding()
+	branding, err := h.loadBranding(c)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load branding", "error.databaseError")
 		return
@@ -108,7 +108,7 @@ func (h *BrandingHandler) AdminUpdateBranding(c *gin.Context) {
 		Details:  details,
 	})
 
-	branding, err := h.loadBranding()
+	branding, err := h.loadBranding(c)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load branding", "error.databaseError")
 		return
@@ -199,7 +199,7 @@ func (h *BrandingHandler) AdminUploadLogo(c *gin.Context) {
 		Details:  details,
 	})
 
-	branding, err := h.loadBranding()
+	branding, err := h.loadBranding(c)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load branding", "error.databaseError")
 		return
@@ -228,7 +228,7 @@ func (h *BrandingHandler) AdminDeleteLogo(c *gin.Context) {
 		Resource: "branding",
 	})
 
-	branding, err := h.loadBranding()
+	branding, err := h.loadBranding(c)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load branding", "error.databaseError")
 		return
@@ -253,9 +253,14 @@ func (h *BrandingHandler) serveBrandingAsset(c *gin.Context, assetType, contentT
 	c.Data(http.StatusOK, contentType, asset.Data)
 }
 
-func (h *BrandingHandler) loadBranding() (*brandingResponse, error) {
+func (h *BrandingHandler) loadBranding(c *gin.Context) (*brandingResponse, error) {
 	name := defaultBrandName
 	var latest time.Time
+	urlState, err := h.urlResolver.Resolve(c)
+	if err != nil {
+		return nil, err
+	}
+	backendURL := strings.TrimRight(urlState.BackendURL, "/")
 
 	cfg, err := h.repo.FindSystemConfig(brandNameConfigKey)
 	if err != nil {
@@ -296,13 +301,13 @@ func (h *BrandingHandler) loadBranding() (*brandingResponse, error) {
 
 	var logoURL *string
 	if hasLogo {
-		url := fmt.Sprintf("%s%s/logo.webp?v=%s", h.backendURL, brandingAPIPrefix, version)
+		url := fmt.Sprintf("%s%s/logo.webp?v=%s", backendURL, brandingAPIPrefix, version)
 		logoURL = &url
 	}
 
 	var faviconURL *string
 	if hasFavicon {
-		url := fmt.Sprintf("%s%s/favicon.ico?v=%s", h.backendURL, brandingAPIPrefix, version)
+		url := fmt.Sprintf("%s%s/favicon.ico?v=%s", backendURL, brandingAPIPrefix, version)
 		faviconURL = &url
 	}
 

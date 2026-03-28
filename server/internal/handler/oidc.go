@@ -29,30 +29,25 @@ import (
 )
 
 type OIDCHandler struct {
-	repo     *repository.Repository
-	cfg      *config.Config
-	provider *oidc.ProviderConfig
+	repo        *repository.Repository
+	cfg         *config.Config
+	provider    *oidc.ProviderConfig
+	urlResolver *URLResolver
 }
 
 const firstUserAdminLockKey int64 = 19490331
 
 func NewOIDCHandler(repo *repository.Repository, cfg *config.Config, provider *oidc.ProviderConfig) *OIDCHandler {
-	return &OIDCHandler{repo: repo, cfg: cfg, provider: provider}
-}
-
-func (h *OIDCHandler) callbackURL() string {
-	base := strings.TrimRight(h.cfg.BackendURL, "/")
-	return base + "/api/v1/auth/callback"
-}
-
-func (h *OIDCHandler) loginURL() string {
-	base := strings.TrimRight(h.cfg.BackendURL, "/")
-	return base + "/api/v1/auth/login"
+	return &OIDCHandler{
+		repo:        repo,
+		cfg:         cfg,
+		provider:    provider,
+		urlResolver: NewURLResolver(repo, cfg),
+	}
 }
 
 // setSessionCookie sets a cookie with full attributes including SameSite=Lax.
-func (h *OIDCHandler) setSessionCookie(c *gin.Context, name, value string, maxAge int) {
-	secure := strings.HasPrefix(h.cfg.FrontendURL, "https")
+func (h *OIDCHandler) setSessionCookie(c *gin.Context, name, value string, maxAge int, secure bool) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     name,
 		Value:    value,
@@ -65,23 +60,31 @@ func (h *OIDCHandler) setSessionCookie(c *gin.Context, name, value string, maxAg
 }
 
 func (h *OIDCHandler) Login(c *gin.Context) {
+	urlState, err := h.urlResolver.Resolve(c)
+	if err != nil {
+		log.Printf("failed to resolve runtime URLs: %v", err)
+		c.String(http.StatusInternalServerError, "failed to resolve runtime URL")
+		return
+	}
+	callbackURL := strings.TrimRight(urlState.BackendURL, "/") + "/api/v1/auth/callback"
+	secureCookie := strings.HasPrefix(urlState.FrontendURL, "https://")
+
 	state := generateRandomState()
 
 	// Store state in httpOnly cookie
-	h.setSessionCookie(c, "hl6_state", state, 900) // 15 min TTL
+	h.setSessionCookie(c, "hl6_state", state, 900, secureCookie) // 15 min TTL
 
 	// Store referral code if present
 	if ref := c.Query("ref"); ref != "" {
 		if matched, _ := regexp.MatchString(`^[0-9a-f]{16}$`, ref); matched {
-			h.setSessionCookie(c, "hl6_ref", ref, 900) // 15 min TTL
+			h.setSessionCookie(c, "hl6_ref", ref, 900, secureCookie) // 15 min TTL
 		}
 	}
 
-	redirectURI := h.callbackURL()
 	authURL := fmt.Sprintf("%s?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
 		h.provider.AuthorizationEndpoint,
 		url.QueryEscape(h.cfg.OIDCClientID),
-		url.QueryEscape(redirectURI),
+		url.QueryEscape(callbackURL),
 		url.QueryEscape("openid email profile"),
 		url.QueryEscape(state),
 	)
@@ -90,6 +93,17 @@ func (h *OIDCHandler) Login(c *gin.Context) {
 }
 
 func (h *OIDCHandler) Callback(c *gin.Context) {
+	urlState, err := h.urlResolver.Resolve(c)
+	if err != nil {
+		log.Printf("failed to resolve runtime URLs: %v", err)
+		c.String(http.StatusInternalServerError, "failed to resolve runtime URL")
+		return
+	}
+	loginURL := strings.TrimRight(urlState.BackendURL, "/") + "/api/v1/auth/login"
+	callbackURL := strings.TrimRight(urlState.BackendURL, "/") + "/api/v1/auth/callback"
+	frontendDashboardURL := strings.TrimRight(urlState.FrontendURL, "/") + "/dashboard"
+	secureCookie := strings.HasPrefix(urlState.FrontendURL, "https://")
+
 	// 1. Verify state
 	code := c.Query("code")
 	state := c.Query("state")
@@ -97,7 +111,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	if err != nil || cookieState != state || state == "" {
 		// Common after refresh/retry of a consumed callback URL; restart login flow.
 		if code != "" {
-			c.Redirect(http.StatusFound, h.loginURL())
+			c.Redirect(http.StatusFound, loginURL)
 			return
 		}
 		c.String(http.StatusBadRequest, "invalid state")
@@ -105,11 +119,10 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	}
 
 	// Clear state cookie
-	h.setSessionCookie(c, "hl6_state", "", -1)
+	h.setSessionCookie(c, "hl6_state", "", -1, secureCookie)
 
 	// 2. Exchange code for tokens
-	redirectURI := h.callbackURL()
-	tokenResp, err := h.exchangeCode(code, redirectURI)
+	tokenResp, err := h.exchangeCode(code, callbackURL)
 	if err != nil {
 		log.Printf("token exchange failed: %v", err)
 		c.String(http.StatusBadGateway, "authentication failed")
@@ -253,7 +266,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 		// Process referral
 		if refCode, err := c.Cookie("hl6_ref"); err == nil && refCode != "" {
-			h.setSessionCookie(c, "hl6_ref", "", -1) // Clear cookie
+			h.setSessionCookie(c, "hl6_ref", "", -1, secureCookie) // Clear cookie
 			h.processReferral(tx, user, refCode)
 		}
 
@@ -281,23 +294,30 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 	// 6. Set session cookie
 	maxAge := 7 * 24 * 60 * 60 // 7 days
-	h.setSessionCookie(c, "hl6_session", sessionToken, maxAge)
+	h.setSessionCookie(c, "hl6_session", sessionToken, maxAge, secureCookie)
 
 	// 7. Redirect to dashboard
-	c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/dashboard")
+	c.Redirect(http.StatusFound, frontendDashboardURL)
 }
 
 func (h *OIDCHandler) Logout(c *gin.Context) {
-	h.setSessionCookie(c, "hl6_session", "", -1)
+	urlState, err := h.urlResolver.Resolve(c)
+	if err != nil {
+		log.Printf("failed to resolve runtime URLs: %v", err)
+		c.String(http.StatusInternalServerError, "failed to resolve runtime URL")
+		return
+	}
+	secureCookie := strings.HasPrefix(urlState.FrontendURL, "https://")
+	h.setSessionCookie(c, "hl6_session", "", -1, secureCookie)
 
 	if h.provider.EndSessionEndpoint != "" {
 		logoutURL := fmt.Sprintf("%s?post_logout_redirect_uri=%s",
 			h.provider.EndSessionEndpoint,
-			url.QueryEscape(h.cfg.FrontendURL),
+			url.QueryEscape(urlState.FrontendURL),
 		)
 		response.OK(c, gin.H{"logout_url": logoutURL})
 	} else {
-		response.OK(c, gin.H{"logout_url": h.cfg.FrontendURL})
+		response.OK(c, gin.H{"logout_url": urlState.FrontendURL})
 	}
 }
 

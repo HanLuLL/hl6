@@ -1,9 +1,10 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useBranding } from "@/hooks/use-branding";
 import { prefetchRouteData } from "@/lib/prefetch";
+import { api, getErrorMessage } from "@/lib/api";
 import { PageTransition } from "./page-transition";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./language-toggle";
@@ -18,8 +19,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import type { BrandingResponse } from "@/types";
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
@@ -103,14 +113,49 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut, credits } = useAuth();
   const branding = useBranding();
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [urlConfirmOpen, setUrlConfirmOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+  });
+  const isAdmin = user?.role === "admin";
+
+  const { data: adminConfig } = useQuery({
+    queryKey: ["admin-config"],
+    queryFn: async () => {
+      const res = await api.adminGetConfig();
+      return res.data;
+    },
+    staleTime: 30_000,
+    enabled: isAdmin,
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: api.adminConfirmUrlConfig,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-config"] });
+      toast.success(t("adminSettings.urlConfirmed"));
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
   }, [collapsed]);
+
+  const shouldShowUrlPrompt = Boolean(
+    isAdmin &&
+    adminConfig?.url_runtime &&
+    !adminConfig.url_runtime.confirmed &&
+    location.pathname !== "/admin/settings"
+  );
+
+  useEffect(() => {
+    setUrlConfirmOpen(shouldShowUrlPrompt);
+  }, [shouldShowUrlPrompt]);
 
   return (
     <div className="flex min-h-screen">
@@ -189,6 +234,58 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
         </main>
         <SiteFooter />
       </div>
+
+      <Dialog open={urlConfirmOpen} onOpenChange={(open) => { if (open) setUrlConfirmOpen(true); }}>
+        <DialogContent
+          showCloseButton={false}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>{t("adminSettings.urlConfirmTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("adminSettings.urlConfirmDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <p>
+              <span className="font-medium">{t("adminSettings.frontendUrl")}:</span>{" "}
+              {adminConfig?.url_runtime.frontend_url}
+            </p>
+            {adminConfig?.url_runtime.frontend_urls?.length > 1 && (
+              <p className="text-muted-foreground">
+                {adminConfig.url_runtime.frontend_urls.join(" , ")}
+              </p>
+            )}
+            <p>
+              <span className="font-medium">{t("adminSettings.backendUrl")}:</span>{" "}
+              {adminConfig?.url_runtime.backend_url}
+            </p>
+            {adminConfig?.url_runtime.backend_urls?.length > 1 && (
+              <p className="text-muted-foreground">
+                {adminConfig.url_runtime.backend_urls.join(" , ")}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUrlConfirmOpen(false);
+                navigate("/admin/settings");
+              }}
+            >
+              {t("adminSettings.goToSettings")}
+            </Button>
+            <Button
+              onClick={() => confirmMutation.mutate()}
+              disabled={confirmMutation.isPending}
+            >
+              {confirmMutation.isPending ? t("common.saving") : t("adminSettings.confirmCurrentUrls")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

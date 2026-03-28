@@ -199,3 +199,20 @@ export interface BrandingResponse {
   favicon_url: string | null;
   version: string;
 }
+
+export interface AdminURLRuntime {
+  frontend_urls: string[];
+  backend_urls: string[];
+  frontend_url: string;
+  backend_url: string;
+  frontend_source: "env" | "db" | "auto" | "fallback";
+  backend_source: "env" | "db" | "auto" | "fallback";
+  frontend_env_locked: boolean;
+  backend_env_locked: boolean;
+  confirmed: boolean;
+}
+
+export interface AdminConfigPayload {
+  values: Record<string, string>;
+  url_runtime: AdminURLRuntime;
+}
