@@ -88,8 +88,8 @@ export default function App() {
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
             <Route path="/admin/notifications" element={<Navigate to="/admin/users?tab=notifications" replace />} />
           </Route>
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
-        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );
