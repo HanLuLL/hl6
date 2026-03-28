@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,7 +25,7 @@ export default function LandingPage() {
   const { isAuthenticated, signIn } = useAuth();
   const branding = useBranding();
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const ref = searchParams.get("ref") ?? undefined;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [readOnlyPrompt, setReadOnlyPrompt] = useState(false);
@@ -34,6 +34,36 @@ export default function LandingPage() {
   const [oidcIssuer, setOidcIssuer] = useState("");
   const [oidcClientID, setOidcClientID] = useState("");
   const [oidcClientSecret, setOidcClientSecret] = useState("");
+
+  useEffect(() => {
+    if (searchParams.get("error") === "user_banned") {
+      const reason = searchParams.get("reason")?.trim() ?? "";
+      sessionStorage.setItem("hl6_banned_notice", "1");
+      if (reason) {
+        sessionStorage.setItem("hl6_ban_reason", reason);
+      } else {
+        sessionStorage.removeItem("hl6_ban_reason");
+      }
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("error");
+      nextParams.delete("reason");
+      setSearchParams(nextParams, { replace: true });
+      return;
+    }
+
+    if (sessionStorage.getItem("hl6_banned_notice") !== "1") {
+      return;
+    }
+    sessionStorage.removeItem("hl6_banned_notice");
+    const reason = sessionStorage.getItem("hl6_ban_reason")?.trim() ?? "";
+    sessionStorage.removeItem("hl6_ban_reason");
+    if (reason) {
+      toast.error(t("error.userBannedWithReason", { reason }));
+      return;
+    }
+    toast.error(t("error.userBanned"));
+  }, [searchParams, setSearchParams, t]);
 
   const openOIDCDialog = (runtime: OIDCStatusPayload, readOnly: boolean) => {
     setStatus(runtime);

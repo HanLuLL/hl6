@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -36,11 +37,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GroupsContent } from "./groups";
 import { NotificationsContent } from "./notifications";
 import { BrandContent } from "./brand";
+import { useAuth } from "@/hooks/use-auth";
 
 function UsersContent() {
+  const { user: currentUser } = useAuth();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [banStatus, setBanStatus] = useState<"all" | "active" | "banned">("all");
   const queryClient = useQueryClient();
   const { t } = useTranslation();
 
@@ -53,9 +57,9 @@ function UsersContent() {
   }, [search]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-users", page, debouncedSearch],
+    queryKey: ["admin-users", page, debouncedSearch, banStatus],
     queryFn: async () => {
-      const res = await api.adminListUsers(page, 50, debouncedSearch);
+      const res = await api.adminListUsers(page, 50, debouncedSearch, banStatus);
       return { users: res.data, total: res.total };
     },
     staleTime: 30_000,
@@ -76,6 +80,10 @@ function UsersContent() {
 
   const [changeGroupUserId, setChangeGroupUserId] = useState<number | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+  const [banUserId, setBanUserId] = useState<number | null>(null);
+  const [banReason, setBanReason] = useState("");
+  const [deleteResources, setDeleteResources] = useState(false);
+  const [forceDelete, setForceDelete] = useState(false);
 
   const grantMutation = useMutation({
     mutationFn: api.adminGrantCredits,
@@ -99,6 +107,37 @@ function UsersContent() {
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
+  const banMutation = useMutation({
+    mutationFn: ({ userId, reason, removeResources, force }: { userId: number; reason: string; removeResources: boolean; force: boolean }) =>
+      api.adminBanUser(userId, {
+        reason,
+        delete_resources: removeResources,
+        force,
+      }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success(t("adminUsers.banSuccess"));
+      const failures = res.data.failed_records?.length ?? 0;
+      if (failures > 0) {
+        toast.warning(t("adminUsers.forceDeleteWithFailures", { count: failures }));
+      }
+      setBanUserId(null);
+      setBanReason("");
+      setDeleteResources(false);
+      setForceDelete(false);
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+
+  const unbanMutation = useMutation({
+    mutationFn: (userId: number) => api.adminUnbanUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success(t("adminUsers.unbanSuccess"));
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+
   return (
     <>
       <Card>
@@ -110,12 +149,24 @@ function UsersContent() {
               {t("adminUsers.totalUsers", { count: data?.total ?? 0 })}
             </CardTitle>
           )}
-          <Input
-            placeholder={t("adminUsers.searchPlaceholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-xs"
-          />
+          <div className="flex items-center gap-2">
+            <Select value={banStatus} onValueChange={(v) => { setBanStatus(v as "all" | "active" | "banned"); setPage(1); }}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("adminUsers.filterAllStatus")}</SelectItem>
+                <SelectItem value="active">{t("adminUsers.filterActive")}</SelectItem>
+                <SelectItem value="banned">{t("adminUsers.filterBanned")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder={t("adminUsers.searchPlaceholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-xs"
+            />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -125,6 +176,7 @@ function UsersContent() {
                 <TableHead>{t("adminUsers.email")}</TableHead>
                 <TableHead>{t("adminUsers.group")}</TableHead>
                 <TableHead>{t("adminUsers.role")}</TableHead>
+                <TableHead>{t("adminUsers.status")}</TableHead>
                 <TableHead>{t("adminUsers.joined")}</TableHead>
                 <TableHead>{t("adminUsers.invitedBy")}</TableHead>
                 <TableHead className="text-right">{t("adminUsers.actions")}</TableHead>
@@ -138,6 +190,7 @@ function UsersContent() {
                     <TableCell><Skeleton className="h-4 w-36" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
@@ -154,6 +207,11 @@ function UsersContent() {
                     <TableCell>
                       <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
                     </TableCell>
+                    <TableCell>
+                      <Badge variant={user.is_banned ? "destructive" : "outline"}>
+                        {user.is_banned ? t("adminUsers.statusBanned") : t("adminUsers.statusActive")}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {new Date(user.created_at).toLocaleDateString()}
                     </TableCell>
@@ -164,12 +222,39 @@ function UsersContent() {
                       <Button variant="ghost" size="sm" onClick={() => {
                         setChangeGroupUserId(user.id);
                         setSelectedGroupId(user.group_id ? String(user.group_id) : "");
-                      }}>
+                      }} disabled={user.is_banned}>
                         {t("adminUsers.changeGroup")}
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setGrantUserId(user.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => setGrantUserId(user.id)} disabled={user.is_banned}>
                         {t("adminUsers.grantCredits")}
                       </Button>
+                      {user.is_banned ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => unbanMutation.mutate(user.id)}
+                          disabled={unbanMutation.isPending}
+                        >
+                          {t("adminUsers.unbanUser")}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setBanUserId(user.id);
+                            setBanReason("");
+                            setDeleteResources(false);
+                            setForceDelete(false);
+                          }}
+                          disabled={banMutation.isPending || user.id === currentUser?.id}
+                        >
+                          {t("adminUsers.banUser")}
+                        </Button>
+                      )}
+                      {user.id === currentUser?.id && (
+                        <Badge variant="outline">{t("adminUsers.currentUser")}</Badge>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -186,6 +271,60 @@ function UsersContent() {
           <Button variant="outline" size="sm" disabled={page >= Math.ceil(data.total / 50)} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</Button>
         </div>
       )}
+
+      <Dialog open={banUserId !== null} onOpenChange={(open) => {
+        if (!open) {
+          setBanUserId(null);
+          setBanReason("");
+          setDeleteResources(false);
+          setForceDelete(false);
+        }
+      }}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogHeader><DialogTitle>{t("adminUsers.banUser")}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t("adminUsers.banReasonOptional")}</Label>
+              <Input
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+                placeholder={t("adminUsers.banReasonPlaceholder")}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">{t("adminUsers.deleteAllResources")}</p>
+                <p className="text-xs text-muted-foreground">{t("adminUsers.deleteAllResourcesHint")}</p>
+              </div>
+              <Switch checked={deleteResources} onCheckedChange={setDeleteResources} />
+            </div>
+            {deleteResources && (
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">{t("adminUsers.forceDelete")}</p>
+                  <p className="text-xs text-muted-foreground">{t("adminUsers.forceDeleteHint")}</p>
+                </div>
+                <Switch checked={forceDelete} onCheckedChange={setForceDelete} />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBanUserId(null)}>{t("common.cancel")}</Button>
+            <Button
+              variant="destructive"
+              onClick={() => banUserId && banMutation.mutate({
+                userId: banUserId,
+                reason: banReason.trim(),
+                removeResources: deleteResources,
+                force: deleteResources && forceDelete,
+              })}
+              disabled={banMutation.isPending}
+            >
+              {banMutation.isPending ? t("common.saving") : t("adminUsers.banUser")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Grant Credits Dialog */}
       <Dialog open={grantUserId !== null} onOpenChange={(open) => !open && setGrantUserId(null)}>

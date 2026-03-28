@@ -12,6 +12,10 @@ type User struct {
 	Name         string     `json:"name"`
 	AvatarURL    string     `json:"avatar_url"`
 	Role         string     `json:"role" gorm:"default:user"`
+	IsBanned     bool       `json:"is_banned" gorm:"not null;default:false;index"`
+	BannedReason string     `json:"banned_reason"`
+	BannedAt     *time.Time `json:"banned_at"`
+	BannedBy     *uint      `json:"banned_by" gorm:"index"`
 	ReferralCode string     `json:"referral_code" gorm:"uniqueIndex;size:16"`
 	GroupID      *uint      `json:"group_id" gorm:"index"`
 	Group        *UserGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
@@ -103,14 +107,14 @@ type CreditTransaction struct {
 }
 
 type AuditLog struct {
-	ID         uint             `json:"id" gorm:"primaryKey"`
-	UserID     uint             `json:"user_id" gorm:"index;not null"`
-	Action     string           `json:"action" gorm:"not null"`
-	Resource   string           `json:"resource"`
-	ResourceID uint             `json:"resource_id"`
-	Details    json.RawMessage  `json:"details" gorm:"type:jsonb"`
-	User       User             `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	CreatedAt  time.Time        `json:"created_at"`
+	ID         uint            `json:"id" gorm:"primaryKey"`
+	UserID     uint            `json:"user_id" gorm:"index;not null"`
+	Action     string          `json:"action" gorm:"not null"`
+	Resource   string          `json:"resource"`
+	ResourceID uint            `json:"resource_id"`
+	Details    json.RawMessage `json:"details" gorm:"type:jsonb"`
+	User       User            `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	CreatedAt  time.Time       `json:"created_at"`
 }
 
 type CloudflareAccount struct {

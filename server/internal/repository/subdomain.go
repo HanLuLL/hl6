@@ -8,6 +8,16 @@ func (r *Repository) ListSubdomainsByUser(userID uint) ([]model.Subdomain, error
 	return subs, err
 }
 
+func (r *Repository) ListSubdomainsByUserWithRecords(userID uint) ([]model.Subdomain, error) {
+	var subs []model.Subdomain
+	err := r.DB.Where("user_id = ?", userID).
+		Preload("Domain").
+		Preload("DNSRecords").
+		Order("created_at DESC").
+		Find(&subs).Error
+	return subs, err
+}
+
 func (r *Repository) FindSubdomain(id uint) (*model.Subdomain, error) {
 	var sub model.Subdomain
 	err := r.DB.Preload("Domain").Preload("DNSRecords").First(&sub, id).Error

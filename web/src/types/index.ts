@@ -14,6 +14,10 @@ export interface User {
   name: string;
   avatar_url: string;
   role: "user" | "admin";
+  is_banned: boolean;
+  banned_reason?: string;
+  banned_at?: string;
+  banned_by?: number;
   group_id?: number;
   group?: UserGroup;
   created_at: string;

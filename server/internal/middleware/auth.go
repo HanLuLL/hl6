@@ -7,14 +7,32 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
-	"hl6-server/internal/repository"
 	"hl6-server/internal/ctxutil"
+	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
 )
 
 type AuthMiddleware struct {
 	sessionKey jwk.Key
 	repo       *repository.Repository
+}
+
+func allowBannedAccess(method, path string) bool {
+	return method == http.MethodPost && path == "/api/v1/auth/logout"
+}
+
+func clearSessionCookie(c *gin.Context) {
+	for _, secure := range []bool{false, true} {
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "hl6_session",
+			Value:    "",
+			MaxAge:   -1,
+			Path:     "/",
+			Secure:   secure,
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
 }
 
 func NewAuthMiddleware(sessionSecret string, repo *repository.Repository) *AuthMiddleware {
@@ -52,6 +70,14 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 		user, err := a.repo.FindUserByExternalID(externalID)
 		if err != nil {
 			response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
+			c.Abort()
+			return
+		}
+		if user.IsBanned && !allowBannedAccess(c.Request.Method, c.Request.URL.Path) {
+			clearSessionCookie(c)
+			response.ErrorWithKeyData(c, http.StatusForbidden, "user is banned", "error.userBanned", gin.H{
+				"reason": user.BannedReason,
+			})
 			c.Abort()
 			return
 		}

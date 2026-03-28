@@ -22,14 +22,22 @@ func (r *Repository) UpdateUser(user *model.User) error {
 	return r.DB.Save(user).Error
 }
 
-func (r *Repository) ListUsers(page, perPage int, search ...string) ([]model.User, int64, error) {
+func (r *Repository) ListUsers(page, perPage int, search, banStatus string) ([]model.User, int64, error) {
 	var users []model.User
 	var total int64
 	q := r.DB.Model(&model.User{})
-	if len(search) > 0 && search[0] != "" {
-		like := "%" + escapeLike(search[0]) + "%"
+	if search != "" {
+		like := "%" + escapeLike(search) + "%"
 		q = q.Where("name ILIKE ? OR email ILIKE ?", like, like)
 	}
+
+	switch banStatus {
+	case "active":
+		q = q.Where("is_banned = ?", false)
+	case "banned":
+		q = q.Where("is_banned = ?", true)
+	}
+
 	q.Count(&total)
 	err := q.Preload("Group").Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
 	return users, total, err
@@ -38,5 +46,13 @@ func (r *Repository) ListUsers(page, perPage int, search ...string) ([]model.Use
 func (r *Repository) CountUsers() (int64, error) {
 	var total int64
 	err := r.DB.Model(&model.User{}).Count(&total).Error
+	return total, err
+}
+
+func (r *Repository) CountUnbannedAdmins() (int64, error) {
+	var total int64
+	err := r.DB.Model(&model.User{}).
+		Where("role = ? AND is_banned = ?", "admin", false).
+		Count(&total).Error
 	return total, err
 }

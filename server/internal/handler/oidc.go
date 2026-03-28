@@ -122,7 +122,8 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	}
 	loginURL := strings.TrimRight(urlState.BackendURL, "/") + "/api/v1/auth/login"
 	callbackURL := strings.TrimRight(urlState.BackendURL, "/") + "/api/v1/auth/callback"
-	frontendDashboardURL := strings.TrimRight(urlState.FrontendURL, "/") + "/dashboard"
+	frontendBaseURL := strings.TrimRight(urlState.FrontendURL, "/")
+	frontendDashboardURL := frontendBaseURL + "/dashboard"
 	secureCookie := strings.HasPrefix(urlState.FrontendURL, "https://")
 
 	// 1. Verify state
@@ -306,6 +307,13 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		h.repo.UpdateUser(user)
 	}
 
+	// Banned users cannot create new sessions.
+	if user.IsBanned {
+		h.setSessionCookie(c, "hl6_session", "", -1, secureCookie)
+		c.Redirect(http.StatusFound, buildBannedRedirectURL(frontendBaseURL, user.BannedReason))
+		return
+	}
+
 	// 5. Issue session JWT
 	sessionToken, err := h.issueSessionJWT(user.ExternalID)
 	if err != nil {
@@ -319,6 +327,30 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 	// 7. Redirect to dashboard
 	c.Redirect(http.StatusFound, frontendDashboardURL)
+}
+
+func buildBannedRedirectURL(frontendBaseURL, reason string) string {
+	targetURL, err := url.Parse(frontendBaseURL + "/")
+	if err != nil {
+		values := url.Values{"error": []string{"user_banned"}}
+		trimmedReason := strings.TrimSpace(reason)
+		if trimmedReason != "" {
+			values.Set("reason", trimmedReason)
+		}
+		return frontendBaseURL + "/?" + values.Encode()
+	}
+
+	query := targetURL.Query()
+	query.Set("error", "user_banned")
+	trimmedReason := strings.TrimSpace(reason)
+	if trimmedReason != "" {
+		query.Set("reason", trimmedReason)
+	} else {
+		query.Del("reason")
+	}
+	targetURL.RawQuery = query.Encode()
+
+	return targetURL.String()
 }
 
 func (h *OIDCHandler) Logout(c *gin.Context) {

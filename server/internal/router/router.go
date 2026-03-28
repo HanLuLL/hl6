@@ -91,6 +91,8 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.DELETE("/dns-records/:id", dnsH.AdminDeleteRecord)
 	admin.GET("/users", adminH.ListUsers)
 	admin.PUT("/users/:id/group", adminH.UpdateUserGroup)
+	admin.PUT("/users/:id/ban", adminH.BanUser)
+	admin.PUT("/users/:id/unban", adminH.UnbanUser)
 	admin.GET("/groups", adminH.ListGroups)
 	admin.POST("/groups", adminH.CreateGroup)
 	admin.PUT("/groups/:id", adminH.UpdateGroup)

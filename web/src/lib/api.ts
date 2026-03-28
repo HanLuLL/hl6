@@ -52,6 +52,22 @@ export class ApiError extends Error {
   }
 }
 
+let handlingBannedSession = false;
+
+async function forceLogoutForBannedUser(): Promise<void> {
+  try {
+    await fetch(buildApiUrl("/auth/logout"), {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  } catch {
+    // Best effort only.
+  }
+}
+
 export function getErrorMessage(err: unknown, t?: (key: string) => string): string {
   if (err instanceof ApiError && err.messageKey && t) {
     const translated = t(err.messageKey);
@@ -102,6 +118,27 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
+    if (res.status === 403 && body?.message_key === "error.userBanned") {
+      const reason = typeof body?.data?.reason === "string" ? body.data.reason : "";
+      sessionStorage.setItem("hl6_banned_notice", "1");
+      if (reason.trim()) {
+        sessionStorage.setItem("hl6_ban_reason", reason.trim());
+      } else {
+        sessionStorage.removeItem("hl6_ban_reason");
+      }
+      sessionStorage.removeItem("hl6_401_count");
+      sessionStorage.removeItem("hl6_401_time");
+
+      if (!handlingBannedSession) {
+        handlingBannedSession = true;
+        if (!path.includes("/auth/logout")) {
+          await forceLogoutForBannedUser();
+        }
+        if (window.location.pathname !== "/") {
+          window.location.href = "/";
+        }
+      }
+    }
     throw new ApiError(body.message || res.statusText, body.message_key, body.data);
   }
 
@@ -168,8 +205,12 @@ export const api = {
     request<ApiResponse<CloudflareZone[]>>(`/admin/cloudflare/accounts/${accountId}/zones`),
   adminGrantCredits: (data: { user_id: number; amount: number; description: string }) =>
     request<ApiResponse<{ user_id: number; granted: number; balance: number }>>("/admin/credits/grant", { method: "POST", body: JSON.stringify(data) }),
-  adminListUsers: (page = 1, perPage = 20, search = "") =>
-    request<PaginatedResponse<UserWithInviter[]>>(`/admin/users?page=${page}&per_page=${perPage}${search ? `&search=${encodeURIComponent(search)}` : ""}`),
+  adminListUsers: (page = 1, perPage = 20, search = "", banStatus: "all" | "active" | "banned" = "all") => {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    if (search) params.set("search", search);
+    if (banStatus !== "all") params.set("ban_status", banStatus);
+    return request<PaginatedResponse<UserWithInviter[]>>(`/admin/users?${params.toString()}`);
+  },
   adminGetStats: () => request<ApiResponse<Stats>>("/admin/stats"),
   adminListAuditLogs: (page = 1, perPage = 20, search = "") =>
     request<PaginatedResponse<AuditLog[]>>(`/admin/audit-logs?page=${page}&per_page=${perPage}${search ? `&search=${encodeURIComponent(search)}` : ""}`),
@@ -185,6 +226,13 @@ export const api = {
     request<ApiResponse<{ message: string }>>(`/admin/groups/${id}?migrate_to=${migrateTo}`, { method: "DELETE" }),
   adminUpdateUserGroup: (userId: number, groupId: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/users/${userId}/group`, { method: "PUT", body: JSON.stringify({ group_id: groupId }) }),
+  adminBanUser: (userId: number, data: { reason?: string; delete_resources?: boolean; force?: boolean }) =>
+    request<ApiResponse<{ message: string; failed_records?: Array<{ subdomain_fqdn: string; record_type: string; record_content: string; cloudflare_record_id: string; error: string }> }>>(
+      `/admin/users/${userId}/ban`,
+      { method: "PUT", body: JSON.stringify(data) }
+    ),
+  adminUnbanUser: (userId: number) =>
+    request<ApiResponse<{ message: string }>>(`/admin/users/${userId}/unban`, { method: "PUT" }),
 
   // Admin: System Config
   adminGetConfig: () =>

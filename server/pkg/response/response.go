@@ -39,6 +39,10 @@ func ErrorWithKey(c *gin.Context, status int, message, messageKey string) {
 	c.JSON(status, Response{Code: -1, Message: message, MessageKey: messageKey})
 }
 
+func ErrorWithKeyData(c *gin.Context, status int, message, messageKey string, data interface{}) {
+	c.JSON(status, Response{Code: -1, Message: message, MessageKey: messageKey, Data: data})
+}
+
 func Paginated(c *gin.Context, data interface{}, total int64, page, perPage int) {
 	c.JSON(http.StatusOK, PaginatedResponse{
 		Code:    0,

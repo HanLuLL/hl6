@@ -2,13 +2,16 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"hl6-server/internal/config"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
@@ -18,6 +21,10 @@ import (
 	"hl6-server/pkg/crypto"
 	"hl6-server/pkg/response"
 )
+
+const adminBanGuardLockKey int64 = 19490332
+
+var errCannotBanLastActiveAdmin = errors.New("cannot ban last active admin")
 
 var allowedConfigKeys = map[string]bool{
 	"registration_bonus_credits": true,
@@ -53,6 +60,12 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "50"))
 	search := c.Query("search")
+	banStatus := strings.ToLower(strings.TrimSpace(c.DefaultQuery("ban_status", "all")))
+	switch banStatus {
+	case "all", "active", "banned":
+	default:
+		banStatus = "all"
+	}
 	if page < 1 {
 		page = 1
 	}
@@ -60,7 +73,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		perPage = 50
 	}
 
-	users, total, err := h.repo.ListUsers(page, perPage, search)
+	users, total, err := h.repo.ListUsers(page, perPage, search, banStatus)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list users", "error.failedToListUsers")
 		return
@@ -335,6 +348,227 @@ func (h *AdminHandler) UpdateUserGroup(c *gin.Context) {
 		})
 	}
 	response.OK(c, gin.H{"message": "user group updated"})
+}
+
+// Ban a user (optionally delete all owned subdomains and DNS records).
+func (h *AdminHandler) BanUser(c *gin.Context) {
+	admin := ctxutil.GetUser(c)
+	if admin == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+
+	userID, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	if admin.ID == userID {
+		response.ErrorWithKey(c, http.StatusBadRequest, "cannot ban yourself", "error.cannotBanSelf")
+		return
+	}
+
+	target, err := h.repo.FindUserByID(userID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusNotFound, "user not found", "error.userNotFound")
+		return
+	}
+
+	var body struct {
+		Reason          string `json:"reason"`
+		DeleteResources bool   `json:"delete_resources"`
+		Force           bool   `json:"force"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
+		return
+	}
+
+	reason := strings.TrimSpace(body.Reason)
+
+	var subdomains []model.Subdomain
+	if body.DeleteResources {
+		subdomains, err = h.repo.ListSubdomainsByUserWithRecords(target.ID)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+			return
+		}
+	}
+
+	var failures []cfFailureRecord
+	cfDeletedCount := 0
+	if body.DeleteResources {
+		for _, sub := range subdomains {
+			cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
+
+			for _, rec := range sub.DNSRecords {
+				if rec.CloudflareRecordID == "" {
+					continue
+				}
+				if err != nil {
+					failures = append(failures, cfFailureRecord{
+						SubdomainFQDN:      sub.FQDN,
+						RecordType:         rec.Type,
+						RecordContent:      rec.Content,
+						CloudflareRecordID: rec.CloudflareRecordID,
+						Error:              err.Error(),
+					})
+					continue
+				}
+				if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, rec.CloudflareRecordID); err != nil {
+					failures = append(failures, cfFailureRecord{
+						SubdomainFQDN:      sub.FQDN,
+						RecordType:         rec.Type,
+						RecordContent:      rec.Content,
+						CloudflareRecordID: rec.CloudflareRecordID,
+						Error:              err.Error(),
+					})
+				} else {
+					cfDeletedCount++
+				}
+			}
+		}
+	}
+
+	if len(failures) > 0 && !body.Force {
+		response.ErrorWithKeyData(c, http.StatusConflict, "some cloudflare dns records failed to delete", "error.cloudflareDeleteFailed", gin.H{
+			"failed_records": failures,
+		})
+		return
+	}
+
+	subdomainIDs := make([]uint, 0, len(subdomains))
+	for _, sub := range subdomains {
+		subdomainIDs = append(subdomainIDs, sub.ID)
+	}
+
+	now := time.Now()
+	targetRole := target.Role
+	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", adminBanGuardLockKey).Error; err != nil {
+			return err
+		}
+
+		var lockedTarget model.User
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&lockedTarget, target.ID).Error; err != nil {
+			return err
+		}
+		targetRole = lockedTarget.Role
+
+		// Safety guard: check and update in the same transaction to prevent concurrent bypass.
+		if lockedTarget.Role == "admin" && !lockedTarget.IsBanned {
+			var activeAdmins int64
+			if err := tx.Model(&model.User{}).
+				Where("role = ? AND is_banned = ?", "admin", false).
+				Count(&activeAdmins).Error; err != nil {
+				return err
+			}
+			if activeAdmins <= 1 {
+				return errCannotBanLastActiveAdmin
+			}
+		}
+
+		if err := tx.Model(&model.User{}).Where("id = ?", target.ID).Updates(map[string]interface{}{
+			"is_banned":     true,
+			"banned_reason": reason,
+			"banned_at":     now,
+			"banned_by":     admin.ID,
+		}).Error; err != nil {
+			return err
+		}
+
+		if len(subdomainIDs) > 0 {
+			if err := tx.Where("subdomain_id IN ?", subdomainIDs).Delete(&model.DNSRecord{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Where("id IN ?", subdomainIDs).Delete(&model.Subdomain{}).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}); err != nil {
+		if errors.Is(err, errCannotBanLastActiveAdmin) {
+			response.ErrorWithKey(c, http.StatusBadRequest, "cannot ban last active admin", "error.cannotBanLastAdmin")
+			return
+		}
+		if cfDeletedCount > 0 {
+			data := gin.H{
+				"retryable": true,
+			}
+			if len(failures) > 0 {
+				data["failed_records"] = failures
+			}
+			response.ErrorWithKeyData(c, http.StatusInternalServerError, "database failed after cloudflare deletions, retry to finish local cleanup", "error.failedToBanUserRetryable", data)
+			return
+		}
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to ban user", "error.failedToBanUser")
+		return
+	}
+
+	details, _ := json.Marshal(map[string]interface{}{
+		"target_user_id":     target.ID,
+		"target_user_role":   targetRole,
+		"reason":             reason,
+		"delete_resources":   body.DeleteResources,
+		"force":              body.Force,
+		"subdomains_deleted": len(subdomainIDs),
+		"cf_failures":        failures,
+	})
+	h.repo.CreateAuditLog(&model.AuditLog{
+		UserID:     admin.ID,
+		Action:     "admin_ban_user",
+		Resource:   "user",
+		ResourceID: target.ID,
+		Details:    details,
+	})
+
+	data := gin.H{"message": "user banned"}
+	if len(failures) > 0 {
+		data["failed_records"] = failures
+	}
+	response.OK(c, data)
+}
+
+func (h *AdminHandler) UnbanUser(c *gin.Context) {
+	admin := ctxutil.GetUser(c)
+	if admin == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+
+	userID, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+
+	target, err := h.repo.FindUserByID(userID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusNotFound, "user not found", "error.userNotFound")
+		return
+	}
+
+	if err := h.repo.GetDB().Model(&model.User{}).Where("id = ?", target.ID).Updates(map[string]interface{}{
+		"is_banned":     false,
+		"banned_reason": "",
+		"banned_at":     nil,
+		"banned_by":     nil,
+	}).Error; err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to unban user", "error.failedToUnbanUser")
+		return
+	}
+
+	details, _ := json.Marshal(map[string]interface{}{
+		"target_user_id": target.ID,
+	})
+	h.repo.CreateAuditLog(&model.AuditLog{
+		UserID:     admin.ID,
+		Action:     "admin_unban_user",
+		Resource:   "user",
+		ResourceID: target.ID,
+		Details:    details,
+	})
+
+	response.OK(c, gin.H{"message": "user unbanned"})
 }
 
 // System Config
