@@ -23,7 +23,11 @@ func (h *AuthHandler) Me(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
-	balance, _ := h.repo.EnsureCreditBalance(user.ID)
+	balance, err := h.repo.EnsureCreditBalance(user.ID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
 	response.OK(c, gin.H{
 		"user":    user,
 		"credits": balance.Balance,

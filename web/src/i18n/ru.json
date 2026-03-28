@@ -445,6 +445,7 @@
     "failedToGrantCredits": "Не удалось начислить кредиты",
     "failedToCreateSubdomain": "Не удалось создать поддомен",
     "failedToListDomains": "Не удалось загрузить список доменов",
+    "failedToLoadGroupAccess": "Не удалось загрузить доступ группы к домену",
     "failedToCreateDomain": "Не удалось создать домен",
     "failedToUpdateDomain": "Не удалось обновить домен",
     "failedToCreateGroupAccess": "Не удалось создать доступ группы",

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -27,8 +28,16 @@ func (h *CreditHandler) GetBalance(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
-	balance, _ := h.repo.EnsureCreditBalance(user.ID)
-	txns, _, _ := h.repo.ListTransactions(user.ID, 1, 10)
+	balance, err := h.repo.EnsureCreditBalance(user.ID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
+	txns, _, err := h.repo.ListTransactions(user.ID, 1, 10)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list transactions", "error.failedToListTransactions")
+		return
+	}
 	response.OK(c, gin.H{
 		"balance":      balance.Balance,
 		"transactions": txns,
@@ -85,36 +94,31 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 
 	amount := model.CreditFromFloat(body.Amount)
 
-	tx := h.repo.GetDB().Begin()
-
 	admin := ctxutil.GetUser(c)
 
-	if body.Amount > 0 {
-		// Grant
-		descKey := "txn.adminGrant"
-		var descParams json.RawMessage
-		if body.Description != "" {
-			descKey = "txn.adminGrantCustom"
-			descParams, _ = json.Marshal(map[string]string{"description": body.Description})
+	txErr := h.repo.Transaction(func(tx *gorm.DB) error {
+		if body.Amount > 0 {
+			descKey := "txn.adminGrant"
+			var descParams json.RawMessage
+			if body.Description != "" {
+				descKey = "txn.adminGrantCustom"
+				descParams, _ = json.Marshal(map[string]string{"description": body.Description})
+			}
+			if err := h.repo.GrantCredits(tx, body.UserID, amount, descKey, descParams); err != nil {
+				return err
+			}
+			if admin != nil {
+				details, _ := json.Marshal(map[string]interface{}{"target_user_id": body.UserID, "amount": body.Amount, "description": body.Description})
+				return tx.Create(&model.AuditLog{
+					UserID:     admin.ID,
+					Action:     "admin_grant_credits",
+					Resource:   "credit",
+					ResourceID: body.UserID,
+					Details:    details,
+				}).Error
+			}
+			return nil
 		}
-		if err := h.repo.GrantCredits(tx, body.UserID, amount, descKey, descParams); err != nil {
-			tx.Rollback()
-			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to grant credits", "error.failedToGrantCredits")
-			return
-		}
-
-		if admin != nil {
-			details, _ := json.Marshal(map[string]interface{}{"target_user_id": body.UserID, "amount": body.Amount, "description": body.Description})
-			tx.Create(&model.AuditLog{
-				UserID:     admin.ID,
-				Action:     "admin_grant_credits",
-				Resource:   "credit",
-				ResourceID: body.UserID,
-				Details:    details,
-			})
-		}
-	} else {
-		// Deduct (amount is negative, so negate for DeductCredits which expects positive)
 		deductAmount := model.CreditFromFloat(-body.Amount)
 		descKey := "txn.adminDeduct"
 		var descParams json.RawMessage
@@ -123,30 +127,38 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 			descParams, _ = json.Marshal(map[string]string{"description": body.Description})
 		}
 		if err := h.repo.DeductCredits(tx, body.UserID, deductAmount, descKey, descParams); err != nil {
-			tx.Rollback()
-			if err == gorm.ErrInvalidData {
-				response.ErrorWithKey(c, http.StatusPaymentRequired, "insufficient credits", "error.insufficientCredits")
-				return
-			}
-			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to deduct credits", "error.failedToDeductCredits")
-			return
+			return err
 		}
-
 		if admin != nil {
 			details, _ := json.Marshal(map[string]interface{}{"target_user_id": body.UserID, "amount": body.Amount, "description": body.Description})
-			tx.Create(&model.AuditLog{
+			return tx.Create(&model.AuditLog{
 				UserID:     admin.ID,
 				Action:     "admin_deduct_credits",
 				Resource:   "credit",
 				ResourceID: body.UserID,
 				Details:    details,
-			})
+			}).Error
 		}
+		return nil
+	})
+	if txErr != nil {
+		if errors.Is(txErr, gorm.ErrInvalidData) {
+			response.ErrorWithKey(c, http.StatusPaymentRequired, "insufficient credits", "error.insufficientCredits")
+			return
+		}
+		if body.Amount > 0 {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to grant credits", "error.failedToGrantCredits")
+		} else {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to deduct credits", "error.failedToDeductCredits")
+		}
+		return
 	}
 
-	tx.Commit()
-
-	balance, _ := h.repo.GetCreditBalance(body.UserID)
+	balance, err := h.repo.GetCreditBalance(body.UserID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
 	response.OK(c, gin.H{
 		"user_id": body.UserID,
 		"granted": body.Amount,

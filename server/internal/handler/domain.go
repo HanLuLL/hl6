@@ -2,14 +2,16 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"hl6-server/internal/config"
-	"hl6-server/internal/model"
-	"hl6-server/internal/repository"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
+	"hl6-server/internal/model"
+	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
 )
 
@@ -87,28 +89,26 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		Description:         body.Description,
 	}
 
-	tx := h.repo.GetDB().Begin()
-	if err := tx.Create(domain).Error; err != nil {
-		tx.Rollback()
+	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(domain).Error; err != nil {
+			return err
+		}
+		for _, ga := range body.GroupAccess {
+			access := model.DomainGroupAccess{
+				DomainID:      domain.ID,
+				GroupID:       ga.GroupID,
+				CreditCost:    model.CreditFromFloat(ga.CreditCost),
+				MaxDNSRecords: ga.MaxDNSRecords,
+			}
+			if err := tx.Create(&access).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create domain", "error.failedToCreateDomain")
 		return
 	}
-
-	for _, ga := range body.GroupAccess {
-		access := model.DomainGroupAccess{
-			DomainID:      domain.ID,
-			GroupID:       ga.GroupID,
-			CreditCost:    model.CreditFromFloat(ga.CreditCost),
-			MaxDNSRecords: ga.MaxDNSRecords,
-		}
-		if err := tx.Create(&access).Error; err != nil {
-			tx.Rollback()
-			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create group access", "error.failedToCreateGroupAccess")
-			return
-		}
-	}
-
-	tx.Commit()
 
 	// Audit log
 	if admin := ctxutil.GetUser(c); admin != nil {
@@ -122,8 +122,11 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		})
 	}
 
-	// Return domain with group access
-	accesses, _ := h.repo.ListDomainGroupAccess(domain.ID)
+	accesses, err := h.repo.ListDomainGroupAccess(domain.ID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load group access", "error.failedToLoadGroupAccess")
+		return
+	}
 	response.Created(c, gin.H{"domain": domain, "group_access": accesses})
 }
 
@@ -149,43 +152,40 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		return
 	}
 
-	tx := h.repo.GetDB().Begin()
-
-	if body.CloudflareZoneID != nil {
-		domain.CloudflareZoneID = *body.CloudflareZoneID
-	}
-	if body.CloudflareAccountID != nil {
-		domain.CloudflareAccountID = *body.CloudflareAccountID
-	}
-	if body.IsActive != nil {
-		domain.IsActive = *body.IsActive
-	}
-	if body.Description != nil {
-		domain.Description = *body.Description
-	}
-	if err := tx.Save(domain).Error; err != nil {
-		tx.Rollback()
+	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if body.CloudflareZoneID != nil {
+			domain.CloudflareZoneID = *body.CloudflareZoneID
+		}
+		if body.CloudflareAccountID != nil {
+			domain.CloudflareAccountID = *body.CloudflareAccountID
+		}
+		if body.IsActive != nil {
+			domain.IsActive = *body.IsActive
+		}
+		if body.Description != nil {
+			domain.Description = *body.Description
+		}
+		if err := tx.Save(domain).Error; err != nil {
+			return err
+		}
+		if body.GroupAccess != nil {
+			var accesses []model.DomainGroupAccess
+			for _, ga := range body.GroupAccess {
+				accesses = append(accesses, model.DomainGroupAccess{
+					GroupID:       ga.GroupID,
+					CreditCost:    model.CreditFromFloat(ga.CreditCost),
+					MaxDNSRecords: ga.MaxDNSRecords,
+				})
+			}
+			if err := h.repo.ReplaceDomainGroupAccess(tx, domain.ID, accesses); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update domain", "error.failedToUpdateDomain")
 		return
 	}
-
-	if body.GroupAccess != nil {
-		var accesses []model.DomainGroupAccess
-		for _, ga := range body.GroupAccess {
-			accesses = append(accesses, model.DomainGroupAccess{
-				GroupID:       ga.GroupID,
-				CreditCost:    model.CreditFromFloat(ga.CreditCost),
-				MaxDNSRecords: ga.MaxDNSRecords,
-			})
-		}
-		if err := h.repo.ReplaceDomainGroupAccess(tx, domain.ID, accesses); err != nil {
-			tx.Rollback()
-			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update group access", "error.failedToUpdateGroupAccess")
-			return
-		}
-	}
-
-	tx.Commit()
 
 	if admin := ctxutil.GetUser(c); admin != nil {
 		details, _ := json.Marshal(map[string]interface{}{"domain_name": domain.Name})
@@ -198,7 +198,11 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		})
 	}
 
-	accessList, _ := h.repo.ListDomainGroupAccess(domain.ID)
+	accessList, err := h.repo.ListDomainGroupAccess(domain.ID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load group access", "error.failedToLoadGroupAccess")
+		return
+	}
 	response.OK(c, gin.H{"domain": domain, "group_access": accessList})
 }
 
@@ -209,7 +213,11 @@ func (h *DomainHandler) AdminListDomainsFull(c *gin.Context) {
 		return
 	}
 
-	accessMap, _ := h.repo.ListAllDomainGroupAccess()
+	accessMap, err := h.repo.ListAllDomainGroupAccess()
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list domains", "error.failedToListDomains")
+		return
+	}
 
 	type domainWithAccess struct {
 		model.Domain
@@ -325,71 +333,58 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 		subdomainIDs[i] = s.ID
 	}
 
-	// 开启事务进行级联删除
-	tx := h.repo.GetDB().Begin()
-
-	// 退还积分
-	if refund {
-		for _, item := range refundItems {
-			descParams, _ := json.Marshal(map[string]interface{}{"fqdn": item.subFQDN})
-			if item.claimCost > 0 {
-				// 认领时扣了积分 -> 退还
-				if rErr := h.repo.RefundCredits(tx, item.userID, item.claimCost, "txn.subdomainDeletedRefund", descParams); rErr != nil {
-					tx.Rollback()
-					response.ErrorWithKey(c, http.StatusInternalServerError, "failed to refund credits", "error.failedToRefundCredits")
-					return
-				}
-			} else {
-				// 认领时送了积分（负价）-> 逆向扣除
-				if dErr := h.repo.DeductCredits(tx, item.userID, -item.claimCost, "txn.subdomainDeletedDeduct", descParams); dErr != nil {
-					tx.Rollback()
-					response.ErrorWithKey(c, http.StatusInternalServerError, "failed to deduct credits", "error.failedToDeductCredits")
-					return
+	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if refund {
+			for _, item := range refundItems {
+				descParams, _ := json.Marshal(map[string]interface{}{"fqdn": item.subFQDN})
+				if item.claimCost > 0 {
+					if err := h.repo.RefundCredits(tx, item.userID, item.claimCost, "txn.subdomainDeletedRefund", descParams); err != nil {
+						return err
+					}
+				} else {
+					if err := h.repo.DeductCredits(tx, item.userID, -item.claimCost, "txn.subdomainDeletedDeduct", descParams); err != nil {
+						return err
+					}
 				}
 			}
 		}
-	}
-
-	// 批量删除 DNS 记录
-	if len(subdomainIDs) > 0 {
-		if err := tx.Where("subdomain_id IN ?", subdomainIDs).Delete(&model.DNSRecord{}).Error; err != nil {
-			tx.Rollback()
-			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete dns records", "error.failedToDeleteDNSRecord")
+		if len(subdomainIDs) > 0 {
+			if err := tx.Where("subdomain_id IN ?", subdomainIDs).Delete(&model.DNSRecord{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Where("domain_id = ?", domain.ID).Delete(&model.Subdomain{}).Error; err != nil {
+				return err
+			}
+		}
+		if err := h.repo.DeleteDomain(tx, domain.ID); err != nil {
+			return err
+		}
+		if admin := ctxutil.GetUser(c); admin != nil {
+			details, _ := json.Marshal(map[string]interface{}{
+				"domain_name":       domain.Name,
+				"subdomain_count":   len(subdomains),
+				"dns_record_count":  func() int { n := 0; for _, s := range subdomains { n += len(s.DNSRecords) }; return n }(),
+				"refunded":          refund,
+				"cf_failures_count": len(failures),
+			})
+			if err := tx.Create(&model.AuditLog{
+				UserID:     admin.ID,
+				Action:     "admin_delete_domain",
+				Resource:   "domain",
+				ResourceID: domain.ID,
+				Details:    details,
+			}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		if errors.Is(err, gorm.ErrInvalidData) {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to deduct credits", "error.failedToDeductCredits")
 			return
 		}
-		// 批量删除子域
-		if err := tx.Where("domain_id = ?", domain.ID).Delete(&model.Subdomain{}).Error; err != nil {
-			tx.Rollback()
-			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete subdomains", "error.failedToDeleteSubdomain")
-			return
-		}
-	}
-
-	// 删除域名（含 DomainGroupAccess）
-	if err := h.repo.DeleteDomain(tx, domain.ID); err != nil {
-		tx.Rollback()
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete domain", "error.failedToDeleteDomain")
 		return
 	}
-
-	// 审计日志
-	if admin := ctxutil.GetUser(c); admin != nil {
-		details, _ := json.Marshal(map[string]interface{}{
-			"domain_name":       domain.Name,
-			"subdomain_count":   len(subdomains),
-			"dns_record_count":  func() int { n := 0; for _, s := range subdomains { n += len(s.DNSRecords) }; return n }(),
-			"refunded":          refund,
-			"cf_failures_count": len(failures),
-		})
-		tx.Create(&model.AuditLog{
-			UserID:     admin.ID,
-			Action:     "admin_delete_domain",
-			Resource:   "domain",
-			ResourceID: domain.ID,
-			Details:    details,
-		})
-	}
-
-	tx.Commit()
 	response.OK(c, gin.H{"message": "domain deleted"})
 }

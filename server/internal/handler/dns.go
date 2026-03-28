@@ -69,25 +69,41 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 	}
 
 	if body.Type == "CNAME" {
-		hasOther, _ := h.repo.HasNonCNAMERecords(sub.ID)
+		hasOther, err := h.repo.HasNonCNAMERecords(sub.ID)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+			return
+		}
 		if hasOther {
 			response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.cnameConflictWithOther")
 			return
 		}
-		hasCNAME, _ := h.repo.HasCNAMERecord(sub.ID)
+		hasCNAME, err := h.repo.HasCNAMERecord(sub.ID)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+			return
+		}
 		if hasCNAME {
 			response.ErrorWithKey(c, http.StatusConflict, "CNAME record already exists", "error.cnameAlreadyExists")
 			return
 		}
 	} else {
-		hasCNAME, _ := h.repo.HasCNAMERecord(sub.ID)
+		hasCNAME, err := h.repo.HasCNAMERecord(sub.ID)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+			return
+		}
 		if hasCNAME {
 			response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.otherConflictWithCname")
 			return
 		}
 	}
 
-	dup, _ := h.repo.HasDuplicateRecord(sub.ID, body.Type, body.Content)
+	dup, err := h.repo.HasDuplicateRecord(sub.ID, body.Type, body.Content)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
 	if dup {
 		response.ErrorWithKey(c, http.StatusConflict, "duplicate record", "error.duplicateRecord")
 		return
@@ -98,7 +114,11 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 	if user != nil && user.GroupID != nil {
 		access, err := h.repo.FindDomainGroupAccess(sub.DomainID, *user.GroupID)
 		if err == nil && access.MaxDNSRecords != nil {
-			count, _ := h.repo.CountDNSRecordsBySubdomain(sub.ID)
+			count, cntErr := h.repo.CountDNSRecordsBySubdomain(sub.ID)
+			if cntErr != nil {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+				return
+			}
 			if int(count) >= *access.MaxDNSRecords {
 				response.ErrorWithKey(c, http.StatusUnprocessableEntity,
 					"dns record limit exceeded", "error.dnsRecordLimitExceeded")
@@ -199,7 +219,11 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 		return
 	}
 
-	dup, _ := h.repo.HasDuplicateRecordExcluding(sub.ID, record.Type, body.Content, record.ID)
+	dup, err := h.repo.HasDuplicateRecordExcluding(sub.ID, record.Type, body.Content, record.ID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
 	if dup {
 		response.ErrorWithKey(c, http.StatusConflict, "duplicate record", "error.duplicateRecord")
 		return

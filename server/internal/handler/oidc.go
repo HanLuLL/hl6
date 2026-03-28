@@ -377,11 +377,22 @@ func (h *OIDCHandler) processReferral(tx *gorm.DB, newUser *model.User, refCode 
 		return
 	}
 
-	// Read credit configs
-	inviterCreditsStr, _ := h.repo.GetSystemConfig("referral_inviter_credits")
-	inviteeCreditsStr, _ := h.repo.GetSystemConfig("referral_invitee_credits")
-	inviterCreditsFloat, _ := strconv.ParseFloat(inviterCreditsStr, 64)
-	inviteeCreditsFloat, _ := strconv.ParseFloat(inviteeCreditsStr, 64)
+	inviterCreditsStr, err := h.repo.GetSystemConfig("referral_inviter_credits")
+	if err != nil {
+		inviterCreditsStr = "0"
+	}
+	inviteeCreditsStr, err := h.repo.GetSystemConfig("referral_invitee_credits")
+	if err != nil {
+		inviteeCreditsStr = "0"
+	}
+	inviterCreditsFloat, err := strconv.ParseFloat(inviterCreditsStr, 64)
+	if err != nil {
+		inviterCreditsFloat = 0
+	}
+	inviteeCreditsFloat, err := strconv.ParseFloat(inviteeCreditsStr, 64)
+	if err != nil {
+		inviteeCreditsFloat = 0
+	}
 	inviterCredits := model.CreditFromFloat(inviterCreditsFloat)
 	inviteeCredits := model.CreditFromFloat(inviteeCreditsFloat)
 

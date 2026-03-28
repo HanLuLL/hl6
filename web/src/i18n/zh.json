@@ -445,6 +445,7 @@
     "failedToGrantCredits": "发放积分失败",
     "failedToCreateSubdomain": "创建子域名失败",
     "failedToListDomains": "获取域名列表失败",
+    "failedToLoadGroupAccess": "加载分组访问失败",
     "failedToCreateDomain": "创建域名失败",
     "failedToUpdateDomain": "更新域名失败",
     "failedToCreateGroupAccess": "创建用户组访问权限失败",

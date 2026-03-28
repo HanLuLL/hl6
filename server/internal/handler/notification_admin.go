@@ -241,7 +241,7 @@ func (h *NotificationAdminHandler) Delete(c *gin.Context) {
 
 	// Resolve target users before deletion for SSE
 	event := SSEEvent{Event: "delete_notification", Data: fmt.Sprintf(`{"id":%d}`, id)}
-	userIDs, _ := h.repo.GetNotificationTargetUserIDs(notification)
+	userIDs, targErr := h.repo.GetNotificationTargetUserIDs(notification)
 
 	if err := h.repo.DeleteNotification(id); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete notification", "error.failedToDeleteNotification")
@@ -262,10 +262,12 @@ func (h *NotificationAdminHandler) Delete(c *gin.Context) {
 	})
 
 	// Send SSE event
-	if notification.TargetType == "all" {
-		h.broker.SendToAll(event)
-	} else if userIDs != nil {
-		h.broker.SendToUsers(userIDs, event)
+	if targErr == nil {
+		if notification.TargetType == "all" {
+			h.broker.SendToAll(event)
+		} else if len(userIDs) > 0 {
+			h.broker.SendToUsers(userIDs, event)
+		}
 	}
 
 	response.OK(c, gin.H{"message": "notification deleted"})

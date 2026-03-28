@@ -445,6 +445,7 @@
     "failedToGrantCredits": "Error al conceder créditos",
     "failedToCreateSubdomain": "Error al crear subdominio",
     "failedToListDomains": "Error al listar dominios",
+    "failedToLoadGroupAccess": "Error al cargar el acceso por grupo",
     "failedToCreateDomain": "Error al crear dominio",
     "failedToUpdateDomain": "Error al actualizar dominio",
     "failedToCreateGroupAccess": "Error al crear acceso de grupo",

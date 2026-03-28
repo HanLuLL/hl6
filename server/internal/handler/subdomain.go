@@ -116,27 +116,7 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 	}
 
 	fqdn := fmt.Sprintf("%s.%s", body.Name, domain.Name)
-	tx := h.repo.GetDB().Begin()
-
 	fqdnParams, _ := json.Marshal(map[string]string{"fqdn": fqdn})
-
-	if creditCost > 0 {
-		if err := h.repo.DeductCredits(tx, user.ID, creditCost, "txn.claimSubdomain", fqdnParams); err != nil {
-			tx.Rollback()
-			if err == gorm.ErrInvalidData {
-				response.ErrorWithKey(c, http.StatusPaymentRequired, "insufficient credits", "error.insufficientCredits")
-				return
-			}
-			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to deduct credits", "error.failedToDeductCredits")
-			return
-		}
-	} else if creditCost < 0 {
-		if err := h.repo.GrantCredits(tx, user.ID, -creditCost, "txn.rewardClaimSubdomain", fqdnParams); err != nil {
-			tx.Rollback()
-			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to grant credits", "error.failedToGrantCredits")
-			return
-		}
-	}
 
 	sub := &model.Subdomain{
 		DomainID:  domain.ID,
@@ -145,28 +125,42 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 		FQDN:      fqdn,
 		ClaimCost: creditCost,
 	}
-	if err := tx.Create(sub).Error; err != nil {
-		tx.Rollback()
-		// Check for PostgreSQL unique constraint violation (code 23505)
+
+	txErr := h.repo.Transaction(func(tx *gorm.DB) error {
+		if creditCost > 0 {
+			if err := h.repo.DeductCredits(tx, user.ID, creditCost, "txn.claimSubdomain", fqdnParams); err != nil {
+				return err
+			}
+		} else if creditCost < 0 {
+			if err := h.repo.GrantCredits(tx, user.ID, -creditCost, "txn.rewardClaimSubdomain", fqdnParams); err != nil {
+				return err
+			}
+		}
+		if err := tx.Create(sub).Error; err != nil {
+			return err
+		}
+		details, _ := json.Marshal(map[string]interface{}{"fqdn": fqdn, "cost": creditCost})
+		return tx.Create(&model.AuditLog{
+			UserID:     user.ID,
+			Action:     "claim_subdomain",
+			Resource:   "subdomain",
+			ResourceID: sub.ID,
+			Details:    details,
+		}).Error
+	})
+	if txErr != nil {
+		if errors.Is(txErr, gorm.ErrInvalidData) {
+			response.ErrorWithKey(c, http.StatusPaymentRequired, "insufficient credits", "error.insufficientCredits")
+			return
+		}
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if errors.As(txErr, &pgErr) && pgErr.Code == "23505" {
 			response.ErrorWithKey(c, http.StatusConflict, "subdomain already taken", "error.subdomainAlreadyTaken")
 			return
 		}
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create subdomain", "error.failedToCreateSubdomain")
 		return
 	}
-
-	details, _ := json.Marshal(map[string]interface{}{"fqdn": fqdn, "cost": creditCost})
-	tx.Create(&model.AuditLog{
-		UserID:     user.ID,
-		Action:     "claim_subdomain",
-		Resource:   "subdomain",
-		ResourceID: sub.ID,
-		Details:    details,
-	})
-
-	tx.Commit()
 	response.Created(c, sub)
 }
 
@@ -211,28 +205,22 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 		}
 	}
 
-	tx := h.repo.GetDB().Begin()
-	if err := tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{}).Error; err != nil {
-		tx.Rollback()
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete dns records", "error.databaseError")
-		return
-	}
-	if err := tx.Delete(sub).Error; err != nil {
-		tx.Rollback()
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete subdomain", "error.databaseError")
-		return
-	}
-
-	details, _ := json.Marshal(map[string]interface{}{"fqdn": sub.FQDN})
-	tx.Create(&model.AuditLog{
-		UserID:     user.ID,
-		Action:     "release_subdomain",
-		Resource:   "subdomain",
-		ResourceID: sub.ID,
-		Details:    details,
-	})
-	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
+	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(sub).Error; err != nil {
+			return err
+		}
+		details, _ := json.Marshal(map[string]interface{}{"fqdn": sub.FQDN})
+		return tx.Create(&model.AuditLog{
+			UserID:     user.ID,
+			Action:     "release_subdomain",
+			Resource:   "subdomain",
+			ResourceID: sub.ID,
+			Details:    details,
+		}).Error
+	}); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to release subdomain", "error.databaseError")
 		return
 	}

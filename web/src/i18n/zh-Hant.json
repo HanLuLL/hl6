@@ -445,6 +445,7 @@
     "failedToGrantCredits": "發放積分失敗",
     "failedToCreateSubdomain": "建立子網域失敗",
     "failedToListDomains": "取得網域清單失敗",
+    "failedToLoadGroupAccess": "載入群組存取失敗",
     "failedToCreateDomain": "建立網域失敗",
     "failedToUpdateDomain": "更新網域失敗",
     "failedToCreateGroupAccess": "建立群組存取權限失敗",

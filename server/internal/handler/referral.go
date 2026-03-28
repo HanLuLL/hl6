@@ -34,8 +34,8 @@ func (h *ReferralHandler) GetReferralInfo(c *gin.Context) {
 		perPage = 20
 	}
 
-	enabledStr, _ := h.repo.GetSystemConfig("referral_enabled")
-	referralEnabled := enabledStr == "true"
+	enabledStr, cfgErr := h.repo.GetSystemConfig("referral_enabled")
+	referralEnabled := cfgErr == nil && enabledStr == "true"
 
 	referrals, total, err := h.repo.ListReferralsByInviter(user.ID, page, perPage)
 	if err != nil {

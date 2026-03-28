@@ -7,10 +7,11 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"hl6-server/internal/model"
-	"hl6-server/internal/repository"
+	"gorm.io/gorm"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
+	"hl6-server/internal/model"
+	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
 )
 
@@ -51,7 +52,11 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	for i, u := range users {
 		userIDs[i] = u.ID
 	}
-	inviterMap, _ := h.repo.GetReferralInvitersForUsers(userIDs)
+	inviterMap, invErr := h.repo.GetReferralInvitersForUsers(userIDs)
+	if invErr != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list users", "error.failedToListUsers")
+		return
+	}
 
 	type userDTO struct {
 		model.User
@@ -223,7 +228,11 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 		return
 	}
 
-	count, _ := h.repo.CountUserGroups()
+	count, err := h.repo.CountUserGroups()
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
 	if count <= 1 {
 		response.ErrorWithKey(c, http.StatusBadRequest, "cannot delete the last group", "error.cannotDeleteLastGroup")
 		return
@@ -241,39 +250,23 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 		return
 	}
 
-	tx := h.repo.GetDB().Begin()
-
-	// Migrate users
-	if err := tx.Model(&model.User{}).Where("group_id = ?", group.ID).Update("group_id", targetGroup.ID).Error; err != nil {
-		tx.Rollback()
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to migrate users", "error.failedToMigrateUsers")
-		return
-	}
-
-	// Delete domain group accesses
-	if err := h.repo.DeleteDomainGroupAccessByGroup(tx, group.ID); err != nil {
-		tx.Rollback()
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete group access records", "error.failedToDeleteGroupAccess")
-		return
-	}
-
-	// If deleted group was default, make target group the default
-	if group.IsDefault {
-		if err := tx.Model(&model.UserGroup{}).Where("id = ?", targetGroup.ID).Update("is_default", true).Error; err != nil {
-			tx.Rollback()
-			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update default group", "error.failedToUpdateDefaultGroup")
-			return
+	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.User{}).Where("group_id = ?", group.ID).Update("group_id", targetGroup.ID).Error; err != nil {
+			return err
 		}
-	}
-
-	// Delete the group
-	if err := tx.Delete(&model.UserGroup{}, group.ID).Error; err != nil {
-		tx.Rollback()
+		if err := h.repo.DeleteDomainGroupAccessByGroup(tx, group.ID); err != nil {
+			return err
+		}
+		if group.IsDefault {
+			if err := tx.Model(&model.UserGroup{}).Where("id = ?", targetGroup.ID).Update("is_default", true).Error; err != nil {
+				return err
+			}
+		}
+		return tx.Delete(&model.UserGroup{}, group.ID).Error
+	}); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete group", "error.failedToDeleteGroup")
 		return
 	}
-
-	tx.Commit()
 	if admin := ctxutil.GetUser(c); admin != nil {
 		details, _ := json.Marshal(map[string]interface{}{"group_name": group.Name, "migrated_to": targetGroup.Name})
 		h.repo.CreateAuditLog(&model.AuditLog{
