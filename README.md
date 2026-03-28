@@ -20,80 +20,6 @@ HL6 是一个域名/子域名管理平台。用户可以在已注册域名下认
 ## 云应用一键部署
 [![通过雨云一键部署](https://rainyun-apps.cn-nb1.rains3.com/materials/deploy-on-rainyun-cn.svg)](https://app.rainyun.com/apps/rca/store/7627?ref=ins_)
 
-## 快速开始（`make dev`）
-
-### 1. 准备依赖
-
-- Docker（需支持 `docker compose`）
-- Go（`server/go.mod` 当前为 `go 1.25.5`）
-- Node.js（建议 `^20.19.0` 或 `>=22.12.0`，与当前 Vite 版本要求一致）
-- npm
-
-### 2. 初始化环境变量
-
-在项目根目录执行：
-
-```bash
-cp .env.example .env
-```
-
-按需修改 `.env`，至少确认以下字段：
-
-- `DATABASE_URL`
-- `SERVER_PORT`
-- `APP_URL`（可选；同域部署时可作为前后端公共访问地址）
-- `FRONTEND_URL` / `BACKEND_URL`（可选；配置后优先级高于数据库配置）
-- `ALLOWED_ORIGINS`
-- `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET`（可选；支持任何标准 OIDC 提供商。若全部留空，可在首次登录时通过网页向导初始化，详见 [OIDC 配置指南](docs/oidc.md)）
-
-### 3. 安装前端依赖
-
-```bash
-cd web && npm install
-```
-
-### 4. 一键启动开发环境
-
-回到项目根目录执行：
-
-```bash
-make dev
-```
-
-`make dev` 会自动完成以下动作：
-
-1. `docker compose up -d` 启动 PostgreSQL
-2. 启动 Go 后端（`server/cmd/server`）
-3. 启动 Vite 前端开发服务器（`web`）
-
-启动后默认访问地址：
-
-- 前端：<http://localhost:5173>
-- 后端 API：<http://localhost:8080>
-- PostgreSQL：`localhost:5432`（DB: `hl6`，User: `hl6`，Password: `hl6dev`）
-
-停止开发环境：
-
-- 在 `make dev` 终端按 `Ctrl+C`（会结束前后端进程）
-- 如需关闭数据库容器：`make db-down`
-
-## 常用命令
-
-```bash
-# 一键开发（推荐）
-make dev
-
-# 仅启动数据库
-make db-up
-make db-down
-
-# 仅启动后端
-make dev-server
-
-# 仅启动前端
-make dev-web
-```
-
 ## 环境变量说明
 
 根目录 `.env.example` 提供了默认模板：
@@ -122,13 +48,10 @@ make dev-web
 
 ## 容器部署
 
-仓库根目录新增了一个全栈 `Dockerfile`，会构建前端并把静态资源打进最终镜像，由 Go 服务同端口托管前端页面和 `/api/v1` 接口。
-
 - 镜像启动后默认监听 `8080`
 - 同域部署时，只需设置 `APP_URL`，并让 `ALLOWED_ORIGINS` 包含该地址
 - 仍然需要独立的 PostgreSQL 实例，`DATABASE_URL` 必填
-
-雨云商店上架建议见 [docs/rainyun.md](docs/rainyun.md)。
+- 快速部署（Docker Compose）见 [docs/docker-compose-quickstart.md](docs/docker-compose-quickstart.md)
 
 ## 项目结构
 
