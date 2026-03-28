@@ -8,11 +8,10 @@ import (
 	"hl6-server/internal/config"
 	"hl6-server/internal/handler"
 	"hl6-server/internal/middleware"
-	"hl6-server/internal/oidc"
 	"hl6-server/internal/repository"
 )
 
-func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.Engine {
+func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
 
@@ -21,7 +20,7 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	rl := middleware.NewRateLimiter(100, time.Minute)
 
 	authH := handler.NewAuthHandler(repo)
-	oidcH := handler.NewOIDCHandler(repo, cfg, provider)
+	oidcH := handler.NewOIDCHandler(repo, cfg)
 	domainH := handler.NewDomainHandler(repo, cfg)
 	subdomainH := handler.NewSubdomainHandler(repo, cfg)
 	creditH := handler.NewCreditHandler(repo)
@@ -39,6 +38,8 @@ func Setup(cfg *config.Config, db *gorm.DB, provider *oidc.ProviderConfig) *gin.
 	api.Use(rl.Handler())
 
 	// Public auth routes
+	api.GET("/auth/oidc/status", oidcH.Status)
+	api.POST("/auth/oidc/bootstrap", oidcH.Bootstrap)
 	api.GET("/auth/login", oidcH.Login)
 	api.GET("/auth/callback", oidcH.Callback)
 	api.GET("/branding", brandingH.GetBranding)

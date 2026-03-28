@@ -34,3 +34,9 @@ func (r *Repository) ListUsers(page, perPage int, search ...string) ([]model.Use
 	err := q.Preload("Group").Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
 	return users, total, err
 }
+
+func (r *Repository) CountUsers() (int64, error) {
+	var total int64
+	err := r.DB.Model(&model.User{}).Count(&total).Error
+	return total, err
+}

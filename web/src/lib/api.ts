@@ -21,6 +21,7 @@ import type {
   UserWithInviter,
   AdminDNSRecord,
   AdminConfigPayload,
+  OIDCStatusPayload,
 } from "@/types";
 
 function normalizeApiBaseUrl(rawValue: string | undefined): string {
@@ -119,6 +120,9 @@ export const api = {
     sessionStorage.removeItem("hl6_401_time");
     return res;
   },
+  getOIDCStatus: () => request<ApiResponse<OIDCStatusPayload>>("/auth/oidc/status"),
+  bootstrapOIDCConfig: (data: { oidc_issuer: string; oidc_client_id: string; oidc_client_secret: string }) =>
+    request<ApiResponse<OIDCStatusPayload>>("/auth/oidc/bootstrap", { method: "POST", body: JSON.stringify(data) }),
   logout: () => request<ApiResponse<{ logout_url: string }>>("/auth/logout", { method: "POST" }),
 
   // Domains

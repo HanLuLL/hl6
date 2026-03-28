@@ -13,7 +13,9 @@ import (
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
+	"hl6-server/internal/oidc"
 	"hl6-server/internal/repository"
+	"hl6-server/pkg/crypto"
 	"hl6-server/pkg/response"
 )
 
@@ -26,17 +28,24 @@ var allowedConfigKeys = map[string]bool{
 	"frontend_url":               true,
 	"backend_urls":               true,
 	"backend_url":                true,
+	"oidc_issuer":                true,
+	"oidc_client_id":             true,
+	"oidc_client_secret":         true,
 }
 
 type AdminHandler struct {
-	repo        *repository.Repository
-	urlResolver *URLResolver
+	repo         *repository.Repository
+	cfg          *config.Config
+	urlResolver  *URLResolver
+	oidcResolver *OIDCRuntimeResolver
 }
 
 func NewAdminHandler(repo *repository.Repository, cfg *config.Config) *AdminHandler {
 	return &AdminHandler{
-		repo:        repo,
-		urlResolver: NewURLResolver(repo, cfg),
+		repo:         repo,
+		cfg:          cfg,
+		urlResolver:  NewURLResolver(repo, cfg),
+		oidcResolver: NewOIDCRuntimeResolver(repo, cfg),
 	}
 }
 
@@ -345,6 +354,14 @@ func (h *AdminHandler) GetConfig(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to resolve runtime url config", "error.failedToGetConfig")
 		return
 	}
+	oidcState, err := h.oidcResolver.Resolve()
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to resolve runtime oidc config", "error.failedToGetConfig")
+		return
+	}
+
+	// Never return client secret value to frontend.
+	delete(configs, configKeyOIDCClientSecret)
 
 	response.OK(c, gin.H{
 		"values": configs,
@@ -358,6 +375,19 @@ func (h *AdminHandler) GetConfig(c *gin.Context) {
 			"frontend_env_locked": urlState.FrontendEnvLocked,
 			"backend_env_locked":  urlState.BackendEnvLocked,
 			"confirmed":           urlState.Confirmed,
+		},
+		"oidc_runtime": gin.H{
+			"configured":               oidcState.Configured,
+			"missing_fields":           oidcState.MissingFields,
+			"issuer":                   oidcState.Issuer,
+			"client_id":                oidcState.ClientID,
+			"issuer_source":            oidcState.IssuerSource,
+			"client_id_source":         oidcState.ClientIDSource,
+			"client_secret_source":     oidcState.ClientSecretSource,
+			"issuer_env_locked":        oidcState.IssuerEnvLocked,
+			"client_id_env_locked":     oidcState.ClientIDEnvLocked,
+			"client_secret_env_locked": oidcState.ClientSecretEnvLocked,
+			"client_secret_configured": oidcState.ClientSecretConfigured,
 		},
 	})
 }
@@ -414,8 +444,104 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 		details[configKeyBackendURL] = firstOrEmptyString(parsed)
 	}
 
+	oidcState, err := h.oidcResolver.Resolve()
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to resolve oidc config", "error.failedToUpdateConfig")
+		return
+	}
+
+	oidcChanged := false
+	candidate := *oidcState
+
+	if raw, ok := body[configKeyOIDCIssuer]; ok {
+		trimmed := strings.TrimSpace(raw)
+		if oidcState.IssuerEnvLocked {
+			if trimmed != "" && trimmed != oidcState.Issuer {
+				response.ErrorWithKey(c, http.StatusBadRequest, "oidc_issuer is controlled by env and cannot be changed", "error.oidcEnvLocked")
+				return
+			}
+		} else {
+			candidate.Issuer = trimmed
+			oidcChanged = true
+			details[configKeyOIDCIssuer] = trimmed
+		}
+	}
+
+	if raw, ok := body[configKeyOIDCClientID]; ok {
+		trimmed := strings.TrimSpace(raw)
+		if oidcState.ClientIDEnvLocked {
+			if trimmed != "" && trimmed != oidcState.ClientID {
+				response.ErrorWithKey(c, http.StatusBadRequest, "oidc_client_id is controlled by env and cannot be changed", "error.oidcEnvLocked")
+				return
+			}
+		} else {
+			candidate.ClientID = trimmed
+			oidcChanged = true
+			details[configKeyOIDCClientID] = trimmed
+		}
+	}
+
+	secretUpdated := false
+	if raw, ok := body[configKeyOIDCClientSecret]; ok {
+		trimmed := strings.TrimSpace(raw)
+		if oidcState.ClientSecretEnvLocked {
+			if trimmed != "" && trimmed != oidcState.ClientSecret {
+				response.ErrorWithKey(c, http.StatusBadRequest, "oidc_client_secret is controlled by env and cannot be changed", "error.oidcEnvLocked")
+				return
+			}
+		} else if trimmed != "" {
+			candidate.ClientSecret = trimmed
+			oidcChanged = true
+			secretUpdated = true
+			details[configKeyOIDCClientSecret] = "***"
+		}
+	}
+
+	if oidcChanged {
+		missing := collectOIDCMissingFields(&candidate)
+		if len(missing) > 0 {
+			response.ErrorWithKey(c, http.StatusBadRequest, "oidc config is incomplete", "error.oidcMissingFields")
+			return
+		}
+
+		issuer, err := validateOIDCIssuer(candidate.Issuer)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusBadRequest, "invalid oidc issuer", "error.invalidOIDCIssuer")
+			return
+		}
+		if _, err := oidc.Discover(c.Request.Context(), issuer); err != nil {
+			response.ErrorWithKey(c, http.StatusBadGateway, "oidc discovery failed", "error.oidcDiscoveryFailed")
+			return
+		}
+
+		if !oidcState.IssuerEnvLocked {
+			if err := h.repo.SetSystemConfig(configKeyOIDCIssuer, issuer); err != nil {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
+				return
+			}
+			details[configKeyOIDCIssuer] = issuer
+		}
+		if !oidcState.ClientIDEnvLocked {
+			if err := h.repo.SetSystemConfig(configKeyOIDCClientID, candidate.ClientID); err != nil {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
+				return
+			}
+		}
+		if !oidcState.ClientSecretEnvLocked && secretUpdated {
+			encSecret, err := crypto.EncryptIfKey(candidate.ClientSecret, h.cfg.EncryptionKey)
+			if err != nil {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "failed to encrypt oidc client secret", "error.encryptionFailed")
+				return
+			}
+			if err := h.repo.SetSystemConfig(configKeyOIDCClientSecret, encSecret); err != nil {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
+				return
+			}
+		}
+	}
+
 	for key, value := range body {
-		if isURLConfigKey(key) {
+		if isURLConfigKey(key) || isOIDCConfigKey(key) {
 			continue
 		}
 		trimmed := strings.TrimSpace(value)
@@ -483,6 +609,15 @@ func pickConfigInput(body map[string]string, keys ...string) (string, bool) {
 func isURLConfigKey(key string) bool {
 	switch key {
 	case configKeyFrontendURL, configKeyFrontendURLs, configKeyBackendURL, configKeyBackendURLs:
+		return true
+	default:
+		return false
+	}
+}
+
+func isOIDCConfigKey(key string) bool {
+	switch key {
+	case configKeyOIDCIssuer, configKeyOIDCClientID, configKeyOIDCClientSecret:
 		return true
 	default:
 		return false

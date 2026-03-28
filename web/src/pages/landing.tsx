@@ -1,4 +1,5 @@
 import { Link, useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -6,6 +7,19 @@ import { useBranding } from "@/hooks/use-branding";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { api, getErrorMessage } from "@/lib/api";
+import { toast } from "sonner";
+import type { OIDCStatusPayload } from "@/types";
 
 export default function LandingPage() {
   const { isAuthenticated, signIn } = useAuth();
@@ -13,6 +27,58 @@ export default function LandingPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const ref = searchParams.get("ref") ?? undefined;
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [readOnlyPrompt, setReadOnlyPrompt] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<OIDCStatusPayload | null>(null);
+  const [oidcIssuer, setOidcIssuer] = useState("");
+  const [oidcClientID, setOidcClientID] = useState("");
+  const [oidcClientSecret, setOidcClientSecret] = useState("");
+
+  const openOIDCDialog = (runtime: OIDCStatusPayload, readOnly: boolean) => {
+    setStatus(runtime);
+    setReadOnlyPrompt(readOnly);
+    setOidcIssuer(runtime.issuer ?? "");
+    setOidcClientID(runtime.client_id ?? "");
+    setOidcClientSecret("");
+    setDialogOpen(true);
+  };
+
+  const handleLoginClick = async () => {
+    try {
+      const res = await api.getOIDCStatus();
+      const runtime = res.data;
+      if (runtime.configured) {
+        signIn(ref);
+        return;
+      }
+      if (runtime.setup_allowed) {
+        openOIDCDialog(runtime, false);
+        return;
+      }
+      openOIDCDialog(runtime, true);
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
+    }
+  };
+
+  const submitOIDCSetup = async () => {
+    setSubmitting(true);
+    try {
+      await api.bootstrapOIDCConfig({
+        oidc_issuer: oidcIssuer,
+        oidc_client_id: oidcClientID,
+        oidc_client_secret: oidcClientSecret,
+      });
+      toast.success(t("oidcSetup.saved"));
+      setDialogOpen(false);
+      signIn(ref);
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -32,7 +98,7 @@ export default function LandingPage() {
               <Link to="/dashboard">{t("landing.dashboard")}</Link>
             </Button>
           ) : (
-            <Button onClick={() => signIn(ref)} className="bg-[#2D5AF6] hover:bg-[#2348D4] text-white">{t("common.signIn")}</Button>
+            <Button onClick={handleLoginClick} className="bg-[#2D5AF6] hover:bg-[#2348D4] text-white">{t("common.signIn")}</Button>
           )}
         </div>
       </header>
@@ -54,7 +120,7 @@ export default function LandingPage() {
               <Link to="/domains">{t("landing.browseDomains")}</Link>
             </Button>
           ) : (
-            <Button size="lg" onClick={() => signIn(ref)} className="bg-[#2D5AF6] hover:bg-[#2348D4] text-white">
+            <Button size="lg" onClick={handleLoginClick} className="bg-[#2D5AF6] hover:bg-[#2348D4] text-white">
               {t("landing.getStarted")}
             </Button>
           )}
@@ -96,6 +162,81 @@ export default function LandingPage() {
           <SiteFooter withBorder={false} centered />
         </div>
       </footer>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{readOnlyPrompt ? t("oidcSetup.unavailableTitle") : t("oidcSetup.title")}</DialogTitle>
+            <DialogDescription>
+              {readOnlyPrompt ? t("oidcSetup.unavailableDesc") : t("oidcSetup.desc")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {readOnlyPrompt ? (
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>{t("oidcSetup.contactAdmin")}</p>
+              {(status?.missing_fields?.length ?? 0) > 0 && (
+                <p>{t("oidcSetup.missingFields", { fields: status?.missing_fields.join(", ") })}</p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t("oidcSetup.issuer")}</Label>
+                <Input
+                  value={oidcIssuer}
+                  onChange={(e) => setOidcIssuer(e.target.value)}
+                  placeholder="https://issuer.example.com"
+                  disabled={status?.issuer_env_locked}
+                />
+                {status?.issuer_env_locked && (
+                  <p className="text-xs text-muted-foreground">{t("oidcSetup.lockedByEnv")}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>{t("oidcSetup.clientId")}</Label>
+                <Input
+                  value={oidcClientID}
+                  onChange={(e) => setOidcClientID(e.target.value)}
+                  placeholder="client-id"
+                  disabled={status?.client_id_env_locked}
+                />
+                {status?.client_id_env_locked && (
+                  <p className="text-xs text-muted-foreground">{t("oidcSetup.lockedByEnv")}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>{t("oidcSetup.clientSecret")}</Label>
+                <Input
+                  type="password"
+                  value={oidcClientSecret}
+                  onChange={(e) => setOidcClientSecret(e.target.value)}
+                  placeholder="client-secret"
+                  disabled={status?.client_secret_env_locked}
+                />
+                {status?.client_secret_env_locked && (
+                  <p className="text-xs text-muted-foreground">{t("oidcSetup.lockedByEnv")}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            {readOnlyPrompt ? (
+              <Button onClick={() => setDialogOpen(false)}>{t("common.close")}</Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  {t("common.cancel")}
+                </Button>
+                <Button onClick={submitOIDCSetup} disabled={submitting}>
+                  {submitting ? t("common.saving") : t("oidcSetup.saveAndLogin")}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

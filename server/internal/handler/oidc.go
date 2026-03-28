@@ -29,20 +29,20 @@ import (
 )
 
 type OIDCHandler struct {
-	repo        *repository.Repository
-	cfg         *config.Config
-	provider    *oidc.ProviderConfig
-	urlResolver *URLResolver
+	repo         *repository.Repository
+	cfg          *config.Config
+	oidcResolver *OIDCRuntimeResolver
+	urlResolver  *URLResolver
 }
 
 const firstUserAdminLockKey int64 = 19490331
 
-func NewOIDCHandler(repo *repository.Repository, cfg *config.Config, provider *oidc.ProviderConfig) *OIDCHandler {
+func NewOIDCHandler(repo *repository.Repository, cfg *config.Config) *OIDCHandler {
 	return &OIDCHandler{
-		repo:        repo,
-		cfg:         cfg,
-		provider:    provider,
-		urlResolver: NewURLResolver(repo, cfg),
+		repo:         repo,
+		cfg:          cfg,
+		oidcResolver: NewOIDCRuntimeResolver(repo, cfg),
+		urlResolver:  NewURLResolver(repo, cfg),
 	}
 }
 
@@ -66,6 +66,17 @@ func (h *OIDCHandler) Login(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "failed to resolve runtime URL")
 		return
 	}
+	runtimeState, provider, err := h.oidcResolver.ResolveProvider(c.Request.Context())
+	if err != nil {
+		if errors.Is(err, errOIDCNotConfigured) {
+			response.ErrorWithKey(c, http.StatusServiceUnavailable, "oidc not configured", "error.oidcNotConfigured")
+			return
+		}
+		log.Printf("failed to resolve oidc provider: %v", err)
+		response.ErrorWithKey(c, http.StatusBadGateway, "failed to resolve oidc provider", "error.oidcDiscoveryFailed")
+		return
+	}
+
 	callbackURL := strings.TrimRight(urlState.BackendURL, "/") + "/api/v1/auth/callback"
 	secureCookie := strings.HasPrefix(urlState.FrontendURL, "https://")
 
@@ -82,8 +93,8 @@ func (h *OIDCHandler) Login(c *gin.Context) {
 	}
 
 	authURL := fmt.Sprintf("%s?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
-		h.provider.AuthorizationEndpoint,
-		url.QueryEscape(h.cfg.OIDCClientID),
+		provider.AuthorizationEndpoint,
+		url.QueryEscape(runtimeState.ClientID),
 		url.QueryEscape(callbackURL),
 		url.QueryEscape("openid email profile"),
 		url.QueryEscape(state),
@@ -97,6 +108,16 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	if err != nil {
 		log.Printf("failed to resolve runtime URLs: %v", err)
 		c.String(http.StatusInternalServerError, "failed to resolve runtime URL")
+		return
+	}
+	runtimeState, provider, err := h.oidcResolver.ResolveProvider(c.Request.Context())
+	if err != nil {
+		if errors.Is(err, errOIDCNotConfigured) {
+			c.String(http.StatusServiceUnavailable, "oidc not configured")
+			return
+		}
+		log.Printf("failed to resolve oidc provider: %v", err)
+		c.String(http.StatusBadGateway, "authentication failed")
 		return
 	}
 	loginURL := strings.TrimRight(urlState.BackendURL, "/") + "/api/v1/auth/login"
@@ -122,7 +143,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	h.setSessionCookie(c, "hl6_state", "", -1, secureCookie)
 
 	// 2. Exchange code for tokens
-	tokenResp, err := h.exchangeCode(code, callbackURL)
+	tokenResp, err := h.exchangeCode(provider, runtimeState, code, callbackURL)
 	if err != nil {
 		log.Printf("token exchange failed: %v", err)
 		c.String(http.StatusBadGateway, "authentication failed")
@@ -138,7 +159,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	}
 
 	// Fetch JWKS for verification
-	keySet, err := jwk.Fetch(c.Request.Context(), h.provider.JwksURI)
+	keySet, err := jwk.Fetch(c.Request.Context(), provider.JwksURI)
 	if err != nil {
 		log.Printf("failed to fetch JWKS: %v", err)
 		c.String(http.StatusBadGateway, "authentication failed")
@@ -147,8 +168,8 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 	idToken, err := jwt.Parse([]byte(idTokenStr),
 		jwt.WithKeySet(keySet),
-		jwt.WithIssuer(h.provider.Issuer),
-		jwt.WithAudience(h.cfg.OIDCClientID),
+		jwt.WithIssuer(provider.Issuer),
+		jwt.WithAudience(runtimeState.ClientID),
 		jwt.WithAcceptableSkew(2*time.Minute),
 	)
 	if err != nil {
@@ -162,7 +183,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	audiences := idToken.Audience()
 	if len(audiences) > 1 {
 		azp, _ := claims["azp"].(string)
-		if azp == "" || azp != h.cfg.OIDCClientID {
+		if azp == "" || azp != runtimeState.ClientID {
 			log.Printf("invalid id_token azp: %v", claims["azp"])
 			c.String(http.StatusBadGateway, "authentication failed")
 			return
@@ -310,9 +331,15 @@ func (h *OIDCHandler) Logout(c *gin.Context) {
 	secureCookie := strings.HasPrefix(urlState.FrontendURL, "https://")
 	h.setSessionCookie(c, "hl6_session", "", -1, secureCookie)
 
-	if h.provider.EndSessionEndpoint != "" {
+	_, provider, err := h.oidcResolver.ResolveProvider(c.Request.Context())
+	if err != nil {
+		response.OK(c, gin.H{"logout_url": urlState.FrontendURL})
+		return
+	}
+
+	if provider.EndSessionEndpoint != "" {
 		logoutURL := fmt.Sprintf("%s?post_logout_redirect_uri=%s",
-			h.provider.EndSessionEndpoint,
+			provider.EndSessionEndpoint,
 			url.QueryEscape(urlState.FrontendURL),
 		)
 		response.OK(c, gin.H{"logout_url": logoutURL})
@@ -321,16 +348,16 @@ func (h *OIDCHandler) Logout(c *gin.Context) {
 	}
 }
 
-func (h *OIDCHandler) exchangeCode(code, redirectURI string) (map[string]interface{}, error) {
+func (h *OIDCHandler) exchangeCode(provider *oidc.ProviderConfig, runtimeState *OIDCRuntimeState, code, redirectURI string) (map[string]interface{}, error) {
 	data := url.Values{
 		"grant_type":    {"authorization_code"},
 		"code":          {code},
 		"redirect_uri":  {redirectURI},
-		"client_id":     {h.cfg.OIDCClientID},
-		"client_secret": {h.cfg.OIDCClientSecret},
+		"client_id":     {runtimeState.ClientID},
+		"client_secret": {runtimeState.ClientSecret},
 	}
 
-	resp, err := http.Post(h.provider.TokenEndpoint, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
+	resp, err := http.Post(provider.TokenEndpoint, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("token request failed: %w", err)
 	}

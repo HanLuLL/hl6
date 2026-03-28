@@ -1,12 +1,24 @@
 # OIDC 提供商配置指南
 
-HL6 兼容所有标准 OIDC 提供商。启动时会通过 `/.well-known/openid-configuration` 自动发现 endpoint，你只需配置三个环境变量：
+HL6 兼容所有标准 OIDC 提供商。登录前会通过 `/.well-known/openid-configuration` 自动发现 endpoint。
+
+推荐通过环境变量配置：
 
 ```env
 OIDC_ISSUER=https://your-oidc-provider.example.com
 OIDC_CLIENT_ID=your-client-id
 OIDC_CLIENT_SECRET=your-client-secret
 ```
+
+也支持在管理员设置页写入数据库配置（适合不方便改 env 的场景）。运行时优先级为字段级：
+
+1. 环境变量（`OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET`）
+2. 数据库配置（管理员设置页）
+
+当环境变量与数据库都缺失时：
+
+- 如果系统里还没有任何用户，登录页会弹出 OIDC 首配向导；
+- 如果系统里已有用户，匿名首配入口会关闭，需管理员通过环境变量或后台设置恢复。
 
 **回调地址（所有提供商通用）：**
 

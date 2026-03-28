@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -14,7 +13,6 @@ import (
 	"gorm.io/gorm"
 	"hl6-server/internal/config"
 	"hl6-server/internal/model"
-	"hl6-server/internal/oidc"
 	"hl6-server/internal/router"
 )
 
@@ -78,14 +76,7 @@ func main() {
 	seedDefaults(db)
 	bootstrapSessionSecret(db, cfg)
 
-	// OIDC Discovery
-	provider, err := oidc.Discover(context.Background(), cfg.OIDCIssuer)
-	if err != nil {
-		log.Fatal("OIDC discovery failed: ", err)
-	}
-	log.Printf("OIDC provider discovered: issuer=%s", provider.Issuer)
-
-	r := router.Setup(cfg, db, provider)
+	r := router.Setup(cfg, db)
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("Server starting on %s", addr)
 	if err := r.Run(addr); err != nil {

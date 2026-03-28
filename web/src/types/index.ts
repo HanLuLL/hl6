@@ -212,7 +212,26 @@ export interface AdminURLRuntime {
   confirmed: boolean;
 }
 
+export interface AdminOIDCRuntime {
+  configured: boolean;
+  missing_fields: string[];
+  issuer: string;
+  client_id: string;
+  issuer_source: "env" | "db" | "none";
+  client_id_source: "env" | "db" | "none";
+  client_secret_source: "env" | "db" | "none";
+  issuer_env_locked: boolean;
+  client_id_env_locked: boolean;
+  client_secret_env_locked: boolean;
+  client_secret_configured: boolean;
+}
+
 export interface AdminConfigPayload {
   values: Record<string, string>;
   url_runtime: AdminURLRuntime;
+  oidc_runtime: AdminOIDCRuntime;
+}
+
+export interface OIDCStatusPayload extends AdminOIDCRuntime {
+  setup_allowed: boolean;
 }
