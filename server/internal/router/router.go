@@ -54,6 +54,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	authed.GET("/domains", domainH.List)
 
 	authed.GET("/subdomains", subdomainH.List)
+	authed.GET("/subdomains/settings", subdomainH.Settings)
 	authed.POST("/subdomains", subdomainH.Claim)
 	authed.GET("/subdomains/:id", subdomainH.Get)
 	authed.DELETE("/subdomains/:id", subdomainH.Release)

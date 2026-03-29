@@ -3,6 +3,11 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { api, getErrorMessage } from "@/lib/api";
 
+const DEFAULT_SUBDOMAIN_SETTINGS = {
+  min_length: 1,
+  max_length: 63,
+};
+
 export function useDomains() {
   return useQuery({
     queryKey: ["domains"],
@@ -22,6 +27,18 @@ export function useSubdomains() {
       return res.data;
     },
     staleTime: 30_000,
+  });
+}
+
+export function useSubdomainSettings() {
+  return useQuery({
+    queryKey: ["subdomain-settings"],
+    queryFn: async () => {
+      const res = await api.getSubdomainSettings();
+      return res.data;
+    },
+    staleTime: 30_000,
+    initialData: DEFAULT_SUBDOMAIN_SETTINGS,
   });
 }
 

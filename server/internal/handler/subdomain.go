@@ -46,6 +46,18 @@ func (h *SubdomainHandler) List(c *gin.Context) {
 	response.OK(c, subs)
 }
 
+func (h *SubdomainHandler) Settings(c *gin.Context) {
+	settings, err := loadSubdomainLengthSettings(h.repo)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load subdomain length settings", "error.failedToGetConfig")
+		return
+	}
+	response.OK(c, gin.H{
+		"min_length": settings.MinLength,
+		"max_length": settings.MaxLength,
+	})
+}
+
 func (h *SubdomainHandler) Get(c *gin.Context) {
 	user := ctxutil.GetUser(c)
 	if user == nil {
@@ -92,7 +104,12 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusForbidden, "subdomain cannot be claimed", "error.subdomainNotClaimable")
 		return
 	}
-	if err := validator.ValidateSubdomainName(body.Name); err != nil {
+	lengthSettings, err := loadSubdomainLengthSettings(h.repo)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load subdomain length settings", "error.failedToGetConfig")
+		return
+	}
+	if err := validator.ValidateSubdomainName(body.Name, lengthSettings.MinLength, lengthSettings.MaxLength); err != nil {
 		if ve, ok := err.(*validator.ValidationError); ok {
 			response.ErrorWithKey(c, http.StatusBadRequest, ve.Message, ve.Key)
 		} else {

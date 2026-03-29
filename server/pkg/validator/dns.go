@@ -15,11 +15,31 @@ type ValidationError struct {
 
 func (e *ValidationError) Error() string { return e.Message }
 
-var subdomainRegex = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
-
-func ValidateSubdomainName(name string) error {
-	name = strings.ToLower(name)
-	if !subdomainRegex.MatchString(name) {
+func ValidateSubdomainName(name string, minLength, maxLength int) error {
+	name = strings.ToLower(strings.TrimSpace(name))
+	if len(name) < minLength || len(name) > maxLength {
+		return &ValidationError{
+			Message: fmt.Sprintf("invalid subdomain length: must be between %d and %d characters", minLength, maxLength),
+			Key:     "error.invalidSubdomainLength",
+		}
+	}
+	for i := 0; i < len(name); i++ {
+		ch := name[i]
+		if ch >= 'a' && ch <= 'z' {
+			continue
+		}
+		if ch >= '0' && ch <= '9' {
+			continue
+		}
+		if ch == '-' {
+			if i == 0 || i == len(name)-1 {
+				return &ValidationError{
+					Message: "invalid subdomain name: must not start or end with hyphen",
+					Key:     "error.invalidSubdomainName",
+				}
+			}
+			continue
+		}
 		return &ValidationError{
 			Message: "invalid subdomain name: must contain only lowercase letters, numbers, and hyphens",
 			Key:     "error.invalidSubdomainName",

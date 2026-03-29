@@ -5,15 +5,29 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"gorm.io/gorm"
 	"hl6-server/internal/repository"
 )
 
-const configKeyReservedSubdomainPrefixes = "reserved_subdomain_prefixes"
+const (
+	configKeyReservedSubdomainPrefixes = "reserved_subdomain_prefixes"
+	configKeySubdomainMinLength        = "subdomain_min_length"
+	configKeySubdomainMaxLength        = "subdomain_max_length"
+	defaultSubdomainMinLength          = 1
+	defaultSubdomainMaxLength          = 63
+	minAllowedSubdomainLength          = 1
+	maxAllowedSubdomainLength          = 63
+)
 
 var reservedSubdomainPrefixPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
+
+type subdomainLengthSettings struct {
+	MinLength int `json:"min_length"`
+	MaxLength int `json:"max_length"`
+}
 
 func loadReservedSubdomainPrefixes(repo *repository.Repository) ([]string, error) {
 	raw, err := repo.GetSystemConfig(configKeyReservedSubdomainPrefixes)
@@ -32,6 +46,57 @@ func saveReservedSubdomainPrefixes(repo *repository.Repository, prefixes []strin
 		return err
 	}
 	return repo.SetSystemConfig(configKeyReservedSubdomainPrefixes, string(encoded))
+}
+
+func defaultLengthSettings() subdomainLengthSettings {
+	return subdomainLengthSettings{
+		MinLength: defaultSubdomainMinLength,
+		MaxLength: defaultSubdomainMaxLength,
+	}
+}
+
+func validateLengthSettings(minLength, maxLength int) error {
+	if minLength < minAllowedSubdomainLength || maxLength > maxAllowedSubdomainLength || minLength > maxLength {
+		return fmt.Errorf("invalid subdomain length settings: min=%d max=%d", minLength, maxLength)
+	}
+	return nil
+}
+
+func loadSubdomainLengthSettings(repo *repository.Repository) (subdomainLengthSettings, error) {
+	configs, err := repo.GetSystemConfigsByKeys([]string{
+		configKeySubdomainMinLength,
+		configKeySubdomainMaxLength,
+	})
+	if err != nil {
+		return defaultLengthSettings(), err
+	}
+
+	settings := defaultLengthSettings()
+	if rawMin, ok := configs[configKeySubdomainMinLength]; ok {
+		if parsed, parseErr := strconv.Atoi(strings.TrimSpace(rawMin)); parseErr == nil {
+			settings.MinLength = parsed
+		}
+	}
+	if rawMax, ok := configs[configKeySubdomainMaxLength]; ok {
+		if parsed, parseErr := strconv.Atoi(strings.TrimSpace(rawMax)); parseErr == nil {
+			settings.MaxLength = parsed
+		}
+	}
+
+	if err := validateLengthSettings(settings.MinLength, settings.MaxLength); err != nil {
+		return defaultLengthSettings(), nil
+	}
+	return settings, nil
+}
+
+func saveSubdomainLengthSettings(repo *repository.Repository, settings subdomainLengthSettings) error {
+	if err := validateLengthSettings(settings.MinLength, settings.MaxLength); err != nil {
+		return err
+	}
+	if err := repo.SetSystemConfig(configKeySubdomainMinLength, strconv.Itoa(settings.MinLength)); err != nil {
+		return err
+	}
+	return repo.SetSystemConfig(configKeySubdomainMaxLength, strconv.Itoa(settings.MaxLength))
 }
 
 func parseReservedSubdomainPrefixes(raw string) []string {

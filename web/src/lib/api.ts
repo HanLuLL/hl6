@@ -22,6 +22,7 @@ import type {
   AdminDNSRecord,
   AdminClaimedSubdomain,
   ReservedSubdomainPrefixSettings,
+  SubdomainLengthSettings,
   AdminConfigPayload,
   OIDCStatusPayload,
 } from "@/types";
@@ -169,6 +170,7 @@ export const api = {
 
   // Subdomains
   listSubdomains: () => request<ApiResponse<Subdomain[]>>("/subdomains"),
+  getSubdomainSettings: () => request<ApiResponse<SubdomainLengthSettings>>("/subdomains/settings"),
   getSubdomain: (id: number) => request<ApiResponse<Subdomain>>(`/subdomains/${id}`),
   claimSubdomain: (data: { domain_id: number; name: string }) =>
     request<ApiResponse<Subdomain>>("/subdomains", { method: "POST", body: JSON.stringify(data) }),
@@ -205,7 +207,7 @@ export const api = {
     request<ApiResponse<DomainWithGroupAccess[]>>("/admin/domains-full"),
   adminGetReservedSubdomainPrefixes: () =>
     request<ApiResponse<ReservedSubdomainPrefixSettings>>("/admin/domains/reserved-prefixes"),
-  adminUpdateReservedSubdomainPrefixes: (data: { prefixes: string[] }) =>
+  adminUpdateReservedSubdomainPrefixes: (data: { prefixes: string[]; min_length: number; max_length: number }) =>
     request<ApiResponse<ReservedSubdomainPrefixSettings>>("/admin/domains/reserved-prefixes", { method: "PUT", body: JSON.stringify(data) }),
   adminListCloudflareZones: (accountId: number) =>
     request<ApiResponse<CloudflareZone[]>>(`/admin/cloudflare/accounts/${accountId}/zones`),

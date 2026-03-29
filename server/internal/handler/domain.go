@@ -266,12 +266,23 @@ func (h *DomainHandler) AdminGetReservedPrefixes(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load reserved subdomain prefixes", "error.failedToGetConfig")
 		return
 	}
-	response.OK(c, gin.H{"prefixes": prefixes})
+	lengthSettings, err := loadSubdomainLengthSettings(h.repo)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load subdomain length settings", "error.failedToGetConfig")
+		return
+	}
+	response.OK(c, gin.H{
+		"prefixes":   prefixes,
+		"min_length": lengthSettings.MinLength,
+		"max_length": lengthSettings.MaxLength,
+	})
 }
 
 func (h *DomainHandler) AdminUpdateReservedPrefixes(c *gin.Context) {
 	var body struct {
-		Prefixes []string `json:"prefixes"`
+		Prefixes  []string `json:"prefixes"`
+		MinLength int      `json:"min_length" binding:"required"`
+		MaxLength int      `json:"max_length" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
@@ -283,15 +294,29 @@ func (h *DomainHandler) AdminUpdateReservedPrefixes(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid reserved prefix", "error.invalidReservedPrefix")
 		return
 	}
+	lengthSettings := subdomainLengthSettings{
+		MinLength: body.MinLength,
+		MaxLength: body.MaxLength,
+	}
+	if err := validateLengthSettings(lengthSettings.MinLength, lengthSettings.MaxLength); err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid subdomain length settings", "error.invalidSubdomainLengthConfig")
+		return
+	}
 
 	if err := saveReservedSubdomainPrefixes(h.repo, normalized); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to save reserved subdomain prefixes", "error.failedToUpdateConfig")
 		return
 	}
+	if err := saveSubdomainLengthSettings(h.repo, lengthSettings); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to save subdomain length settings", "error.failedToUpdateConfig")
+		return
+	}
 
 	if admin := ctxutil.GetUser(c); admin != nil {
 		details, _ := json.Marshal(map[string]interface{}{
-			"prefixes": normalized,
+			"prefixes":   normalized,
+			"min_length": lengthSettings.MinLength,
+			"max_length": lengthSettings.MaxLength,
 		})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:   admin.ID,
@@ -301,7 +326,11 @@ func (h *DomainHandler) AdminUpdateReservedPrefixes(c *gin.Context) {
 		})
 	}
 
-	response.OK(c, gin.H{"prefixes": normalized})
+	response.OK(c, gin.H{
+		"prefixes":   normalized,
+		"min_length": lengthSettings.MinLength,
+		"max_length": lengthSettings.MaxLength,
+	})
 }
 
 func (h *DomainHandler) AdminDelete(c *gin.Context) {

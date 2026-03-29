@@ -131,18 +131,21 @@ function DomainsContent() {
     staleTime: 30_000,
   });
 
-  const { data: reservedPrefixes } = useQuery({
+  const { data: reservedSettings } = useQuery({
     queryKey: ["admin-reserved-subdomain-prefixes"],
     queryFn: async () => {
       const res = await api.adminGetReservedSubdomainPrefixes();
-      return res.data.prefixes;
+      return res.data;
     },
     staleTime: 30_000,
   });
 
   const [showAdd, setShowAdd] = useState(false);
   const [showReservedPrefixes, setShowReservedPrefixes] = useState(false);
+  const [settingsTab, setSettingsTab] = useState("prefixes");
   const [reservedPrefixesText, setReservedPrefixesText] = useState("");
+  const [subdomainMinLength, setSubdomainMinLength] = useState("1");
+  const [subdomainMaxLength, setSubdomainMaxLength] = useState("63");
   const [editDomain, setEditDomain] = useState<DomainWithGroupAccess | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<CloudflareAccount | null>(null);
   const [selectedZone, setSelectedZone] = useState<CloudflareZone | null>(null);
@@ -211,12 +214,15 @@ function DomainsContent() {
   });
 
   const updateReservedPrefixesMutation = useMutation({
-    mutationFn: (prefixes: string[]) => api.adminUpdateReservedSubdomainPrefixes({ prefixes }),
+    mutationFn: ({ prefixes, minLength, maxLength }: { prefixes: string[]; minLength: number; maxLength: number }) =>
+      api.adminUpdateReservedSubdomainPrefixes({ prefixes, min_length: minLength, max_length: maxLength }),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["admin-reserved-subdomain-prefixes"] });
       setReservedPrefixesText(res.data.prefixes.join("\n"));
+      setSubdomainMinLength(String(res.data.min_length));
+      setSubdomainMaxLength(String(res.data.max_length));
       setShowReservedPrefixes(false);
-      toast.success(t("adminDomains.reservedPrefixesSaved"));
+      toast.success(t("adminDomains.settingsSaved"));
     },
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
@@ -264,7 +270,10 @@ function DomainsContent() {
           variant="outline"
           size="icon"
           onClick={() => {
-            setReservedPrefixesText((reservedPrefixes ?? []).join("\n"));
+            setReservedPrefixesText((reservedSettings?.prefixes ?? []).join("\n"));
+            setSubdomainMinLength(String(reservedSettings?.min_length ?? 1));
+            setSubdomainMaxLength(String(reservedSettings?.max_length ?? 63));
+            setSettingsTab("prefixes");
             setShowReservedPrefixes(true);
           }}
           title={t("adminDomains.reservedPrefixes")}
@@ -413,27 +422,61 @@ function DomainsContent() {
       <Dialog open={showReservedPrefixes} onOpenChange={(open) => {
         setShowReservedPrefixes(open);
         if (open) {
-          setReservedPrefixesText((reservedPrefixes ?? []).join("\n"));
+          setReservedPrefixesText((reservedSettings?.prefixes ?? []).join("\n"));
+          setSubdomainMinLength(String(reservedSettings?.min_length ?? 1));
+          setSubdomainMaxLength(String(reservedSettings?.max_length ?? 63));
+          setSettingsTab("prefixes");
         }
       }}>
-        <DialogContent className="sm:max-w-md" aria-describedby="reserved-prefixes-desc">
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto" aria-describedby="reserved-prefixes-desc">
           <DialogHeader>
-            <DialogTitle>{t("adminDomains.reservedPrefixes")}</DialogTitle>
+            <DialogTitle>{t("adminDomains.settingsTitle")}</DialogTitle>
             <DialogDescription id="reserved-prefixes-desc">
-              {t("adminDomains.reservedPrefixesDescription")}
+              {t("adminDomains.settingsDescription")}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Textarea
-              value={reservedPrefixesText}
-              onChange={(e) => setReservedPrefixesText(e.target.value)}
-              placeholder={t("adminDomains.reservedPrefixesPlaceholder")}
-              className="min-h-44 font-mono text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
-              {t("adminDomains.reservedPrefixesHint")}
-            </p>
-          </div>
+          <Tabs value={settingsTab} onValueChange={setSettingsTab}>
+            <TabsList variant="line" className="w-full">
+              <TabsTrigger value="prefixes">{t("adminDomains.reservedPrefixes")}</TabsTrigger>
+              <TabsTrigger value="length">{t("adminDomains.subdomainLength")}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="prefixes" className="space-y-2 py-2">
+              <Textarea
+                value={reservedPrefixesText}
+                onChange={(e) => setReservedPrefixesText(e.target.value)}
+                placeholder={t("adminDomains.reservedPrefixesPlaceholder")}
+                className="min-h-44 max-h-[40vh] overflow-y-auto font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("adminDomains.reservedPrefixesHint")}
+              </p>
+            </TabsContent>
+            <TabsContent value="length" className="space-y-3 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="subdomain-min-length">{t("adminDomains.subdomainMinLength")}</Label>
+                <Input
+                  id="subdomain-min-length"
+                  type="number"
+                  min={1}
+                  max={63}
+                  value={subdomainMinLength}
+                  onChange={(e) => setSubdomainMinLength(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="subdomain-max-length">{t("adminDomains.subdomainMaxLength")}</Label>
+                <Input
+                  id="subdomain-max-length"
+                  type="number"
+                  min={1}
+                  max={63}
+                  value={subdomainMaxLength}
+                  onChange={(e) => setSubdomainMaxLength(e.target.value)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">{t("adminDomains.subdomainLengthHint")}</p>
+            </TabsContent>
+          </Tabs>
           <DialogFooter>
             <Button
               variant="outline"
@@ -444,11 +487,23 @@ function DomainsContent() {
             </Button>
             <Button
               onClick={() => {
+                const minLength = parseInt(subdomainMinLength, 10);
+                const maxLength = parseInt(subdomainMaxLength, 10);
+                if (
+                  Number.isNaN(minLength) ||
+                  Number.isNaN(maxLength) ||
+                  minLength < 1 ||
+                  maxLength > 63 ||
+                  minLength > maxLength
+                ) {
+                  toast.error(t("adminDomains.invalidSubdomainLengthRange"));
+                  return;
+                }
                 const prefixes = reservedPrefixesText
                   .split("\n")
                   .map((line) => line.trim())
                   .filter(Boolean);
-                updateReservedPrefixesMutation.mutate(prefixes);
+                updateReservedPrefixesMutation.mutate({ prefixes, minLength, maxLength });
               }}
               disabled={updateReservedPrefixesMutation.isPending}
               data-dialog-primary="true"

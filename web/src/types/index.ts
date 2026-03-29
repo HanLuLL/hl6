@@ -213,6 +213,13 @@ export interface AdminClaimedSubdomain {
 
 export interface ReservedSubdomainPrefixSettings {
   prefixes: string[];
+  min_length: number;
+  max_length: number;
+}
+
+export interface SubdomainLengthSettings {
+  min_length: number;
+  max_length: number;
 }
 
 export interface BrandingResponse {
