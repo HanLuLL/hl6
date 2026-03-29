@@ -212,7 +212,7 @@ function DialogContent({
     onKeyDownCapture?.(event)
     if (event.defaultPrevented || !enableHotkeys) return
     if (!(event.metaKey || event.ctrlKey) || event.key !== "Enter") return
-    if (event.isComposing || event.nativeEvent.isComposing || event.repeat) return
+    if (event.nativeEvent.isComposing || event.repeat) return
 
     const content = event.currentTarget
     const firstMissingRequired = findFirstMissingRequiredField(content)
