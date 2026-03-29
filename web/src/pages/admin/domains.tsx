@@ -259,7 +259,7 @@ function DomainsContent() {
             </TableHeader>
             <TableBody>
               {domains?.map((domain) => (
-                <TableRow key={domain.id}>
+                <TableRow key={domain.id} className="cursor-pointer" onClick={() => setEditDomain(domain)}>
                   <TableCell className="font-medium">{domain.name}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">{domain.cloudflare_zone_id.slice(0, 12)}...</TableCell>
                   <TableCell>
@@ -279,10 +279,7 @@ function DomainsContent() {
                       {domain.is_active ? t("common.active") : t("common.inactive")}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => {
-                      setEditDomain(domain);
-                    }}>{t("common.edit")}</Button>
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
                       size="sm"

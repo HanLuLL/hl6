@@ -276,8 +276,6 @@ function UsersContent() {
                 <TableHead>{t("adminUsers.email")}</TableHead>
                 <TableHead>{t("adminUsers.credits")}</TableHead>
                 <TableHead>{t("adminUsers.group")}</TableHead>
-                <TableHead>{t("adminUsers.role")}</TableHead>
-                <TableHead>{t("adminUsers.status")}</TableHead>
                 <TableHead>{t("adminUsers.joined")}</TableHead>
                 <TableHead>{t("adminUsers.invitedBy")}</TableHead>
                 <TableHead className="text-right">{t("adminUsers.actions")}</TableHead>
@@ -289,8 +287,6 @@ function UsersContent() {
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-4 w-36" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
@@ -316,14 +312,6 @@ function UsersContent() {
                     <TableCell className="text-sm text-muted-foreground">{formatCredits(user.credits)}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{user.group?.name ?? "-"}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.is_banned ? "destructive" : "outline"}>
-                        {user.is_banned ? t("adminUsers.statusBanned") : t("adminUsers.statusActive")}
-                      </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(user.created_at)}
@@ -369,9 +357,6 @@ function UsersContent() {
                         >
                           {t("adminUsers.banUser")}
                         </Button>
-                      )}
-                      {user.id === currentUser?.id && (
-                        <Badge variant="outline">{t("adminUsers.currentUser")}</Badge>
                       )}
                     </TableCell>
                   </TableRow>
