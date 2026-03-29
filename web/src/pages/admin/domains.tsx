@@ -43,7 +43,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage, ApiError } from "@/lib/api";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CloudflareZone, CloudflareAccount, DomainWithGroupAccess, UserGroup } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -131,7 +131,18 @@ function DomainsContent() {
     staleTime: 30_000,
   });
 
+  const { data: reservedPrefixes } = useQuery({
+    queryKey: ["admin-reserved-subdomain-prefixes"],
+    queryFn: async () => {
+      const res = await api.adminGetReservedSubdomainPrefixes();
+      return res.data.prefixes;
+    },
+    staleTime: 30_000,
+  });
+
   const [showAdd, setShowAdd] = useState(false);
+  const [showReservedPrefixes, setShowReservedPrefixes] = useState(false);
+  const [reservedPrefixesText, setReservedPrefixesText] = useState("");
   const [editDomain, setEditDomain] = useState<DomainWithGroupAccess | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<CloudflareAccount | null>(null);
   const [selectedZone, setSelectedZone] = useState<CloudflareZone | null>(null);
@@ -199,6 +210,17 @@ function DomainsContent() {
     },
   });
 
+  const updateReservedPrefixesMutation = useMutation({
+    mutationFn: (prefixes: string[]) => api.adminUpdateReservedSubdomainPrefixes({ prefixes }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-reserved-subdomain-prefixes"] });
+      setReservedPrefixesText(res.data.prefixes.join("\n"));
+      setShowReservedPrefixes(false);
+      toast.success(t("adminDomains.reservedPrefixesSaved"));
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -237,7 +259,19 @@ function DomainsContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => {
+            setReservedPrefixesText((reservedPrefixes ?? []).join("\n"));
+            setShowReservedPrefixes(true);
+          }}
+          title={t("adminDomains.reservedPrefixes")}
+          aria-label={t("adminDomains.reservedPrefixes")}
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
         <Button onClick={() => {
           setGroupAccess([]);
           setSelectedAccount(null);
@@ -370,6 +404,56 @@ function DomainsContent() {
               data-dialog-primary="true"
             >
               {createMutation.isPending ? t("common.creating") : t("common.create")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reserved Prefixes Dialog */}
+      <Dialog open={showReservedPrefixes} onOpenChange={(open) => {
+        setShowReservedPrefixes(open);
+        if (open) {
+          setReservedPrefixesText((reservedPrefixes ?? []).join("\n"));
+        }
+      }}>
+        <DialogContent className="sm:max-w-md" aria-describedby="reserved-prefixes-desc">
+          <DialogHeader>
+            <DialogTitle>{t("adminDomains.reservedPrefixes")}</DialogTitle>
+            <DialogDescription id="reserved-prefixes-desc">
+              {t("adminDomains.reservedPrefixesDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Textarea
+              value={reservedPrefixesText}
+              onChange={(e) => setReservedPrefixesText(e.target.value)}
+              placeholder={t("adminDomains.reservedPrefixesPlaceholder")}
+              className="min-h-44 font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("adminDomains.reservedPrefixesHint")}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowReservedPrefixes(false)}
+              disabled={updateReservedPrefixesMutation.isPending}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={() => {
+                const prefixes = reservedPrefixesText
+                  .split("\n")
+                  .map((line) => line.trim())
+                  .filter(Boolean);
+                updateReservedPrefixesMutation.mutate(prefixes);
+              }}
+              disabled={updateReservedPrefixesMutation.isPending}
+              data-dialog-primary="true"
+            >
+              {updateReservedPrefixesMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>

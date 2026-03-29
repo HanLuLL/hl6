@@ -81,6 +81,8 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.PUT("/domains/:id", domainH.AdminUpdate)
 	admin.DELETE("/domains/:id", domainH.AdminDelete)
 	admin.GET("/domains-full", domainH.AdminListDomainsFull)
+	admin.GET("/domains/reserved-prefixes", domainH.AdminGetReservedPrefixes)
+	admin.PUT("/domains/reserved-prefixes", domainH.AdminUpdateReservedPrefixes)
 	admin.GET("/cloudflare/accounts", cfAccountH.List)
 	admin.POST("/cloudflare/accounts", cfAccountH.Create)
 	admin.PUT("/cloudflare/accounts/:id", cfAccountH.Update)

@@ -83,6 +83,15 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 		return
 	}
 	body.Name = strings.ToLower(strings.TrimSpace(body.Name))
+	reservedPrefixes, err := loadReservedSubdomainPrefixes(h.repo)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load reserved subdomain prefixes", "error.databaseError")
+		return
+	}
+	if isReservedSubdomainPrefix(body.Name, reservedPrefixes) {
+		response.ErrorWithKey(c, http.StatusForbidden, "subdomain cannot be claimed", "error.subdomainNotClaimable")
+		return
+	}
 	if err := validator.ValidateSubdomainName(body.Name); err != nil {
 		if ve, ok := err.(*validator.ValidationError); ok {
 			response.ErrorWithKey(c, http.StatusBadRequest, ve.Message, ve.Key)

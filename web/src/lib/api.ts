@@ -21,6 +21,7 @@ import type {
   UserWithInviter,
   AdminDNSRecord,
   AdminClaimedSubdomain,
+  ReservedSubdomainPrefixSettings,
   AdminConfigPayload,
   OIDCStatusPayload,
 } from "@/types";
@@ -202,6 +203,10 @@ export const api = {
     request<ApiResponse<{ message: string }>>(`/admin/domains/${id}?force=${options?.force ?? false}&refund=${options?.refund ?? false}`, { method: "DELETE" }),
   adminListDomainsFull: () =>
     request<ApiResponse<DomainWithGroupAccess[]>>("/admin/domains-full"),
+  adminGetReservedSubdomainPrefixes: () =>
+    request<ApiResponse<ReservedSubdomainPrefixSettings>>("/admin/domains/reserved-prefixes"),
+  adminUpdateReservedSubdomainPrefixes: (data: { prefixes: string[] }) =>
+    request<ApiResponse<ReservedSubdomainPrefixSettings>>("/admin/domains/reserved-prefixes", { method: "PUT", body: JSON.stringify(data) }),
   adminListCloudflareZones: (accountId: number) =>
     request<ApiResponse<CloudflareZone[]>>(`/admin/cloudflare/accounts/${accountId}/zones`),
   adminGrantCredits: (data: { user_id: number; amount: number; description: string }) =>

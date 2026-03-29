@@ -211,6 +211,10 @@ export interface AdminClaimedSubdomain {
   created_at: string;
 }
 
+export interface ReservedSubdomainPrefixSettings {
+  prefixes: string[];
+}
+
 export interface BrandingResponse {
   name: string;
   logo_url: string | null;

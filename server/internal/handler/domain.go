@@ -260,6 +260,50 @@ func (h *DomainHandler) AdminListDomainsFull(c *gin.Context) {
 	response.OK(c, result)
 }
 
+func (h *DomainHandler) AdminGetReservedPrefixes(c *gin.Context) {
+	prefixes, err := loadReservedSubdomainPrefixes(h.repo)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load reserved subdomain prefixes", "error.failedToGetConfig")
+		return
+	}
+	response.OK(c, gin.H{"prefixes": prefixes})
+}
+
+func (h *DomainHandler) AdminUpdateReservedPrefixes(c *gin.Context) {
+	var body struct {
+		Prefixes []string `json:"prefixes"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
+		return
+	}
+
+	normalized, err := normalizeReservedSubdomainPrefixes(body.Prefixes)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid reserved prefix", "error.invalidReservedPrefix")
+		return
+	}
+
+	if err := saveReservedSubdomainPrefixes(h.repo, normalized); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to save reserved subdomain prefixes", "error.failedToUpdateConfig")
+		return
+	}
+
+	if admin := ctxutil.GetUser(c); admin != nil {
+		details, _ := json.Marshal(map[string]interface{}{
+			"prefixes": normalized,
+		})
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:   admin.ID,
+			Action:   "admin_update_reserved_subdomain_prefixes",
+			Resource: "system_config",
+			Details:  details,
+		})
+	}
+
+	response.OK(c, gin.H{"prefixes": normalized})
+}
+
 func (h *DomainHandler) AdminDelete(c *gin.Context) {
 	id, ok := helpers.ParseUintParam(c, "id")
 	if !ok {

@@ -17,26 +17,12 @@ func (e *ValidationError) Error() string { return e.Message }
 
 var subdomainRegex = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
 
-var reservedNames = map[string]bool{
-	"www": true, "mail": true, "ftp": true, "ns1": true, "ns2": true,
-	"smtp": true, "pop": true, "imap": true, "admin": true, "api": true,
-	"mx": true, "dns": true, "ns": true, "cpanel": true, "webmail": true,
-	"localhost": true, "autoconfig": true, "autodiscover": true,
-}
-
 func ValidateSubdomainName(name string) error {
 	name = strings.ToLower(name)
 	if !subdomainRegex.MatchString(name) {
 		return &ValidationError{
 			Message: "invalid subdomain name: must contain only lowercase letters, numbers, and hyphens",
 			Key:     "error.invalidSubdomainName",
-		}
-	}
-	if reservedNames[name] {
-		return &ValidationError{
-			Message: fmt.Sprintf("subdomain name '%s' is reserved", name),
-			Key:     "error.reservedSubdomain",
-			Params:  map[string]string{"name": name},
 		}
 	}
 	return nil
