@@ -2,7 +2,6 @@ package handler
 
 import (
 	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
@@ -35,7 +35,16 @@ type OIDCHandler struct {
 	urlResolver  *URLResolver
 }
 
-const firstUserAdminLockKey int64 = 19490331
+const (
+	firstUserAdminLockKey         int64 = 19490331
+	referralCodeLength                  = 5
+	maxReferralCodeCreateAttempts       = 20
+)
+
+var (
+	referralCodePattern       = regexp.MustCompile(`^[a-z]{5}$`)
+	legacyReferralCodePattern = regexp.MustCompile(`^[0-9a-f]{16}$`)
+)
 
 func NewOIDCHandler(repo *repository.Repository, cfg *config.Config) *OIDCHandler {
 	return &OIDCHandler{
@@ -86,10 +95,8 @@ func (h *OIDCHandler) Login(c *gin.Context) {
 	h.setSessionCookie(c, "hl6_state", state, 900, secureCookie) // 15 min TTL
 
 	// Store referral code if present
-	if ref := c.Query("ref"); ref != "" {
-		if matched, _ := regexp.MatchString(`^[0-9a-f]{16}$`, ref); matched {
-			h.setSessionCookie(c, "hl6_ref", ref, 900, secureCookie) // 15 min TTL
-		}
+	if ref := strings.ToLower(strings.TrimSpace(c.Query("ref"))); ref != "" && isValidReferralCode(ref) {
+		h.setSessionCookie(c, "hl6_ref", ref, 900, secureCookie) // 15 min TTL
 	}
 
 	authURL := fmt.Sprintf("%s?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
@@ -208,12 +215,11 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 		// New user — create in a single transaction
 		user = &model.User{
-			ExternalID:   sub,
-			Email:        email,
-			Name:         name,
-			AvatarURL:    picture,
-			Role:         "user",
-			ReferralCode: generateReferralCode(),
+			ExternalID: sub,
+			Email:      email,
+			Name:       name,
+			AvatarURL:  picture,
+			Role:       "user",
 		}
 
 		// Assign default group
@@ -248,7 +254,8 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 			user.Role = "admin"
 		}
 
-		if err := tx.Create(user).Error; err != nil {
+		if err := h.createUserWithUniqueReferralCode(tx, user); err != nil {
+			log.Printf("failed to create user %q with unique referral code: %v", sub, err)
 			tx.Rollback()
 			c.String(http.StatusInternalServerError, "failed to create user")
 			return
@@ -432,10 +439,62 @@ func (h *OIDCHandler) issueSessionJWT(externalID string) (string, error) {
 	return string(signed), nil
 }
 
-func generateReferralCode() string {
-	b := make([]byte, 8)
-	rand.Read(b)
-	return hex.EncodeToString(b)
+func (h *OIDCHandler) createUserWithUniqueReferralCode(tx *gorm.DB, user *model.User) error {
+	for attempts := 0; attempts < maxReferralCodeCreateAttempts; attempts++ {
+		code, err := generateReferralCode()
+		if err != nil {
+			return err
+		}
+		user.ID = 0
+		user.ReferralCode = code
+		if err := tx.Create(user).Error; err != nil {
+			if isReferralCodeUniqueViolation(err) {
+				continue
+			}
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("unable to generate unique referral code after %d attempts", maxReferralCodeCreateAttempts)
+}
+
+func generateReferralCode() (string, error) {
+	const alphabet = "abcdefghijklmnopqrstuvwxyz"
+	const maxUnbiasedByte = byte(26 * 9)
+
+	code := make([]byte, referralCodeLength)
+	randomBytes := make([]byte, referralCodeLength*2)
+	filled := 0
+
+	for filled < referralCodeLength {
+		if _, err := rand.Read(randomBytes); err != nil {
+			return "", err
+		}
+		for _, b := range randomBytes {
+			if b >= maxUnbiasedByte {
+				continue
+			}
+			code[filled] = alphabet[b%26]
+			filled++
+			if filled == referralCodeLength {
+				break
+			}
+		}
+	}
+
+	return string(code), nil
+}
+
+func isValidReferralCode(code string) bool {
+	return referralCodePattern.MatchString(code) || legacyReferralCodePattern.MatchString(code)
+}
+
+func isReferralCodeUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != "23505" {
+		return false
+	}
+	return strings.Contains(strings.ToLower(pgErr.ConstraintName), "referral_code")
 }
 
 func (h *OIDCHandler) processReferral(tx *gorm.DB, newUser *model.User, refCode string) {

@@ -2,12 +2,12 @@ package main
 
 import (
 	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -17,6 +17,10 @@ import (
 )
 
 const internalSessionSecretKey = "_internal_session_secret"
+const (
+	referralCodeLength             = 5
+	referralCodeBackfillMaxRetries = 20
+)
 
 func main() {
 	godotenv.Load("../.env")
@@ -219,8 +223,9 @@ func seedDefaults(db *gorm.DB) {
 	var usersWithoutCode []model.User
 	db.Where("referral_code = '' OR referral_code IS NULL").Find(&usersWithoutCode)
 	for _, u := range usersWithoutCode {
-		code := generateReferralCode()
-		db.Model(&model.User{}).Where("id = ?", u.ID).Update("referral_code", code)
+		if err := backfillReferralCode(db, u.ID); err != nil {
+			log.Printf("failed to backfill referral_code for user %d: %v", u.ID, err)
+		}
 	}
 }
 
@@ -266,8 +271,61 @@ func migrateCreditsToInt(db *gorm.DB) {
 	log.Println("Credit migration complete")
 }
 
-func generateReferralCode() string {
-	b := make([]byte, 8)
-	rand.Read(b)
-	return hex.EncodeToString(b)
+func backfillReferralCode(db *gorm.DB, userID uint) error {
+	for attempts := 0; attempts < referralCodeBackfillMaxRetries; attempts++ {
+		code, err := generateReferralCode()
+		if err != nil {
+			return err
+		}
+		tx := db.Model(&model.User{}).
+			Where("id = ? AND (referral_code = '' OR referral_code IS NULL)", userID).
+			Update("referral_code", code)
+		if tx.Error != nil {
+			if isReferralCodeUniqueViolation(tx.Error) {
+				continue
+			}
+			return tx.Error
+		}
+		// rows=0 means this user was concurrently updated by another process.
+		if tx.RowsAffected == 0 {
+			return nil
+		}
+		return nil
+	}
+	return fmt.Errorf("unable to generate unique referral code after %d attempts", referralCodeBackfillMaxRetries)
+}
+
+func generateReferralCode() (string, error) {
+	const alphabet = "abcdefghijklmnopqrstuvwxyz"
+	const maxUnbiasedByte = byte(26 * 9)
+
+	code := make([]byte, referralCodeLength)
+	randomBytes := make([]byte, referralCodeLength*2)
+	filled := 0
+
+	for filled < referralCodeLength {
+		if _, err := rand.Read(randomBytes); err != nil {
+			return "", err
+		}
+		for _, b := range randomBytes {
+			if b >= maxUnbiasedByte {
+				continue
+			}
+			code[filled] = alphabet[b%26]
+			filled++
+			if filled == referralCodeLength {
+				break
+			}
+		}
+	}
+
+	return string(code), nil
+}
+
+func isReferralCodeUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != "23505" {
+		return false
+	}
+	return strings.Contains(strings.ToLower(pgErr.ConstraintName), "referral_code")
 }
