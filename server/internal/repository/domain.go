@@ -16,6 +16,14 @@ func (r *Repository) ListDomains(activeOnly bool) ([]model.Domain, error) {
 	return domains, err
 }
 
+func (r *Repository) DomainExistsByZoneIDOrName(zoneID, name string) (bool, error) {
+	var count int64
+	err := r.DB.Model(&model.Domain{}).
+		Where("cloudflare_zone_id = ? OR lower(name) = lower(?)", zoneID, name).
+		Count(&count).Error
+	return count > 0, err
+}
+
 func (r *Repository) FindDomain(id uint) (*model.Domain, error) {
 	var domain model.Domain
 	err := r.DB.First(&domain, id).Error

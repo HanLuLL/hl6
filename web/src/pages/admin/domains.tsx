@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -337,6 +337,7 @@ function DomainsContent() {
                 value={selectedZone}
                 onSelect={setSelectedZone}
                 accountId={selectedAccount?.id ?? null}
+                existingDomains={domains ?? []}
                 required
               />
             </div>
@@ -687,10 +688,11 @@ function AccountCombobox({ accounts, value, onSelect, required = false }: {
   );
 }
 
-function ZoneCombobox({ value, onSelect, accountId, required = false }: {
+function ZoneCombobox({ value, onSelect, accountId, existingDomains, required = false }: {
   value: CloudflareZone | null;
   onSelect: (zone: CloudflareZone | null) => void;
   accountId: number | null;
+  existingDomains: DomainWithGroupAccess[];
   required?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -705,6 +707,25 @@ function ZoneCombobox({ value, onSelect, accountId, required = false }: {
     enabled: !!accountId,
     staleTime: 30_000,
   });
+
+  const filteredZones = useMemo(() => {
+    if (!zones || zones.length === 0) {
+      return [];
+    }
+
+    const existingZoneIds = new Set(existingDomains.map((d) => d.cloudflare_zone_id));
+    const existingNamesLower = new Set(existingDomains.map((d) => d.name.trim().toLowerCase()));
+
+    return zones.filter((zone) => {
+      if (existingZoneIds.has(zone.id)) {
+        return false;
+      }
+      if (existingNamesLower.has(zone.name.trim().toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+  }, [zones, existingDomains]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -731,7 +752,7 @@ function ZoneCombobox({ value, onSelect, accountId, required = false }: {
               {isLoading ? t("common.loading") : t("adminDomains.noDomainsFound")}
             </CommandEmpty>
             <CommandGroup>
-              {zones?.map((zone) => (
+              {filteredZones.map((zone) => (
                 <CommandItem
                   key={zone.id}
                   value={zone.name}

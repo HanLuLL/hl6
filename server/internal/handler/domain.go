@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 	"hl6-server/internal/config"
 	"hl6-server/internal/ctxutil"
@@ -55,8 +57,8 @@ func (h *DomainHandler) List(c *gin.Context) {
 
 type groupAccessInput struct {
 	GroupID       uint    `json:"group_id" binding:"required"`
-	CreditCost   float64 `json:"credit_cost"`
-	MaxDNSRecords *int   `json:"max_dns_records"`
+	CreditCost    float64 `json:"credit_cost"`
+	MaxDNSRecords *int    `json:"max_dns_records"`
 }
 
 func (h *DomainHandler) AdminCreate(c *gin.Context) {
@@ -70,6 +72,23 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
+		return
+	}
+
+	body.Name = strings.TrimSpace(body.Name)
+	body.CloudflareZoneID = strings.TrimSpace(body.CloudflareZoneID)
+	if body.Name == "" || body.CloudflareZoneID == "" {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
+		return
+	}
+
+	exists, err := h.repo.DomainExistsByZoneIDOrName(body.CloudflareZoneID, body.Name)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
+	if exists {
+		response.ErrorWithKey(c, http.StatusConflict, "domain already exists", "error.domainAlreadyExists")
 		return
 	}
 
@@ -89,7 +108,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		Description:         body.Description,
 	}
 
-	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+	txErr := h.repo.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(domain).Error; err != nil {
 			return err
 		}
@@ -105,7 +124,13 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 			}
 		}
 		return nil
-	}); err != nil {
+	})
+	if txErr != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(txErr, &pgErr) && pgErr.Code == "23505" {
+			response.ErrorWithKey(c, http.StatusConflict, "domain already exists", "error.domainAlreadyExists")
+			return
+		}
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create domain", "error.failedToCreateDomain")
 		return
 	}
@@ -361,9 +386,15 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 		}
 		if admin := ctxutil.GetUser(c); admin != nil {
 			details, _ := json.Marshal(map[string]interface{}{
-				"domain_name":       domain.Name,
-				"subdomain_count":   len(subdomains),
-				"dns_record_count":  func() int { n := 0; for _, s := range subdomains { n += len(s.DNSRecords) }; return n }(),
+				"domain_name":     domain.Name,
+				"subdomain_count": len(subdomains),
+				"dns_record_count": func() int {
+					n := 0
+					for _, s := range subdomains {
+						n += len(s.DNSRecords)
+					}
+					return n
+				}(),
 				"refunded":          refund,
 				"cf_failures_count": len(failures),
 			})

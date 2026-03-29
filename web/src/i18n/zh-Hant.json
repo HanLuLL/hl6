@@ -521,6 +521,7 @@
     "failedToListDomains": "取得網域清單失敗",
     "failedToLoadGroupAccess": "載入群組存取失敗",
     "failedToCreateDomain": "建立網域失敗",
+    "domainAlreadyExists": "網域已存在",
     "failedToUpdateDomain": "更新網域失敗",
     "failedToCreateGroupAccess": "建立群組存取權限失敗",
     "failedToUpdateGroupAccess": "更新群組存取權限失敗",

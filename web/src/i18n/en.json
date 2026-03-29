@@ -521,6 +521,7 @@
     "failedToListDomains": "Failed to list domains",
     "failedToLoadGroupAccess": "Failed to load group access",
     "failedToCreateDomain": "Failed to create domain",
+    "domainAlreadyExists": "Domain already exists",
     "failedToUpdateDomain": "Failed to update domain",
     "failedToCreateGroupAccess": "Failed to create group access",
     "failedToUpdateGroupAccess": "Failed to update group access",

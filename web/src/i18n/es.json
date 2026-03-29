@@ -521,6 +521,7 @@
     "failedToListDomains": "Error al listar dominios",
     "failedToLoadGroupAccess": "Error al cargar el acceso por grupo",
     "failedToCreateDomain": "Error al crear dominio",
+    "domainAlreadyExists": "El dominio ya existe",
     "failedToUpdateDomain": "Error al actualizar dominio",
     "failedToCreateGroupAccess": "Error al crear acceso de grupo",
     "failedToUpdateGroupAccess": "Error al actualizar acceso de grupo",

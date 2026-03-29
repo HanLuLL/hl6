@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"hl6-server/internal/config"
@@ -159,7 +160,32 @@ func (h *CloudflareAccountHandler) ListZones(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list cloudflare zones", "error.failedToListCloudflareZones")
 		return
 	}
-	response.OK(c, zones)
+
+	existingDomains, err := h.repo.ListDomains(false)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list domains", "error.failedToListDomains")
+		return
+	}
+
+	existingZoneIDs := make(map[string]struct{}, len(existingDomains))
+	existingNamesLower := make(map[string]struct{}, len(existingDomains))
+	for _, d := range existingDomains {
+		existingZoneIDs[d.CloudflareZoneID] = struct{}{}
+		existingNamesLower[strings.ToLower(strings.TrimSpace(d.Name))] = struct{}{}
+	}
+
+	filteredZones := make([]service.ZoneInfo, 0, len(zones))
+	for _, zone := range zones {
+		if _, found := existingZoneIDs[zone.ID]; found {
+			continue
+		}
+		if _, found := existingNamesLower[strings.ToLower(strings.TrimSpace(zone.Name))]; found {
+			continue
+		}
+		filteredZones = append(filteredZones, zone)
+	}
+
+	response.OK(c, filteredZones)
 }
 
 // cfForAccount is a helper to get a CloudflareService for a given account ID.

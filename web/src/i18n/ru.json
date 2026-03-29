@@ -521,6 +521,7 @@
     "failedToListDomains": "Не удалось загрузить список доменов",
     "failedToLoadGroupAccess": "Не удалось загрузить доступ группы к домену",
     "failedToCreateDomain": "Не удалось создать домен",
+    "domainAlreadyExists": "Домен уже существует",
     "failedToUpdateDomain": "Не удалось обновить домен",
     "failedToCreateGroupAccess": "Не удалось создать доступ группы",
     "failedToUpdateGroupAccess": "Не удалось обновить доступ группы",

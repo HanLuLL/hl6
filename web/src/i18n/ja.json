@@ -521,6 +521,7 @@
     "failedToListDomains": "ドメインの一覧取得に失敗しました",
     "failedToLoadGroupAccess": "グループアクセスの読み込みに失敗しました",
     "failedToCreateDomain": "ドメインの作成に失敗しました",
+    "domainAlreadyExists": "ドメインは既に存在します",
     "failedToUpdateDomain": "ドメインの更新に失敗しました",
     "failedToCreateGroupAccess": "グループアクセスの作成に失敗しました",
     "failedToUpdateGroupAccess": "グループアクセスの更新に失敗しました",
