@@ -49,6 +49,7 @@ import type { CloudflareZone, CloudflareAccount, DomainWithGroupAccess, UserGrou
 import { Skeleton } from "@/components/ui/skeleton";
 import { DNSRecordsContent } from "./dns-records";
 import { CloudflareAccountsContent } from "./cloudflare-accounts";
+import { ClaimedSubdomainsContent } from "./claimed-subdomains";
 
 interface GroupAccessEntry {
   group_id: number;
@@ -88,11 +89,15 @@ export default function AdminDomainsPage() {
       >
         <TabsList variant="line">
           <TabsTrigger value="dns-records">{t("adminDomains.tabDnsRecords")}</TabsTrigger>
+          <TabsTrigger value="claimed">{t("adminDomains.tabClaimed")}</TabsTrigger>
           <TabsTrigger value="domains">{t("adminDomains.tabDomains")}</TabsTrigger>
           <TabsTrigger value="cloudflare">{t("adminDomains.tabCloudflare")}</TabsTrigger>
         </TabsList>
         <TabsContent value="dns-records" className="space-y-6 mt-4">
           <DNSRecordsContent />
+        </TabsContent>
+        <TabsContent value="claimed" className="space-y-6 mt-4">
+          <ClaimedSubdomainsContent />
         </TabsContent>
         <TabsContent value="domains" className="space-y-6 mt-4">
           <DomainsContent />

@@ -1,6 +1,10 @@
 package repository
 
-import "hl6-server/internal/model"
+import (
+	"time"
+
+	"hl6-server/internal/model"
+)
 
 func (r *Repository) ListSubdomainsByUser(userID uint) ([]model.Subdomain, error) {
 	var subs []model.Subdomain
@@ -42,4 +46,66 @@ func (r *Repository) ListSubdomainsByDomain(domainID uint) ([]model.Subdomain, e
 	var subs []model.Subdomain
 	err := r.DB.Where("domain_id = ?", domainID).Preload("Domain").Preload("DNSRecords").Find(&subs).Error
 	return subs, err
+}
+
+type AdminClaimedSubdomainDTO struct {
+	ID             uint      `json:"id"`
+	DomainID       uint      `json:"domain_id"`
+	UserID         uint      `json:"user_id"`
+	FQDN           string    `json:"fqdn"`
+	DomainName     string    `json:"domain_name"`
+	UserEmail      string    `json:"user_email"`
+	DNSRecordCount int64     `json:"dns_record_count"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+func (r *Repository) AdminListClaimedSubdomains(page, perPage int, search string) ([]AdminClaimedSubdomainDTO, int64, error) {
+	var results []AdminClaimedSubdomainDTO
+	var total int64
+
+	countQ := r.DB.Model(&model.Subdomain{}).
+		Joins("JOIN users ON users.id = subdomains.user_id").
+		Joins("JOIN domains ON domains.id = subdomains.domain_id")
+
+	if search != "" {
+		like := "%" + escapeLike(search) + "%"
+		countQ = countQ.Where("subdomains.fqdn ILIKE ? OR users.email ILIKE ? OR domains.name ILIKE ?", like, like, like)
+	}
+
+	if err := countQ.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	q := r.DB.Table("subdomains").
+		Select(`
+subdomains.id,
+subdomains.domain_id,
+subdomains.user_id,
+subdomains.fqdn,
+subdomains.created_at,
+domains.name as domain_name,
+users.email as user_email,
+COUNT(dns_records.id) as dns_record_count
+`).
+		Joins("JOIN domains ON domains.id = subdomains.domain_id").
+		Joins("JOIN users ON users.id = subdomains.user_id").
+		Joins("LEFT JOIN dns_records ON dns_records.subdomain_id = subdomains.id")
+
+	if search != "" {
+		like := "%" + escapeLike(search) + "%"
+		q = q.Where("subdomains.fqdn ILIKE ? OR users.email ILIKE ? OR domains.name ILIKE ?", like, like, like)
+	}
+
+	err := q.Group("subdomains.id, subdomains.domain_id, subdomains.user_id, subdomains.fqdn, subdomains.created_at, domains.name, users.email").
+		Order("subdomains.created_at DESC").
+		Offset((page - 1) * perPage).
+		Limit(perPage).
+		Scan(&results).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	if results == nil {
+		results = []AdminClaimedSubdomainDTO{}
+	}
+	return results, total, nil
 }

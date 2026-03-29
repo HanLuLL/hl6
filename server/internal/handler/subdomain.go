@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -21,12 +23,13 @@ import (
 )
 
 type SubdomainHandler struct {
-	repo *repository.Repository
-	cfg  *config.Config
+	repo   *repository.Repository
+	cfg    *config.Config
+	broker *SSEBroker
 }
 
-func NewSubdomainHandler(repo *repository.Repository, cfg *config.Config) *SubdomainHandler {
-	return &SubdomainHandler{repo: repo, cfg: cfg}
+func NewSubdomainHandler(repo *repository.Repository, cfg *config.Config, broker *SSEBroker) *SubdomainHandler {
+	return &SubdomainHandler{repo: repo, cfg: cfg, broker: broker}
 }
 
 func (h *SubdomainHandler) List(c *gin.Context) {
@@ -223,6 +226,127 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 	}); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to release subdomain", "error.databaseError")
 		return
+	}
+
+	response.OK(c, gin.H{"message": "subdomain released"})
+}
+
+func (h *SubdomainHandler) AdminListClaimed(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+
+	search := strings.TrimSpace(c.Query("search"))
+	subs, total, err := h.repo.AdminListClaimedSubdomains(page, perPage, search)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list claimed subdomains", "error.failedToListSubdomains")
+		return
+	}
+	response.Paginated(c, subs, total, page, perPage)
+}
+
+func (h *SubdomainHandler) AdminRelease(c *gin.Context) {
+	admin := ctxutil.GetUser(c)
+	if admin == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+
+	id, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+
+	var body struct {
+		Notify bool   `json:"notify"`
+		Reason string `json:"reason"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		// Allow empty body.
+		body.Notify = false
+		body.Reason = ""
+	}
+	reason := strings.TrimSpace(body.Reason)
+
+	sub, err := h.repo.FindSubdomain(id)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusNotFound, "subdomain not found", "error.subdomainNotFound")
+		return
+	}
+
+	// Delete all Cloudflare records first; any failure aborts local cleanup.
+	if len(sub.DNSRecords) > 0 {
+		cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
+		if err != nil {
+			if errors.Is(err, service.ErrCloudflareTokenEmpty) {
+				response.Error(c, http.StatusInternalServerError, err.Error())
+			} else {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+			}
+			return
+		}
+		for _, record := range sub.DNSRecords {
+			if record.CloudflareRecordID == "" {
+				continue
+			}
+			if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
+				log.Printf("cloudflare DeleteRecord error: %v", err)
+				response.ErrorWithKey(c, http.StatusBadGateway, "cloudflare operation failed", "error.cloudflareError")
+				return
+			}
+		}
+	}
+
+	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&model.Subdomain{}, sub.ID).Error; err != nil {
+			return err
+		}
+		details, _ := json.Marshal(map[string]interface{}{
+			"fqdn":    sub.FQDN,
+			"user_id": sub.UserID,
+			"notify":  body.Notify,
+		})
+		return tx.Create(&model.AuditLog{
+			UserID:     admin.ID,
+			Action:     "admin_release_subdomain",
+			Resource:   "subdomain",
+			ResourceID: sub.ID,
+			Details:    details,
+		}).Error
+	}); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to release subdomain", "error.databaseError")
+		return
+	}
+
+	if body.Notify {
+		title := fmt.Sprintf("%s 认领已被管理员释放", sub.FQDN)
+		content := fmt.Sprintf("您的认领 %s 已被管理员释放，相关解析记录已被删除。", sub.FQDN)
+		if reason != "" {
+			content = fmt.Sprintf("您的认领 %s 已被管理员释放，相关解析记录已被删除。\n原因：%s", sub.FQDN, reason)
+		}
+		targetIDs, _ := json.Marshal([]uint{sub.UserID})
+		notification := &model.Notification{
+			Title:      title,
+			Content:    content,
+			Type:       "urgent",
+			TargetType: "users",
+			TargetIDs:  targetIDs,
+			CreatedBy:  admin.ID,
+		}
+		if err := h.repo.CreateNotificationWithImages(notification); err != nil {
+			log.Printf("failed to create notification: %v", err)
+		} else if h.broker != nil {
+			event := SSEEvent{Event: "new_notification", Data: fmt.Sprintf(`{"id":%d}`, notification.ID)}
+			h.broker.SendToUsers([]uint{sub.UserID}, event)
+		}
 	}
 
 	response.OK(c, gin.H{"message": "subdomain released"})

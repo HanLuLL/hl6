@@ -256,6 +256,7 @@
   },
   "adminDomains": {
     "tabDnsRecords": "DNS Records",
+    "tabClaimed": "Claimed List",
     "tabDomains": "Domains",
     "tabCloudflare": "Cloudflare Accounts",
     "title": "Manage Domains",
@@ -293,7 +294,17 @@
     "cfDeleteFailuresDesc": "The following records failed to delete from Cloudflare. You can force delete (removes DB records, ignores CF errors) or cancel.",
     "forceDelete": "Force Delete (Ignore CF Errors)",
     "cfFailureSubdomain": "Subdomain",
-    "cfFailureError": "Error"
+    "cfFailureError": "Error",
+    "claimedSearchPlaceholder": "Search by FQDN, root domain, or claimer email...",
+    "claimedFqdn": "FQDN",
+    "claimedDomain": "Root Domain",
+    "claimedUserEmail": "Claimer Email",
+    "claimedRecordCount": "Record Count",
+    "claimedAt": "Claimed At",
+    "claimedNoRecords": "No claimed records",
+    "releaseClaimed": "Release Claim",
+    "releaseClaimedConfirm": "This will release {{fqdn}} and delete all its DNS records. This action cannot be undone.",
+    "claimedReleased": "Claim released"
   },
   "adminDnsRecords": {
     "searchPlaceholder": "Search by name or content...",

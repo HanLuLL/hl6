@@ -256,6 +256,7 @@
   },
   "adminDomains": {
     "tabDnsRecords": "Registros DNS",
+    "tabClaimed": "Lista de reclamaciones",
     "tabDomains": "Dominios",
     "tabCloudflare": "Cuentas Cloudflare",
     "title": "Gestión de dominios",
@@ -293,7 +294,17 @@
     "cfDeleteFailuresDesc": "Los siguientes registros no se pudieron eliminar de Cloudflare. Puedes forzar la eliminación o cancelar.",
     "forceDelete": "Forzar eliminación (ignorar errores CF)",
     "cfFailureSubdomain": "Subdominio",
-    "cfFailureError": "Error"
+    "cfFailureError": "Error",
+    "claimedSearchPlaceholder": "Buscar por FQDN, dominio raíz o correo del reclamante...",
+    "claimedFqdn": "FQDN",
+    "claimedDomain": "Dominio raíz",
+    "claimedUserEmail": "Correo del reclamante",
+    "claimedRecordCount": "Cantidad de registros",
+    "claimedAt": "Fecha de reclamación",
+    "claimedNoRecords": "No hay reclamaciones",
+    "releaseClaimed": "Liberar reclamación",
+    "releaseClaimedConfirm": "Esto liberará {{fqdn}} y eliminará todos sus registros DNS. Esta acción no se puede deshacer.",
+    "claimedReleased": "Reclamación liberada"
   },
   "adminDnsRecords": {
     "searchPlaceholder": "Buscar por nombre o contenido...",

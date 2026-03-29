@@ -150,3 +150,4 @@ docker-compose.override.yml
 *.tfstate.*
 *.pid
 *.seed
+docker-compose.yml

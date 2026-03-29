@@ -20,6 +20,7 @@ import type {
   ReferralInfo,
   UserWithInviter,
   AdminDNSRecord,
+  AdminClaimedSubdomain,
   AdminConfigPayload,
   OIDCStatusPayload,
 } from "@/types";
@@ -273,6 +274,13 @@ export const api = {
   },
   adminDeleteDNSRecord: (id: number, data: { notify: boolean; reason?: string }) =>
     request<ApiResponse<{ message: string }>>(`/admin/dns-records/${id}`, { method: "DELETE", body: JSON.stringify(data) }),
+  adminListClaimedSubdomains: (page = 1, perPage = 20, search = "") => {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    if (search) params.set("search", search);
+    return request<PaginatedResponse<AdminClaimedSubdomain[]>>(`/admin/claimed-subdomains?${params.toString()}`);
+  },
+  adminReleaseClaimedSubdomain: (id: number, data: { notify: boolean; reason?: string }) =>
+    request<ApiResponse<{ message: string }>>(`/admin/claimed-subdomains/${id}`, { method: "DELETE", body: JSON.stringify(data) }),
   adminUpdateBranding: (data: { name: string }) =>
     request<ApiResponse<BrandingResponse>>("/admin/branding", { method: "PUT", body: JSON.stringify(data) }),
   adminUploadBrandingLogo: async (file: File) => {

@@ -256,6 +256,7 @@
   },
   "adminDomains": {
     "tabDnsRecords": "DNS записи",
+    "tabClaimed": "Список занятых",
     "tabDomains": "Домены",
     "tabCloudflare": "Аккаунты Cloudflare",
     "title": "Управление доменами",
@@ -293,7 +294,17 @@
     "cfDeleteFailuresDesc": "Следующие записи не удалось удалить из Cloudflare. Можно принудительно удалить или отменить.",
     "forceDelete": "Принудительно удалить (игнорировать ошибки CF)",
     "cfFailureSubdomain": "Поддомен",
-    "cfFailureError": "Ошибка"
+    "cfFailureError": "Ошибка",
+    "claimedSearchPlaceholder": "Поиск по FQDN, корневому домену или email владельца...",
+    "claimedFqdn": "FQDN",
+    "claimedDomain": "Корневой домен",
+    "claimedUserEmail": "Email владельца",
+    "claimedRecordCount": "Количество записей",
+    "claimedAt": "Дата занятия",
+    "claimedNoRecords": "Занятые записи не найдены",
+    "releaseClaimed": "Освободить",
+    "releaseClaimedConfirm": "Поддомен {{fqdn}} будет освобождён, а все его DNS-записи удалены. Это действие необратимо.",
+    "claimedReleased": "Занятое имя освобождено"
   },
   "adminDnsRecords": {
     "searchPlaceholder": "Поиск по имени или содержимому...",

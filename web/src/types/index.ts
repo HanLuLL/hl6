@@ -200,6 +200,17 @@ export interface AdminDNSRecord extends DNSRecord {
   domain_name: string;
 }
 
+export interface AdminClaimedSubdomain {
+  id: number;
+  domain_id: number;
+  user_id: number;
+  fqdn: string;
+  domain_name: string;
+  user_email: string;
+  dns_record_count: number;
+  created_at: string;
+}
+
 export interface BrandingResponse {
   name: string;
   logo_url: string | null;

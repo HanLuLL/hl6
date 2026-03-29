@@ -256,6 +256,7 @@
   },
   "adminDomains": {
     "tabDnsRecords": "解析列表",
+    "tabClaimed": "认领列表",
     "tabDomains": "域名管理",
     "tabCloudflare": "Cloudflare 账号",
     "title": "域名管理",
@@ -293,7 +294,17 @@
     "cfDeleteFailuresDesc": "以下记录从 Cloudflare 删除失败。可选择强制删除（仅删除数据库记录，忽略 CF 错误）或取消。",
     "forceDelete": "强制删除（忽略 CF 错误）",
     "cfFailureSubdomain": "子域",
-    "cfFailureError": "错误原因"
+    "cfFailureError": "错误原因",
+    "claimedSearchPlaceholder": "按 FQDN、根域名或认领者邮箱搜索...",
+    "claimedFqdn": "FQDN",
+    "claimedDomain": "根域名",
+    "claimedUserEmail": "认领者邮箱",
+    "claimedRecordCount": "下属解析数",
+    "claimedAt": "认领时间",
+    "claimedNoRecords": "暂无认领记录",
+    "releaseClaimed": "释放认领",
+    "releaseClaimedConfirm": "将释放 {{fqdn}}，并删除其全部解析记录。此操作不可撤销。",
+    "claimedReleased": "认领已释放"
   },
   "adminDnsRecords": {
     "searchPlaceholder": "按名称或内容搜索...",

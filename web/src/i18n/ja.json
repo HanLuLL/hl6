@@ -256,6 +256,7 @@
   },
   "adminDomains": {
     "tabDnsRecords": "DNS レコード",
+    "tabClaimed": "取得一覧",
     "tabDomains": "ドメイン管理",
     "tabCloudflare": "Cloudflare アカウント",
     "title": "ドメイン管理",
@@ -293,7 +294,17 @@
     "cfDeleteFailuresDesc": "以下のレコードがCloudflareから削除できませんでした。強制削除またはキャンセルを選択してください。",
     "forceDelete": "強制削除（CFエラーを無視）",
     "cfFailureSubdomain": "サブドメイン",
-    "cfFailureError": "エラー"
+    "cfFailureError": "エラー",
+    "claimedSearchPlaceholder": "FQDN・ルートドメイン・取得者メールで検索...",
+    "claimedFqdn": "FQDN",
+    "claimedDomain": "ルートドメイン",
+    "claimedUserEmail": "取得者メール",
+    "claimedRecordCount": "レコード数",
+    "claimedAt": "取得日時",
+    "claimedNoRecords": "取得済みレコードはありません",
+    "releaseClaimed": "取得を解放",
+    "releaseClaimedConfirm": "{{fqdn}} の取得を解放し、関連するDNSレコードをすべて削除します。この操作は取り消せません。",
+    "claimedReleased": "取得を解放しました"
   },
   "adminDnsRecords": {
     "searchPlaceholder": "名前またはコンテンツで検索...",
