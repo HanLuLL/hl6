@@ -431,7 +431,7 @@
     "lockedByEnv": "この項目は環境変数で管理されています",
     "unavailableTitle": "OIDC 未設定",
     "unavailableDesc": "OIDC 設定が不足しており、匿名初期設定は無効です。",
-    "contactAdmin": "管理者に依頼して、環境変数または管理設定ページから OIDC を復旧してください。",
+    "contactAdmin": "管理者に依頼して、環境変数または「オペレーション > ログイン/登録」タブから OIDC を復旧してください。",
     "missingFields": "不足している項目: {{fields}}"
   },
   "adminCloudflare": {

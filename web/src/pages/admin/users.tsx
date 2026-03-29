@@ -38,6 +38,7 @@ import type { UserWithInviter } from "@/types";
 import { GroupsContent } from "./groups";
 import { NotificationsContent } from "./notifications";
 import { BrandContent } from "./brand";
+import { LoginRegistrationSettingsContent } from "./login-registration";
 import { useAuth } from "@/hooks/use-auth";
 
 const PAGE_SIZE = 30;
@@ -612,6 +613,7 @@ export default function AdminUsersPage() {
           <TabsTrigger value="groups">{t("adminUsers.tabGroups")}</TabsTrigger>
           <TabsTrigger value="notifications">{t("adminUsers.tabNotifications")}</TabsTrigger>
           <TabsTrigger value="brand">{t("adminUsers.tabBrand")}</TabsTrigger>
+          <TabsTrigger value="login-registration">{t("adminUsers.tabLoginRegistration")}</TabsTrigger>
         </TabsList>
         <TabsContent value="users" className="mt-4 space-y-6">
           <UsersContent />
@@ -624,6 +626,9 @@ export default function AdminUsersPage() {
         </TabsContent>
         <TabsContent value="brand" className="mt-4">
           <BrandContent />
+        </TabsContent>
+        <TabsContent value="login-registration" className="mt-4">
+          <LoginRegistrationSettingsContent />
         </TabsContent>
       </Tabs>
     </div>

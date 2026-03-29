@@ -431,7 +431,7 @@
     "lockedByEnv": "Este campo está gestionado por variables de entorno",
     "unavailableTitle": "OIDC no configurado",
     "unavailableDesc": "Falta configuración OIDC y el bootstrap anónimo está deshabilitado.",
-    "contactAdmin": "Pide a un administrador que restaure OIDC desde variables de entorno o desde la configuración de administrador.",
+    "contactAdmin": "Pide a un administrador que restaure OIDC desde variables de entorno o desde Operaciones > Inicio/Registro.",
     "missingFields": "Campos faltantes: {{fields}}"
   },
   "adminCloudflare": {

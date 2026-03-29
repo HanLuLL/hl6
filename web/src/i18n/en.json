@@ -431,7 +431,7 @@
     "lockedByEnv": "This field is managed by environment variables",
     "unavailableTitle": "OIDC Not Configured",
     "unavailableDesc": "OIDC configuration is missing and anonymous setup is disabled.",
-    "contactAdmin": "Ask an administrator to restore OIDC settings via environment variables or admin settings.",
+    "contactAdmin": "Ask an administrator to restore OIDC settings via environment variables or the Operations > Sign-in/Sign-up tab.",
     "missingFields": "Missing fields: {{fields}}"
   },
   "adminCloudflare": {
