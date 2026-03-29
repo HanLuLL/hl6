@@ -205,10 +205,21 @@ export const api = {
     request<ApiResponse<CloudflareZone[]>>(`/admin/cloudflare/accounts/${accountId}/zones`),
   adminGrantCredits: (data: { user_id: number; amount: number; description: string }) =>
     request<ApiResponse<{ user_id: number; granted: number; balance: number }>>("/admin/credits/grant", { method: "POST", body: JSON.stringify(data) }),
-  adminListUsers: (page = 1, perPage = 20, search = "", banStatus: "all" | "active" | "banned" = "all") => {
+  adminListUsers: (
+    page = 1,
+    perPage = 20,
+    search = "",
+    banStatus: "all" | "active" | "banned" = "all",
+    role: "all" | "user" | "admin" = "all",
+    groupId?: number,
+    inviter = ""
+  ) => {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
     if (search) params.set("search", search);
     if (banStatus !== "all") params.set("ban_status", banStatus);
+    if (role !== "all") params.set("role", role);
+    if (groupId !== undefined) params.set("group_id", String(groupId));
+    if (inviter) params.set("inviter", inviter);
     return request<PaginatedResponse<UserWithInviter[]>>(`/admin/users?${params.toString()}`);
   },
   adminGetStats: () => request<ApiResponse<Stats>>("/admin/stats"),

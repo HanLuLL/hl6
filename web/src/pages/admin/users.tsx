@@ -34,17 +34,49 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { UserWithInviter } from "@/types";
 import { GroupsContent } from "./groups";
 import { NotificationsContent } from "./notifications";
 import { BrandContent } from "./brand";
 import { useAuth } from "@/hooks/use-auth";
+
+const PAGE_SIZE = 30;
+const EMAIL_MAX_VISIBLE = 24;
+
+function truncateText(value: string, maxLen = EMAIL_MAX_VISIBLE): string {
+  if (value.length <= maxLen) {
+    return value;
+  }
+  return `${value.slice(0, maxLen)}...`;
+}
+
+function formatCredits(value?: number): string {
+  const safe = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  return safe.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+}
+
+function formatDate(value?: string, withTime = false): string {
+  if (!value) {
+    return "-";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+  return withTime ? date.toLocaleString() : date.toLocaleDateString();
+}
 
 function UsersContent() {
   const { user: currentUser } = useAuth();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [inviterSearch, setInviterSearch] = useState("");
+  const [debouncedInviterSearch, setDebouncedInviterSearch] = useState("");
   const [banStatus, setBanStatus] = useState<"all" | "active" | "banned">("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | "user" | "admin">("all");
+  const [groupFilter, setGroupFilter] = useState<string>("all");
+  const [detailUser, setDetailUser] = useState<UserWithInviter | null>(null);
   const queryClient = useQueryClient();
   const { t } = useTranslation();
 
@@ -56,10 +88,26 @@ function UsersContent() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedInviterSearch(inviterSearch);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [inviterSearch]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-users", page, debouncedSearch, banStatus],
+    queryKey: ["admin-users", page, debouncedSearch, debouncedInviterSearch, banStatus, roleFilter, groupFilter],
     queryFn: async () => {
-      const res = await api.adminListUsers(page, 50, debouncedSearch, banStatus);
+      const res = await api.adminListUsers(
+        page,
+        PAGE_SIZE,
+        debouncedSearch,
+        banStatus,
+        roleFilter,
+        groupFilter === "all" ? undefined : Number(groupFilter),
+        debouncedInviterSearch
+      );
       return { users: res.data, total: res.total };
     },
     staleTime: 30_000,
@@ -84,6 +132,14 @@ function UsersContent() {
   const [banReason, setBanReason] = useState("");
   const [deleteResources, setDeleteResources] = useState(false);
   const [forceDelete, setForceDelete] = useState(false);
+
+  const copyEmail = (email: string) => {
+    navigator.clipboard.writeText(email).then(() => {
+      toast.success(t("common.copied"));
+    }).catch(() => {
+      // Ignore clipboard errors in unsupported or insecure contexts.
+    });
+  };
 
   const grantMutation = useMutation({
     mutationFn: api.adminGrantCredits,
@@ -141,7 +197,7 @@ function UsersContent() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
           {isLoading ? (
             <Skeleton className="h-4 w-32" />
           ) : (
@@ -149,8 +205,14 @@ function UsersContent() {
               {t("adminUsers.totalUsers", { count: data?.total ?? 0 })}
             </CardTitle>
           )}
-          <div className="flex items-center gap-2">
-            <Select value={banStatus} onValueChange={(v) => { setBanStatus(v as "all" | "active" | "banned"); setPage(1); }}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={banStatus}
+              onValueChange={(v) => {
+                setBanStatus(v as "all" | "active" | "banned");
+                setPage(1);
+              }}
+            >
               <SelectTrigger className="w-[160px]">
                 <SelectValue />
               </SelectTrigger>
@@ -160,11 +222,50 @@ function UsersContent() {
                 <SelectItem value="banned">{t("adminUsers.filterBanned")}</SelectItem>
               </SelectContent>
             </Select>
+            <Select
+              value={roleFilter}
+              onValueChange={(v) => {
+                setRoleFilter(v as "all" | "user" | "admin");
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder={t("adminUsers.filterByRole")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("adminUsers.filterAllRoles")}</SelectItem>
+                <SelectItem value="user">{t("adminUsers.filterRoleUser")}</SelectItem>
+                <SelectItem value="admin">{t("adminUsers.filterRoleAdmin")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={groupFilter}
+              onValueChange={(v) => {
+                setGroupFilter(v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder={t("adminUsers.filterByGroup")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("adminUsers.filterAllGroups")}</SelectItem>
+                {groups?.map((group) => (
+                  <SelectItem key={group.id} value={String(group.id)}>{group.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Input
               placeholder={t("adminUsers.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="max-w-xs"
+              className="w-[220px]"
+            />
+            <Input
+              placeholder={t("adminUsers.filterByInviter")}
+              value={inviterSearch}
+              onChange={(e) => setInviterSearch(e.target.value)}
+              className="w-[220px]"
             />
           </div>
         </CardHeader>
@@ -172,8 +273,8 @@ function UsersContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("adminUsers.name")}</TableHead>
                 <TableHead>{t("adminUsers.email")}</TableHead>
+                <TableHead>{t("adminUsers.credits")}</TableHead>
                 <TableHead>{t("adminUsers.group")}</TableHead>
                 <TableHead>{t("adminUsers.role")}</TableHead>
                 <TableHead>{t("adminUsers.status")}</TableHead>
@@ -186,21 +287,33 @@ function UsersContent() {
               {isLoading ? (
                 [...Array(5)].map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="ml-auto h-8 w-32" /></TableCell>
                   </TableRow>
                 ))
               ) : (
                 data?.users?.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                  <TableRow key={user.id} className="cursor-pointer" onClick={() => setDetailUser(user)}>
+                    <TableCell className="max-w-[240px]">
+                      <button
+                        type="button"
+                        className="text-muted-foreground w-full cursor-copy truncate text-left hover:underline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyEmail(user.email);
+                        }}
+                        title={user.email}
+                      >
+                        {truncateText(user.email)}
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatCredits(user.credits)}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{user.group?.name ?? "-"}</Badge>
                     </TableCell>
@@ -213,16 +326,21 @@ function UsersContent() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(user.created_at).toLocaleDateString()}
+                      {formatDate(user.created_at)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {user.invited_by?.name ?? "—"}
+                      {user.invited_by?.email ?? "—"}
                     </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button variant="ghost" size="sm" onClick={() => {
-                        setChangeGroupUserId(user.id);
-                        setSelectedGroupId(user.group_id ? String(user.group_id) : "");
-                      }} disabled={user.is_banned}>
+                    <TableCell className="space-x-1 text-right" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setChangeGroupUserId(user.id);
+                          setSelectedGroupId(user.group_id ? String(user.group_id) : "");
+                        }}
+                        disabled={user.is_banned}
+                      >
                         {t("adminUsers.changeGroup")}
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => setGrantUserId(user.id)} disabled={user.is_banned}>
@@ -264,11 +382,13 @@ function UsersContent() {
         </CardContent>
       </Card>
 
-      {data && data.total > 50 && (
+      <UserDetailDialog user={detailUser} onClose={() => setDetailUser(null)} />
+
+      {data && data.total > PAGE_SIZE && (
         <div className="flex justify-center gap-2">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>{t("common.previous")}</Button>
-          <span className="flex items-center text-sm text-muted-foreground">{t("common.pageOf", { page, total: Math.ceil(data.total / 50) })}</span>
-          <Button variant="outline" size="sm" disabled={page >= Math.ceil(data.total / 50)} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</Button>
+          <span className="flex items-center text-sm text-muted-foreground">{t("common.pageOf", { page, total: Math.ceil(data.total / PAGE_SIZE) })}</span>
+          <Button variant="outline" size="sm" disabled={page >= Math.ceil(data.total / PAGE_SIZE)} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</Button>
         </div>
       )}
 
@@ -327,7 +447,6 @@ function UsersContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Grant Credits Dialog */}
       <Dialog open={grantUserId !== null} onOpenChange={(open) => !open && setGrantUserId(null)}>
         <DialogContent aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{t("adminUsers.grantCredits")}</DialogTitle></DialogHeader>
@@ -358,9 +477,11 @@ function UsersContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Change Group Dialog */}
       <Dialog open={changeGroupUserId !== null} onOpenChange={(open) => {
-        if (!open) { setChangeGroupUserId(null); setSelectedGroupId(""); }
+        if (!open) {
+          setChangeGroupUserId(null);
+          setSelectedGroupId("");
+        }
       }}>
         <DialogContent aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{t("adminUsers.changeGroup")}</DialogTitle></DialogHeader>
@@ -401,6 +522,84 @@ function UsersContent() {
   );
 }
 
+function UserDetailDialog({ user, onClose }: { user: UserWithInviter | null; onClose: () => void }) {
+  const { t } = useTranslation();
+
+  return (
+    <Dialog open={!!user} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-2xl" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>{t("adminUsers.userDetail")}</DialogTitle>
+        </DialogHeader>
+        {user && (
+          <div className="space-y-5 py-2">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">{t("adminUsers.basicInfo")}</p>
+              <UserDetailRow label={t("adminUsers.name")} value={user.name || "-"} />
+              <UserDetailRow label={t("adminUsers.email")} value={user.email || "-"} />
+              <UserDetailRow label={t("adminUsers.role")} value={user.role || "-"} />
+              <UserDetailRow label={t("adminUsers.group")} value={user.group?.name ?? "-"} />
+              <UserDetailRow label={t("adminUsers.groupId")} value={user.group_id ? String(user.group_id) : "-"} mono />
+              <UserDetailRow
+                label={t("adminUsers.status")}
+                value={user.is_banned ? t("adminUsers.statusBanned") : t("adminUsers.statusActive")}
+              />
+              <UserDetailRow label={t("adminUsers.credits")} value={formatCredits(user.credits)} mono />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">{t("adminUsers.accountMeta")}</p>
+              <UserDetailRow label={t("adminUsers.id")} value={String(user.id)} mono />
+              <UserDetailRow label={t("adminUsers.externalId")} value={user.external_id || "-"} mono breakAll />
+              <UserDetailRow label={t("adminUsers.referralCode")} value={user.referral_code || "-"} mono />
+              <UserDetailRow label={t("adminUsers.avatarUrl")} value={user.avatar_url || "-"} breakAll />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">{t("adminUsers.banInfo")}</p>
+              <UserDetailRow label={t("adminUsers.bannedReason")} value={user.banned_reason || "-"} />
+              <UserDetailRow label={t("adminUsers.bannedAt")} value={formatDate(user.banned_at, true)} />
+              <UserDetailRow label={t("adminUsers.bannedBy")} value={user.banned_by ? String(user.banned_by) : "-"} mono />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">{t("adminUsers.relationInfo")}</p>
+              <UserDetailRow
+                label={t("adminUsers.invitedBy")}
+                value={user.invited_by ? `${user.invited_by.email} (#${user.invited_by.id})` : "-"}
+              />
+              <UserDetailRow label={t("adminUsers.joined")} value={formatDate(user.created_at, true)} />
+              <UserDetailRow label={t("adminUsers.updatedAt")} value={formatDate(user.updated_at, true)} />
+            </div>
+          </div>
+        )}
+        <DialogFooter>
+          <Button onClick={onClose} data-dialog-primary="true">{t("common.confirm")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function UserDetailRow({
+  label,
+  value,
+  mono,
+  breakAll,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  breakAll?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-4">
+      <span className="text-muted-foreground min-w-28 shrink-0 text-sm">{label}</span>
+      <span className={`text-sm ${mono ? "font-mono" : ""} ${breakAll ? "break-all" : "break-words"}`}>{value}</span>
+    </div>
+  );
+}
+
 export default function AdminUsersPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -429,7 +628,7 @@ export default function AdminUsersPage() {
           <TabsTrigger value="notifications">{t("adminUsers.tabNotifications")}</TabsTrigger>
           <TabsTrigger value="brand">{t("adminUsers.tabBrand")}</TabsTrigger>
         </TabsList>
-        <TabsContent value="users" className="space-y-6 mt-4">
+        <TabsContent value="users" className="mt-4 space-y-6">
           <UsersContent />
         </TabsContent>
         <TabsContent value="groups" className="mt-4">

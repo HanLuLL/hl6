@@ -10,6 +10,7 @@ export interface UserGroup {
 export interface User {
   id: number;
   external_id: string;
+  referral_code?: string;
   email: string;
   name: string;
   avatar_url: string;
@@ -183,9 +184,11 @@ export interface ReferralInfo {
 }
 
 export interface UserWithInviter extends User {
+  credits: number;
   invited_by?: {
     id: number;
     name: string;
+    email: string;
   };
 }
 

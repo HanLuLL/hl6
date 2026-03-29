@@ -2,6 +2,11 @@ package repository
 
 import "hl6-server/internal/model"
 
+type UserWithCredits struct {
+	model.User
+	Credits model.Credit `json:"credits" gorm:"column:credits"`
+}
+
 func (r *Repository) FindUserByExternalID(externalID string) (*model.User, error) {
 	var user model.User
 	err := r.DB.Preload("Group").Where("external_id = ?", externalID).First(&user).Error
@@ -22,10 +27,13 @@ func (r *Repository) UpdateUser(user *model.User) error {
 	return r.DB.Save(user).Error
 }
 
-func (r *Repository) ListUsers(page, perPage int, search, banStatus string) ([]model.User, int64, error) {
-	var users []model.User
+func (r *Repository) ListUsers(page, perPage int, search, banStatus, role string, groupID *uint, inviter string) ([]UserWithCredits, int64, error) {
+	var users []UserWithCredits
 	var total int64
-	q := r.DB.Model(&model.User{})
+	q := r.DB.Model(&model.User{}).
+		Select("users.*, COALESCE(credit_balances.balance, 0) AS credits").
+		Joins("LEFT JOIN credit_balances ON credit_balances.user_id = users.id")
+
 	if search != "" {
 		like := "%" + escapeLike(search) + "%"
 		q = q.Where("name ILIKE ? OR email ILIKE ?", like, like)
@@ -36,6 +44,27 @@ func (r *Repository) ListUsers(page, perPage int, search, banStatus string) ([]m
 		q = q.Where("is_banned = ?", false)
 	case "banned":
 		q = q.Where("is_banned = ?", true)
+	}
+
+	switch role {
+	case "user", "admin":
+		q = q.Where("role = ?", role)
+	}
+
+	if groupID != nil {
+		q = q.Where("group_id = ?", *groupID)
+	}
+
+	if inviter != "" {
+		like := "%" + escapeLike(inviter) + "%"
+		q = q.Where(`
+EXISTS (
+  SELECT 1
+  FROM user_referrals ur
+  JOIN users inviters ON inviters.id = ur.inviter_id
+  WHERE ur.invitee_id = users.id
+    AND (inviters.email ILIKE ? OR inviters.name ILIKE ?)
+)`, like, like)
 	}
 
 	q.Count(&total)

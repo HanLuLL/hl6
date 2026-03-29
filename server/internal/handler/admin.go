@@ -60,11 +60,29 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "50"))
 	search := c.Query("search")
+	inviter := strings.TrimSpace(c.Query("inviter"))
 	banStatus := strings.ToLower(strings.TrimSpace(c.DefaultQuery("ban_status", "all")))
+	role := strings.ToLower(strings.TrimSpace(c.DefaultQuery("role", "all")))
+	groupIDStr := strings.TrimSpace(c.Query("group_id"))
+	var groupID *uint
 	switch banStatus {
 	case "all", "active", "banned":
 	default:
 		banStatus = "all"
+	}
+	switch role {
+	case "all", "user", "admin":
+	default:
+		role = "all"
+	}
+	if groupIDStr != "" {
+		parsed, err := strconv.ParseUint(groupIDStr, 10, 64)
+		if err != nil {
+			response.Error(c, http.StatusBadRequest, "invalid group_id")
+			return
+		}
+		parsedID := uint(parsed)
+		groupID = &parsedID
 	}
 	if page < 1 {
 		page = 1
@@ -73,7 +91,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		perPage = 50
 	}
 
-	users, total, err := h.repo.ListUsers(page, perPage, search, banStatus)
+	users, total, err := h.repo.ListUsers(page, perPage, search, banStatus, role, groupID, inviter)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list users", "error.failedToListUsers")
 		return
@@ -92,20 +110,23 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 
 	type userDTO struct {
 		model.User
+		Credits   model.Credit `json:"credits"`
 		InvitedBy *struct {
-			ID   uint   `json:"id"`
-			Name string `json:"name"`
+			ID    uint   `json:"id"`
+			Name  string `json:"name"`
+			Email string `json:"email"`
 		} `json:"invited_by"`
 	}
 
 	result := make([]userDTO, len(users))
 	for i, u := range users {
-		dto := userDTO{User: u}
+		dto := userDTO{User: u.User, Credits: u.Credits}
 		if inviter, ok := inviterMap[u.ID]; ok {
 			dto.InvitedBy = &struct {
-				ID   uint   `json:"id"`
-				Name string `json:"name"`
-			}{ID: inviter.ID, Name: inviter.Name}
+				ID    uint   `json:"id"`
+				Name  string `json:"name"`
+				Email string `json:"email"`
+			}{ID: inviter.ID, Name: inviter.Name, Email: inviter.Email}
 		}
 		result[i] = dto
 	}
