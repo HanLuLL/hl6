@@ -337,10 +337,13 @@
     "totalEntries": "{{count}} total entries",
     "action": "Action",
     "user": "User",
+    "userEmail": "User Email",
     "resource": "Resource",
     "details": "Details",
     "time": "Time",
-    "searchPlaceholder": "Search by action or resource..."
+    "searchPlaceholder": "Search by action or resource...",
+    "operatorPlaceholder": "Search by operator email...",
+    "actionPlaceholder": "Search by action..."
   },
   "adminGroups": {
     "title": "User Groups",

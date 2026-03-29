@@ -337,10 +337,13 @@
     "totalEntries": "Всего записей: {{count}}",
     "action": "Действие",
     "user": "Пользователь",
+    "userEmail": "Email пользователя",
     "resource": "Ресурс",
     "details": "Подробности",
     "time": "Время",
-    "searchPlaceholder": "Поиск по действию или ресурсу..."
+    "searchPlaceholder": "Поиск по действию или ресурсу...",
+    "operatorPlaceholder": "Поиск по email оператора...",
+    "actionPlaceholder": "Поиск по действию..."
   },
   "adminGroups": {
     "title": "Управление группами",

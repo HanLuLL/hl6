@@ -337,10 +337,13 @@
     "totalEntries": "全 {{count}} 件",
     "action": "アクション",
     "user": "ユーザー",
+    "userEmail": "ユーザーメール",
     "resource": "リソース",
     "details": "詳細",
     "time": "時刻",
-    "searchPlaceholder": "アクションまたはリソースで検索..."
+    "searchPlaceholder": "アクションまたはリソースで検索...",
+    "operatorPlaceholder": "操作者メールで検索...",
+    "actionPlaceholder": "アクションで検索..."
   },
   "adminGroups": {
     "title": "ユーザーグループ管理",

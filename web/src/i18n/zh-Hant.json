@@ -337,10 +337,13 @@
     "totalEntries": "共 {{count}} 筆記錄",
     "action": "操作",
     "user": "使用者",
+    "userEmail": "使用者信箱",
     "resource": "資源",
     "details": "詳情",
     "time": "時間",
-    "searchPlaceholder": "按操作或資源搜尋..."
+    "searchPlaceholder": "按操作或資源搜尋...",
+    "operatorPlaceholder": "按操作者信箱搜尋...",
+    "actionPlaceholder": "按操作搜尋..."
   },
   "adminGroups": {
     "title": "使用者群組管理",

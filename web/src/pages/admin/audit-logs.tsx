@@ -15,29 +15,50 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+
+const EMAIL_MAX_VISIBLE = 24;
+
+function truncateText(value: string, maxLen = EMAIL_MAX_VISIBLE): string {
+  if (value.length <= maxLen) {
+    return value;
+  }
+  return `${value.slice(0, maxLen)}...`;
+}
 
 export default function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [operator, setOperator] = useState("");
+  const [debouncedOperator, setDebouncedOperator] = useState("");
+  const [action, setAction] = useState("");
+  const [debouncedAction, setDebouncedAction] = useState("");
   const { t } = useTranslation();
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(search);
+      setDebouncedOperator(operator.trim());
+      setDebouncedAction(action.trim());
       setPage(1);
     }, 300);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [operator, action]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-audit-logs", page, debouncedSearch],
+    queryKey: ["admin-audit-logs", page, debouncedOperator, debouncedAction],
     queryFn: async () => {
-      const res = await api.adminListAuditLogs(page, 15, debouncedSearch);
+      const res = await api.adminListAuditLogs(page, 15, debouncedOperator, debouncedAction);
       return { logs: res.data, total: res.total };
     },
     staleTime: 30_000,
   });
+
+  const copyEmail = (email: string) => {
+    navigator.clipboard.writeText(email).then(() => {
+      toast.success(t("common.copied"));
+    }).catch(() => {
+      // Ignore clipboard errors in unsupported or insecure contexts.
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -47,7 +68,7 @@ export default function AdminAuditLogsPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
           {isLoading ? (
             <Skeleton className="h-4 w-28" />
           ) : (
@@ -55,19 +76,27 @@ export default function AdminAuditLogsPage() {
               {t("auditLogs.totalEntries", { count: data?.total ?? 0 })}
             </CardTitle>
           )}
-          <Input
-            placeholder={t("auditLogs.searchPlaceholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-xs"
-          />
+          <div className="flex w-full max-w-2xl flex-wrap items-center justify-end gap-2">
+            <Input
+              placeholder={t("auditLogs.operatorPlaceholder")}
+              value={operator}
+              onChange={(e) => setOperator(e.target.value)}
+              className="w-56"
+            />
+            <Input
+              placeholder={t("auditLogs.actionPlaceholder")}
+              value={action}
+              onChange={(e) => setAction(e.target.value)}
+              className="w-56"
+            />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("auditLogs.action")}</TableHead>
-                <TableHead>{t("auditLogs.user")}</TableHead>
+                <TableHead>{t("auditLogs.userEmail")}</TableHead>
                 <TableHead>{t("auditLogs.resource")}</TableHead>
                 <TableHead>{t("auditLogs.details")}</TableHead>
                 <TableHead>{t("auditLogs.time")}</TableHead>
@@ -90,7 +119,20 @@ export default function AdminAuditLogsPage() {
                     <TableCell>
                       <Badge variant="outline">{log.action}</Badge>
                     </TableCell>
-                    <TableCell className="text-sm">{log.user?.name ?? `User #${log.user_id}`}</TableCell>
+                    <TableCell className="text-sm">
+                      {log.user?.email ? (
+                        <button
+                          type="button"
+                          title={log.user.email}
+                          className="max-w-56 cursor-pointer truncate text-left text-foreground hover:text-primary"
+                          onClick={() => copyEmail(log.user?.email ?? "")}
+                        >
+                          {truncateText(log.user.email)}
+                        </button>
+                      ) : (
+                        `User #${log.user_id}`
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{log.resource} #{log.resource_id}</TableCell>
                     <TableCell className="text-xs font-mono text-muted-foreground max-w-xs truncate">
                       {JSON.stringify(log.details)}

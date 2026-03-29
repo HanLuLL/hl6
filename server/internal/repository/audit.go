@@ -6,15 +6,22 @@ func (r *Repository) CreateAuditLog(log *model.AuditLog) error {
 	return r.DB.Create(log).Error
 }
 
-func (r *Repository) ListAuditLogs(page, perPage int, search ...string) ([]model.AuditLog, int64, error) {
+func (r *Repository) ListAuditLogs(page, perPage int, operator, action string) ([]model.AuditLog, int64, error) {
 	var logs []model.AuditLog
 	var total int64
 	q := r.DB.Model(&model.AuditLog{})
-	if len(search) > 0 && search[0] != "" {
-		like := "%" + escapeLike(search[0]) + "%"
-		q = q.Where("action ILIKE ? OR resource ILIKE ?", like, like)
+
+	if operator != "" {
+		like := "%" + escapeLike(operator) + "%"
+		q = q.Joins("LEFT JOIN users ON users.id = audit_logs.user_id").
+			Where("users.email ILIKE ?", like)
+	}
+
+	if action != "" {
+		like := "%" + escapeLike(action) + "%"
+		q = q.Where("audit_logs.action ILIKE ?", like)
 	}
 	q.Count(&total)
-	err := q.Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Preload("User").Find(&logs).Error
+	err := q.Offset((page - 1) * perPage).Limit(perPage).Order("audit_logs.created_at DESC").Preload("User").Find(&logs).Error
 	return logs, total, err
 }

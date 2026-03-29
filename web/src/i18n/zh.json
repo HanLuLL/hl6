@@ -337,10 +337,13 @@
     "totalEntries": "共 {{count}} 条记录",
     "action": "操作",
     "user": "用户",
+    "userEmail": "用户邮箱",
     "resource": "资源",
     "details": "详情",
     "time": "时间",
-    "searchPlaceholder": "按操作或资源搜索..."
+    "searchPlaceholder": "按操作或资源搜索...",
+    "operatorPlaceholder": "按操作者邮箱搜索...",
+    "actionPlaceholder": "按操作搜索..."
   },
   "adminGroups": {
     "title": "用户组管理",

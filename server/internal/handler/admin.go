@@ -146,7 +146,8 @@ func (h *AdminHandler) Stats(c *gin.Context) {
 func (h *AdminHandler) AuditLogs(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "15"))
-	search := c.Query("search")
+	operator := strings.TrimSpace(c.Query("operator"))
+	action := strings.TrimSpace(c.Query("action"))
 	if page < 1 {
 		page = 1
 	}
@@ -154,7 +155,7 @@ func (h *AdminHandler) AuditLogs(c *gin.Context) {
 		perPage = 15
 	}
 
-	logs, total, err := h.repo.ListAuditLogs(page, perPage, search)
+	logs, total, err := h.repo.ListAuditLogs(page, perPage, operator, action)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list audit logs", "error.failedToListAuditLogs")
 		return

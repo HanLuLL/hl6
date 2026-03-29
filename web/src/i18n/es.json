@@ -337,10 +337,13 @@
     "totalEntries": "{{count}} entradas en total",
     "action": "Acción",
     "user": "Usuario",
+    "userEmail": "Correo del usuario",
     "resource": "Recurso",
     "details": "Detalles",
     "time": "Hora",
-    "searchPlaceholder": "Buscar por acción o recurso..."
+    "searchPlaceholder": "Buscar por acción o recurso...",
+    "operatorPlaceholder": "Buscar por correo del operador...",
+    "actionPlaceholder": "Buscar por acción..."
   },
   "adminGroups": {
     "title": "Grupos de usuarios",

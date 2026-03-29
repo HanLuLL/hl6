@@ -224,8 +224,12 @@ export const api = {
     return request<PaginatedResponse<UserWithInviter[]>>(`/admin/users?${params.toString()}`);
   },
   adminGetStats: () => request<ApiResponse<Stats>>("/admin/stats"),
-  adminListAuditLogs: (page = 1, perPage = 20, search = "") =>
-    request<PaginatedResponse<AuditLog[]>>(`/admin/audit-logs?page=${page}&per_page=${perPage}${search ? `&search=${encodeURIComponent(search)}` : ""}`),
+  adminListAuditLogs: (page = 1, perPage = 20, operator = "", action = "") => {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    if (operator) params.set("operator", operator);
+    if (action) params.set("action", action);
+    return request<PaginatedResponse<AuditLog[]>>(`/admin/audit-logs?${params.toString()}`);
+  },
 
   // Admin: User Groups
   adminListGroups: () =>
