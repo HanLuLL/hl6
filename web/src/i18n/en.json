@@ -31,7 +31,7 @@
     "errorTitle": "Something went wrong",
     "errorMessage": "An unexpected error occurred while loading the page. Please try again.",
     "retry": "Retry",
-    "hotkeyGuide": "Shortcuts: Esc closes or goes back; Cmd/Ctrl + Enter confirms or submits. If a required field is missing, focus jumps to the first one.",
+    "hotkeyGuide": "Esc closes or goes back; Cmd/Ctrl + Enter confirms.",
     "gotIt": "Got it"
   },
   "landing": {

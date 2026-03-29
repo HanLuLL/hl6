@@ -31,7 +31,7 @@
     "errorTitle": "エラーが発生しました",
     "errorMessage": "ページの読み込み中に予期しないエラーが発生しました。もう一度お試しください。",
     "retry": "再試行",
-    "hotkeyGuide": "ショートカット: Esc で閉じる/前に戻る、Cmd/Ctrl + Enter で確定/送信。必須項目が未入力の場合は最初の必須項目へフォーカスします。",
+    "hotkeyGuide": "Esc で閉じる/前に戻る、Cmd/Ctrl + Enter で確定",
     "gotIt": "了解"
   },
   "landing": {

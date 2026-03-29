@@ -31,7 +31,7 @@
     "errorTitle": "出错了",
     "errorMessage": "页面加载时发生了意外错误，请重试。",
     "retry": "重试",
-    "hotkeyGuide": "快捷键：Esc 关闭或返回上一步；Cmd/Ctrl + Enter 确认或提交。必填项未完成时会自动定位到第一个必填项。",
+    "hotkeyGuide": "Esc 关闭或返回上一步；Cmd/Ctrl + Enter 确认",
     "gotIt": "知道了"
   },
   "landing": {
