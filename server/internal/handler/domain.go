@@ -3,13 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
-	"hl6-server/internal/config"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
@@ -28,11 +28,10 @@ type cfFailureRecord struct {
 
 type DomainHandler struct {
 	repo *repository.Repository
-	cfg  *config.Config
 }
 
-func NewDomainHandler(repo *repository.Repository, cfg *config.Config) *DomainHandler {
-	return &DomainHandler{repo: repo, cfg: cfg}
+func NewDomainHandler(repo *repository.Repository) *DomainHandler {
+	return &DomainHandler{repo: repo}
 }
 
 func (h *DomainHandler) List(c *gin.Context) {
@@ -339,7 +338,6 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 		return
 	}
 
-	force := c.Query("force") == "true"
 	refund := c.Query("refund") == "true"
 
 	domain, err := h.repo.FindDomain(id)
@@ -355,38 +353,30 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 		return
 	}
 
-	// 删除 Cloudflare DNS 记录
-	var failures []cfFailureRecord
-	if domain.CloudflareAccountID != 0 {
-		cf, cfErr := cfForAccount(h.repo, h.cfg, domain.CloudflareAccountID)
-		if cfErr == nil {
-			for _, sub := range subdomains {
-				for _, rec := range sub.DNSRecords {
-					if rec.CloudflareRecordID == "" {
-						continue
-					}
-					if delErr := cf.DeleteRecord(c.Request.Context(), domain.CloudflareZoneID, rec.CloudflareRecordID); delErr != nil {
-						failures = append(failures, cfFailureRecord{
-							SubdomainFQDN:      sub.FQDN,
-							RecordType:         rec.Type,
-							RecordContent:      rec.Content,
-							CloudflareRecordID: rec.CloudflareRecordID,
-							Error:              delErr.Error(),
-						})
-					}
-				}
-			}
+	type deleteCandidate struct {
+		sub model.Subdomain
+		rec model.DNSRecord
+	}
+	candidates := make([]deleteCandidate, 0)
+	for _, sub := range subdomains {
+		for _, rec := range sub.DNSRecords {
+			candidates = append(candidates, deleteCandidate{sub: sub, rec: rec})
 		}
 	}
 
-	// 若有失败且未强制删除，返回 409
-	if len(failures) > 0 && !force {
-		c.JSON(http.StatusConflict, gin.H{
-			"code":    409,
-			"message": "some cloudflare dns records failed to delete",
-			"data":    gin.H{"failed_records": failures},
-		})
-		return
+	if len(candidates) > 0 {
+		if domain.CloudflareAccountID == 0 {
+			response.ErrorWithKeyData(c, http.StatusConflict, "cloudflare account is missing", "error.cloudflareAccountNotFound", gin.H{
+				"pending_delete_count": len(candidates),
+			})
+			return
+		}
+		if _, err := h.repo.FindCloudflareAccount(domain.CloudflareAccountID); err != nil {
+			response.ErrorWithKeyData(c, http.StatusConflict, "cloudflare account not found", "error.cloudflareAccountNotFound", gin.H{
+				"pending_delete_count": len(candidates),
+			})
+			return
+		}
 	}
 
 	// 收集退还积分信息 — 使用 ClaimCost 而非 re-query 当前组价格
@@ -431,6 +421,7 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 		subdomainIDs[i] = s.ID
 	}
 
+	queuedOps := 0
 	if err := h.repo.Transaction(func(tx *gorm.DB) error {
 		if refund {
 			for _, item := range refundItems {
@@ -444,6 +435,29 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 						return err
 					}
 				}
+			}
+		}
+		if len(candidates) > 0 {
+			for _, item := range candidates {
+				if _, err := enqueueCloudflareTask(
+					h.repo,
+					tx,
+					cloudflareTaskResourceDNSRecord,
+					item.rec.ID,
+					model.CloudflareTaskActionDeleteDNSRecord,
+					model.CloudflareTaskPayload{
+						CloudflareAccountID: domain.CloudflareAccountID,
+						ZoneID:              domain.CloudflareZoneID,
+						RecordID:            item.rec.CloudflareRecordID,
+						RecordType:          item.rec.Type,
+						Name:                item.rec.Name,
+						Content:             item.rec.Content,
+					},
+					fmt.Sprintf("domain:delete:%d:%s", item.rec.ID, item.rec.CloudflareRecordID),
+				); err != nil {
+					return err
+				}
+				queuedOps++
 			}
 		}
 		if len(subdomainIDs) > 0 {
@@ -468,8 +482,9 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 					}
 					return n
 				}(),
-				"refunded":          refund,
-				"cf_failures_count": len(failures),
+				"refunded":         refund,
+				"cf_queued_count":  queuedOps,
+				"cf_skipped_count": len(candidates) - queuedOps,
 			})
 			if err := tx.Create(&model.AuditLog{
 				UserID:     admin.ID,
@@ -490,5 +505,10 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete domain", "error.failedToDeleteDomain")
 		return
 	}
-	response.OK(c, gin.H{"message": "domain deleted"})
+	data := gin.H{"message": "domain deleted"}
+	if queuedOps > 0 {
+		data["sync_status"] = "processing"
+		data["operation_count"] = queuedOps
+	}
+	response.OK(c, data)
 }

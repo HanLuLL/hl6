@@ -84,6 +84,9 @@ type DNSRecord struct {
 	TTL                int       `json:"ttl" gorm:"default:1"`
 	Proxied            bool      `json:"proxied" gorm:"default:false"`
 	CloudflareRecordID string    `json:"cloudflare_record_id"`
+	SyncStatus         string    `json:"sync_status" gorm:"type:varchar(24);not null;default:synced;index"`
+	SyncError          string    `json:"sync_error,omitempty" gorm:"type:text"`
+	SyncOperationID    *uint     `json:"sync_operation_id,omitempty" gorm:"index"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
 }

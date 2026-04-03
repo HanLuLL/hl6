@@ -86,7 +86,9 @@ func (r *Repository) AdminListDNSRecords(page, perPage int, search string, domai
 		q = q.Where("users.group_id = ?", *groupID)
 	}
 
-	q.Count(&total)
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	err := q.Offset((page - 1) * perPage).Limit(perPage).Order("dns_records.created_at DESC").Scan(&results).Error
 	if results == nil {
 		results = []AdminDNSRecordDTO{}

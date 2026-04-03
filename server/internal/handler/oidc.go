@@ -16,13 +16,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"hl6-server/internal/config"
 	"hl6-server/internal/model"
 	"hl6-server/internal/oidc"
+	"hl6-server/internal/referral"
 	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
 
@@ -38,7 +38,6 @@ type OIDCHandler struct {
 
 const (
 	firstUserAdminLockKey         int64 = 19490331
-	referralCodeLength                  = 5
 	maxReferralCodeCreateAttempts       = 20
 )
 
@@ -90,7 +89,11 @@ func (h *OIDCHandler) Login(c *gin.Context) {
 	callbackURL := strings.TrimRight(urlState.BackendURL, "/") + "/api/v1/auth/callback"
 	secureCookie := strings.HasPrefix(urlState.FrontendURL, "https://")
 
-	state := generateRandomState()
+	state, err := generateRandomState()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "failed to generate oauth state")
+		return
+	}
 
 	// Store state in httpOnly cookie
 	h.setSessionCookie(c, "hl6_state", state, 900, secureCookie) // 15 min TTL
@@ -263,33 +266,46 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		}
 
 		// Create credit balance
-		tx.Create(&model.CreditBalance{UserID: user.ID, Balance: 0})
+		if err := tx.Create(&model.CreditBalance{UserID: user.ID, Balance: 0}).Error; err != nil {
+			tx.Rollback()
+			c.String(http.StatusInternalServerError, "failed to initialize user credits")
+			return
+		}
 
 		// Audit log for registration
 		regDetails, _ := json.Marshal(map[string]string{"email": email})
-		tx.Create(&model.AuditLog{
+		if err := tx.Create(&model.AuditLog{
 			UserID:     user.ID,
 			Action:     "user_register",
 			Resource:   "user",
 			ResourceID: user.ID,
 			Details:    regDetails,
-		})
+		}).Error; err != nil {
+			tx.Rollback()
+			c.String(http.StatusInternalServerError, "failed to initialize user audit")
+			return
+		}
 
 		// Grant registration bonus
 		if bonusStr, err := h.repo.GetSystemConfig("registration_bonus_credits"); err == nil {
 			if bonus, err := strconv.ParseFloat(bonusStr, 64); err == nil && bonus > 0 {
 				amount := model.CreditFromFloat(bonus)
 				if err := h.repo.GrantCredits(tx, user.ID, amount, "txn.registrationBonus", nil); err != nil {
-					log.Printf("failed to grant registration bonus for user %d: %v", user.ID, err)
-				} else {
-					bonusDetails, _ := json.Marshal(map[string]interface{}{"amount": amount})
-					tx.Create(&model.AuditLog{
-						UserID:     user.ID,
-						Action:     "user_registration_bonus",
-						Resource:   "credit",
-						ResourceID: user.ID,
-						Details:    bonusDetails,
-					})
+					tx.Rollback()
+					c.String(http.StatusInternalServerError, "failed to grant registration bonus")
+					return
+				}
+				bonusDetails, _ := json.Marshal(map[string]interface{}{"amount": amount})
+				if err := tx.Create(&model.AuditLog{
+					UserID:     user.ID,
+					Action:     "user_registration_bonus",
+					Resource:   "credit",
+					ResourceID: user.ID,
+					Details:    bonusDetails,
+				}).Error; err != nil {
+					tx.Rollback()
+					c.String(http.StatusInternalServerError, "failed to write bonus audit log")
+					return
 				}
 			}
 		}
@@ -297,7 +313,12 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		// Process referral
 		if refCode, err := c.Cookie("hl6_ref"); err == nil && refCode != "" {
 			h.setSessionCookie(c, "hl6_ref", "", -1, secureCookie) // Clear cookie
-			h.processReferral(tx, user, refCode)
+			if err := h.processReferral(tx, user, refCode); err != nil {
+				log.Printf("failed to process referral for user %d: %v", user.ID, err)
+				tx.Rollback()
+				c.String(http.StatusInternalServerError, "failed to process referral")
+				return
+			}
 		}
 
 		if err := tx.Commit().Error; err != nil {
@@ -306,13 +327,21 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		}
 
 		// Reload user with group
-		user, _ = h.repo.FindUserByExternalID(sub)
+		loaded, loadErr := h.repo.FindUserByExternalID(sub)
+		if loadErr != nil {
+			c.String(http.StatusInternalServerError, "failed to reload user")
+			return
+		}
+		user = loaded
 	} else {
 		// Existing user — update info
 		user.Email = email
 		user.Name = name
 		user.AvatarURL = picture
-		h.repo.UpdateUser(user)
+		if err := h.repo.UpdateUser(user); err != nil {
+			c.String(http.StatusInternalServerError, "failed to update user profile")
+			return
+		}
 	}
 
 	// Banned users cannot create new sessions.
@@ -442,14 +471,14 @@ func (h *OIDCHandler) issueSessionJWT(externalID string) (string, error) {
 
 func (h *OIDCHandler) createUserWithUniqueReferralCode(tx *gorm.DB, user *model.User) error {
 	for attempts := 0; attempts < maxReferralCodeCreateAttempts; attempts++ {
-		code, err := generateReferralCode()
+		code, err := referral.GenerateCode(5)
 		if err != nil {
 			return err
 		}
 		user.ID = 0
 		user.ReferralCode = code
 		if err := tx.Create(user).Error; err != nil {
-			if isReferralCodeUniqueViolation(err) {
+			if referral.IsCodeUniqueViolation(err) {
 				continue
 			}
 			return err
@@ -459,61 +488,26 @@ func (h *OIDCHandler) createUserWithUniqueReferralCode(tx *gorm.DB, user *model.
 	return fmt.Errorf("unable to generate unique referral code after %d attempts", maxReferralCodeCreateAttempts)
 }
 
-func generateReferralCode() (string, error) {
-	const alphabet = "abcdefghijklmnopqrstuvwxyz"
-	const maxUnbiasedByte = byte(26 * 9)
-
-	code := make([]byte, referralCodeLength)
-	randomBytes := make([]byte, referralCodeLength*2)
-	filled := 0
-
-	for filled < referralCodeLength {
-		if _, err := rand.Read(randomBytes); err != nil {
-			return "", err
-		}
-		for _, b := range randomBytes {
-			if b >= maxUnbiasedByte {
-				continue
-			}
-			code[filled] = alphabet[b%26]
-			filled++
-			if filled == referralCodeLength {
-				break
-			}
-		}
-	}
-
-	return string(code), nil
-}
-
 func isValidReferralCode(code string) bool {
 	return referralCodePattern.MatchString(code) || legacyReferralCodePattern.MatchString(code)
 }
 
-func isReferralCodeUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) || pgErr.Code != "23505" {
-		return false
-	}
-	return strings.Contains(strings.ToLower(pgErr.ConstraintName), "referral_code")
-}
-
-func (h *OIDCHandler) processReferral(tx *gorm.DB, newUser *model.User, refCode string) {
+func (h *OIDCHandler) processReferral(tx *gorm.DB, newUser *model.User, refCode string) error {
 	// Check if referral feature is enabled
 	enabledStr, err := h.repo.GetSystemConfig("referral_enabled")
 	if err != nil || enabledStr != "true" {
-		return
+		return nil
 	}
 
 	// Find inviter by referral code
 	inviter, err := h.repo.FindUserByReferralCode(refCode)
 	if err != nil {
-		return
+		return nil
 	}
 
 	// Prevent self-referral
 	if inviter.ID == newUser.ID {
-		return
+		return nil
 	}
 
 	inviterCreditsStr, err := h.repo.GetSystemConfig("referral_inviter_credits")
@@ -539,7 +533,7 @@ func (h *OIDCHandler) processReferral(tx *gorm.DB, newUser *model.User, refCode 
 	if inviterCredits > 0 {
 		inviterParams, _ := json.Marshal(map[string]string{"name": newUser.Name})
 		if err := h.repo.GrantCredits(tx, inviter.ID, inviterCredits, "txn.referralInviter", inviterParams); err != nil {
-			log.Printf("failed to grant referral credits to inviter %d: %v", inviter.ID, err)
+			return err
 		}
 	}
 
@@ -547,17 +541,19 @@ func (h *OIDCHandler) processReferral(tx *gorm.DB, newUser *model.User, refCode 
 	if inviteeCredits > 0 {
 		inviteeParams, _ := json.Marshal(map[string]string{"name": inviter.Name})
 		if err := h.repo.GrantCredits(tx, newUser.ID, inviteeCredits, "txn.referralInvitee", inviteeParams); err != nil {
-			log.Printf("failed to grant referral credits to invitee %d: %v", newUser.ID, err)
+			return err
 		}
 	}
 
 	// Create referral record
-	tx.Create(&model.UserReferral{
+	if err := tx.Create(&model.UserReferral{
 		InviterID:      inviter.ID,
 		InviteeID:      newUser.ID,
 		InviterCredits: inviterCredits,
 		InviteeCredits: inviteeCredits,
-	})
+	}).Error; err != nil {
+		return err
+	}
 
 	// Audit log
 	details, _ := json.Marshal(map[string]interface{}{
@@ -566,17 +562,22 @@ func (h *OIDCHandler) processReferral(tx *gorm.DB, newUser *model.User, refCode 
 		"inviter_credits": inviterCredits,
 		"invitee_credits": inviteeCredits,
 	})
-	tx.Create(&model.AuditLog{
+	if err := tx.Create(&model.AuditLog{
 		UserID:     newUser.ID,
 		Action:     "user_referral",
 		Resource:   "user",
 		ResourceID: newUser.ID,
 		Details:    details,
-	})
+	}).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
-func generateRandomState() string {
+func generateRandomState() (string, error) {
 	b := make([]byte, 16)
-	rand.Read(b)
-	return hex.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }

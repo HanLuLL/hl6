@@ -615,6 +615,7 @@
     "migrateToRequired": "需要指定迁移目标",
     "invalidMigrateTo": "无效的迁移目标",
     "invalidID": "无效的 ID",
+    "cloudflareOperationInProgress": "该 DNS 记录正在同步中，请稍后再试",
     "cloudflareDeleteFailed": "无法从 Cloudflare 删除 DNS 记录",
     "domainHasSubdomains": "无法删除有活跃子域名的域名",
     "failedToDeleteDomain": "删除域名失败",

@@ -10,7 +10,6 @@ import (
 	_ "image/png"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/chai2010/webp"
@@ -38,14 +37,7 @@ func NewNotificationAdminHandler(repo *repository.Repository, broker *SSEBroker,
 }
 
 func (h *NotificationAdminHandler) List(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "15"))
-	if page < 1 {
-		page = 1
-	}
-	if perPage < 1 || perPage > 100 {
-		perPage = 15
-	}
+	page, perPage := helpers.ParsePageParams(c, 15, 100)
 
 	notifications, total, err := h.repo.ListNotificationsAdmin(page, perPage)
 	if err != nil {

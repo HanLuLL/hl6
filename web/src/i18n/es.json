@@ -615,6 +615,7 @@
     "migrateToRequired": "Se requiere destino de migración",
     "invalidMigrateTo": "Destino de migración inválido",
     "invalidID": "ID no válido",
+    "cloudflareOperationInProgress": "Otra operación de sincronización DNS está en curso",
     "cloudflareDeleteFailed": "Error al eliminar el registro DNS de Cloudflare",
     "domainHasSubdomains": "No se puede eliminar un dominio con subdominios activos",
     "failedToDeleteDomain": "Error al eliminar el dominio",

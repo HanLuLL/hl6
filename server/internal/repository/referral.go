@@ -12,7 +12,9 @@ func (r *Repository) ListReferralsByInviter(inviterID uint, page, perPage int) (
 	var referrals []model.UserReferral
 	var total int64
 	q := r.DB.Model(&model.UserReferral{}).Where("inviter_id = ?", inviterID)
-	q.Count(&total)
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	err := q.Preload("Invitee").Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&referrals).Error
 	return referrals, total, err
 }

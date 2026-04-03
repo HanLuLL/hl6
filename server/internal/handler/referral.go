@@ -2,10 +2,10 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"hl6-server/internal/ctxutil"
+	"hl6-server/internal/helpers"
 	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
 )
@@ -25,14 +25,7 @@ func (h *ReferralHandler) GetReferralInfo(c *gin.Context) {
 		return
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if perPage < 1 || perPage > 100 {
-		perPage = 20
-	}
+	page, perPage := helpers.ParsePageParams(c, 20, 100)
 
 	enabledStr, cfgErr := h.repo.GetSystemConfig("referral_enabled")
 	referralEnabled := cfgErr == nil && enabledStr == "true"

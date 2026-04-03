@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"regexp"
-	"strconv"
 	"time"
 	"unicode/utf8"
 
@@ -38,14 +37,7 @@ func (h *NotificationHandler) List(c *gin.Context) {
 		return
 	}
 
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	if offset < 0 {
-		offset = 0
-	}
-	if limit < 1 || limit > 50 {
-		limit = 20
-	}
+	offset, limit := helpers.ParseOffsetLimit(c, 20, 50)
 
 	groupID := uint(0)
 	if user.GroupID != nil {

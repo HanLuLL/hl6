@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,24 +9,23 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"hl6-server/internal/config"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
-	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
 	"hl6-server/pkg/validator"
+
+	"gorm.io/gorm"
 )
 
 type DNSHandler struct {
 	repo   *repository.Repository
-	cfg    *config.Config
 	broker *SSEBroker
 }
 
-func NewDNSHandler(repo *repository.Repository, cfg *config.Config, broker *SSEBroker) *DNSHandler {
-	return &DNSHandler{repo: repo, cfg: cfg, broker: broker}
+func NewDNSHandler(repo *repository.Repository, broker *SSEBroker) *DNSHandler {
+	return &DNSHandler{repo: repo, broker: broker}
 }
 
 func (h *DNSHandler) ListRecords(c *gin.Context) {
@@ -135,44 +133,57 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 		body.TTL = 1
 	}
 
-	cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
-	if err != nil {
-		if errors.Is(err, service.ErrCloudflareTokenEmpty) {
-			response.Error(c, http.StatusInternalServerError, err.Error())
-		} else {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
-		}
-		return
-	}
-
-	cfID, err := cf.CreateRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, body.Type, sub.FQDN, body.Content, body.TTL, body.Proxied)
-	if err != nil {
-		log.Printf("cloudflare CreateRecord error: %v", err)
-		response.ErrorWithKey(c, http.StatusBadGateway, "cloudflare operation failed", "error.cloudflareError")
+	if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
 		return
 	}
 
 	record := &model.DNSRecord{
-		SubdomainID:        sub.ID,
-		Type:               body.Type,
-		Name:               sub.FQDN,
-		Content:            body.Content,
-		TTL:                body.TTL,
-		Proxied:            body.Proxied,
-		CloudflareRecordID: cfID,
+		SubdomainID: sub.ID,
+		Type:        body.Type,
+		Name:        sub.FQDN,
+		Content:     body.Content,
+		TTL:         body.TTL,
+		Proxied:     body.Proxied,
+		SyncStatus:  "pending_create",
 	}
-	if err := h.repo.CreateDNSRecord(record); err != nil {
-		// Rollback Cloudflare record
-		if delErr := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, cfID); delErr != nil {
-			log.Printf("failed to rollback cloudflare record %s: %v", cfID, delErr)
+	var task *model.CloudflareTask
+	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(record).Error; err != nil {
+			return err
 		}
+		queued, err := enqueueCloudflareTask(
+			h.repo,
+			tx,
+			cloudflareTaskResourceDNSRecord,
+			record.ID,
+			model.CloudflareTaskActionCreateDNSRecord,
+			model.CloudflareTaskPayload{
+				CloudflareAccountID: sub.Domain.CloudflareAccountID,
+				ZoneID:              sub.Domain.CloudflareZoneID,
+				RecordType:          body.Type,
+				Name:                sub.FQDN,
+				Content:             body.Content,
+				TTL:                 body.TTL,
+				Proxied:             body.Proxied,
+			},
+			fmt.Sprintf("dns:create:%d", record.ID),
+		)
+		if err != nil {
+			return err
+		}
+		task = queued
+		return h.repo.UpdateDNSRecordSyncState(tx, record.ID, "pending_create", &task.ID, "", nil)
+	}); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to save record", "error.failedToSaveRecord")
 		return
 	}
+	record.SyncOperationID = &task.ID
+	record.SyncStatus = "pending_create"
 
 	if user != nil {
 		details, _ := json.Marshal(map[string]interface{}{
-			"type": body.Type, "content": body.Content, "fqdn": sub.FQDN,
+			"type": body.Type, "content": body.Content, "fqdn": sub.FQDN, "operation_id": task.ID,
 		})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:     user.ID,
@@ -237,29 +248,52 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 		body.TTL = 1
 	}
 
-	cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
-	if err != nil {
-		if errors.Is(err, service.ErrCloudflareTokenEmpty) {
-			response.Error(c, http.StatusInternalServerError, err.Error())
-		} else {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
-		}
+	if record.SyncStatus != "synced" {
+		response.ErrorWithKey(c, http.StatusConflict, "record has a pending sync operation", "error.cloudflareOperationInProgress")
 		return
 	}
-
-	if err := cf.UpdateRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID, record.Type, sub.FQDN, body.Content, body.TTL, body.Proxied); err != nil {
-		log.Printf("cloudflare UpdateRecord error: %v", err)
-		response.ErrorWithKey(c, http.StatusBadGateway, "cloudflare operation failed", "error.cloudflareError")
+	if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
 		return
 	}
 
 	record.Content = body.Content
 	record.TTL = body.TTL
 	record.Proxied = body.Proxied
-	if err := h.repo.UpdateDNSRecord(record); err != nil {
+	var task *model.CloudflareTask
+	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(record).Error; err != nil {
+			return err
+		}
+		queued, err := enqueueCloudflareTask(
+			h.repo,
+			tx,
+			cloudflareTaskResourceDNSRecord,
+			record.ID,
+			model.CloudflareTaskActionUpdateDNSRecord,
+			model.CloudflareTaskPayload{
+				CloudflareAccountID: sub.Domain.CloudflareAccountID,
+				ZoneID:              sub.Domain.CloudflareZoneID,
+				RecordID:            record.CloudflareRecordID,
+				RecordType:          record.Type,
+				Name:                sub.FQDN,
+				Content:             body.Content,
+				TTL:                 body.TTL,
+				Proxied:             body.Proxied,
+			},
+			fmt.Sprintf("dns:update:%d:%d", record.ID, record.UpdatedAt.UnixNano()),
+		)
+		if err != nil {
+			return err
+		}
+		task = queued
+		return h.repo.UpdateDNSRecordSyncState(tx, record.ID, "pending_update", &task.ID, "", nil)
+	}); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
 		return
 	}
+	record.SyncStatus = "pending_update"
+	record.SyncOperationID = &task.ID
 	response.OK(c, record)
 }
 
@@ -278,28 +312,42 @@ func (h *DNSHandler) DeleteRecord(c *gin.Context) {
 		return
 	}
 
-	if record.CloudflareRecordID != "" {
-		cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
+	var opID *uint
+	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
+			return err
+		}
+		task, err := enqueueCloudflareTask(
+			h.repo,
+			tx,
+			cloudflareTaskResourceDNSRecord,
+			record.ID,
+			model.CloudflareTaskActionDeleteDNSRecord,
+			model.CloudflareTaskPayload{
+				CloudflareAccountID: sub.Domain.CloudflareAccountID,
+				ZoneID:              sub.Domain.CloudflareZoneID,
+				RecordID:            record.CloudflareRecordID,
+				RecordType:          record.Type,
+				Name:                record.Name,
+				Content:             record.Content,
+			},
+			fmt.Sprintf("dns:delete:%d:%s", record.ID, record.CloudflareRecordID),
+		)
 		if err != nil {
-			if errors.Is(err, service.ErrCloudflareTokenEmpty) {
-				response.Error(c, http.StatusInternalServerError, err.Error())
-			} else {
-				response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
-			}
-			return
+			return err
 		}
-		if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
-			log.Printf("cloudflare DeleteRecord error: %v", err)
-			response.ErrorWithKey(c, http.StatusBadGateway, "cloudflare operation failed", "error.cloudflareError")
-			return
-		}
-	}
-
-	if err := h.repo.DeleteDNSRecord(record.ID); err != nil {
+		opID = &task.ID
+		return tx.Delete(&model.DNSRecord{}, record.ID).Error
+	}); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
 		return
 	}
-	response.OK(c, gin.H{"message": "record deleted"})
+	data := gin.H{"message": "record deleted"}
+	if opID != nil {
+		data["operation_id"] = *opID
+		data["sync_status"] = "processing"
+	}
+	response.OK(c, data)
 }
 
 func (h *DNSHandler) getSubdomain(c *gin.Context) *model.Subdomain {
@@ -329,14 +377,7 @@ func (h *DNSHandler) getSubdomain(c *gin.Context) *model.Subdomain {
 }
 
 func (h *DNSHandler) AdminListRecords(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if perPage < 1 || perPage > 100 {
-		perPage = 20
-	}
+	page, perPage := helpers.ParsePageParams(c, 20, 100)
 	search := c.Query("search")
 
 	var domainID *uint
@@ -391,26 +432,33 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 		return
 	}
 
-	// Delete from Cloudflare
-	if record.CloudflareRecordID != "" {
-		cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
+	var opID *uint
+	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
+			return err
+		}
+		task, err := enqueueCloudflareTask(
+			h.repo,
+			tx,
+			cloudflareTaskResourceDNSRecord,
+			record.ID,
+			model.CloudflareTaskActionDeleteDNSRecord,
+			model.CloudflareTaskPayload{
+				CloudflareAccountID: sub.Domain.CloudflareAccountID,
+				ZoneID:              sub.Domain.CloudflareZoneID,
+				RecordID:            record.CloudflareRecordID,
+				RecordType:          record.Type,
+				Name:                record.Name,
+				Content:             record.Content,
+			},
+			fmt.Sprintf("admin:dns:delete:%d:%s", record.ID, record.CloudflareRecordID),
+		)
 		if err != nil {
-			if errors.Is(err, service.ErrCloudflareTokenEmpty) {
-				response.Error(c, http.StatusInternalServerError, err.Error())
-			} else {
-				response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
-			}
-			return
+			return err
 		}
-		if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
-			log.Printf("cloudflare DeleteRecord error: %v", err)
-			response.ErrorWithKey(c, http.StatusBadGateway, "cloudflare operation failed", "error.cloudflareError")
-			return
-		}
-	}
-
-	// Delete from database
-	if err := h.repo.DeleteDNSRecord(record.ID); err != nil {
+		opID = &task.ID
+		return tx.Delete(&model.DNSRecord{}, record.ID).Error
+	}); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
 		return
 	}
@@ -447,6 +495,7 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 		"type":    record.Type,
 		"content": record.Content,
 		"notify":  body.Notify,
+		"op_id":   opID,
 	})
 	h.repo.CreateAuditLog(&model.AuditLog{
 		UserID:     admin.ID,
@@ -456,5 +505,10 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 		Details:    details,
 	})
 
-	response.OK(c, gin.H{"message": "record deleted"})
+	data := gin.H{"message": "record deleted"}
+	if opID != nil {
+		data["operation_id"] = *opID
+		data["sync_status"] = "processing"
+	}
+	response.OK(c, data)
 }

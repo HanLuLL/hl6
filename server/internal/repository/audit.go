@@ -21,7 +21,9 @@ func (r *Repository) ListAuditLogs(page, perPage int, operator, action string) (
 		like := "%" + escapeLike(action) + "%"
 		q = q.Where("audit_logs.action ILIKE ?", like)
 	}
-	q.Count(&total)
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	err := q.Offset((page - 1) * perPage).Limit(perPage).Order("audit_logs.created_at DESC").Preload("User").Find(&logs).Error
 	return logs, total, err
 }

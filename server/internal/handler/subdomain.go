@@ -6,30 +6,26 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
-	"hl6-server/internal/config"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
-	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
 	"hl6-server/pkg/validator"
 )
 
 type SubdomainHandler struct {
 	repo   *repository.Repository
-	cfg    *config.Config
 	broker *SSEBroker
 }
 
-func NewSubdomainHandler(repo *repository.Repository, cfg *config.Config, broker *SSEBroker) *SubdomainHandler {
-	return &SubdomainHandler{repo: repo, cfg: cfg, broker: broker}
+func NewSubdomainHandler(repo *repository.Repository, broker *SSEBroker) *SubdomainHandler {
+	return &SubdomainHandler{repo: repo, broker: broker}
 }
 
 func (h *SubdomainHandler) List(c *gin.Context) {
@@ -213,35 +209,44 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 		return
 	}
 
-	// Delete all CF records first - all must succeed before DB cleanup
-	if len(sub.DNSRecords) > 0 {
-		cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
-		if err != nil {
-			if errors.Is(err, service.ErrCloudflareTokenEmpty) {
-				response.Error(c, http.StatusInternalServerError, err.Error())
-			} else {
-				response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
-			}
+	operationCount := len(sub.DNSRecords)
+	if operationCount > 0 {
+		if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
 			return
-		}
-		for _, record := range sub.DNSRecords {
-			if record.CloudflareRecordID != "" {
-				if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
-					response.ErrorWithKey(c, http.StatusBadGateway, "failed to delete DNS record from Cloudflare", "error.cloudflareDeleteFailed")
-					return
-				}
-			}
 		}
 	}
 
+	queuedOps := 0
 	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		for _, record := range sub.DNSRecords {
+			if _, err := enqueueCloudflareTask(
+				h.repo,
+				tx,
+				cloudflareTaskResourceDNSRecord,
+				record.ID,
+				model.CloudflareTaskActionDeleteDNSRecord,
+				model.CloudflareTaskPayload{
+					CloudflareAccountID: sub.Domain.CloudflareAccountID,
+					ZoneID:              sub.Domain.CloudflareZoneID,
+					RecordID:            record.CloudflareRecordID,
+					RecordType:          record.Type,
+					Name:                record.Name,
+					Content:             record.Content,
+				},
+				fmt.Sprintf("subdomain:release:%d:%s", record.ID, record.CloudflareRecordID),
+			); err != nil {
+				return err
+			}
+			queuedOps++
+		}
 		if err := tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{}).Error; err != nil {
 			return err
 		}
 		if err := tx.Delete(sub).Error; err != nil {
 			return err
 		}
-		details, _ := json.Marshal(map[string]interface{}{"fqdn": sub.FQDN})
+		details, _ := json.Marshal(map[string]interface{}{"fqdn": sub.FQDN, "operation_count": queuedOps})
 		return tx.Create(&model.AuditLog{
 			UserID:     user.ID,
 			Action:     "release_subdomain",
@@ -254,18 +259,16 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, gin.H{"message": "subdomain released"})
+	data := gin.H{"message": "subdomain released"}
+	if queuedOps > 0 {
+		data["sync_status"] = "processing"
+		data["operation_count"] = queuedOps
+	}
+	response.OK(c, data)
 }
 
 func (h *SubdomainHandler) AdminListClaimed(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if perPage < 1 || perPage > 100 {
-		perPage = 20
-	}
+	page, perPage := helpers.ParsePageParams(c, 20, 100)
 
 	search := strings.TrimSpace(c.Query("search"))
 	subs, total, err := h.repo.AdminListClaimedSubdomains(page, perPage, search)
@@ -305,30 +308,37 @@ func (h *SubdomainHandler) AdminRelease(c *gin.Context) {
 		return
 	}
 
-	// Delete all Cloudflare records first; any failure aborts local cleanup.
-	if len(sub.DNSRecords) > 0 {
-		cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
-		if err != nil {
-			if errors.Is(err, service.ErrCloudflareTokenEmpty) {
-				response.Error(c, http.StatusInternalServerError, err.Error())
-			} else {
-				response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
-			}
+	operationCount := len(sub.DNSRecords)
+	if operationCount > 0 {
+		if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
 			return
-		}
-		for _, record := range sub.DNSRecords {
-			if record.CloudflareRecordID == "" {
-				continue
-			}
-			if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, record.CloudflareRecordID); err != nil {
-				log.Printf("cloudflare DeleteRecord error: %v", err)
-				response.ErrorWithKey(c, http.StatusBadGateway, "cloudflare operation failed", "error.cloudflareError")
-				return
-			}
 		}
 	}
 
+	queuedOps := 0
 	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		for _, record := range sub.DNSRecords {
+			if _, err := enqueueCloudflareTask(
+				h.repo,
+				tx,
+				cloudflareTaskResourceDNSRecord,
+				record.ID,
+				model.CloudflareTaskActionDeleteDNSRecord,
+				model.CloudflareTaskPayload{
+					CloudflareAccountID: sub.Domain.CloudflareAccountID,
+					ZoneID:              sub.Domain.CloudflareZoneID,
+					RecordID:            record.CloudflareRecordID,
+					RecordType:          record.Type,
+					Name:                record.Name,
+					Content:             record.Content,
+				},
+				fmt.Sprintf("admin:subdomain:release:%d:%s", record.ID, record.CloudflareRecordID),
+			); err != nil {
+				return err
+			}
+			queuedOps++
+		}
 		if err := tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{}).Error; err != nil {
 			return err
 		}
@@ -339,6 +349,7 @@ func (h *SubdomainHandler) AdminRelease(c *gin.Context) {
 			"fqdn":    sub.FQDN,
 			"user_id": sub.UserID,
 			"notify":  body.Notify,
+			"op_cnt":  queuedOps,
 		})
 		return tx.Create(&model.AuditLog{
 			UserID:     admin.ID,
@@ -375,5 +386,10 @@ func (h *SubdomainHandler) AdminRelease(c *gin.Context) {
 		}
 	}
 
-	response.OK(c, gin.H{"message": "subdomain released"})
+	data := gin.H{"message": "subdomain released"}
+	if queuedOps > 0 {
+		data["sync_status"] = "processing"
+		data["operation_count"] = queuedOps
+	}
+	response.OK(c, data)
 }

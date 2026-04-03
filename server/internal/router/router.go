@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -9,6 +10,7 @@ import (
 	"hl6-server/internal/handler"
 	"hl6-server/internal/middleware"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/service"
 )
 
 func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
@@ -16,21 +18,24 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
 
 	repo := repository.New(db)
+	cfTaskWorker := service.NewCloudflareTaskWorker(repo, cfg, 3*time.Second, 25)
+	cfTaskWorker.Start(context.Background())
+
 	auth := middleware.NewAuthMiddleware(cfg.SessionSecret, repo)
 	rl := middleware.NewRateLimiter(100, time.Minute)
 
 	authH := handler.NewAuthHandler(repo)
 	oidcH := handler.NewOIDCHandler(repo, cfg)
-	domainH := handler.NewDomainHandler(repo, cfg)
+	domainH := handler.NewDomainHandler(repo)
 	sseBroker := handler.NewSSEBroker()
-	subdomainH := handler.NewSubdomainHandler(repo, cfg, sseBroker)
+	subdomainH := handler.NewSubdomainHandler(repo, sseBroker)
 	creditH := handler.NewCreditHandler(repo)
 	adminH := handler.NewAdminHandler(repo, cfg)
 	brandingH := handler.NewBrandingHandler(repo, cfg)
 	referralH := handler.NewReferralHandler(repo)
 	cfAccountH := handler.NewCloudflareAccountHandler(repo, cfg)
 
-	dnsH := handler.NewDNSHandler(repo, cfg, sseBroker)
+	dnsH := handler.NewDNSHandler(repo, sseBroker)
 	notifH := handler.NewNotificationHandler(repo, sseBroker)
 	notifAdminH := handler.NewNotificationAdminHandler(repo, sseBroker, cfg)
 
@@ -106,6 +111,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.PUT("/config", adminH.UpdateConfig)
 	admin.POST("/config/url-confirm", adminH.ConfirmURLConfig)
 	admin.GET("/stats", adminH.Stats)
+	admin.GET("/cloudflare/tasks/dead", adminH.ListDeadCloudflareTasks)
 	admin.GET("/audit-logs", adminH.AuditLogs)
 	admin.GET("/notifications", notifAdminH.List)
 	admin.POST("/notifications", notifAdminH.Create)

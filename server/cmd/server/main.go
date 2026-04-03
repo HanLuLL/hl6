@@ -8,18 +8,17 @@ import (
 	"log"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"hl6-server/internal/config"
 	"hl6-server/internal/model"
+	"hl6-server/internal/referral"
 	"hl6-server/internal/router"
 )
 
 const internalSessionSecretKey = "_internal_session_secret"
 const (
-	referralCodeLength             = 5
 	referralCodeBackfillMaxRetries = 20
 )
 
@@ -51,6 +50,7 @@ func main() {
 		&model.DomainGroupAccess{},
 		&model.Subdomain{},
 		&model.DNSRecord{},
+		&model.CloudflareTask{},
 		&model.CreditBalance{},
 		&model.CreditTransaction{},
 		&model.AuditLog{},
@@ -274,7 +274,7 @@ func migrateCreditsToInt(db *gorm.DB) {
 
 func backfillReferralCode(db *gorm.DB, userID uint) error {
 	for attempts := 0; attempts < referralCodeBackfillMaxRetries; attempts++ {
-		code, err := generateReferralCode()
+		code, err := referral.GenerateCode(5)
 		if err != nil {
 			return err
 		}
@@ -282,7 +282,7 @@ func backfillReferralCode(db *gorm.DB, userID uint) error {
 			Where("id = ? AND (referral_code = '' OR referral_code IS NULL)", userID).
 			Update("referral_code", code)
 		if tx.Error != nil {
-			if isReferralCodeUniqueViolation(tx.Error) {
+			if referral.IsCodeUniqueViolation(tx.Error) {
 				continue
 			}
 			return tx.Error
@@ -294,39 +294,4 @@ func backfillReferralCode(db *gorm.DB, userID uint) error {
 		return nil
 	}
 	return fmt.Errorf("unable to generate unique referral code after %d attempts", referralCodeBackfillMaxRetries)
-}
-
-func generateReferralCode() (string, error) {
-	const alphabet = "abcdefghijklmnopqrstuvwxyz"
-	const maxUnbiasedByte = byte(26 * 9)
-
-	code := make([]byte, referralCodeLength)
-	randomBytes := make([]byte, referralCodeLength*2)
-	filled := 0
-
-	for filled < referralCodeLength {
-		if _, err := rand.Read(randomBytes); err != nil {
-			return "", err
-		}
-		for _, b := range randomBytes {
-			if b >= maxUnbiasedByte {
-				continue
-			}
-			code[filled] = alphabet[b%26]
-			filled++
-			if filled == referralCodeLength {
-				break
-			}
-		}
-	}
-
-	return string(code), nil
-}
-
-func isReferralCodeUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) || pgErr.Code != "23505" {
-		return false
-	}
-	return strings.Contains(strings.ToLower(pgErr.ConstraintName), "referral_code")
 }

@@ -57,8 +57,7 @@ func NewAdminHandler(repo *repository.Repository, cfg *config.Config) *AdminHand
 }
 
 func (h *AdminHandler) ListUsers(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "50"))
+	page, perPage := helpers.ParsePageParams(c, 50, 100)
 	search := c.Query("search")
 	inviter := strings.TrimSpace(c.Query("inviter"))
 	banStatus := strings.ToLower(strings.TrimSpace(c.DefaultQuery("ban_status", "all")))
@@ -84,13 +83,6 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		parsedID := uint(parsed)
 		groupID = &parsedID
 	}
-	if page < 1 {
-		page = 1
-	}
-	if perPage < 1 || perPage > 100 {
-		perPage = 50
-	}
-
 	users, total, err := h.repo.ListUsers(page, perPage, search, banStatus, role, groupID, inviter)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list users", "error.failedToListUsers")
@@ -143,17 +135,27 @@ func (h *AdminHandler) Stats(c *gin.Context) {
 	response.OK(c, stats)
 }
 
+func (h *AdminHandler) ListDeadCloudflareTasks(c *gin.Context) {
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	if limit < 1 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	tasks, err := h.repo.ListDeadCloudflareTasks(limit)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list cloudflare tasks", "error.databaseError")
+		return
+	}
+	response.OK(c, tasks)
+}
+
 func (h *AdminHandler) AuditLogs(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "15"))
+	page, perPage := helpers.ParsePageParams(c, 15, 100)
 	operator := strings.TrimSpace(c.Query("operator"))
 	action := strings.TrimSpace(c.Query("action"))
-	if page < 1 {
-		page = 1
-	}
-	if perPage < 1 || perPage > 100 {
-		perPage = 15
-	}
 
 	logs, total, err := h.repo.ListAuditLogs(page, perPage, operator, action)
 	if err != nil {
@@ -416,42 +418,41 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 		}
 	}
 
+	type deleteCandidate struct {
+		sub model.Subdomain
+		rec model.DNSRecord
+	}
+	var candidates []deleteCandidate
 	var failures []cfFailureRecord
-	cfDeletedCount := 0
 	if body.DeleteResources {
+		accountErrCache := make(map[uint]error)
 		for _, sub := range subdomains {
-			cf, err := cfForAccount(h.repo, h.cfg, sub.Domain.CloudflareAccountID)
+			accountID := sub.Domain.CloudflareAccountID
+			if _, ok := accountErrCache[accountID]; !ok {
+				if accountID == 0 {
+					accountErrCache[accountID] = errors.New("cloudflare account id is empty")
+				} else {
+					_, accountErrCache[accountID] = h.repo.FindCloudflareAccount(accountID)
+				}
+			}
 
 			for _, rec := range sub.DNSRecords {
-				if rec.CloudflareRecordID == "" {
-					continue
-				}
-				if err != nil {
+				if accountErrCache[accountID] != nil {
 					failures = append(failures, cfFailureRecord{
 						SubdomainFQDN:      sub.FQDN,
 						RecordType:         rec.Type,
 						RecordContent:      rec.Content,
 						CloudflareRecordID: rec.CloudflareRecordID,
-						Error:              err.Error(),
+						Error:              accountErrCache[accountID].Error(),
 					})
 					continue
 				}
-				if err := cf.DeleteRecord(c.Request.Context(), sub.Domain.CloudflareZoneID, rec.CloudflareRecordID); err != nil {
-					failures = append(failures, cfFailureRecord{
-						SubdomainFQDN:      sub.FQDN,
-						RecordType:         rec.Type,
-						RecordContent:      rec.Content,
-						CloudflareRecordID: rec.CloudflareRecordID,
-						Error:              err.Error(),
-					})
-				} else {
-					cfDeletedCount++
-				}
+				candidates = append(candidates, deleteCandidate{sub: sub, rec: rec})
 			}
 		}
 	}
 
-	if len(failures) > 0 && !body.Force {
+	if len(failures) > 0 {
 		response.ErrorWithKeyData(c, http.StatusConflict, "some cloudflare dns records failed to delete", "error.cloudflareDeleteFailed", gin.H{
 			"failed_records": failures,
 		})
@@ -465,6 +466,7 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 
 	now := time.Now()
 	targetRole := target.Role
+	queuedOps := 0
 	if err := h.repo.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", adminBanGuardLockKey).Error; err != nil {
 			return err
@@ -498,6 +500,28 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 			return err
 		}
 
+		for _, item := range candidates {
+			if _, err := enqueueCloudflareTask(
+				h.repo,
+				tx,
+				cloudflareTaskResourceDNSRecord,
+				item.rec.ID,
+				model.CloudflareTaskActionDeleteDNSRecord,
+				model.CloudflareTaskPayload{
+					CloudflareAccountID: item.sub.Domain.CloudflareAccountID,
+					ZoneID:              item.sub.Domain.CloudflareZoneID,
+					RecordID:            item.rec.CloudflareRecordID,
+					RecordType:          item.rec.Type,
+					Name:                item.rec.Name,
+					Content:             item.rec.Content,
+				},
+				fmt.Sprintf("admin:ban:%d:%s", item.rec.ID, item.rec.CloudflareRecordID),
+			); err != nil {
+				return err
+			}
+			queuedOps++
+		}
+
 		if len(subdomainIDs) > 0 {
 			if err := tx.Where("subdomain_id IN ?", subdomainIDs).Delete(&model.DNSRecord{}).Error; err != nil {
 				return err
@@ -513,16 +537,6 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 			response.ErrorWithKey(c, http.StatusBadRequest, "cannot ban last active admin", "error.cannotBanLastAdmin")
 			return
 		}
-		if cfDeletedCount > 0 {
-			data := gin.H{
-				"retryable": true,
-			}
-			if len(failures) > 0 {
-				data["failed_records"] = failures
-			}
-			response.ErrorWithKeyData(c, http.StatusInternalServerError, "database failed after cloudflare deletions, retry to finish local cleanup", "error.failedToBanUserRetryable", data)
-			return
-		}
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to ban user", "error.failedToBanUser")
 		return
 	}
@@ -535,6 +549,7 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 		"force":              body.Force,
 		"subdomains_deleted": len(subdomainIDs),
 		"cf_failures":        failures,
+		"cf_queue_count":     queuedOps,
 	})
 	h.repo.CreateAuditLog(&model.AuditLog{
 		UserID:     admin.ID,
@@ -547,6 +562,10 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 	data := gin.H{"message": "user banned"}
 	if len(failures) > 0 {
 		data["failed_records"] = failures
+	}
+	if queuedOps > 0 {
+		data["sync_status"] = "processing"
+		data["operation_count"] = queuedOps
 	}
 	response.OK(c, data)
 }

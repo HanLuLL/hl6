@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"hl6-server/internal/ctxutil"
+	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
-	"hl6-server/internal/ctxutil"
 	"hl6-server/pkg/response"
 )
 
@@ -50,14 +50,7 @@ func (h *CreditHandler) ListTransactions(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if perPage < 1 || perPage > 100 {
-		perPage = 20
-	}
+	page, perPage := helpers.ParsePageParams(c, 20, 100)
 
 	txns, total, err := h.repo.ListTransactions(user.ID, page, perPage)
 	if err != nil {

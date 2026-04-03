@@ -67,7 +67,9 @@ EXISTS (
 )`, like, like)
 	}
 
-	q.Count(&total)
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	err := q.Preload("Group").Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
 	return users, total, err
 }

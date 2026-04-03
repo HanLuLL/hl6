@@ -23,6 +23,7 @@ type CloudflareService struct {
 }
 
 var ErrCloudflareTokenEmpty = errors.New("cloudflare api token is empty")
+var ErrCloudflareRecordNotFound = errors.New("cloudflare record not found")
 
 func NewCloudflareService(apiToken string) (*CloudflareService, error) {
 	if apiToken == "" {
@@ -112,6 +113,13 @@ func (s *CloudflareService) CreateRecord(ctx context.Context, zoneID, recordType
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
+	// Prefer read-before-write to keep retries idempotent when DB update failed after a successful create.
+	if existingID, err := s.FindRecord(ctx, zoneID, recordType, name, content); err == nil {
+		return existingID, nil
+	} else if err != nil && !errors.Is(err, ErrCloudflareRecordNotFound) {
+		return "", fmt.Errorf("cloudflare pre-check record: %w", err)
+	}
+
 	record, err := s.client.DNS.Records.New(ctx, dns.RecordNewParams{
 		ZoneID: cloudflare.F(zoneID),
 		Body:   s.buildNewBody(recordType, name, content, ttl, proxied),
@@ -181,7 +189,9 @@ func (s *CloudflareService) DeleteRecord(ctx context.Context, zoneID, recordID s
 	})
 	if err != nil {
 		// Idempotent: if record no longer exists, treat as success
-		if !s.RecordExists(ctx, zoneID, recordID) {
+		existsCtx, existsCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer existsCancel()
+		if !s.RecordExists(existsCtx, zoneID, recordID) {
 			return nil
 		}
 		return fmt.Errorf("cloudflare delete record: %w", err)
@@ -212,7 +222,7 @@ func (s *CloudflareService) FindRecord(ctx context.Context, zoneID, recordType, 
 	if err := pager.Err(); err != nil {
 		return "", fmt.Errorf("cloudflare search: %w", err)
 	}
-	return "", fmt.Errorf("record not found")
+	return "", ErrCloudflareRecordNotFound
 }
 
 // RecordExists checks if a specific record still exists in Cloudflare.

@@ -615,6 +615,7 @@
     "migrateToRequired": "Необходимо указать цель миграции",
     "invalidMigrateTo": "Недопустимая цель миграции",
     "invalidID": "Недействительный ID",
+    "cloudflareOperationInProgress": "Выполняется другая операция синхронизации DNS",
     "cloudflareDeleteFailed": "Не удалось удалить DNS-запись из Cloudflare",
     "domainHasSubdomains": "Невозможно удалить домен с активными поддоменами",
     "failedToDeleteDomain": "Не удалось удалить домен",
