@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine AS builder
+FROM mirror.houlang.cloud/dh/golang:1.25-alpine AS builder
 
 WORKDIR /src
 
@@ -10,7 +10,7 @@ RUN go mod download
 COPY server/ ./
 RUN CGO_ENABLED=1 GOOS=linux go build -o /out/hl6-server ./cmd/server
 
-FROM alpine:3.22
+FROM mirror.houlang.cloud/dh/alpine:3.22
 
 RUN apk add --no-cache ca-certificates tzdata libgcc
 

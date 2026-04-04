@@ -1,4 +1,4 @@
-FROM node:22-alpine AS web-builder
+FROM mirror.houlang.cloud/dh/node:22-alpine AS web-builder
 
 WORKDIR /src/web
 
@@ -8,7 +8,7 @@ RUN npm ci
 COPY web/ ./
 RUN npm run build
 
-FROM golang:1.25-alpine AS server-builder
+FROM mirror.houlang.cloud/dh/golang:1.25-alpine AS server-builder
 
 WORKDIR /src
 
@@ -20,7 +20,7 @@ RUN go mod download
 COPY server/ ./
 RUN CGO_ENABLED=1 GOOS=linux go build -o /out/hl6-server ./cmd/server
 
-FROM alpine:3.22
+FROM mirror.houlang.cloud/dh/alpine:3.22
 
 RUN apk add --no-cache ca-certificates tzdata libgcc
 
