@@ -1,4 +1,4 @@
-FROM mirror.houlang.cloud/dh/golang:1.25-alpine AS builder
+FROM mirror.houlang.cloud/dh/golang:1.25.6-alpine AS builder
 
 WORKDIR /src
 

@@ -8,7 +8,7 @@ RUN npm ci
 COPY web/ ./
 RUN npm run build
 
-FROM mirror.houlang.cloud/dh/golang:1.25-alpine AS server-builder
+FROM mirror.houlang.cloud/dh/golang:1.25.6-alpine AS server-builder
 
 WORKDIR /src
 
