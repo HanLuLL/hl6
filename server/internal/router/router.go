@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,9 @@ import (
 func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
 	repo := repository.New(db)
 	cfTaskWorker := service.NewCloudflareTaskWorker(repo, cfg, 3*time.Second, 25)
