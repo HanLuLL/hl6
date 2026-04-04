@@ -11,6 +11,7 @@ app:docker:
   variables:
     IMAGE_NAME: "$CI_REGISTRY_IMAGE/app"
   rules:
+    - if: '$FORCE_FULL_CI == "1"'
     - if: '$CI_COMMIT_TAG'
     - if: '$CI_COMMIT_BRANCH'
       changes:
@@ -23,6 +24,7 @@ app:docker:
 pages:
   stage: build
   rules:
+    - if: '$FORCE_FULL_CI == "1"'
     - if: '$CI_COMMIT_BRANCH'
       changes:
         - web/**/*
