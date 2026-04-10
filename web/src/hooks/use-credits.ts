@@ -12,6 +12,17 @@ export function useCredits() {
   });
 }
 
+export function useDailyCheckinStatus() {
+  return useQuery({
+    queryKey: ["daily-checkin-status"],
+    queryFn: async () => {
+      const res = await api.getDailyCheckinStatus();
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
+}
+
 export function useTransactions(page = 1, perPage = 20) {
   return useQuery({
     queryKey: ["transactions", page, perPage],

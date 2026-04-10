@@ -115,7 +115,14 @@
     "grant": "付与",
     "deduct": "控除",
     "refund": "返金",
-    "balance": "残高：{{balance}}"
+    "balance": "残高：{{balance}}",
+    "dailyCheckinTitle": "デイリーチェックイン",
+    "dailyCheckinDesc": "1日1回クレジットを受け取れます",
+    "dailyCheckinReward": "本日の報酬: {{amount}} クレジット",
+    "dailyCheckinNow": "今すぐチェックイン",
+    "dailyCheckingIn": "チェックイン中...",
+    "dailyCheckinClaimed": "本日は受取済み",
+    "dailyCheckinSuccess": "チェックイン成功、{{amount}} クレジット獲得"
   },
   "claimDialog": {
     "title": "サブドメインを取得",
@@ -421,7 +428,15 @@
     "referralDesc": "紹介プログラムと報酬クレジットを設定",
     "referralEnabled": "紹介プログラムを有効化",
     "referralInviterCredits": "招待者のクレジット",
-    "referralInviteeCredits": "被招待者のクレジット"
+    "referralInviteeCredits": "被招待者のクレジット",
+    "dailyCheckinTitle": "デイリーチェックイン",
+    "dailyCheckinDesc": "機能スイッチ、日次報酬、対象ユーザーグループを設定",
+    "dailyCheckinEnabled": "デイリーチェックインを有効化",
+    "dailyCheckinCredits": "日次チェックインクレジット",
+    "dailyCheckinGroups": "許可ユーザーグループ",
+    "dailyCheckinGroupsHint": "グループ未選択時は誰もチェックインできません",
+    "dailyCheckinZeroDisableHint": "クレジットが 0 の場合、実行時は無効として扱われます",
+    "noGroups": "利用可能なグループがありません"
   },
   "referral": {
     "title": "紹介プログラム",
@@ -474,7 +489,8 @@
     "subdomainDeletedRefund": "管理者がドメインを削除、サブドメイン {{fqdn}} のクレジットを返金",
     "subdomainDeletedDeduct": "管理者がドメインを削除、サブドメイン {{fqdn}} のボーナスクレジットを回収",
     "referralInviter": "{{name}} の招待報酬",
-    "referralInvitee": "{{name}} からの招待報酬"
+    "referralInvitee": "{{name}} からの招待報酬",
+    "dailyCheckin": "デイリーチェックイン報酬"
   },
   "notifications": {
     "title": "通知",
@@ -620,6 +636,12 @@
     "domainHasSubdomains": "アクティブなサブドメインがあるドメインは削除できません",
     "failedToDeleteDomain": "ドメインの削除に失敗しました",
     "amountCannotBeZero": "金額はゼロにできません",
+    "dailyCheckinDisabled": "デイリーチェックインは無効です",
+    "dailyCheckinAlreadyClaimed": "本日のチェックインは既に受け取り済みです",
+    "dailyCheckinGroupNotAllowed": "現在のユーザーグループはチェックインできません",
+    "invalidDailyCheckinEnabled": "デイリーチェックイン有効設定が不正です",
+    "invalidDailyCheckinCredits": "デイリーチェックイン報酬設定が不正です",
+    "invalidDailyCheckinGroupIDs": "デイリーチェックイングループ設定が不正です",
     "cloudflareAccountNotFound": "Cloudflareアカウントが見つかりません",
     "cloudflareAccountHasDomains": "関連するドメインがあるアカウントは削除できません",
     "failedToListCloudflareAccounts": "Cloudflareアカウントの一覧取得に失敗しました",

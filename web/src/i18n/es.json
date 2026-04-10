@@ -115,7 +115,14 @@
     "grant": "Otorgar",
     "deduct": "Deducir",
     "refund": "Reembolso",
-    "balance": "Saldo: {{balance}}"
+    "balance": "Saldo: {{balance}}",
+    "dailyCheckinTitle": "Registro diario",
+    "dailyCheckinDesc": "Reclama créditos una vez por día",
+    "dailyCheckinReward": "Recompensa de hoy: {{amount}} créditos",
+    "dailyCheckinNow": "Registrar ahora",
+    "dailyCheckingIn": "Registrando...",
+    "dailyCheckinClaimed": "Ya registrado hoy",
+    "dailyCheckinSuccess": "Registro exitoso, ganaste {{amount}} créditos"
   },
   "claimDialog": {
     "title": "Solicitar subdominio",
@@ -421,7 +428,15 @@
     "referralDesc": "Configurar el programa de referidos y créditos de recompensa",
     "referralEnabled": "Habilitar programa de referidos",
     "referralInviterCredits": "Créditos del invitador",
-    "referralInviteeCredits": "Créditos del invitado"
+    "referralInviteeCredits": "Créditos del invitado",
+    "dailyCheckinTitle": "Registro diario",
+    "dailyCheckinDesc": "Configura interruptor, recompensa diaria y grupos permitidos",
+    "dailyCheckinEnabled": "Habilitar registro diario",
+    "dailyCheckinCredits": "Créditos diarios",
+    "dailyCheckinGroups": "Grupos permitidos",
+    "dailyCheckinGroupsHint": "Si no se selecciona ningún grupo, nadie puede registrarse",
+    "dailyCheckinZeroDisableHint": "Cuando los créditos son 0, la función se considera deshabilitada",
+    "noGroups": "No hay grupos disponibles"
   },
   "referral": {
     "title": "Programa de referidos",
@@ -474,7 +489,8 @@
     "subdomainDeletedRefund": "Admin eliminó el dominio, reembolso por subdominio {{fqdn}}",
     "subdomainDeletedDeduct": "Admin eliminó el dominio, créditos de bonificación reclamados por subdominio {{fqdn}}",
     "referralInviter": "Recompensa por invitar a {{name}}",
-    "referralInvitee": "Recompensa por invitación de {{name}}"
+    "referralInvitee": "Recompensa por invitación de {{name}}",
+    "dailyCheckin": "Recompensa de registro diario"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -620,6 +636,12 @@
     "domainHasSubdomains": "No se puede eliminar un dominio con subdominios activos",
     "failedToDeleteDomain": "Error al eliminar el dominio",
     "amountCannotBeZero": "La cantidad no puede ser cero",
+    "dailyCheckinDisabled": "El registro diario está deshabilitado",
+    "dailyCheckinAlreadyClaimed": "El registro de hoy ya fue reclamado",
+    "dailyCheckinGroupNotAllowed": "Tu grupo no tiene permiso para registrarse",
+    "invalidDailyCheckinEnabled": "Configuración de activación de registro diario inválida",
+    "invalidDailyCheckinCredits": "Configuración de créditos diarios inválida",
+    "invalidDailyCheckinGroupIDs": "Configuración de grupos de registro diario inválida",
     "cloudflareAccountNotFound": "Cuenta de Cloudflare no encontrada",
     "cloudflareAccountHasDomains": "No se puede eliminar una cuenta con dominios asociados",
     "failedToListCloudflareAccounts": "Error al listar cuentas de Cloudflare",

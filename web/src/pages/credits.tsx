@@ -1,20 +1,35 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCredits, useTransactions } from "@/hooks/use-credits";
+import { api, getErrorMessage } from "@/lib/api";
+import { useCredits, useDailyCheckinStatus, useTransactions } from "@/hooks/use-credits";
 import { useReferrals } from "@/hooks/use-referrals";
 import { toast } from "sonner";
 
 export default function CreditsPage() {
+  const queryClient = useQueryClient();
   const { data: creditData, isLoading: creditLoading } = useCredits();
+  const { data: checkinStatus } = useDailyCheckinStatus();
   const [page, setPage] = useState(1);
   const { data: txnData, isLoading: txnLoading } = useTransactions(page, 10);
   const [refPage, setRefPage] = useState(1);
   const { data: refData, isLoading: refLoading } = useReferrals(refPage, 10);
   const { t } = useTranslation();
+  const claimMutation = useMutation({
+    mutationFn: api.claimDailyCheckin,
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["credits"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      queryClient.invalidateQueries({ queryKey: ["daily-checkin-status"] });
+      toast.success(t("credits.dailyCheckinSuccess", { amount: res.data.granted }));
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
 
   const typeBadge = (type: string) => {
     switch (type) {
@@ -54,6 +69,30 @@ export default function CreditsPage() {
           <p className="text-sm text-muted-foreground mt-1">{t("credits.creditsAvailable")}</p>
         </CardContent>
       </Card>
+
+      {checkinStatus?.enabled && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t("credits.dailyCheckinTitle")}</CardTitle>
+            <p className="text-sm text-muted-foreground">{t("credits.dailyCheckinDesc")}</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {t("credits.dailyCheckinReward", { amount: checkinStatus.reward })}
+            </p>
+            <Button
+              onClick={() => claimMutation.mutate()}
+              disabled={checkinStatus.claimed_today || claimMutation.isPending}
+            >
+              {checkinStatus.claimed_today
+                ? t("credits.dailyCheckinClaimed")
+                : claimMutation.isPending
+                  ? t("credits.dailyCheckingIn")
+                  : t("credits.dailyCheckinNow")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {referralEnabled && (
         <Card>

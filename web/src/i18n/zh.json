@@ -115,7 +115,14 @@
     "grant": "发放",
     "deduct": "扣除",
     "refund": "退款",
-    "balance": "余额：{{balance}}"
+    "balance": "余额：{{balance}}",
+    "dailyCheckinTitle": "每日签到",
+    "dailyCheckinDesc": "每天可领取一次签到积分",
+    "dailyCheckinReward": "今日签到奖励：{{amount}} 积分",
+    "dailyCheckinNow": "立即签到",
+    "dailyCheckingIn": "签到中...",
+    "dailyCheckinClaimed": "今日已签到",
+    "dailyCheckinSuccess": "签到成功，获得 {{amount}} 积分"
   },
   "claimDialog": {
     "title": "申请子域名",
@@ -421,7 +428,15 @@
     "referralDesc": "配置邀请注册功能和奖励积分",
     "referralEnabled": "启用邀请注册",
     "referralInviterCredits": "邀请人积分",
-    "referralInviteeCredits": "被邀请人积分"
+    "referralInviteeCredits": "被邀请人积分",
+    "dailyCheckinTitle": "每日签到",
+    "dailyCheckinDesc": "配置签到功能开关、每日奖励和可参与用户组",
+    "dailyCheckinEnabled": "启用每日签到",
+    "dailyCheckinCredits": "每日签到积分",
+    "dailyCheckinGroups": "可签到用户组",
+    "dailyCheckinGroupsHint": "未选择用户组时，所有用户均不可签到",
+    "dailyCheckinZeroDisableHint": "当积分为 0 时，运行时视为签到功能关闭",
+    "noGroups": "暂无可选用户组"
   },
   "referral": {
     "title": "邀请注册",
@@ -474,7 +489,8 @@
     "subdomainDeletedRefund": "管理员删除域名，退还子域名 {{fqdn}} 的积分",
     "subdomainDeletedDeduct": "管理员删除域名，扣回子域名 {{fqdn}} 的奖励积分",
     "referralInviter": "邀请用户 {{name}} 注册奖励",
-    "referralInvitee": "受 {{name}} 邀请注册奖励"
+    "referralInvitee": "受 {{name}} 邀请注册奖励",
+    "dailyCheckin": "每日签到奖励"
   },
   "notifications": {
     "title": "通知",
@@ -620,6 +636,12 @@
     "domainHasSubdomains": "无法删除有活跃子域名的域名",
     "failedToDeleteDomain": "删除域名失败",
     "amountCannotBeZero": "金额不能为零",
+    "dailyCheckinDisabled": "每日签到功能未开启",
+    "dailyCheckinAlreadyClaimed": "今日已完成签到",
+    "dailyCheckinGroupNotAllowed": "当前用户组不可签到",
+    "invalidDailyCheckinEnabled": "每日签到开关配置无效",
+    "invalidDailyCheckinCredits": "每日签到积分配置无效",
+    "invalidDailyCheckinGroupIDs": "每日签到用户组配置无效",
     "cloudflareAccountNotFound": "Cloudflare 账号未找到",
     "cloudflareAccountHasDomains": "无法删除有关联域名的账号",
     "failedToListCloudflareAccounts": "获取 Cloudflare 账号列表失败",

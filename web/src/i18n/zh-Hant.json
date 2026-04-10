@@ -115,7 +115,14 @@
     "grant": "發放",
     "deduct": "扣除",
     "refund": "退款",
-    "balance": "餘額：{{balance}}"
+    "balance": "餘額：{{balance}}",
+    "dailyCheckinTitle": "每日簽到",
+    "dailyCheckinDesc": "每天可領取一次簽到積分",
+    "dailyCheckinReward": "今日簽到獎勵：{{amount}} 積分",
+    "dailyCheckinNow": "立即簽到",
+    "dailyCheckingIn": "簽到中...",
+    "dailyCheckinClaimed": "今日已簽到",
+    "dailyCheckinSuccess": "簽到成功，獲得 {{amount}} 積分"
   },
   "claimDialog": {
     "title": "申請子網域",
@@ -421,7 +428,15 @@
     "referralDesc": "設定邀請註冊功能和獎勵積分",
     "referralEnabled": "啟用邀請註冊",
     "referralInviterCredits": "邀請人積分",
-    "referralInviteeCredits": "被邀請人積分"
+    "referralInviteeCredits": "被邀請人積分",
+    "dailyCheckinTitle": "每日簽到",
+    "dailyCheckinDesc": "配置簽到功能開關、每日獎勵和可參與使用者組",
+    "dailyCheckinEnabled": "啟用每日簽到",
+    "dailyCheckinCredits": "每日簽到積分",
+    "dailyCheckinGroups": "可簽到使用者組",
+    "dailyCheckinGroupsHint": "未選擇使用者組時，所有使用者均不可簽到",
+    "dailyCheckinZeroDisableHint": "當積分為 0 時，運行時視為簽到功能關閉",
+    "noGroups": "暫無可選使用者組"
   },
   "referral": {
     "title": "邀請註冊",
@@ -474,7 +489,8 @@
     "subdomainDeletedRefund": "管理員刪除網域，退還子網域 {{fqdn}} 的積分",
     "subdomainDeletedDeduct": "管理員刪除網域，扣回子網域 {{fqdn}} 的獎勵積分",
     "referralInviter": "邀請用戶 {{name}} 註冊獎勵",
-    "referralInvitee": "受 {{name}} 邀請註冊獎勵"
+    "referralInvitee": "受 {{name}} 邀請註冊獎勵",
+    "dailyCheckin": "每日簽到獎勵"
   },
   "notifications": {
     "title": "通知",
@@ -620,6 +636,12 @@
     "domainHasSubdomains": "無法刪除有活躍子域名的域名",
     "failedToDeleteDomain": "刪除域名失敗",
     "amountCannotBeZero": "金額不能為零",
+    "dailyCheckinDisabled": "每日簽到功能未開啟",
+    "dailyCheckinAlreadyClaimed": "今日已完成簽到",
+    "dailyCheckinGroupNotAllowed": "目前使用者組不可簽到",
+    "invalidDailyCheckinEnabled": "每日簽到開關設定無效",
+    "invalidDailyCheckinCredits": "每日簽到積分設定無效",
+    "invalidDailyCheckinGroupIDs": "每日簽到使用者組設定無效",
     "cloudflareAccountNotFound": "Cloudflare 帳號未找到",
     "cloudflareAccountHasDomains": "無法刪除有關聯網域的帳號",
     "failedToListCloudflareAccounts": "取得 Cloudflare 帳號清單失敗",

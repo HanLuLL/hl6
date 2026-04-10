@@ -31,6 +31,9 @@ var allowedConfigKeys = map[string]bool{
 	"referral_enabled":           true,
 	"referral_inviter_credits":   true,
 	"referral_invitee_credits":   true,
+	"daily_checkin_enabled":      true,
+	"daily_checkin_credits":      true,
+	"daily_checkin_group_ids":    true,
 	"frontend_urls":              true,
 	"frontend_url":               true,
 	"backend_urls":               true,
@@ -682,6 +685,7 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 	}
 
 	details := make(map[string]string, len(body)+4)
+	normalizedConfigValues := make(map[string]string, 3)
 
 	if raw, ok := pickConfigInput(body, configKeyFrontendURLs, configKeyFrontendURL); ok {
 		if h.urlResolver.cfg.FrontendURLEnvSet {
@@ -815,11 +819,53 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 		}
 	}
 
+	if raw, ok := body[configKeyDailyCheckinEnabled]; ok {
+		normalized, err := normalizeBooleanConfig(raw)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusBadRequest, "invalid daily_checkin_enabled", "error.invalidDailyCheckinEnabled")
+			return
+		}
+		normalizedConfigValues[configKeyDailyCheckinEnabled] = normalized
+		details[configKeyDailyCheckinEnabled] = normalized
+	}
+
+	if raw, ok := body[configKeyDailyCheckinCredits]; ok {
+		normalized, err := normalizeDailyCheckinCredits(raw)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusBadRequest, "invalid daily_checkin_credits", "error.invalidDailyCheckinCredits")
+			return
+		}
+		normalizedConfigValues[configKeyDailyCheckinCredits] = normalized
+		details[configKeyDailyCheckinCredits] = normalized
+	}
+
+	if raw, ok := body[configKeyDailyCheckinGroupIDs]; ok {
+		groupIDs, err := parseDailyCheckinGroupIDs(raw)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusBadRequest, "invalid daily_checkin_group_ids", "error.invalidDailyCheckinGroupIDs")
+			return
+		}
+		if err := validateDailyCheckinGroupsExist(h.repo, groupIDs); err != nil {
+			if errors.Is(err, errDailyCheckinGroupsNotFound) {
+				response.ErrorWithKey(c, http.StatusBadRequest, "invalid daily_checkin_group_ids", "error.invalidDailyCheckinGroupIDs")
+				return
+			}
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to validate daily_checkin_group_ids", "error.failedToUpdateConfig")
+			return
+		}
+		normalized := formatDailyCheckinGroupIDs(groupIDs)
+		normalizedConfigValues[configKeyDailyCheckinGroupIDs] = normalized
+		details[configKeyDailyCheckinGroupIDs] = normalized
+	}
+
 	for key, value := range body {
 		if isURLConfigKey(key) || isOIDCConfigKey(key) {
 			continue
 		}
 		trimmed := strings.TrimSpace(value)
+		if normalized, ok := normalizedConfigValues[key]; ok {
+			trimmed = normalized
+		}
 		if err := h.repo.SetSystemConfig(key, trimmed); err != nil {
 			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
 			return

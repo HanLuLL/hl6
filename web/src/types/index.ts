@@ -67,6 +67,20 @@ export interface CreditBalance {
   transactions: CreditTransaction[];
 }
 
+export interface DailyCheckinStatus {
+  enabled: boolean;
+  reward: number;
+  claimed_today: boolean;
+  checkin_date: string;
+}
+
+export interface DailyCheckinClaimResult {
+  granted: number;
+  balance: number;
+  claimed_today: boolean;
+  checkin_date: string;
+}
+
 export interface CreditTransaction {
   id: number;
   user_id: number;

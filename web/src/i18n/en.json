@@ -115,7 +115,14 @@
     "grant": "Grant",
     "deduct": "Deduct",
     "refund": "Refund",
-    "balance": "Balance: {{balance}}"
+    "balance": "Balance: {{balance}}",
+    "dailyCheckinTitle": "Daily Check-in",
+    "dailyCheckinDesc": "Claim check-in credits once per day",
+    "dailyCheckinReward": "Today's reward: {{amount}} credits",
+    "dailyCheckinNow": "Check in now",
+    "dailyCheckingIn": "Checking in...",
+    "dailyCheckinClaimed": "Checked in today",
+    "dailyCheckinSuccess": "Check-in successful, gained {{amount}} credits"
   },
   "claimDialog": {
     "title": "Claim Subdomain",
@@ -421,7 +428,15 @@
     "referralDesc": "Configure referral program and reward credits",
     "referralEnabled": "Enable referral program",
     "referralInviterCredits": "Inviter credits",
-    "referralInviteeCredits": "Invitee credits"
+    "referralInviteeCredits": "Invitee credits",
+    "dailyCheckinTitle": "Daily Check-in",
+    "dailyCheckinDesc": "Configure feature switch, daily reward, and allowed user groups",
+    "dailyCheckinEnabled": "Enable daily check-in",
+    "dailyCheckinCredits": "Daily check-in credits",
+    "dailyCheckinGroups": "Allowed user groups",
+    "dailyCheckinGroupsHint": "If no group is selected, no user can check in",
+    "dailyCheckinZeroDisableHint": "When credits are set to 0, the feature is treated as disabled at runtime",
+    "noGroups": "No groups available"
   },
   "referral": {
     "title": "Referral Program",
@@ -474,7 +489,8 @@
     "subdomainDeletedRefund": "Admin deleted domain, refund for subdomain {{fqdn}}",
     "subdomainDeletedDeduct": "Admin deleted domain, bonus credits reclaimed for subdomain {{fqdn}}",
     "referralInviter": "Referral reward for inviting {{name}}",
-    "referralInvitee": "Referral reward from {{name}}'s invitation"
+    "referralInvitee": "Referral reward from {{name}}'s invitation",
+    "dailyCheckin": "Daily check-in reward"
   },
   "notifications": {
     "title": "Notifications",
@@ -620,6 +636,12 @@
     "domainHasSubdomains": "Cannot delete domain with active subdomains",
     "failedToDeleteDomain": "Failed to delete domain",
     "amountCannotBeZero": "Amount cannot be zero",
+    "dailyCheckinDisabled": "Daily check-in is disabled",
+    "dailyCheckinAlreadyClaimed": "Today's check-in has already been claimed",
+    "dailyCheckinGroupNotAllowed": "Your group is not allowed to check in",
+    "invalidDailyCheckinEnabled": "Invalid daily check-in enabled config",
+    "invalidDailyCheckinCredits": "Invalid daily check-in credits config",
+    "invalidDailyCheckinGroupIDs": "Invalid daily check-in group config",
     "cloudflareAccountNotFound": "Cloudflare account not found",
     "cloudflareAccountHasDomains": "Cannot delete account with associated domains",
     "failedToListCloudflareAccounts": "Failed to list Cloudflare accounts",

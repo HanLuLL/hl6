@@ -10,6 +10,20 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 
+function parseGroupIds(raw?: string): number[] {
+  if (!raw) return [];
+  const values = raw.split(",");
+  const seen = new Set<number>();
+  const result: number[] = [];
+  for (const value of values) {
+    const parsed = Number(value.trim());
+    if (!Number.isInteger(parsed) || parsed <= 0 || seen.has(parsed)) continue;
+    seen.add(parsed);
+    result.push(parsed);
+  }
+  return result.sort((a, b) => a - b);
+}
+
 export function LoginRegistrationSettingsContent() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -21,11 +35,22 @@ export function LoginRegistrationSettingsContent() {
     },
     staleTime: 30_000,
   });
+  const { data: groupsData } = useQuery({
+    queryKey: ["admin-groups"],
+    queryFn: async () => {
+      const res = await api.adminListGroups();
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
 
   const [bonusCredits, setBonusCredits] = useState("0");
   const [referralEnabled, setReferralEnabled] = useState(false);
   const [referralInviterCredits, setReferralInviterCredits] = useState("0");
   const [referralInviteeCredits, setReferralInviteeCredits] = useState("0");
+  const [dailyCheckinEnabled, setDailyCheckinEnabled] = useState(false);
+  const [dailyCheckinCredits, setDailyCheckinCredits] = useState("0");
+  const [dailyCheckinGroupIds, setDailyCheckinGroupIds] = useState<number[]>([]);
   const [oidcIssuer, setOidcIssuer] = useState("");
   const [oidcClientID, setOidcClientID] = useState("");
   const [oidcClientSecret, setOidcClientSecret] = useState("");
@@ -39,6 +64,9 @@ export function LoginRegistrationSettingsContent() {
     setReferralEnabled(values.referral_enabled === "true");
     setReferralInviterCredits(values.referral_inviter_credits ?? "0");
     setReferralInviteeCredits(values.referral_invitee_credits ?? "0");
+    setDailyCheckinEnabled(values.daily_checkin_enabled === "true");
+    setDailyCheckinCredits(values.daily_checkin_credits ?? "0");
+    setDailyCheckinGroupIds(parseGroupIds(values.daily_checkin_group_ids));
     setOidcIssuer(config.oidc_runtime?.issuer ?? values.oidc_issuer ?? "");
     setOidcClientID(config.oidc_runtime?.client_id ?? values.oidc_client_id ?? "");
     setOidcClientSecret("");
@@ -79,6 +107,20 @@ export function LoginRegistrationSettingsContent() {
     if (Object.keys(payload).length === 0) return;
     updateMutation.mutate(payload);
     setOidcClientSecret("");
+  };
+
+  const saveDailyCheckinConfig = () => {
+    const filteredGroupIDs = groupsData
+      ? dailyCheckinGroupIds.filter((id) => groupsData.some((g) => g.id === id))
+      : dailyCheckinGroupIds;
+    if (groupsData) {
+      setDailyCheckinGroupIds(filteredGroupIDs);
+    }
+    updateMutation.mutate({
+      daily_checkin_enabled: dailyCheckinEnabled ? "true" : "false",
+      daily_checkin_credits: dailyCheckinCredits.trim() || "0",
+      daily_checkin_group_ids: filteredGroupIDs.join(","),
+    });
   };
 
   if (isLoading) {
@@ -252,6 +294,78 @@ export function LoginRegistrationSettingsContent() {
               {updateMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("adminSettings.dailyCheckinTitle")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("adminSettings.dailyCheckinDesc")}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>{t("adminSettings.dailyCheckinEnabled")}</Label>
+            <Switch
+              checked={dailyCheckinEnabled}
+              onCheckedChange={setDailyCheckinEnabled}
+              disabled={updateMutation.isPending}
+            />
+          </div>
+
+          <div className="space-y-2 max-w-xs">
+            <Label>{t("adminSettings.dailyCheckinCredits")}</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.1"
+              value={dailyCheckinCredits}
+              onChange={(e) => setDailyCheckinCredits(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">{t("adminSettings.dailyCheckinZeroDisableHint")}</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("adminSettings.dailyCheckinGroups")}</Label>
+            {groupsData && groupsData.length > 0 ? (
+              <div className="max-h-36 overflow-y-auto border rounded-md">
+                {groupsData.map((group) => (
+                  <label
+                    key={group.id}
+                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent cursor-pointer text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={dailyCheckinGroupIds.includes(group.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setDailyCheckinGroupIds((prev) => {
+                            if (prev.includes(group.id)) return prev;
+                            return [...prev, group.id].sort((a, b) => a - b);
+                          });
+                        } else {
+                          setDailyCheckinGroupIds((prev) => prev.filter((id) => id !== group.id));
+                        }
+                      }}
+                    />
+                    <span>{group.name}</span>
+                    {group.user_count !== undefined && (
+                      <span className="text-muted-foreground text-xs">({group.user_count})</span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">{t("adminSettings.noGroups")}</p>
+            )}
+            <p className="text-xs text-muted-foreground">{t("adminSettings.dailyCheckinGroupsHint")}</p>
+          </div>
+
+          <Button
+            onClick={saveDailyCheckinConfig}
+            disabled={updateMutation.isPending}
+          >
+            {updateMutation.isPending ? t("common.saving") : t("common.save")}
+          </Button>
         </CardContent>
       </Card>
     </div>

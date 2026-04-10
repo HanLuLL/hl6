@@ -7,6 +7,8 @@ import type {
   DNSRecord,
   CreditBalance,
   CreditTransaction,
+  DailyCheckinStatus,
+  DailyCheckinClaimResult,
   DomainGroupAccess,
   DomainWithGroupAccess,
   CloudflareZone,
@@ -191,6 +193,10 @@ export const api = {
   getCredits: () => request<ApiResponse<CreditBalance>>("/credits"),
   listTransactions: (page = 1, perPage = 20) =>
     request<PaginatedResponse<CreditTransaction[]>>(`/credits/transactions?page=${page}&per_page=${perPage}`),
+  getDailyCheckinStatus: () =>
+    request<ApiResponse<DailyCheckinStatus>>("/credits/checkin/status"),
+  claimDailyCheckin: () =>
+    request<ApiResponse<DailyCheckinClaimResult>>("/credits/checkin", { method: "POST" }),
 
   // Referrals
   getReferrals: (page = 1, perPage = 20) =>

@@ -115,7 +115,14 @@
     "grant": "Начисление",
     "deduct": "Списание",
     "refund": "Возврат",
-    "balance": "Баланс: {{balance}}"
+    "balance": "Баланс: {{balance}}",
+    "dailyCheckinTitle": "Ежедневный чекин",
+    "dailyCheckinDesc": "Получайте кредиты один раз в день",
+    "dailyCheckinReward": "Награда сегодня: {{amount}} кредитов",
+    "dailyCheckinNow": "Отметиться",
+    "dailyCheckingIn": "Отмечаем...",
+    "dailyCheckinClaimed": "Сегодня уже отмечено",
+    "dailyCheckinSuccess": "Чекин выполнен, получено {{amount}} кредитов"
   },
   "claimDialog": {
     "title": "Регистрация поддомена",
@@ -421,7 +428,15 @@
     "referralDesc": "Настройка реферальной программы и начисляемых кредитов",
     "referralEnabled": "Включить реферальную программу",
     "referralInviterCredits": "Кредиты приглашающему",
-    "referralInviteeCredits": "Кредиты приглашённому"
+    "referralInviteeCredits": "Кредиты приглашённому",
+    "dailyCheckinTitle": "Ежедневный чекин",
+    "dailyCheckinDesc": "Настройка переключателя, награды и разрешённых групп",
+    "dailyCheckinEnabled": "Включить ежедневный чекин",
+    "dailyCheckinCredits": "Кредиты за чекин",
+    "dailyCheckinGroups": "Разрешённые группы",
+    "dailyCheckinGroupsHint": "Если группы не выбраны, никто не может отмечаться",
+    "dailyCheckinZeroDisableHint": "Если кредиты равны 0, функция считается выключенной",
+    "noGroups": "Нет доступных групп"
   },
   "referral": {
     "title": "Реферальная программа",
@@ -474,7 +489,8 @@
     "subdomainDeletedRefund": "Домен удалён администратором, возврат кредитов за поддомен {{fqdn}}",
     "subdomainDeletedDeduct": "Домен удалён администратором, списание бонусных кредитов за поддомен {{fqdn}}",
     "referralInviter": "Награда за приглашение {{name}}",
-    "referralInvitee": "Награда за приглашение от {{name}}"
+    "referralInvitee": "Награда за приглашение от {{name}}",
+    "dailyCheckin": "Награда за ежедневный чекин"
   },
   "notifications": {
     "title": "Уведомления",
@@ -620,6 +636,12 @@
     "domainHasSubdomains": "Невозможно удалить домен с активными поддоменами",
     "failedToDeleteDomain": "Не удалось удалить домен",
     "amountCannotBeZero": "Сумма не может быть нулевой",
+    "dailyCheckinDisabled": "Ежедневный чекин отключён",
+    "dailyCheckinAlreadyClaimed": "Чекин за сегодня уже получен",
+    "dailyCheckinGroupNotAllowed": "Вашей группе недоступен чекин",
+    "invalidDailyCheckinEnabled": "Некорректная настройка включения чекина",
+    "invalidDailyCheckinCredits": "Некорректная настройка кредитов чекина",
+    "invalidDailyCheckinGroupIDs": "Некорректная настройка групп для чекина",
     "cloudflareAccountNotFound": "Аккаунт Cloudflare не найден",
     "cloudflareAccountHasDomains": "Невозможно удалить аккаунт с привязанными доменами",
     "failedToListCloudflareAccounts": "Не удалось загрузить список аккаунтов Cloudflare",

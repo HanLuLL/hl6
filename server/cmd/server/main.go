@@ -53,6 +53,7 @@ func main() {
 		&model.CloudflareTask{},
 		&model.CreditBalance{},
 		&model.CreditTransaction{},
+		&model.DailyCheckinClaim{},
 		&model.AuditLog{},
 		&model.SystemConfig{},
 		&model.Notification{},
@@ -201,26 +202,24 @@ func seedDefaults(db *gorm.DB) {
 		}
 	}
 
-	// 4. Ensure registration_bonus_credits config exists
-	var cfg model.SystemConfig
-	if db.Where("\"key\" = ?", "registration_bonus_credits").First(&cfg).Error != nil {
-		db.Create(&model.SystemConfig{Key: "registration_bonus_credits", Value: "0"})
+	// 4. Seed config defaults
+	configDefaults := map[string]string{
+		"registration_bonus_credits": "0",
+		"referral_enabled":           "true",
+		"referral_inviter_credits":   "0",
+		"referral_invitee_credits":   "0",
+		"daily_checkin_enabled":      "false",
+		"daily_checkin_credits":      "0",
+		"daily_checkin_group_ids":    "",
 	}
-
-	// 5. Seed referral config defaults
-	referralConfigs := map[string]string{
-		"referral_enabled":         "true",
-		"referral_inviter_credits": "0",
-		"referral_invitee_credits": "0",
-	}
-	for key, defaultVal := range referralConfigs {
+	for key, defaultVal := range configDefaults {
 		var rc model.SystemConfig
 		if db.Where("\"key\" = ?", key).First(&rc).Error != nil {
 			db.Create(&model.SystemConfig{Key: key, Value: defaultVal})
 		}
 	}
 
-	// 6. Backfill referral_code for existing users
+	// 5. Backfill referral_code for existing users
 	var usersWithoutCode []model.User
 	db.Where("referral_code = '' OR referral_code IS NULL").Find(&usersWithoutCode)
 	for _, u := range usersWithoutCode {

@@ -109,6 +109,14 @@ type CreditTransaction struct {
 	CreatedAt         time.Time       `json:"created_at"`
 }
 
+type DailyCheckinClaim struct {
+	ID          uint      `json:"id" gorm:"primaryKey"`
+	UserID      uint      `json:"user_id" gorm:"uniqueIndex:idx_daily_checkin_user_date;not null"`
+	CheckinDate string    `json:"checkin_date" gorm:"type:date;uniqueIndex:idx_daily_checkin_user_date;not null"`
+	Reward      Credit    `json:"reward" gorm:"type:bigint;not null"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type AuditLog struct {
 	ID         uint            `json:"id" gorm:"primaryKey"`
 	UserID     uint            `json:"user_id" gorm:"index;not null"`

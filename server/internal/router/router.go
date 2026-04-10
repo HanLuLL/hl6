@@ -75,6 +75,8 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
 	authed.GET("/credits", creditH.GetBalance)
 	authed.GET("/credits/transactions", creditH.ListTransactions)
+	authed.GET("/credits/checkin/status", creditH.GetDailyCheckinStatus)
+	authed.POST("/credits/checkin", creditH.DailyCheckin)
 
 	authed.GET("/referrals", referralH.GetReferralInfo)
 

@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
@@ -58,6 +60,95 @@ func (h *CreditHandler) ListTransactions(c *gin.Context) {
 		return
 	}
 	response.Paginated(c, txns, total, page, perPage)
+}
+
+func (h *CreditHandler) GetDailyCheckinStatus(c *gin.Context) {
+	user := ctxutil.GetUser(c)
+	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
+		return
+	}
+
+	cfg, err := loadDailyCheckinRuntimeConfig(h.repo)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to get config", "error.failedToGetConfig")
+		return
+	}
+
+	today := todayInBeijing(time.Now())
+	claimed := false
+	if cfg.Enabled {
+		claimed, err = h.repo.HasDailyCheckinClaim(user.ID, today)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+			return
+		}
+	}
+
+	response.OK(c, gin.H{
+		"enabled":       cfg.Enabled,
+		"reward":        cfg.Reward,
+		"claimed_today": claimed,
+		"checkin_date":  today,
+	})
+}
+
+func (h *CreditHandler) DailyCheckin(c *gin.Context) {
+	user := ctxutil.GetUser(c)
+	if user == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
+		return
+	}
+
+	cfg, err := loadDailyCheckinRuntimeConfig(h.repo)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to get config", "error.failedToGetConfig")
+		return
+	}
+	if !cfg.Enabled {
+		response.ErrorWithKey(c, http.StatusForbidden, "daily checkin is disabled", "error.dailyCheckinDisabled")
+		return
+	}
+
+	if user.GroupID == nil || !cfg.IsGroupAllowed(*user.GroupID) {
+		response.ErrorWithKey(c, http.StatusForbidden, "group is not allowed for daily checkin", "error.dailyCheckinGroupNotAllowed")
+		return
+	}
+
+	today := todayInBeijing(time.Now())
+	txErr := h.repo.Transaction(func(tx *gorm.DB) error {
+		claim := &model.DailyCheckinClaim{
+			UserID:      user.ID,
+			CheckinDate: today,
+			Reward:      cfg.Reward,
+		}
+		if err := tx.Create(claim).Error; err != nil {
+			return err
+		}
+		return h.repo.GrantCredits(tx, user.ID, cfg.Reward, "txn.dailyCheckin", nil)
+	})
+	if txErr != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(txErr, &pgErr) && pgErr.Code == "23505" {
+			response.ErrorWithKey(c, http.StatusConflict, "daily checkin already claimed", "error.dailyCheckinAlreadyClaimed")
+			return
+		}
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to grant credits", "error.failedToGrantCredits")
+		return
+	}
+
+	balance, err := h.repo.GetCreditBalance(user.ID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+		return
+	}
+
+	response.OK(c, gin.H{
+		"granted":       cfg.Reward,
+		"balance":       balance.Balance,
+		"claimed_today": true,
+		"checkin_date":  today,
+	})
 }
 
 func (h *CreditHandler) AdminGrant(c *gin.Context) {
