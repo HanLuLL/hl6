@@ -15,16 +15,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
-
-const EMAIL_MAX_VISIBLE = 24;
-
-function truncateText(value: string, maxLen = EMAIL_MAX_VISIBLE): string {
-  if (value.length <= maxLen) {
-    return value;
-  }
-  return `${value.slice(0, maxLen)}...`;
-}
+import { CopyableEmail } from "@/components/ui/copyable-email";
 
 export default function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
@@ -51,14 +42,6 @@ export default function AdminAuditLogsPage() {
     },
     staleTime: 30_000,
   });
-
-  const copyEmail = (email: string) => {
-    navigator.clipboard.writeText(email).then(() => {
-      toast.success(t("common.copied"));
-    }).catch(() => {
-      // Ignore clipboard errors in unsupported or insecure contexts.
-    });
-  };
 
   return (
     <div className="space-y-6">
@@ -121,14 +104,10 @@ export default function AdminAuditLogsPage() {
                     </TableCell>
                     <TableCell className="text-sm">
                       {log.user?.email ? (
-                        <button
-                          type="button"
-                          title={log.user.email}
-                          className="max-w-56 cursor-pointer truncate text-left text-foreground hover:text-primary"
-                          onClick={() => copyEmail(log.user?.email ?? "")}
-                        >
-                          {truncateText(log.user.email)}
-                        </button>
+                        <CopyableEmail
+                          email={log.user.email}
+                          className="max-w-56 text-foreground"
+                        />
                       ) : (
                         `User #${log.user_id}`
                       )}

@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CopyableEmail } from "@/components/ui/copyable-email";
 
 export function ClaimedSubdomainsContent() {
   const { t } = useTranslation();
@@ -145,7 +146,9 @@ export function ClaimedSubdomainsContent() {
               {items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-mono text-xs">{item.fqdn}</TableCell>
-                  <TableCell className="text-muted-foreground text-xs">{item.user_email}</TableCell>
+                  <TableCell className="text-xs">
+                    <CopyableEmail email={item.user_email} className="text-muted-foreground max-w-[240px]" />
+                  </TableCell>
                   <TableCell>{item.dns_record_count}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">
                     {new Date(item.created_at).toLocaleDateString()}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import { Copy } from "lucide-react";
+import { CopyableEmail } from "@/components/ui/copyable-email";
 import type { AdminDNSRecord } from "@/types";
+
+const DEFAULT_BAN_REASON = "该账户违反平台规定";
 
 export function DNSRecordsContent() {
   const { t } = useTranslation();
@@ -49,6 +52,7 @@ export function DNSRecordsContent() {
   const [detailRecord, setDetailRecord] = useState<AdminDNSRecord | null>(null);
   const [deleteRecord, setDeleteRecord] = useState<AdminDNSRecord | null>(null);
   const [sendNotify, setSendNotify] = useState(false);
+  const [banUser, setBanUser] = useState(true);
   const [reason, setReason] = useState("");
 
   useEffect(() => {
@@ -91,14 +95,15 @@ export function DNSRecordsContent() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id, notify, reason }: { id: number; notify: boolean; reason?: string }) =>
-      api.adminDeleteDNSRecord(id, { notify, reason }),
+    mutationFn: ({ id, notify, banUser, reason }: { id: number; notify: boolean; banUser: boolean; reason?: string }) =>
+      api.adminDeleteDNSRecord(id, { notify, reason, ban_user: banUser }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-dns-records"] });
       toast.success(t("adminDnsRecords.recordDeleted"));
       setDeleteRecord(null);
       setDetailRecord(null);
       setSendNotify(false);
+      setBanUser(true);
       setReason("");
     },
     onError: (err) => toast.error(getErrorMessage(err, t)),
@@ -269,7 +274,13 @@ export function DNSRecordsContent() {
                   <TableCell>
                     <Badge variant="outline" className="text-xs">{record.type}</Badge>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{record.user_email}</TableCell>
+                  <TableCell className="text-xs">
+                    <CopyableEmail
+                      email={record.user_email}
+                      stopPropagation
+                      className="text-muted-foreground max-w-[220px]"
+                    />
+                  </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {new Date(record.created_at).toLocaleDateString()}
                   </TableCell>
@@ -282,6 +293,7 @@ export function DNSRecordsContent() {
                         e.stopPropagation();
                         setDeleteRecord(record);
                         setSendNotify(false);
+                        setBanUser(true);
                         setReason("");
                       }}
                     >
@@ -319,13 +331,14 @@ export function DNSRecordsContent() {
         onDelete={(r) => {
           setDeleteRecord(r);
           setSendNotify(false);
+          setBanUser(true);
           setReason("");
         }}
       />
 
       {/* Delete Confirm Dialog */}
       <Dialog open={!!deleteRecord} onOpenChange={(open) => {
-        if (!open) { setDeleteRecord(null); setSendNotify(false); setReason(""); }
+        if (!open) { setDeleteRecord(null); setSendNotify(false); setBanUser(true); setReason(""); }
       }}>
         <DialogContent aria-describedby="delete-dns-desc">
           <DialogHeader>
@@ -347,28 +360,50 @@ export function DNSRecordsContent() {
                 {t("adminDnsRecords.sendNotification")}
               </label>
             </div>
-            {sendNotify && (
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="ban-user-toggle"
+                checked={banUser}
+                onChange={(e) => setBanUser(e.target.checked)}
+                className="mt-0.5 cursor-pointer"
+              />
+              <label htmlFor="ban-user-toggle" className="text-sm font-medium cursor-pointer">
+                {t("adminUsers.banUser")}
+              </label>
+            </div>
+            {(sendNotify || banUser) && (
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">{t("adminDnsRecords.reason")}</label>
+                <label className="text-sm text-muted-foreground">
+                  {t("adminDnsRecords.reason")}
+                  {banUser ? <span className="ml-1 text-destructive">*</span> : null}
+                </label>
                 <Textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder={t("adminDnsRecords.reasonPlaceholder")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Tab" && !e.shiftKey && banUser && reason.trim() === "") {
+                      e.preventDefault();
+                      setReason(DEFAULT_BAN_REASON);
+                    }
+                  }}
                 />
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setDeleteRecord(null); setSendNotify(false); setReason(""); }} disabled={deleteMutation.isPending}>
+            <Button variant="outline" onClick={() => { setDeleteRecord(null); setSendNotify(false); setBanUser(true); setReason(""); }} disabled={deleteMutation.isPending}>
               {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
-              disabled={deleteMutation.isPending}
+              disabled={deleteMutation.isPending || (banUser && reason.trim() === "")}
               onClick={() => deleteRecord && deleteMutation.mutate({
                 id: deleteRecord.id,
                 notify: sendNotify,
-                reason: sendNotify ? reason : undefined,
+                banUser,
+                reason: sendNotify || banUser ? reason.trim() : undefined,
               })}
               data-dialog-primary="true"
             >
@@ -416,7 +451,10 @@ function RecordDetailDialog({ record, onClose, onDelete }: {
             <DetailRow label={t("adminDnsRecords.content")} value={record.content} mono />
             <DetailRow label={t("adminDnsRecords.ttl")} value={record.ttl === 1 ? "Auto" : String(record.ttl)} />
             <DetailRow label={t("adminDnsRecords.proxied")} value={record.proxied ? t("common.on") : t("common.off")} />
-            <DetailRow label={t("adminDnsRecords.userEmail")} value={record.user_email} />
+            <DetailRow
+              label={t("adminDnsRecords.userEmail")}
+              value={<CopyableEmail email={record.user_email} truncate={false} className="text-sm text-foreground" />}
+            />
             <DetailRow label={t("adminDnsRecords.userName")} value={record.user_name} />
             <DetailRow label={t("adminDnsRecords.domain")} value={record.domain_name} />
             <DetailRow label={t("adminDnsRecords.createdAt")} value={new Date(record.created_at).toLocaleString()} />
@@ -438,7 +476,7 @@ function RecordDetailDialog({ record, onClose, onDelete }: {
   );
 }
 
-function DetailRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function DetailRow({ label, value, mono }: { label: string; value: ReactNode; mono?: boolean }) {
   return (
     <div className="flex gap-4 items-start">
       <span className="text-sm text-muted-foreground min-w-28 shrink-0">{label}</span>

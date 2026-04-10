@@ -255,7 +255,7 @@ export const api = {
     request<ApiResponse<{ message: string }>>(`/admin/groups/${id}?migrate_to=${migrateTo}`, { method: "DELETE" }),
   adminUpdateUserGroup: (userId: number, groupId: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/users/${userId}/group`, { method: "PUT", body: JSON.stringify({ group_id: groupId }) }),
-  adminBanUser: (userId: number, data: { reason?: string; delete_resources?: boolean; force?: boolean }) =>
+  adminBanUser: (userId: number, data: { reason?: string }) =>
     request<ApiResponse<{ message: string; failed_records?: Array<{ subdomain_fqdn: string; record_type: string; record_content: string; cloudflare_record_id: string; error: string }> }>>(
       `/admin/users/${userId}/ban`,
       { method: "PUT", body: JSON.stringify(data) }
@@ -289,7 +289,7 @@ export const api = {
     if (groupId) params.set("group_id", String(groupId));
     return request<PaginatedResponse<AdminDNSRecord[]>>(`/admin/dns-records?${params.toString()}`);
   },
-  adminDeleteDNSRecord: (id: number, data: { notify: boolean; reason?: string }) =>
+  adminDeleteDNSRecord: (id: number, data: { notify: boolean; reason?: string; ban_user?: boolean }) =>
     request<ApiResponse<{ message: string }>>(`/admin/dns-records/${id}`, { method: "DELETE", body: JSON.stringify(data) }),
   adminListClaimedSubdomains: (page = 1, perPage = 20, search = "") => {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });

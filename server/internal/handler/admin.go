@@ -7,11 +7,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"hl6-server/internal/config"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
@@ -377,7 +375,7 @@ func (h *AdminHandler) UpdateUserGroup(c *gin.Context) {
 	response.OK(c, gin.H{"message": "user group updated"})
 }
 
-// Ban a user (optionally delete all owned subdomains and DNS records).
+// Ban a user and always delete all owned subdomains and DNS records.
 func (h *AdminHandler) BanUser(c *gin.Context) {
 	admin := ctxutil.GetUser(c)
 	if admin == nil {
@@ -401,9 +399,7 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 	}
 
 	var body struct {
-		Reason          string `json:"reason"`
-		DeleteResources bool   `json:"delete_resources"`
-		Force           bool   `json:"force"`
+		Reason string `json:"reason"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
@@ -412,130 +408,14 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 
 	reason := strings.TrimSpace(body.Reason)
 
-	var subdomains []model.Subdomain
-	if body.DeleteResources {
-		subdomains, err = h.repo.ListSubdomainsByUserWithRecords(target.ID)
-		if err != nil {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
-			return
-		}
-	}
-
-	type deleteCandidate struct {
-		sub model.Subdomain
-		rec model.DNSRecord
-	}
-	var candidates []deleteCandidate
-	var failures []cfFailureRecord
-	if body.DeleteResources {
-		accountErrCache := make(map[uint]error)
-		for _, sub := range subdomains {
-			accountID := sub.Domain.CloudflareAccountID
-			if _, ok := accountErrCache[accountID]; !ok {
-				if accountID == 0 {
-					accountErrCache[accountID] = errors.New("cloudflare account id is empty")
-				} else {
-					_, accountErrCache[accountID] = h.repo.FindCloudflareAccount(accountID)
-				}
-			}
-
-			for _, rec := range sub.DNSRecords {
-				if accountErrCache[accountID] != nil {
-					failures = append(failures, cfFailureRecord{
-						SubdomainFQDN:      sub.FQDN,
-						RecordType:         rec.Type,
-						RecordContent:      rec.Content,
-						CloudflareRecordID: rec.CloudflareRecordID,
-						Error:              accountErrCache[accountID].Error(),
-					})
-					continue
-				}
-				candidates = append(candidates, deleteCandidate{sub: sub, rec: rec})
-			}
-		}
-	}
-
+	result, failures, err := executeAdminBanUserWithCleanup(h.repo, admin.ID, target, reason)
 	if len(failures) > 0 {
 		response.ErrorWithKeyData(c, http.StatusConflict, "some cloudflare dns records failed to delete", "error.cloudflareDeleteFailed", gin.H{
 			"failed_records": failures,
 		})
 		return
 	}
-
-	subdomainIDs := make([]uint, 0, len(subdomains))
-	for _, sub := range subdomains {
-		subdomainIDs = append(subdomainIDs, sub.ID)
-	}
-
-	now := time.Now()
-	targetRole := target.Role
-	queuedOps := 0
-	if err := h.repo.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", adminBanGuardLockKey).Error; err != nil {
-			return err
-		}
-
-		var lockedTarget model.User
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&lockedTarget, target.ID).Error; err != nil {
-			return err
-		}
-		targetRole = lockedTarget.Role
-
-		// Safety guard: check and update in the same transaction to prevent concurrent bypass.
-		if lockedTarget.Role == "admin" && !lockedTarget.IsBanned {
-			var activeAdmins int64
-			if err := tx.Model(&model.User{}).
-				Where("role = ? AND is_banned = ?", "admin", false).
-				Count(&activeAdmins).Error; err != nil {
-				return err
-			}
-			if activeAdmins <= 1 {
-				return errCannotBanLastActiveAdmin
-			}
-		}
-
-		if err := tx.Model(&model.User{}).Where("id = ?", target.ID).Updates(map[string]interface{}{
-			"is_banned":     true,
-			"banned_reason": reason,
-			"banned_at":     now,
-			"banned_by":     admin.ID,
-		}).Error; err != nil {
-			return err
-		}
-
-		for _, item := range candidates {
-			if _, err := enqueueCloudflareTask(
-				h.repo,
-				tx,
-				cloudflareTaskResourceDNSRecord,
-				item.rec.ID,
-				model.CloudflareTaskActionDeleteDNSRecord,
-				model.CloudflareTaskPayload{
-					CloudflareAccountID: item.sub.Domain.CloudflareAccountID,
-					ZoneID:              item.sub.Domain.CloudflareZoneID,
-					RecordID:            item.rec.CloudflareRecordID,
-					RecordType:          item.rec.Type,
-					Name:                item.rec.Name,
-					Content:             item.rec.Content,
-				},
-				fmt.Sprintf("admin:ban:%d:%s", item.rec.ID, item.rec.CloudflareRecordID),
-			); err != nil {
-				return err
-			}
-			queuedOps++
-		}
-
-		if len(subdomainIDs) > 0 {
-			if err := tx.Where("subdomain_id IN ?", subdomainIDs).Delete(&model.DNSRecord{}).Error; err != nil {
-				return err
-			}
-			if err := tx.Where("id IN ?", subdomainIDs).Delete(&model.Subdomain{}).Error; err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}); err != nil {
+	if err != nil {
 		if errors.Is(err, errCannotBanLastActiveAdmin) {
 			response.ErrorWithKey(c, http.StatusBadRequest, "cannot ban last active admin", "error.cannotBanLastAdmin")
 			return
@@ -546,13 +426,11 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 
 	details, _ := json.Marshal(map[string]interface{}{
 		"target_user_id":     target.ID,
-		"target_user_role":   targetRole,
+		"target_user_role":   result.TargetRole,
 		"reason":             reason,
-		"delete_resources":   body.DeleteResources,
-		"force":              body.Force,
-		"subdomains_deleted": len(subdomainIDs),
-		"cf_failures":        failures,
-		"cf_queue_count":     queuedOps,
+		"delete_resources":   true,
+		"subdomains_deleted": result.SubdomainsDeleted,
+		"cf_queue_count":     result.QueueCount,
 	})
 	h.repo.CreateAuditLog(&model.AuditLog{
 		UserID:     admin.ID,
@@ -563,12 +441,9 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 	})
 
 	data := gin.H{"message": "user banned"}
-	if len(failures) > 0 {
-		data["failed_records"] = failures
-	}
-	if queuedOps > 0 {
+	if result.QueueCount > 0 {
 		data["sync_status"] = "processing"
-		data["operation_count"] = queuedOps
+		data["operation_count"] = result.QueueCount
 	}
 	response.OK(c, data)
 }

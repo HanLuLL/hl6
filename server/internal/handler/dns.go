@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -417,13 +418,20 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 	}
 
 	var body struct {
-		Notify bool   `json:"notify"`
-		Reason string `json:"reason"`
+		Notify  bool   `json:"notify"`
+		Reason  string `json:"reason"`
+		BanUser bool   `json:"ban_user"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		// Allow empty body
 		body.Notify = false
 		body.Reason = ""
+		body.BanUser = false
+	}
+	reason := strings.TrimSpace(body.Reason)
+	if body.BanUser && reason == "" {
+		response.ErrorWithKey(c, http.StatusBadRequest, "reason is required when ban_user is true", "error.invalidRequestBody")
+		return
 	}
 
 	record, sub, err := h.repo.FindDNSRecordWithSubdomain(recordID)
@@ -433,34 +441,82 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 	}
 
 	var opID *uint
-	if err := h.repo.Transaction(func(tx *gorm.DB) error {
-		if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
-			return err
+	banResult := adminBanExecutionResult{}
+	if body.BanUser {
+		if admin.ID == sub.UserID {
+			response.ErrorWithKey(c, http.StatusBadRequest, "cannot ban yourself", "error.cannotBanSelf")
+			return
 		}
-		task, err := enqueueCloudflareTask(
-			h.repo,
-			tx,
-			cloudflareTaskResourceDNSRecord,
-			record.ID,
-			model.CloudflareTaskActionDeleteDNSRecord,
-			model.CloudflareTaskPayload{
-				CloudflareAccountID: sub.Domain.CloudflareAccountID,
-				ZoneID:              sub.Domain.CloudflareZoneID,
-				RecordID:            record.CloudflareRecordID,
-				RecordType:          record.Type,
-				Name:                record.Name,
-				Content:             record.Content,
-			},
-			fmt.Sprintf("admin:dns:delete:%d:%s", record.ID, record.CloudflareRecordID),
-		)
-		if err != nil {
-			return err
+
+		target, findErr := h.repo.FindUserByID(sub.UserID)
+		if findErr != nil {
+			response.ErrorWithKey(c, http.StatusNotFound, "user not found", "error.userNotFound")
+			return
 		}
-		opID = &task.ID
-		return tx.Delete(&model.DNSRecord{}, record.ID).Error
-	}); err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
-		return
+
+		banResult, failures, banErr := executeAdminBanUserWithCleanup(h.repo, admin.ID, target, reason)
+		if len(failures) > 0 {
+			response.ErrorWithKeyData(c, http.StatusConflict, "some cloudflare dns records failed to delete", "error.cloudflareDeleteFailed", gin.H{
+				"failed_records": failures,
+			})
+			return
+		}
+		if banErr != nil {
+			if errors.Is(banErr, errCannotBanLastActiveAdmin) {
+				response.ErrorWithKey(c, http.StatusBadRequest, "cannot ban last active admin", "error.cannotBanLastAdmin")
+				return
+			}
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to ban user", "error.failedToBanUser")
+			return
+		}
+	} else {
+		if err := h.repo.Transaction(func(tx *gorm.DB) error {
+			if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
+				return err
+			}
+			task, err := enqueueCloudflareTask(
+				h.repo,
+				tx,
+				cloudflareTaskResourceDNSRecord,
+				record.ID,
+				model.CloudflareTaskActionDeleteDNSRecord,
+				model.CloudflareTaskPayload{
+					CloudflareAccountID: sub.Domain.CloudflareAccountID,
+					ZoneID:              sub.Domain.CloudflareZoneID,
+					RecordID:            record.CloudflareRecordID,
+					RecordType:          record.Type,
+					Name:                record.Name,
+					Content:             record.Content,
+				},
+				fmt.Sprintf("admin:dns:delete:%d:%s", record.ID, record.CloudflareRecordID),
+			)
+			if err != nil {
+				return err
+			}
+			opID = &task.ID
+			return tx.Delete(&model.DNSRecord{}, record.ID).Error
+		}); err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+			return
+		}
+	}
+
+	if body.BanUser {
+		banDetails, _ := json.Marshal(map[string]interface{}{
+			"target_user_id":     sub.UserID,
+			"target_user_role":   banResult.TargetRole,
+			"reason":             reason,
+			"delete_resources":   true,
+			"subdomains_deleted": banResult.SubdomainsDeleted,
+			"cf_queue_count":     banResult.QueueCount,
+		})
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:     admin.ID,
+			Action:     "admin_ban_user",
+			Resource:   "user",
+			ResourceID: sub.UserID,
+			Details:    banDetails,
+		})
 	}
 
 	// Send notification if requested
@@ -468,8 +524,11 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 		fqdn := record.Name
 		title := fmt.Sprintf("%s 解析已被删除", fqdn)
 		content := fmt.Sprintf("您的解析 %s 已被删除。", fqdn)
-		if body.Reason != "" {
-			content = fmt.Sprintf("您的解析 %s 已被删除。\n原因：%s", fqdn, body.Reason)
+		if body.BanUser {
+			content = fmt.Sprintf("您的解析 %s 已被删除，账号已被封禁。", fqdn)
+		}
+		if reason != "" {
+			content = fmt.Sprintf("%s\n原因：%s", content, reason)
 		}
 
 		targetIDs, _ := json.Marshal([]uint{sub.UserID})
@@ -491,11 +550,16 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 
 	// Audit log
 	details, _ := json.Marshal(map[string]interface{}{
-		"fqdn":    record.Name,
-		"type":    record.Type,
-		"content": record.Content,
-		"notify":  body.Notify,
-		"op_id":   opID,
+		"fqdn":               record.Name,
+		"type":               record.Type,
+		"content":            record.Content,
+		"notify":             body.Notify,
+		"reason":             reason,
+		"ban_user":           body.BanUser,
+		"target_user_id":     sub.UserID,
+		"op_id":              opID,
+		"ban_queue_count":    banResult.QueueCount,
+		"subdomains_deleted": banResult.SubdomainsDeleted,
 	})
 	h.repo.CreateAuditLog(&model.AuditLog{
 		UserID:     admin.ID,
@@ -506,6 +570,15 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 	})
 
 	data := gin.H{"message": "record deleted"}
+	if body.BanUser {
+		data["ban_user"] = true
+		if banResult.QueueCount > 0 {
+			data["sync_status"] = "processing"
+			data["operation_count"] = banResult.QueueCount
+		}
+		response.OK(c, data)
+		return
+	}
 	if opID != nil {
 		data["operation_id"] = *opID
 		data["sync_status"] = "processing"

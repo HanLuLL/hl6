@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +33,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CopyableEmail } from "@/components/ui/copyable-email";
 import type { UserWithInviter } from "@/types";
 import { GroupsContent } from "./groups";
 import { NotificationsContent } from "./notifications";
@@ -42,14 +42,6 @@ import { LoginRegistrationSettingsContent } from "./login-registration";
 import { useAuth } from "@/hooks/use-auth";
 
 const PAGE_SIZE = 30;
-const EMAIL_MAX_VISIBLE = 24;
-
-function truncateText(value: string, maxLen = EMAIL_MAX_VISIBLE): string {
-  if (value.length <= maxLen) {
-    return value;
-  }
-  return `${value.slice(0, maxLen)}...`;
-}
 
 function formatCredits(value?: number): string {
   const safe = typeof value === "number" && Number.isFinite(value) ? value : 0;
@@ -131,16 +123,6 @@ function UsersContent() {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [banUserId, setBanUserId] = useState<number | null>(null);
   const [banReason, setBanReason] = useState("");
-  const [deleteResources, setDeleteResources] = useState(false);
-  const [forceDelete, setForceDelete] = useState(false);
-
-  const copyEmail = (email: string) => {
-    navigator.clipboard.writeText(email).then(() => {
-      toast.success(t("common.copied"));
-    }).catch(() => {
-      // Ignore clipboard errors in unsupported or insecure contexts.
-    });
-  };
 
   const grantMutation = useMutation({
     mutationFn: api.adminGrantCredits,
@@ -165,23 +147,15 @@ function UsersContent() {
   });
 
   const banMutation = useMutation({
-    mutationFn: ({ userId, reason, removeResources, force }: { userId: number; reason: string; removeResources: boolean; force: boolean }) =>
+    mutationFn: ({ userId, reason }: { userId: number; reason: string }) =>
       api.adminBanUser(userId, {
         reason,
-        delete_resources: removeResources,
-        force,
       }),
-    onSuccess: (res) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       toast.success(t("adminUsers.banSuccess"));
-      const failures = res.data.failed_records?.length ?? 0;
-      if (failures > 0) {
-        toast.warning(t("adminUsers.forceDeleteWithFailures", { count: failures }));
-      }
       setBanUserId(null);
       setBanReason("");
-      setDeleteResources(false);
-      setForceDelete(false);
     },
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
@@ -298,17 +272,11 @@ function UsersContent() {
                 data?.users?.map((user) => (
                   <TableRow key={user.id} className="cursor-pointer" onClick={() => setDetailUser(user)}>
                     <TableCell className="max-w-[240px]">
-                      <button
-                        type="button"
-                        className="text-muted-foreground w-full cursor-copy truncate text-left hover:underline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyEmail(user.email);
-                        }}
-                        title={user.email}
-                      >
-                        {truncateText(user.email)}
-                      </button>
+                      <CopyableEmail
+                        email={user.email}
+                        stopPropagation
+                        className="text-muted-foreground w-full"
+                      />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatCredits(user.credits)}</TableCell>
                     <TableCell>
@@ -318,7 +286,15 @@ function UsersContent() {
                       {formatDate(user.created_at)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {user.invited_by?.email ?? "—"}
+                      {user.invited_by?.email ? (
+                        <CopyableEmail
+                          email={user.invited_by.email}
+                          stopPropagation
+                          className="text-muted-foreground max-w-[220px]"
+                        />
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
                     <TableCell className="space-x-1 text-right" onClick={(e) => e.stopPropagation()}>
                       <Button
@@ -351,8 +327,6 @@ function UsersContent() {
                           onClick={() => {
                             setBanUserId(user.id);
                             setBanReason("");
-                            setDeleteResources(false);
-                            setForceDelete(false);
                           }}
                           disabled={banMutation.isPending || user.id === currentUser?.id}
                         >
@@ -382,8 +356,6 @@ function UsersContent() {
         if (!open) {
           setBanUserId(null);
           setBanReason("");
-          setDeleteResources(false);
-          setForceDelete(false);
         }
       }}>
         <DialogContent aria-describedby={undefined}>
@@ -397,22 +369,10 @@ function UsersContent() {
                 placeholder={t("adminUsers.banReasonPlaceholder")}
               />
             </div>
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">{t("adminUsers.deleteAllResources")}</p>
-                <p className="text-xs text-muted-foreground">{t("adminUsers.deleteAllResourcesHint")}</p>
-              </div>
-              <Switch checked={deleteResources} onCheckedChange={setDeleteResources} />
+            <div className="rounded-md border p-3">
+              <p className="text-sm font-medium">{t("adminUsers.deleteAllResources")}</p>
+              <p className="text-xs text-muted-foreground">{t("adminUsers.deleteAllResourcesHint")}</p>
             </div>
-            {deleteResources && (
-              <div className="flex items-center justify-between rounded-md border p-3">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">{t("adminUsers.forceDelete")}</p>
-                  <p className="text-xs text-muted-foreground">{t("adminUsers.forceDeleteHint")}</p>
-                </div>
-                <Switch checked={forceDelete} onCheckedChange={setForceDelete} />
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBanUserId(null)}>{t("common.cancel")}</Button>
@@ -421,8 +381,6 @@ function UsersContent() {
               onClick={() => banUserId && banMutation.mutate({
                 userId: banUserId,
                 reason: banReason.trim(),
-                removeResources: deleteResources,
-                force: deleteResources && forceDelete,
               })}
               disabled={banMutation.isPending}
               data-dialog-primary="true"
@@ -522,7 +480,10 @@ function UserDetailDialog({ user, onClose }: { user: UserWithInviter | null; onC
             <div className="space-y-2">
               <p className="text-sm font-semibold">{t("adminUsers.basicInfo")}</p>
               <UserDetailRow label={t("adminUsers.name")} value={user.name || "-"} />
-              <UserDetailRow label={t("adminUsers.email")} value={user.email || "-"} />
+              <UserDetailRow
+                label={t("adminUsers.email")}
+                value={<CopyableEmail email={user.email} truncate={false} className="text-sm text-foreground" />}
+              />
               <UserDetailRow label={t("adminUsers.role")} value={user.role || "-"} />
               <UserDetailRow label={t("adminUsers.group")} value={user.group?.name ?? "-"} />
               <UserDetailRow label={t("adminUsers.groupId")} value={user.group_id ? String(user.group_id) : "-"} mono />
@@ -552,7 +513,12 @@ function UserDetailDialog({ user, onClose }: { user: UserWithInviter | null; onC
               <p className="text-sm font-semibold">{t("adminUsers.relationInfo")}</p>
               <UserDetailRow
                 label={t("adminUsers.invitedBy")}
-                value={user.invited_by ? `${user.invited_by.email} (#${user.invited_by.id})` : "-"}
+                value={user.invited_by ? (
+                  <span className="flex items-center gap-1">
+                    <CopyableEmail email={user.invited_by.email} truncate={false} className="text-sm text-foreground" />
+                    <span className="text-sm text-muted-foreground">#{user.invited_by.id}</span>
+                  </span>
+                ) : "-"}
               />
               <UserDetailRow label={t("adminUsers.joined")} value={formatDate(user.created_at, true)} />
               <UserDetailRow label={t("adminUsers.updatedAt")} value={formatDate(user.updated_at, true)} />
@@ -574,7 +540,7 @@ function UserDetailRow({
   breakAll,
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   mono?: boolean;
   breakAll?: boolean;
 }) {
