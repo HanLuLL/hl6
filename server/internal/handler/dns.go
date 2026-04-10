@@ -454,7 +454,9 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 			return
 		}
 
-		banResult, failures, banErr := executeAdminBanUserWithCleanup(h.repo, admin.ID, target, reason)
+		var failures []cfFailureRecord
+		var banErr error
+		banResult, failures, banErr = executeAdminBanUserWithCleanup(h.repo, admin.ID, target, reason)
 		if len(failures) > 0 {
 			response.ErrorWithKeyData(c, http.StatusConflict, "some cloudflare dns records failed to delete", "error.cloudflareDeleteFailed", gin.H{
 				"failed_records": failures,
