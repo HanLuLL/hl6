@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
 	"hl6-server/pkg/validator"
 
@@ -24,6 +26,7 @@ import (
 type DNSHandler struct {
 	repo   *repository.Repository
 	broker *SSEBroker
+	ops    *service.DNSOperationService
 }
 
 var (
@@ -34,8 +37,8 @@ var (
 	errDNSRecordLimitExceeded    = errors.New("dns record limit exceeded")
 )
 
-func NewDNSHandler(repo *repository.Repository, broker *SSEBroker) *DNSHandler {
-	return &DNSHandler{repo: repo, broker: broker}
+func NewDNSHandler(repo *repository.Repository, broker *SSEBroker, ops *service.DNSOperationService) *DNSHandler {
+	return &DNSHandler{repo: repo, broker: broker, ops: ops}
 }
 
 func (h *DNSHandler) ListRecords(c *gin.Context) {
@@ -59,7 +62,6 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 	var body struct {
 		Type    string `json:"type" binding:"required"`
 		Content string `json:"content" binding:"required"`
-		TTL     int    `json:"ttl"`
 		Proxied bool   `json:"proxied"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -90,156 +92,140 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 	if body.Type == "TXT" {
 		body.Proxied = false
 	}
-
-	if body.TTL <= 0 {
-		body.TTL = 1
+	if sub.Domain.Provider != model.DNSProviderCloudflare {
+		body.Proxied = false
 	}
 
-	if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
+	ttl := normalizeDNSRecordTTL(sub.Domain.Provider, 0, 0)
+
+	if _, err := h.repo.FindDNSProviderAccount(sub.Domain.ProviderAccountID); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
 		return
 	}
 
+	key, ok := idempotencyKeyFromHeader(c)
+	if !ok {
+		return
+	}
 	record := &model.DNSRecord{
 		SubdomainID: sub.ID,
 		Type:        body.Type,
 		Name:        sub.FQDN,
 		Content:     body.Content,
-		TTL:         body.TTL,
+		TTL:         ttl,
 		Proxied:     body.Proxied,
-		SyncStatus:  "pending_create",
 	}
-	var task *model.CloudflareTask
-	if err := h.repo.Transaction(func(tx *gorm.DB) error {
-		if _, err := h.repo.LockSubdomainForUpdate(tx, sub.ID); err != nil {
-			return err
-		}
+	scopeUserID := uint(0)
+	if user != nil {
+		scopeUserID = user.ID
+	}
+	scope := fmt.Sprintf("dns:create:user:%d:sub:%d", scopeUserID, sub.ID)
+	result := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
+		err := h.ops.CreateRecordAtomic(ctx, service.CreateRecordInput{
+			Subdomain: sub,
+			Record:    record,
+		}, func(tx *gorm.DB) error {
+			if _, err := h.repo.LockSubdomainForUpdate(tx, sub.ID); err != nil {
+				return err
+			}
 
-		var cnameCount int64
-		if err := tx.Model(&model.DNSRecord{}).
-			Where("subdomain_id = ? AND type = ?", sub.ID, "CNAME").
-			Count(&cnameCount).Error; err != nil {
-			return err
-		}
-
-		if body.Type == "CNAME" {
-			var otherCount int64
+			var cnameCount int64
 			if err := tx.Model(&model.DNSRecord{}).
-				Where("subdomain_id = ? AND type <> ?", sub.ID, "CNAME").
-				Count(&otherCount).Error; err != nil {
+				Where("subdomain_id = ? AND type = ?", sub.ID, "CNAME").
+				Count(&cnameCount).Error; err != nil {
 				return err
 			}
-			if otherCount > 0 {
-				return errDNSCNAMEConflictWithOther
+			if body.Type == "CNAME" {
+				var otherCount int64
+				if err := tx.Model(&model.DNSRecord{}).
+					Where("subdomain_id = ? AND type <> ?", sub.ID, "CNAME").
+					Count(&otherCount).Error; err != nil {
+					return err
+				}
+				if otherCount > 0 {
+					return errDNSCNAMEConflictWithOther
+				}
+				if cnameCount > 0 {
+					return errDNSCNAMEAlreadyExists
+				}
+			} else if cnameCount > 0 {
+				return errDNSOtherConflictWithCNAME
 			}
-			if cnameCount > 0 {
-				return errDNSCNAMEAlreadyExists
-			}
-		} else if cnameCount > 0 {
-			return errDNSOtherConflictWithCNAME
-		}
 
-		var dupCount int64
-		if err := tx.Model(&model.DNSRecord{}).
-			Where("subdomain_id = ? AND type = ? AND content = ?", sub.ID, body.Type, body.Content).
-			Count(&dupCount).Error; err != nil {
-			return err
-		}
-		if dupCount > 0 {
-			return errDNSDuplicateRecord
-		}
-
-		if maxDNSRecords != nil {
-			var currentCount int64
-			if err := tx.Model(&model.DNSRecord{}).Where("subdomain_id = ?", sub.ID).Count(&currentCount).Error; err != nil {
+			var dupCount int64
+			if err := tx.Model(&model.DNSRecord{}).
+				Where("subdomain_id = ? AND type = ? AND content = ?", sub.ID, body.Type, body.Content).
+				Count(&dupCount).Error; err != nil {
 				return err
 			}
-			if int(currentCount) >= *maxDNSRecords {
-				return errDNSRecordLimitExceeded
+			if dupCount > 0 {
+				return errDNSDuplicateRecord
 			}
+			if maxDNSRecords != nil {
+				var currentCount int64
+				if err := tx.Model(&model.DNSRecord{}).Where("subdomain_id = ?", sub.ID).Count(&currentCount).Error; err != nil {
+					return err
+				}
+				if int(currentCount) >= *maxDNSRecords {
+					return errDNSRecordLimitExceeded
+				}
+			}
+			return nil
+		})
+		if err == nil {
+			if user != nil {
+				details, _ := json.Marshal(map[string]interface{}{
+					"type": body.Type, "content": body.Content, "fqdn": sub.FQDN,
+				})
+				h.repo.CreateAuditLog(&model.AuditLog{
+					UserID:     user.ID,
+					Action:     "create_dns_record",
+					Resource:   "dns_record",
+					ResourceID: record.ID,
+					Details:    details,
+				})
+			}
+			return service.OperationResult{
+				HTTPStatus: http.StatusCreated,
+				Message:    "created",
+				Data:       record,
+				Retryable:  false,
+			}, nil
 		}
 
-		if err := tx.Create(record).Error; err != nil {
-			return err
-		}
-		queued, err := enqueueCloudflareTask(
-			h.repo,
-			tx,
-			cloudflareTaskResourceDNSRecord,
-			record.ID,
-			model.CloudflareTaskActionCreateDNSRecord,
-			model.CloudflareTaskPayload{
-				CloudflareAccountID: sub.Domain.CloudflareAccountID,
-				ZoneID:              sub.Domain.CloudflareZoneID,
-				RecordType:          body.Type,
-				Name:                sub.FQDN,
-				Content:             body.Content,
-				TTL:                 body.TTL,
-				Proxied:             body.Proxied,
-			},
-			fmt.Sprintf("dns:create:%d", record.ID),
-		)
-		if err != nil {
-			return err
-		}
-		task = queued
-		return h.repo.UpdateDNSRecordSyncState(tx, record.ID, "pending_create", &task.ID, "", nil)
-	}); err != nil {
 		switch {
 		case errors.Is(err, gorm.ErrRecordNotFound):
-			response.ErrorWithKey(c, http.StatusNotFound, "subdomain not found", "error.subdomainNotFound")
-			return
+			return service.OperationResult{HTTPStatus: http.StatusNotFound, Message: "subdomain not found", MessageKey: "error.subdomainNotFound"}, nil
 		case errors.Is(err, errDNSCNAMEConflictWithOther):
-			response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.cnameConflictWithOther")
-			return
+			return service.OperationResult{HTTPStatus: http.StatusConflict, Message: "CNAME record cannot coexist with other records", MessageKey: "error.cnameConflictWithOther"}, nil
 		case errors.Is(err, errDNSCNAMEAlreadyExists):
-			response.ErrorWithKey(c, http.StatusConflict, "CNAME record already exists", "error.cnameAlreadyExists")
-			return
+			return service.OperationResult{HTTPStatus: http.StatusConflict, Message: "CNAME record already exists", MessageKey: "error.cnameAlreadyExists"}, nil
 		case errors.Is(err, errDNSOtherConflictWithCNAME):
-			response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.otherConflictWithCname")
-			return
+			return service.OperationResult{HTTPStatus: http.StatusConflict, Message: "CNAME record cannot coexist with other records", MessageKey: "error.otherConflictWithCname"}, nil
 		case errors.Is(err, errDNSDuplicateRecord):
-			response.ErrorWithKey(c, http.StatusConflict, "duplicate record", "error.duplicateRecord")
-			return
+			return service.OperationResult{HTTPStatus: http.StatusConflict, Message: "duplicate record", MessageKey: "error.duplicateRecord"}, nil
 		case errors.Is(err, errDNSRecordLimitExceeded):
-			response.ErrorWithKey(c, http.StatusUnprocessableEntity, "dns record limit exceeded", "error.dnsRecordLimitExceeded")
-			return
+			return service.OperationResult{HTTPStatus: http.StatusUnprocessableEntity, Message: "dns record limit exceeded", MessageKey: "error.dnsRecordLimitExceeded"}, nil
 		}
 
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			if strings.EqualFold(pgErr.ConstraintName, "idx_dns_records_subdomain_cname_unique") {
 				if body.Type == "CNAME" {
-					response.ErrorWithKey(c, http.StatusConflict, "CNAME record already exists", "error.cnameAlreadyExists")
-				} else {
-					response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.otherConflictWithCname")
+					return service.OperationResult{HTTPStatus: http.StatusConflict, Message: "CNAME record already exists", MessageKey: "error.cnameAlreadyExists"}, nil
 				}
-				return
+				return service.OperationResult{HTTPStatus: http.StatusConflict, Message: "CNAME record cannot coexist with other records", MessageKey: "error.otherConflictWithCname"}, nil
 			}
-			response.ErrorWithKey(c, http.StatusConflict, "duplicate record", "error.duplicateRecord")
-			return
+			return service.OperationResult{HTTPStatus: http.StatusConflict, Message: "duplicate record", MessageKey: "error.duplicateRecord"}, nil
 		}
-
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to save record", "error.failedToSaveRecord")
-		return
-	}
-	record.SyncOperationID = &task.ID
-	record.SyncStatus = "pending_create"
-
-	if user != nil {
-		details, _ := json.Marshal(map[string]interface{}{
-			"type": body.Type, "content": body.Content, "fqdn": sub.FQDN, "operation_id": task.ID,
-		})
-		h.repo.CreateAuditLog(&model.AuditLog{
-			UserID:     user.ID,
-			Action:     "create_dns_record",
-			Resource:   "dns_record",
-			ResourceID: record.ID,
-			Details:    details,
-		})
-	}
-
-	response.Created(c, record)
+		return service.OperationResult{
+			HTTPStatus: http.StatusInternalServerError,
+			Message:    "failed to save record",
+			MessageKey: "error.failedToSaveRecord",
+			Retryable:  true,
+		}, nil
+	})
+	writeOperationResult(c, result)
 }
 
 func (h *DNSHandler) UpdateRecord(c *gin.Context) {
@@ -259,7 +245,6 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 
 	var body struct {
 		Content string `json:"content" binding:"required"`
-		TTL     int    `json:"ttl"`
 		Proxied bool   `json:"proxied"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -288,63 +273,49 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 	if record.Type == "TXT" {
 		body.Proxied = false
 	}
-
-	if body.TTL <= 0 {
-		body.TTL = 1
+	if sub.Domain.Provider != model.DNSProviderCloudflare {
+		body.Proxied = false
 	}
 
-	if record.SyncStatus != "synced" {
-		response.ErrorWithKey(c, http.StatusConflict, "record has a pending sync operation", "error.cloudflareOperationInProgress")
+	ttl := normalizeDNSRecordTTL(sub.Domain.Provider, 0, 0)
+	key, ok := idempotencyKeyFromHeader(c)
+	if !ok {
 		return
 	}
-	if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
-		return
-	}
-
-	record.Content = body.Content
-	record.TTL = body.TTL
-	record.Proxied = body.Proxied
-	var task *model.CloudflareTask
-	if err := h.repo.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Save(record).Error; err != nil {
-			return err
+	scope := fmt.Sprintf("dns:update:user:%d:record:%d", sub.UserID, record.ID)
+	result := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
+		err := h.ops.UpdateRecordAtomic(ctx, service.UpdateRecordInput{
+			Subdomain:  sub,
+			Record:     record,
+			NewContent: body.Content,
+			NewTTL:     ttl,
+			NewProxied: body.Proxied,
+		})
+		if err == nil {
+			return service.OperationResult{
+				HTTPStatus: http.StatusOK,
+				Message:    "ok",
+				Data:       record,
+				Retryable:  false,
+			}, nil
 		}
-		queued, err := enqueueCloudflareTask(
-			h.repo,
-			tx,
-			cloudflareTaskResourceDNSRecord,
-			record.ID,
-			model.CloudflareTaskActionUpdateDNSRecord,
-			model.CloudflareTaskPayload{
-				CloudflareAccountID: sub.Domain.CloudflareAccountID,
-				ZoneID:              sub.Domain.CloudflareZoneID,
-				RecordID:            record.CloudflareRecordID,
-				RecordType:          record.Type,
-				Name:                sub.FQDN,
-				Content:             body.Content,
-				TTL:                 body.TTL,
-				Proxied:             body.Proxied,
-			},
-			fmt.Sprintf("dns:update:%d:%d", record.ID, record.UpdatedAt.UnixNano()),
-		)
-		if err != nil {
-			return err
-		}
-		task = queued
-		return h.repo.UpdateDNSRecordSyncState(tx, record.ID, "pending_update", &task.ID, "", nil)
-	}); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			response.ErrorWithKey(c, http.StatusConflict, "duplicate record", "error.duplicateRecord")
-			return
+			return service.OperationResult{
+				HTTPStatus: http.StatusConflict,
+				Message:    "duplicate record",
+				MessageKey: "error.duplicateRecord",
+				Retryable:  false,
+			}, nil
 		}
-		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
-		return
-	}
-	record.SyncStatus = "pending_update"
-	record.SyncOperationID = &task.ID
-	response.OK(c, record)
+		return service.OperationResult{
+			HTTPStatus: http.StatusInternalServerError,
+			Message:    "database error",
+			MessageKey: "error.databaseError",
+			Retryable:  true,
+		}, nil
+	})
+	writeOperationResult(c, result)
 }
 
 func (h *DNSHandler) DeleteRecord(c *gin.Context) {
@@ -362,42 +333,30 @@ func (h *DNSHandler) DeleteRecord(c *gin.Context) {
 		return
 	}
 
-	var opID *uint
-	if err := h.repo.Transaction(func(tx *gorm.DB) error {
-		if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
-			return err
-		}
-		task, err := enqueueCloudflareTask(
-			h.repo,
-			tx,
-			cloudflareTaskResourceDNSRecord,
-			record.ID,
-			model.CloudflareTaskActionDeleteDNSRecord,
-			model.CloudflareTaskPayload{
-				CloudflareAccountID: sub.Domain.CloudflareAccountID,
-				ZoneID:              sub.Domain.CloudflareZoneID,
-				RecordID:            record.CloudflareRecordID,
-				RecordType:          record.Type,
-				Name:                record.Name,
-				Content:             record.Content,
-			},
-			fmt.Sprintf("dns:delete:%d:%s", record.ID, record.CloudflareRecordID),
-		)
-		if err != nil {
-			return err
-		}
-		opID = &task.ID
-		return tx.Delete(&model.DNSRecord{}, record.ID).Error
-	}); err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+	key, ok := idempotencyKeyFromHeader(c)
+	if !ok {
 		return
 	}
-	data := gin.H{"message": "record deleted"}
-	if opID != nil {
-		data["operation_id"] = *opID
-		data["sync_status"] = "processing"
-	}
-	response.OK(c, data)
+	scope := fmt.Sprintf("dns:delete:user:%d:record:%d", sub.UserID, record.ID)
+	result := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
+		if err := h.ops.DeleteRecordAtomic(ctx, service.DeleteRecordInput{
+			Subdomain: sub,
+			Record:    record,
+		}); err != nil {
+			return service.OperationResult{
+				HTTPStatus: http.StatusInternalServerError,
+				Message:    "database error",
+				MessageKey: "error.databaseError",
+				Retryable:  true,
+			}, nil
+		}
+		return service.OperationResult{
+			HTTPStatus: http.StatusOK,
+			Message:    "ok",
+			Data:       gin.H{"message": "record deleted"},
+		}, nil
+	})
+	writeOperationResult(c, result)
 }
 
 func (h *DNSHandler) getSubdomain(c *gin.Context) *model.Subdomain {
@@ -488,151 +447,128 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusNotFound, "record not found", "error.recordNotFound")
 		return
 	}
-
-	var opID *uint
-	banResult := adminBanExecutionResult{}
-	if body.BanUser {
-		if admin.ID == sub.UserID {
-			response.ErrorWithKey(c, http.StatusBadRequest, "cannot ban yourself", "error.cannotBanSelf")
-			return
-		}
-
-		target, findErr := h.repo.FindUserByID(sub.UserID)
-		if findErr != nil {
-			response.ErrorWithKey(c, http.StatusNotFound, "user not found", "error.userNotFound")
-			return
-		}
-
-		var failures []cfFailureRecord
-		var banErr error
-		banResult, failures, banErr = executeAdminBanUserWithCleanup(h.repo, admin.ID, target, reason)
-		if len(failures) > 0 {
-			response.ErrorWithKeyData(c, http.StatusConflict, "some cloudflare dns records failed to delete", "error.cloudflareDeleteFailed", gin.H{
-				"failed_records": failures,
-			})
-			return
-		}
-		if banErr != nil {
-			if errors.Is(banErr, errCannotBanLastActiveAdmin) {
-				response.ErrorWithKey(c, http.StatusBadRequest, "cannot ban last active admin", "error.cannotBanLastAdmin")
-				return
-			}
-			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to ban user", "error.failedToBanUser")
-			return
-		}
-	} else {
-		if err := h.repo.Transaction(func(tx *gorm.DB) error {
-			if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
-				return err
-			}
-			task, err := enqueueCloudflareTask(
-				h.repo,
-				tx,
-				cloudflareTaskResourceDNSRecord,
-				record.ID,
-				model.CloudflareTaskActionDeleteDNSRecord,
-				model.CloudflareTaskPayload{
-					CloudflareAccountID: sub.Domain.CloudflareAccountID,
-					ZoneID:              sub.Domain.CloudflareZoneID,
-					RecordID:            record.CloudflareRecordID,
-					RecordType:          record.Type,
-					Name:                record.Name,
-					Content:             record.Content,
-				},
-				fmt.Sprintf("admin:dns:delete:%d:%s", record.ID, record.CloudflareRecordID),
-			)
-			if err != nil {
-				return err
-			}
-			opID = &task.ID
-			return tx.Delete(&model.DNSRecord{}, record.ID).Error
-		}); err != nil {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
-			return
-		}
+	key, ok := idempotencyKeyFromHeader(c)
+	if !ok {
+		return
 	}
+	scope := fmt.Sprintf("admin:dns:delete:%d:ban:%t", record.ID, body.BanUser)
+	result := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
+		banResult := adminBanExecutionResult{}
+		if body.BanUser {
+			if admin.ID == sub.UserID {
+				return service.OperationResult{HTTPStatus: http.StatusBadRequest, Message: "cannot ban yourself", MessageKey: "error.cannotBanSelf"}, nil
+			}
+			target, findErr := h.repo.FindUserByID(sub.UserID)
+			if findErr != nil {
+				return service.OperationResult{HTTPStatus: http.StatusNotFound, Message: "user not found", MessageKey: "error.userNotFound"}, nil
+			}
+			var failures []cfFailureRecord
+			var banErr error
+			banResult, failures, banErr = executeAdminBanUserWithCleanup(h.repo, h.ops, admin.ID, target, reason)
+			if len(failures) > 0 {
+				return service.OperationResult{
+					HTTPStatus: http.StatusConflict,
+					Message:    "some cloudflare dns records failed to delete",
+					MessageKey: "error.cloudflareDeleteFailed",
+					Data:       gin.H{"failed_records": failures},
+				}, nil
+			}
+			if banErr != nil {
+				if errors.Is(banErr, errCannotBanLastActiveAdmin) {
+					return service.OperationResult{HTTPStatus: http.StatusBadRequest, Message: "cannot ban last active admin", MessageKey: "error.cannotBanLastAdmin"}, nil
+				}
+				return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to ban user", MessageKey: "error.failedToBanUser", Retryable: true}, nil
+			}
+			banDetails, _ := json.Marshal(map[string]interface{}{
+				"target_user_id":     sub.UserID,
+				"target_user_role":   banResult.TargetRole,
+				"reason":             reason,
+				"delete_resources":   true,
+				"subdomains_deleted": banResult.SubdomainsDeleted,
+				"deleted_dns_count":  banResult.DeletedDNSCount,
+			})
+			h.repo.CreateAuditLog(&model.AuditLog{
+				UserID:     admin.ID,
+				Action:     "admin_ban_user",
+				Resource:   "user",
+				ResourceID: sub.UserID,
+				Details:    banDetails,
+			})
+		} else {
+			if err := h.ops.DeleteRecordAtomic(ctx, service.DeleteRecordInput{
+				Subdomain: sub,
+				Record:    record,
+			}); err != nil {
+				return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "database error", MessageKey: "error.databaseError", Retryable: true}, nil
+			}
+		}
 
-	if body.BanUser {
-		banDetails, _ := json.Marshal(map[string]interface{}{
-			"target_user_id":     sub.UserID,
-			"target_user_role":   banResult.TargetRole,
+		if body.Notify {
+			fqdn := record.Name
+			title := fmt.Sprintf("%s 解析已被删除", fqdn)
+			content := fmt.Sprintf("您的解析 %s 已被删除。", fqdn)
+			if body.BanUser {
+				content = fmt.Sprintf("您的解析 %s 已被删除，账号已被封禁。", fqdn)
+			}
+			if reason != "" {
+				content = fmt.Sprintf("%s\n原因：%s", content, reason)
+			}
+			targetIDs, _ := json.Marshal([]uint{sub.UserID})
+			notification := &model.Notification{
+				Title:      title,
+				Content:    content,
+				Type:       "urgent",
+				TargetType: "users",
+				TargetIDs:  targetIDs,
+				CreatedBy:  admin.ID,
+			}
+			if err := h.repo.CreateNotificationWithImages(notification); err != nil {
+				log.Printf("failed to create notification: %v", err)
+			} else {
+				event := SSEEvent{Event: "new_notification", Data: fmt.Sprintf(`{"id":%d}`, notification.ID)}
+				h.broker.SendToUsers([]uint{sub.UserID}, event)
+			}
+		}
+
+		details, _ := json.Marshal(map[string]interface{}{
+			"fqdn":               record.Name,
+			"type":               record.Type,
+			"content":            record.Content,
+			"notify":             body.Notify,
 			"reason":             reason,
-			"delete_resources":   true,
+			"ban_user":           body.BanUser,
+			"target_user_id":     sub.UserID,
+			"deleted_dns_count":  banResult.DeletedDNSCount,
 			"subdomains_deleted": banResult.SubdomainsDeleted,
-			"cf_queue_count":     banResult.QueueCount,
 		})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:     admin.ID,
-			Action:     "admin_ban_user",
-			Resource:   "user",
-			ResourceID: sub.UserID,
-			Details:    banDetails,
+			Action:     "admin_delete_dns_record",
+			Resource:   "dns_record",
+			ResourceID: record.ID,
+			Details:    details,
 		})
-	}
-
-	// Send notification if requested
-	if body.Notify {
-		fqdn := record.Name
-		title := fmt.Sprintf("%s 解析已被删除", fqdn)
-		content := fmt.Sprintf("您的解析 %s 已被删除。", fqdn)
+		data := gin.H{"message": "record deleted"}
 		if body.BanUser {
-			content = fmt.Sprintf("您的解析 %s 已被删除，账号已被封禁。", fqdn)
+			data["ban_user"] = true
 		}
-		if reason != "" {
-			content = fmt.Sprintf("%s\n原因：%s", content, reason)
-		}
-
-		targetIDs, _ := json.Marshal([]uint{sub.UserID})
-		notification := &model.Notification{
-			Title:      title,
-			Content:    content,
-			Type:       "urgent",
-			TargetType: "users",
-			TargetIDs:  targetIDs,
-			CreatedBy:  admin.ID,
-		}
-		if err := h.repo.CreateNotificationWithImages(notification); err != nil {
-			log.Printf("failed to create notification: %v", err)
-		} else {
-			event := SSEEvent{Event: "new_notification", Data: fmt.Sprintf(`{"id":%d}`, notification.ID)}
-			h.broker.SendToUsers([]uint{sub.UserID}, event)
-		}
-	}
-
-	// Audit log
-	details, _ := json.Marshal(map[string]interface{}{
-		"fqdn":               record.Name,
-		"type":               record.Type,
-		"content":            record.Content,
-		"notify":             body.Notify,
-		"reason":             reason,
-		"ban_user":           body.BanUser,
-		"target_user_id":     sub.UserID,
-		"op_id":              opID,
-		"ban_queue_count":    banResult.QueueCount,
-		"subdomains_deleted": banResult.SubdomainsDeleted,
+		return service.OperationResult{HTTPStatus: http.StatusOK, Message: "ok", Data: data}, nil
 	})
-	h.repo.CreateAuditLog(&model.AuditLog{
-		UserID:     admin.ID,
-		Action:     "admin_delete_dns_record",
-		Resource:   "dns_record",
-		ResourceID: record.ID,
-		Details:    details,
-	})
+	writeOperationResult(c, result)
+}
 
-	data := gin.H{"message": "record deleted"}
-	if body.BanUser {
-		data["ban_user"] = true
-		if banResult.QueueCount > 0 {
-			data["sync_status"] = "processing"
-			data["operation_count"] = banResult.QueueCount
-		}
-		response.OK(c, data)
-		return
+func normalizeDNSRecordTTL(provider string, requestedTTL int, currentTTL int) int {
+	_ = requestedTTL
+	_ = currentTTL
+
+	switch model.NormalizeProvider(provider) {
+	case model.DNSProviderCloudflare:
+		return 1
+	case model.DNSProviderHuaweiDNS:
+		return 300
+	case model.DNSProviderDNSPod, model.DNSProviderAliDNS:
+		return 600
+	default:
+		return 600
 	}
-	if opID != nil {
-		data["operation_id"] = *opID
-		data["sync_status"] = "processing"
-	}
-	response.OK(c, data)
 }

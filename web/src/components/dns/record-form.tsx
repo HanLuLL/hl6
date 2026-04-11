@@ -56,7 +56,6 @@ interface RecordFormProps {
 export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFormProps) {
   const [type, setType] = useState<string>(record?.type || "A");
   const [content, setContent] = useState(record?.content || "");
-  const [ttl, setTtl] = useState(String(record?.ttl || 1));
   const [proxied, setProxied] = useState(record?.proxied || false);
   const [validationError, setValidationError] = useState("");
   const { t } = useTranslation();
@@ -64,12 +63,12 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
   const create = useCreateRecord(subdomainId);
   const update = useUpdateRecord(subdomainId);
   const isEdit = !!record;
+  const isSaving = create.isPending || update.isPending || create.isRetrying || update.isRetrying;
 
   const handleSubmit = () => {
     if (!content.trim()) return;
     const data = {
       content: content.trim(),
-      ttl: parseInt(ttl) || 1,
       proxied: type === "TXT" ? false : proxied,
     };
 
@@ -139,36 +138,19 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
               <p className="text-sm text-destructive">{t(validationError)}</p>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>{t("recordForm.ttl")}</Label>
-              <Select value={ttl} onValueChange={setTtl}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">{t("common.auto")}</SelectItem>
-                  <SelectItem value="60">{t("recordForm.ttl1min")}</SelectItem>
-                  <SelectItem value="300">{t("recordForm.ttl5min")}</SelectItem>
-                  <SelectItem value="3600">{t("recordForm.ttl1hour")}</SelectItem>
-                  <SelectItem value="86400">{t("recordForm.ttl1day")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{t("recordForm.proxied")}</Label>
-              <div className="flex items-center h-9">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={type === "TXT" ? false : proxied}
-                    onChange={(e) => setProxied(e.target.checked)}
-                    disabled={type === "TXT"}
-                    className="rounded"
-                  />
-                  <span className="text-sm">{proxied ? t("common.on") : t("common.off")}</span>
-                </label>
-              </div>
+          <div className="space-y-2">
+            <Label>{t("recordForm.proxied")}</Label>
+            <div className="flex items-center h-9">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={type === "TXT" ? false : proxied}
+                  onChange={(e) => setProxied(e.target.checked)}
+                  disabled={type === "TXT"}
+                  className="rounded"
+                />
+                <span className="text-sm">{proxied ? t("common.on") : t("common.off")}</span>
+              </label>
             </div>
           </div>
         </div>
@@ -176,8 +158,14 @@ export function RecordForm({ subdomainId, record, open, onOpenChange }: RecordFo
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={handleSubmit} disabled={!content.trim() || !!validationError || create.isPending || update.isPending} data-dialog-primary="true">
-            {create.isPending || update.isPending ? t("common.saving") : isEdit ? t("recordForm.update") : t("common.create")}
+          <Button onClick={handleSubmit} disabled={!content.trim() || !!validationError || isSaving} data-dialog-primary="true">
+            {create.isRetrying || update.isRetrying
+              ? `${t("common.retry")}...`
+              : create.isPending || update.isPending
+                ? t("common.saving")
+                : isEdit
+                  ? t("recordForm.update")
+                  : t("common.create")}
           </Button>
         </DialogFooter>
       </DialogContent>
