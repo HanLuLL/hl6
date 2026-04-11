@@ -4,7 +4,7 @@ HL6 是一个域名/子域名管理平台，用户可以在已注册域名下认
 
 ## Tech Stack
 
-- **Frontend**: React 19 + TypeScript, Vite, Tailwind CSS 4, React Router DOM, TanStack React Query, i18next (6 语言), OIDC 兼容认证, Shadcn UI
+- **Frontend**: React 19 + TypeScript, Vite, Tailwind CSS 4, React Router DOM, TanStack React Query, i18nextt (6 语言), OIDC 兼容认证, Shadcn UI
 - **Backend**: Go (Gin + GORM), PostgreSQL 16, Cloudflare API (DNS 管理), JWT 认证 (lestrrat-go/jwx)
 - **Infra**: Docker Compose (PostgreSQL), OIDC 兼容认证, Cloudflare (DNS)
 
@@ -36,7 +36,7 @@ cd web && npm run lint     # ESLint
 - `hooks/` — 自定义 hooks（use-auth, use-subdomains, use-dns-records, use-credits 等），封装 TanStack React Query 的数据获取和 mutation
 - `lib/api.ts` — REST API 客户端，使用 Bearer token 认证
 - `lib/prefetch.ts` — React Query 预取逻辑
-- `i18n/` — i18next 配置及语言文件（en, zh, zh-Hant, es, ru, ja）
+- `i18n/` — i18nextt 配置及语言文件（en, zh, zh-Hant, es, ru, ja）
 - `types/` — TypeScript 接口定义
 
 路径别名: `@/*` 映射到 `web/src/*`。Vite 开发服务器代理 `/api` 到 `localhost:8080`。
@@ -73,3 +73,10 @@ cd web && npm run lint     # ESLint
 ## 对话要求
 
 - 主动追问用户，确保思想对齐：目标用户、核心功能、不做的功能、未提及的可能问题
+
+## Active Technologies
+- Go 1.25.5（后端），TypeScript 5 + React 19（前端） + Gin、GORM、PostgreSQL driver、cloudflare-go/v4、tencentcloud-sdk-go、alibabacloud alidns SDK、huaweicloud-sdk-go-v3、TanStack React Query、i18next (001-add-dns-providers)
+- Go 1.25.5（后端），TypeScript 5.9 + React 19（前端） + Gin、GORM、PostgreSQL driver、cloudflare-go/v4、tencentcloud-sdk-go（dnspod）、alidns-20150109/v5、huaweicloud-sdk-go-v3、baidubce/bce-sdk-go、AWS SDK for Go v2（Route53）、google.golang.org/api/dns/v1、TanStack React Query、i18nex (001-add-dns-providers)
+
+## Recent Changes
+- 001-add-dns-providers: Added Go 1.25.5（后端），TypeScript 5 + React 19（前端） + Gin、GORM、PostgreSQL driver、cloudflare-go/v4、tencentcloud-sdk-go、alibabacloud alidns SDK、huaweicloud-sdk-go-v3、TanStack React Query、i18next
