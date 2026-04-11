@@ -30,6 +30,8 @@ function FooterBadge({ icon: Icon, label, value }: FooterBadgeProps): JSX.Elemen
 export function SiteFooter({ withBorder = true, centered = false }: SiteFooterProps): JSX.Element {
   const branch = __APP_GIT_BRANCH__ || "unknown";
   const commit = __APP_GIT_COMMIT__ || "unknown";
+  const showBranch = branch.toLowerCase() !== "unknown";
+  const showCommit = commit.toLowerCase() !== "unknown";
 
   return (
     <footer
@@ -53,8 +55,8 @@ export function SiteFooter({ withBorder = true, centered = false }: SiteFooterPr
           <Code2 className="h-3.5 w-3.5" />
           <span>厚浪开源</span>
         </a>
-        <FooterBadge icon={GitBranch} label="Branch" value={branch} />
-        <FooterBadge icon={GitCommitHorizontal} label="Commit" value={commit} />
+        {showBranch && <FooterBadge icon={GitBranch} label="Branch" value={branch} />}
+        {showCommit && <FooterBadge icon={GitCommitHorizontal} label="Commit" value={commit} />}
       </div>
     </footer>
   );
