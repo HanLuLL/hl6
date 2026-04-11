@@ -32,6 +32,8 @@ func main() {
 		log.Fatal("failed to connect database:", err)
 	}
 
+	preMigrateDNSLegacyObjects(db)
+
 	// Rename logto_id column to external_id (idempotent)
 	var colExists bool
 	db.Raw("SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'logto_id')").Scan(&colExists)
@@ -45,12 +47,13 @@ func main() {
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.UserGroup{},
-		&model.CloudflareAccount{},
+		&model.DNSProviderAccount{},
 		&model.Domain{},
 		&model.DomainGroupAccess{},
 		&model.Subdomain{},
 		&model.DNSRecord{},
-		&model.CloudflareTask{},
+		&model.DNSOperationRequest{},
+		&model.DNSOperationEvent{},
 		&model.CreditBalance{},
 		&model.CreditTransaction{},
 		&model.DailyCheckinClaim{},
@@ -64,6 +67,8 @@ func main() {
 	); err != nil {
 		log.Fatal("failed to migrate:", err)
 	}
+	migrateDNSProviderFields(db)
+	cleanupLegacyDNSSyncSchema(db)
 
 	ensureDNSRecordConstraints(db)
 
@@ -181,6 +186,48 @@ func ensureDNSRecordConstraints(db *gorm.DB) {
 	for _, stmt := range statements {
 		if err := db.Exec(stmt).Error; err != nil {
 			log.Printf("warning: failed to ensure dns record constraint (%s): %v", stmt, err)
+		}
+	}
+}
+
+func preMigrateDNSLegacyObjects(db *gorm.DB) {
+	statements := []string{
+		`ALTER TABLE IF EXISTS cloudflare_accounts RENAME TO dns_provider_accounts`,
+		`ALTER TABLE IF EXISTS dns_records RENAME COLUMN cloudflare_record_id TO provider_record_id`,
+	}
+	for _, stmt := range statements {
+		if err := db.Exec(stmt).Error; err != nil {
+			log.Printf("warning: pre-migrate dns legacy object failed (%s): %v", stmt, err)
+		}
+	}
+}
+
+func migrateDNSProviderFields(db *gorm.DB) {
+	statements := []string{
+		`ALTER TABLE IF EXISTS domains ADD COLUMN IF NOT EXISTS provider varchar(32)`,
+		`UPDATE domains SET provider = 'cloudflare' WHERE provider IS NULL OR provider = ''`,
+		`ALTER TABLE IF EXISTS dns_provider_accounts ADD COLUMN IF NOT EXISTS provider varchar(32)`,
+		`ALTER TABLE IF EXISTS dns_provider_accounts ADD COLUMN IF NOT EXISTS credentials text`,
+		`UPDATE dns_provider_accounts SET provider = 'cloudflare' WHERE provider IS NULL OR provider = ''`,
+		`UPDATE dns_provider_accounts SET credentials = api_token WHERE (credentials IS NULL OR credentials = '') AND api_token IS NOT NULL`,
+	}
+	for _, stmt := range statements {
+		if err := db.Exec(stmt).Error; err != nil {
+			log.Printf("warning: failed to migrate dns provider fields (%s): %v", stmt, err)
+		}
+	}
+}
+
+func cleanupLegacyDNSSyncSchema(db *gorm.DB) {
+	statements := []string{
+		`ALTER TABLE IF EXISTS dns_records DROP COLUMN IF EXISTS sync_status`,
+		`ALTER TABLE IF EXISTS dns_records DROP COLUMN IF EXISTS sync_operation_id`,
+		`ALTER TABLE IF EXISTS dns_records DROP COLUMN IF EXISTS sync_error`,
+		`DROP TABLE IF EXISTS cloudflare_tasks`,
+	}
+	for _, stmt := range statements {
+		if err := db.Exec(stmt).Error; err != nil {
+			log.Printf("warning: failed to cleanup legacy dns sync schema (%s): %v", stmt, err)
 		}
 	}
 }

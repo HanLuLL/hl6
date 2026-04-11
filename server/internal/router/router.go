@@ -1,7 +1,6 @@
 package router
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -22,24 +21,23 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	})
 
 	repo := repository.New(db)
-	cfTaskWorker := service.NewCloudflareTaskWorker(repo, cfg, 3*time.Second, 25)
-	cfTaskWorker.Start(context.Background())
+	dnsOps := service.NewDNSOperationService(repo, cfg)
 
 	auth := middleware.NewAuthMiddleware(cfg.SessionSecret, repo)
 	rl := middleware.NewRateLimiter(100, time.Minute)
 
 	authH := handler.NewAuthHandler(repo)
 	oidcH := handler.NewOIDCHandler(repo, cfg)
-	domainH := handler.NewDomainHandler(repo)
+	domainH := handler.NewDomainHandler(repo, dnsOps)
 	sseBroker := handler.NewSSEBroker()
-	subdomainH := handler.NewSubdomainHandler(repo, sseBroker)
+	subdomainH := handler.NewSubdomainHandler(repo, sseBroker, dnsOps)
 	creditH := handler.NewCreditHandler(repo)
-	adminH := handler.NewAdminHandler(repo, cfg)
+	adminH := handler.NewAdminHandler(repo, cfg, dnsOps)
 	brandingH := handler.NewBrandingHandler(repo, cfg)
 	referralH := handler.NewReferralHandler(repo)
-	cfAccountH := handler.NewCloudflareAccountHandler(repo, cfg)
+	dnsAccountH := handler.NewDNSProviderAccountHandler(repo, cfg)
 
-	dnsH := handler.NewDNSHandler(repo, sseBroker)
+	dnsH := handler.NewDNSHandler(repo, sseBroker, dnsOps)
 	notifH := handler.NewNotificationHandler(repo, sseBroker)
 	notifAdminH := handler.NewNotificationAdminHandler(repo, sseBroker, cfg)
 
@@ -95,11 +93,11 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.PUT("/domains/:id", domainH.AdminUpdate)
 	admin.DELETE("/domains/:id", domainH.AdminDelete)
 	admin.GET("/domains-full", domainH.AdminListDomainsFull)
-	admin.GET("/cloudflare/accounts", cfAccountH.List)
-	admin.POST("/cloudflare/accounts", cfAccountH.Create)
-	admin.PUT("/cloudflare/accounts/:id", cfAccountH.Update)
-	admin.DELETE("/cloudflare/accounts/:id", cfAccountH.Delete)
-	admin.GET("/cloudflare/accounts/:id/zones", cfAccountH.ListZones)
+	admin.GET("/dns-accounts", dnsAccountH.List)
+	admin.POST("/dns-accounts", dnsAccountH.Create)
+	admin.PUT("/dns-accounts/:id", dnsAccountH.Update)
+	admin.DELETE("/dns-accounts/:id", dnsAccountH.Delete)
+	admin.GET("/dns-accounts/:id/zones", dnsAccountH.ListZones)
 	admin.POST("/credits/grant", creditH.AdminGrant)
 	admin.GET("/dns-records", dnsH.AdminListRecords)
 	admin.DELETE("/dns-records/:id", dnsH.AdminDeleteRecord)
@@ -117,7 +115,6 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.PUT("/config", adminH.UpdateConfig)
 	admin.POST("/config/url-confirm", adminH.ConfirmURLConfig)
 	admin.GET("/stats", adminH.Stats)
-	admin.GET("/cloudflare/tasks/dead", adminH.ListDeadCloudflareTasks)
 	admin.GET("/audit-logs", adminH.AuditLogs)
 	admin.GET("/notifications", notifAdminH.List)
 	admin.POST("/notifications", notifAdminH.Create)

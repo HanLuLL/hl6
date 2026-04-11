@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/service"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -15,11 +17,12 @@ import (
 type adminBanExecutionResult struct {
 	TargetRole        string
 	SubdomainsDeleted int
-	QueueCount        int
+	DeletedDNSCount   int
 }
 
 func executeAdminBanUserWithCleanup(
 	repo *repository.Repository,
+	ops *service.DNSOperationService,
 	adminID uint,
 	target *model.User,
 	reason string,
@@ -46,23 +49,23 @@ func executeAdminBanUserWithCleanup(
 	accountErrCache := make(map[uint]error)
 
 	for _, sub := range subdomains {
-		accountID := sub.Domain.CloudflareAccountID
+		accountID := sub.Domain.ProviderAccountID
 		if _, ok := accountErrCache[accountID]; !ok {
 			if accountID == 0 {
-				accountErrCache[accountID] = errors.New("cloudflare account id is empty")
+				accountErrCache[accountID] = errors.New("provider account id is empty")
 			} else {
-				_, accountErrCache[accountID] = repo.FindCloudflareAccount(accountID)
+				_, accountErrCache[accountID] = repo.FindDNSProviderAccount(accountID)
 			}
 		}
 
 		for _, rec := range sub.DNSRecords {
 			if accountErrCache[accountID] != nil {
 				failures = append(failures, cfFailureRecord{
-					SubdomainFQDN:      sub.FQDN,
-					RecordType:         rec.Type,
-					RecordContent:      rec.Content,
-					CloudflareRecordID: rec.CloudflareRecordID,
-					Error:              accountErrCache[accountID].Error(),
+					SubdomainFQDN:    sub.FQDN,
+					RecordType:       rec.Type,
+					RecordContent:    rec.Content,
+					ProviderRecordID: rec.ProviderRecordID,
+					Error:            accountErrCache[accountID].Error(),
 				})
 				continue
 			}
@@ -74,6 +77,36 @@ func executeAdminBanUserWithCleanup(
 		return result, failures, nil
 	}
 
+	batchItems := make([]service.BatchDeleteItem, 0, len(candidates))
+	for _, item := range candidates {
+		batchItems = append(batchItems, service.BatchDeleteItem{
+			RecordID:          item.rec.ID,
+			SubdomainFQDN:     item.sub.FQDN,
+			Provider:          item.sub.Domain.Provider,
+			ProviderAccountID: item.sub.Domain.ProviderAccountID,
+			ZoneID:            item.sub.Domain.ProviderZoneID,
+			ProviderRecordID:  item.rec.ProviderRecordID,
+			RecordType:        item.rec.Type,
+			Name:              item.rec.Name,
+			Content:           item.rec.Content,
+		})
+	}
+
+	deleteResult := ops.DeleteRecordsBatch(context.Background(), batchItems, 3)
+	if deleteResult.Failed > 0 {
+		for _, f := range deleteResult.Failures {
+			failures = append(failures, cfFailureRecord{
+				SubdomainFQDN:    f.SubdomainFQDN,
+				RecordType:       f.RecordType,
+				RecordContent:    f.RecordContent,
+				ProviderRecordID: f.ProviderRecordID,
+				Error:            f.Error,
+			})
+		}
+		result.DeletedDNSCount = deleteResult.Succeeded
+		return result, failures, nil
+	}
+
 	subdomainIDs := make([]uint, 0, len(subdomains))
 	for _, sub := range subdomains {
 		subdomainIDs = append(subdomainIDs, sub.ID)
@@ -81,7 +114,6 @@ func executeAdminBanUserWithCleanup(
 
 	now := time.Now()
 	targetRole := target.Role
-	queuedOps := 0
 
 	if err := repo.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", adminBanGuardLockKey).Error; err != nil {
@@ -94,7 +126,6 @@ func executeAdminBanUserWithCleanup(
 		}
 		targetRole = lockedTarget.Role
 
-		// Safety guard: check and update in the same transaction to prevent concurrent bypass.
 		if lockedTarget.Role == "admin" && !lockedTarget.IsBanned {
 			var activeAdmins int64
 			if err := tx.Model(&model.User{}).
@@ -116,28 +147,6 @@ func executeAdminBanUserWithCleanup(
 			return err
 		}
 
-		for _, item := range candidates {
-			if _, err := enqueueCloudflareTask(
-				repo,
-				tx,
-				cloudflareTaskResourceDNSRecord,
-				item.rec.ID,
-				model.CloudflareTaskActionDeleteDNSRecord,
-				model.CloudflareTaskPayload{
-					CloudflareAccountID: item.sub.Domain.CloudflareAccountID,
-					ZoneID:              item.sub.Domain.CloudflareZoneID,
-					RecordID:            item.rec.CloudflareRecordID,
-					RecordType:          item.rec.Type,
-					Name:                item.rec.Name,
-					Content:             item.rec.Content,
-				},
-				fmt.Sprintf("admin:ban:%d:%s", item.rec.ID, item.rec.CloudflareRecordID),
-			); err != nil {
-				return err
-			}
-			queuedOps++
-		}
-
 		if len(subdomainIDs) > 0 {
 			if err := tx.Where("subdomain_id IN ?", subdomainIDs).Delete(&model.DNSRecord{}).Error; err != nil {
 				return err
@@ -146,7 +155,6 @@ func executeAdminBanUserWithCleanup(
 				return err
 			}
 		}
-
 		return nil
 	}); err != nil {
 		return result, nil, err
@@ -154,6 +162,13 @@ func executeAdminBanUserWithCleanup(
 
 	result.TargetRole = targetRole
 	result.SubdomainsDeleted = len(subdomainIDs)
-	result.QueueCount = queuedOps
+	result.DeletedDNSCount = deleteResult.Succeeded
 	return result, nil, nil
+}
+
+func composeBatchScope(prefix string, ids []uint) string {
+	if len(ids) == 0 {
+		return prefix + ":none"
+	}
+	return fmt.Sprintf("%s:first:%d:last:%d:count:%d", prefix, ids[0], ids[len(ids)-1], len(ids))
 }

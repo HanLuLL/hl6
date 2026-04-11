@@ -458,7 +458,7 @@ function RecordDetailDialog({ record, onClose, onDelete }: {
             <DetailRow label={t("adminDnsRecords.userName")} value={record.user_name} />
             <DetailRow label={t("adminDnsRecords.domain")} value={record.domain_name} />
             <DetailRow label={t("adminDnsRecords.createdAt")} value={new Date(record.created_at).toLocaleString()} />
-            <DetailRow label={t("adminDnsRecords.cloudflareId")} value={record.cloudflare_record_id} mono />
+            <DetailRow label={t("adminDnsRecords.cloudflareId")} value={record.provider_record_id} mono />
           </div>
         )}
         <DialogFooter>

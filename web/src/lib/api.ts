@@ -11,11 +11,11 @@ import type {
   DailyCheckinClaimResult,
   DomainGroupAccess,
   DomainWithGroupAccess,
-  CloudflareZone,
+  DNSProviderZone,
   Stats,
   AuditLog,
   UserGroup,
-  CloudflareAccount,
+  DNSProviderAccount,
   Notification,
   OffsetPaginatedResponse,
   BrandingResponse,
@@ -50,12 +50,38 @@ export function buildApiUrl(path: string): string {
 export class ApiError extends Error {
   messageKey?: string;
   data?: unknown;
-  constructor(message: string, messageKey?: string, data?: unknown) {
+  status?: number;
+  constructor(message: string, messageKey?: string, data?: unknown, status?: number) {
     super(message);
     this.messageKey = messageKey;
     this.data = data;
+    this.status = status;
   }
 }
+
+export function createIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function isRetryableMutationError(err: unknown): boolean {
+  if (err instanceof ApiError) {
+    if (err.status === 408) return true;
+    if (typeof err.status === "number" && err.status >= 500) return true;
+  }
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    return msg.includes("timeout") || msg.includes("network") || msg.includes("failed to fetch");
+  }
+  return false;
+}
+
+type RequestOptions = RequestInit & {
+  timeoutMs?: number;
+  idempotencyKey?: string;
+};
 
 let handlingBannedSession = false;
 
@@ -82,20 +108,55 @@ export function getErrorMessage(err: unknown, t?: (key: string) => string): stri
   return String(err);
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const method = (options.method ?? "GET").toUpperCase();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
+  if (!["GET", "HEAD", "OPTIONS"].includes(method) && !headers["X-Idempotency-Key"]) {
+    headers["X-Idempotency-Key"] = options.idempotencyKey || createIdempotencyKey();
+  }
 
-  const res = await fetch(buildApiUrl(path), {
-    ...options,
-    headers,
-    credentials: "include",
-  });
+  const timeoutMs = options.timeoutMs ?? 0;
+  const timeoutController = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const upstreamSignal = options.signal;
+  const abortByUpstream = () => timeoutController.abort();
+  if (upstreamSignal) {
+    if (upstreamSignal.aborted) {
+      timeoutController.abort();
+    } else {
+      upstreamSignal.addEventListener("abort", abortByUpstream, { once: true });
+    }
+  }
+  if (timeoutMs > 0) {
+    timer = setTimeout(() => timeoutController.abort(), timeoutMs);
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(buildApiUrl(path), {
+      ...options,
+      headers,
+      credentials: "include",
+      signal: timeoutController.signal,
+    });
+  } catch (err) {
+    if (timer) clearTimeout(timer);
+    if (upstreamSignal) {
+      upstreamSignal.removeEventListener("abort", abortByUpstream);
+    }
+    if (err instanceof DOMException && err.name === "AbortError" && !upstreamSignal?.aborted && timeoutMs > 0) {
+      throw new ApiError("Request timeout", "error.failedToFetch", undefined, 408);
+    }
+    throw err;
+  } finally {
+    if (timer) clearTimeout(timer);
+    if (upstreamSignal) {
+      upstreamSignal.removeEventListener("abort", abortByUpstream);
+    }
+  }
 
   if (res.status === 401) {
     if (!path.includes("/auth/me")) {
@@ -118,7 +179,7 @@ async function request<T>(
         window.location.href = buildApiUrl("/auth/login");
       }
     }
-    throw new ApiError("Not authenticated", "error.missingToken");
+    throw new ApiError("Not authenticated", "error.missingToken", undefined, 401);
   }
 
   if (!res.ok) {
@@ -144,7 +205,7 @@ async function request<T>(
         }
       }
     }
-    throw new ApiError(body.message || res.statusText, body.message_key, body.data);
+    throw new ApiError(body.message || res.statusText, body.message_key, body.data, res.status);
   }
 
   return res.json();
@@ -176,18 +237,41 @@ export const api = {
   getSubdomain: (id: number) => request<ApiResponse<Subdomain>>(`/subdomains/${id}`),
   claimSubdomain: (data: { domain_id: number; name: string }) =>
     request<ApiResponse<Subdomain>>("/subdomains", { method: "POST", body: JSON.stringify(data) }),
-  releaseSubdomain: (id: number) =>
-    request<ApiResponse<{ message: string }>>(`/subdomains/${id}`, { method: "DELETE" }),
+  releaseSubdomain: (id: number, opts?: { idempotencyKey?: string; timeoutMs?: number }) =>
+    request<ApiResponse<{ message: string }>>(`/subdomains/${id}`, { method: "DELETE", idempotencyKey: opts?.idempotencyKey, timeoutMs: opts?.timeoutMs }),
 
   // DNS Records
   listRecords: (subdomainId: number) =>
     request<ApiResponse<DNSRecord[]>>(`/subdomains/${subdomainId}/records`),
-  createRecord: (subdomainId: number, data: { type: string; content: string; ttl?: number; proxied?: boolean }) =>
-    request<ApiResponse<DNSRecord>>(`/subdomains/${subdomainId}/records`, { method: "POST", body: JSON.stringify(data) }),
-  updateRecord: (subdomainId: number, recordId: number, data: { content: string; ttl?: number; proxied?: boolean }) =>
-    request<ApiResponse<DNSRecord>>(`/subdomains/${subdomainId}/records/${recordId}`, { method: "PUT", body: JSON.stringify(data) }),
-  deleteRecord: (subdomainId: number, recordId: number) =>
-    request<ApiResponse<{ message: string }>>(`/subdomains/${subdomainId}/records/${recordId}`, { method: "DELETE" }),
+  createRecord: (
+    subdomainId: number,
+    data: { type: string; content: string; ttl?: number; proxied?: boolean },
+    opts?: { idempotencyKey?: string; timeoutMs?: number }
+  ) =>
+    request<ApiResponse<DNSRecord>>(`/subdomains/${subdomainId}/records`, {
+      method: "POST",
+      body: JSON.stringify(data),
+      idempotencyKey: opts?.idempotencyKey,
+      timeoutMs: opts?.timeoutMs,
+    }),
+  updateRecord: (
+    subdomainId: number,
+    recordId: number,
+    data: { content: string; ttl?: number; proxied?: boolean },
+    opts?: { idempotencyKey?: string; timeoutMs?: number }
+  ) =>
+    request<ApiResponse<DNSRecord>>(`/subdomains/${subdomainId}/records/${recordId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+      idempotencyKey: opts?.idempotencyKey,
+      timeoutMs: opts?.timeoutMs,
+    }),
+  deleteRecord: (subdomainId: number, recordId: number, opts?: { idempotencyKey?: string; timeoutMs?: number }) =>
+    request<ApiResponse<{ message: string }>>(`/subdomains/${subdomainId}/records/${recordId}`, {
+      method: "DELETE",
+      idempotencyKey: opts?.idempotencyKey,
+      timeoutMs: opts?.timeoutMs,
+    }),
 
   // Credits
   getCredits: () => request<ApiResponse<CreditBalance>>("/credits"),
@@ -203,20 +287,24 @@ export const api = {
     request<ApiResponse<ReferralInfo>>(`/referrals?page=${page}&per_page=${perPage}`),
 
   // Admin
-  adminCreateDomain: (data: { name: string; cloudflare_zone_id: string; cloudflare_account_id: number; description: string; group_access: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
+  adminCreateDomain: (data: { name: string; provider_zone_id: string; provider_account_id: number; description: string; group_access: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
     request<ApiResponse<{ domain: Domain; group_access: DomainGroupAccess[] }>>("/admin/domains", { method: "POST", body: JSON.stringify(data) }),
-  adminUpdateDomain: (id: number, data: { cloudflare_zone_id?: string; cloudflare_account_id?: number; is_active?: boolean; description?: string; group_access?: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
+  adminUpdateDomain: (id: number, data: { provider_zone_id?: string; provider_account_id?: number; is_active?: boolean; description?: string; group_access?: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
     request<ApiResponse<{ domain: Domain; group_access: DomainGroupAccess[] }>>(`/admin/domains/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-  adminDeleteDomain: (id: number, options?: { force?: boolean; refund?: boolean }) =>
-    request<ApiResponse<{ message: string }>>(`/admin/domains/${id}?force=${options?.force ?? false}&refund=${options?.refund ?? false}`, { method: "DELETE" }),
+  adminDeleteDomain: (id: number, options?: { force?: boolean; refund?: boolean; idempotencyKey?: string; timeoutMs?: number }) =>
+    request<ApiResponse<{ message: string }>>(`/admin/domains/${id}?force=${options?.force ?? false}&refund=${options?.refund ?? false}`, {
+      method: "DELETE",
+      idempotencyKey: options?.idempotencyKey,
+      timeoutMs: options?.timeoutMs,
+    }),
   adminListDomainsFull: () =>
     request<ApiResponse<DomainWithGroupAccess[]>>("/admin/domains-full"),
   adminGetReservedSubdomainPrefixes: () =>
     request<ApiResponse<ReservedSubdomainPrefixSettings>>("/admin/domains/reserved-prefixes"),
   adminUpdateReservedSubdomainPrefixes: (data: { prefixes: string[]; min_length: number; max_length: number }) =>
     request<ApiResponse<ReservedSubdomainPrefixSettings>>("/admin/domains/reserved-prefixes", { method: "PUT", body: JSON.stringify(data) }),
-  adminListCloudflareZones: (accountId: number) =>
-    request<ApiResponse<CloudflareZone[]>>(`/admin/cloudflare/accounts/${accountId}/zones`),
+  adminListDNSProviderZones: (accountId: number) =>
+    request<ApiResponse<DNSProviderZone[]>>(`/admin/dns-accounts/${accountId}/zones`),
   adminGrantCredits: (data: { user_id: number; amount: number; description: string }) =>
     request<ApiResponse<{ user_id: number; granted: number; balance: number }>>("/admin/credits/grant", { method: "POST", body: JSON.stringify(data) }),
   adminListUsers: (
@@ -255,10 +343,10 @@ export const api = {
     request<ApiResponse<{ message: string }>>(`/admin/groups/${id}?migrate_to=${migrateTo}`, { method: "DELETE" }),
   adminUpdateUserGroup: (userId: number, groupId: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/users/${userId}/group`, { method: "PUT", body: JSON.stringify({ group_id: groupId }) }),
-  adminBanUser: (userId: number, data: { reason?: string }) =>
-    request<ApiResponse<{ message: string; failed_records?: Array<{ subdomain_fqdn: string; record_type: string; record_content: string; cloudflare_record_id: string; error: string }> }>>(
+  adminBanUser: (userId: number, data: { reason?: string }, opts?: { idempotencyKey?: string; timeoutMs?: number }) =>
+    request<ApiResponse<{ message: string; failed_records?: Array<{ subdomain_fqdn: string; record_type: string; record_content: string; provider_record_id: string; error: string }> }>>(
       `/admin/users/${userId}/ban`,
-      { method: "PUT", body: JSON.stringify(data) }
+      { method: "PUT", body: JSON.stringify(data), idempotencyKey: opts?.idempotencyKey, timeoutMs: opts?.timeoutMs }
     ),
   adminUnbanUser: (userId: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/users/${userId}/unban`, { method: "PUT" }),
@@ -271,15 +359,15 @@ export const api = {
   adminConfirmUrlConfig: () =>
     request<ApiResponse<{ message: string }>>("/admin/config/url-confirm", { method: "POST" }),
 
-  // Admin: Cloudflare Accounts
-  adminListCloudflareAccounts: () =>
-    request<ApiResponse<CloudflareAccount[]>>("/admin/cloudflare/accounts"),
-  adminCreateCloudflareAccount: (data: { name: string; api_token: string }) =>
-    request<ApiResponse<CloudflareAccount>>("/admin/cloudflare/accounts", { method: "POST", body: JSON.stringify(data) }),
-  adminUpdateCloudflareAccount: (id: number, data: { name: string; api_token?: string }) =>
-    request<ApiResponse<CloudflareAccount>>(`/admin/cloudflare/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-  adminDeleteCloudflareAccount: (id: number) =>
-    request<ApiResponse<{ message: string }>>(`/admin/cloudflare/accounts/${id}`, { method: "DELETE" }),
+  // Admin: DNS Provider Accounts
+  adminListDNSProviderAccounts: () =>
+    request<ApiResponse<DNSProviderAccount[]>>("/admin/dns-accounts"),
+  adminCreateDNSProviderAccount: (data: { provider: string; name: string; credentials: Record<string, string> }) =>
+    request<ApiResponse<DNSProviderAccount>>("/admin/dns-accounts", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdateDNSProviderAccount: (id: number, data: { provider?: string; name: string; credentials?: Record<string, string> }) =>
+    request<ApiResponse<DNSProviderAccount>>(`/admin/dns-accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminDeleteDNSProviderAccount: (id: number) =>
+    request<ApiResponse<{ message: string }>>(`/admin/dns-accounts/${id}`, { method: "DELETE" }),
 
   // Admin: DNS Records
   adminListDNSRecords: (page = 1, perPage = 20, search = "", domainId?: number, groupId?: number) => {
@@ -289,15 +377,25 @@ export const api = {
     if (groupId) params.set("group_id", String(groupId));
     return request<PaginatedResponse<AdminDNSRecord[]>>(`/admin/dns-records?${params.toString()}`);
   },
-  adminDeleteDNSRecord: (id: number, data: { notify: boolean; reason?: string; ban_user?: boolean }) =>
-    request<ApiResponse<{ message: string }>>(`/admin/dns-records/${id}`, { method: "DELETE", body: JSON.stringify(data) }),
+  adminDeleteDNSRecord: (id: number, data: { notify: boolean; reason?: string; ban_user?: boolean }, opts?: { idempotencyKey?: string; timeoutMs?: number }) =>
+    request<ApiResponse<{ message: string }>>(`/admin/dns-records/${id}`, {
+      method: "DELETE",
+      body: JSON.stringify(data),
+      idempotencyKey: opts?.idempotencyKey,
+      timeoutMs: opts?.timeoutMs,
+    }),
   adminListClaimedSubdomains: (page = 1, perPage = 20, search = "") => {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
     if (search) params.set("search", search);
     return request<PaginatedResponse<AdminClaimedSubdomain[]>>(`/admin/claimed-subdomains?${params.toString()}`);
   },
-  adminReleaseClaimedSubdomain: (id: number, data: { notify: boolean; reason?: string }) =>
-    request<ApiResponse<{ message: string }>>(`/admin/claimed-subdomains/${id}`, { method: "DELETE", body: JSON.stringify(data) }),
+  adminReleaseClaimedSubdomain: (id: number, data: { notify: boolean; reason?: string }, opts?: { idempotencyKey?: string; timeoutMs?: number }) =>
+    request<ApiResponse<{ message: string }>>(`/admin/claimed-subdomains/${id}`, {
+      method: "DELETE",
+      body: JSON.stringify(data),
+      idempotencyKey: opts?.idempotencyKey,
+      timeoutMs: opts?.timeoutMs,
+    }),
   adminUpdateBranding: (data: { name: string }) =>
     request<ApiResponse<BrandingResponse>>("/admin/branding", { method: "PUT", body: JSON.stringify(data) }),
   adminUploadBrandingLogo: async (file: File) => {

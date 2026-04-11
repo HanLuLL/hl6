@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -50,15 +51,16 @@ type SystemConfig struct {
 }
 
 type Domain struct {
-	ID                  uint      `json:"id" gorm:"primaryKey"`
-	Name                string    `json:"name" gorm:"uniqueIndex;not null"`
-	CloudflareZoneID    string    `json:"cloudflare_zone_id" gorm:"not null"`
-	CloudflareAccountID uint      `json:"cloudflare_account_id" gorm:"not null;default:0"`
-	CreditCost          Credit    `json:"credit_cost" gorm:"type:bigint;default:10"`
-	IsActive            bool      `json:"is_active" gorm:"default:true"`
-	Description         string    `json:"description"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
+	ID                uint      `json:"id" gorm:"primaryKey"`
+	Name              string    `json:"name" gorm:"uniqueIndex;not null"`
+	Provider          string    `json:"provider" gorm:"type:varchar(32);not null;default:cloudflare;index"`
+	ProviderZoneID    string    `json:"provider_zone_id" gorm:"column:cloudflare_zone_id;not null"`
+	ProviderAccountID uint      `json:"provider_account_id" gorm:"column:cloudflare_account_id;not null;default:0"`
+	CreditCost        Credit    `json:"credit_cost" gorm:"type:bigint;default:10"`
+	IsActive          bool      `json:"is_active" gorm:"default:true"`
+	Description       string    `json:"description"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 type Subdomain struct {
@@ -76,19 +78,16 @@ type Subdomain struct {
 }
 
 type DNSRecord struct {
-	ID                 uint      `json:"id" gorm:"primaryKey"`
-	SubdomainID        uint      `json:"subdomain_id" gorm:"index;not null"`
-	Type               string    `json:"type" gorm:"not null"`
-	Name               string    `json:"name" gorm:"not null"`
-	Content            string    `json:"content" gorm:"not null"`
-	TTL                int       `json:"ttl" gorm:"default:1"`
-	Proxied            bool      `json:"proxied" gorm:"default:false"`
-	CloudflareRecordID string    `json:"cloudflare_record_id"`
-	SyncStatus         string    `json:"sync_status" gorm:"type:varchar(24);not null;default:synced;index"`
-	SyncError          string    `json:"sync_error,omitempty" gorm:"type:text"`
-	SyncOperationID    *uint     `json:"sync_operation_id,omitempty" gorm:"index"`
-	CreatedAt          time.Time `json:"created_at"`
-	UpdatedAt          time.Time `json:"updated_at"`
+	ID               uint      `json:"id" gorm:"primaryKey"`
+	SubdomainID      uint      `json:"subdomain_id" gorm:"index;not null"`
+	Type             string    `json:"type" gorm:"not null"`
+	Name             string    `json:"name" gorm:"not null"`
+	Content          string    `json:"content" gorm:"not null"`
+	TTL              int       `json:"ttl" gorm:"default:1"`
+	Proxied          bool      `json:"proxied" gorm:"default:false"`
+	ProviderRecordID string    `json:"provider_record_id"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 type CreditBalance struct {
@@ -128,34 +127,70 @@ type AuditLog struct {
 	CreatedAt  time.Time       `json:"created_at"`
 }
 
-type CloudflareAccount struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	Name      string    `json:"name" gorm:"not null"`
-	ApiToken  string    `json:"-" gorm:"not null"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+type DNSProviderAccount struct {
+	ID             uint      `json:"id" gorm:"primaryKey"`
+	Provider       string    `json:"provider" gorm:"type:varchar(32);not null;default:cloudflare;index"`
+	Name           string    `json:"name" gorm:"not null"`
+	Credentials    string    `json:"-" gorm:"type:text"`
+	LegacyAPIToken string    `json:"-" gorm:"column:api_token"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
-type CloudflareAccountView struct {
-	ID        uint      `json:"id"`
-	Name      string    `json:"name"`
-	TokenHint string    `json:"token_hint"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+type DNSProviderAccountView struct {
+	ID             uint      `json:"id"`
+	Provider       string    `json:"provider"`
+	Name           string    `json:"name"`
+	CredentialHint string    `json:"credential_hint"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
-func (a *CloudflareAccount) ToView() CloudflareAccountView {
+func (a *DNSProviderAccount) ToView() DNSProviderAccountView {
 	hint := ""
-	if len(a.ApiToken) >= 4 {
-		hint = "..." + a.ApiToken[len(a.ApiToken)-4:]
+	raw := a.Credentials
+	if raw == "" {
+		raw = a.LegacyAPIToken
 	}
-	return CloudflareAccountView{
-		ID:        a.ID,
-		Name:      a.Name,
-		TokenHint: hint,
-		CreatedAt: a.CreatedAt,
-		UpdatedAt: a.UpdatedAt,
+	trimmed := strings.TrimSpace(raw)
+	if trimmed != "" && strings.HasPrefix(trimmed, "{") {
+		var m map[string]string
+		if err := json.Unmarshal([]byte(trimmed), &m); err == nil {
+			for _, k := range []string{
+				"api_token",
+				"ak",
+				"access_key_id",
+				"secret_id",
+				"api_user",
+				"username",
+				"project_id",
+			} {
+				if v := strings.TrimSpace(m[k]); v != "" {
+					if len(v) > 4 {
+						hint = "..." + v[len(v)-4:]
+					} else {
+						hint = v
+					}
+					break
+				}
+			}
+		}
 	}
+	if hint == "" && len(trimmed) >= 4 {
+		hint = "..." + trimmed[len(trimmed)-4:]
+	}
+	return DNSProviderAccountView{
+		ID:             a.ID,
+		Provider:       a.Provider,
+		Name:           a.Name,
+		CredentialHint: hint,
+		CreatedAt:      a.CreatedAt,
+		UpdatedAt:      a.UpdatedAt,
+	}
+}
+
+func (DNSProviderAccount) TableName() string {
+	return "dns_provider_accounts"
 }
 
 type UserReferral struct {

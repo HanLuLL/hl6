@@ -81,7 +81,7 @@ export default function App() {
           <Route path="/credits" element={<CreditsPage />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin/domains" element={<AdminDomainsPage />} />
-            <Route path="/admin/cloudflare" element={<Navigate to="/admin/domains?tab=cloudflare" replace />} />
+            <Route path="/admin/cloudflare" element={<Navigate to="/admin/domains?tab=dns-providers" replace />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
             <Route path="/admin/groups" element={<Navigate to="/admin/users?tab=groups" replace />} />

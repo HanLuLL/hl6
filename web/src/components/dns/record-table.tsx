@@ -93,7 +93,7 @@ export function RecordTable({ subdomainId, records }: RecordTableProps) {
                       size="sm"
                       className="text-destructive"
                       onClick={() => setDeleteTarget(record)}
-                      disabled={deleteRecord.isPending}
+                      disabled={deleteRecord.isPending || deleteRecord.isRetrying}
                     >
                       {t("common.delete")}
                     </Button>
@@ -119,7 +119,7 @@ export function RecordTable({ subdomainId, records }: RecordTableProps) {
         description={t("recordTable.deleteDesc", { type: deleteTarget?.type, content: deleteTarget?.content })}
         onConfirm={handleDelete}
         destructive
-        loading={deleteRecord.isPending}
+        loading={deleteRecord.isPending || deleteRecord.isRetrying}
       />
     </>
   );

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,24 +15,26 @@ import (
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
 )
 
 // cfFailureRecord 记录一条 CF DNS 删除失败的信息
 type cfFailureRecord struct {
-	SubdomainFQDN      string `json:"subdomain_fqdn"`
-	RecordType         string `json:"record_type"`
-	RecordContent      string `json:"record_content"`
-	CloudflareRecordID string `json:"cloudflare_record_id"`
-	Error              string `json:"error"`
+	SubdomainFQDN    string `json:"subdomain_fqdn"`
+	RecordType       string `json:"record_type"`
+	RecordContent    string `json:"record_content"`
+	ProviderRecordID string `json:"provider_record_id"`
+	Error            string `json:"error"`
 }
 
 type DomainHandler struct {
 	repo *repository.Repository
+	ops  *service.DNSOperationService
 }
 
-func NewDomainHandler(repo *repository.Repository) *DomainHandler {
-	return &DomainHandler{repo: repo}
+func NewDomainHandler(repo *repository.Repository, ops *service.DNSOperationService) *DomainHandler {
+	return &DomainHandler{repo: repo, ops: ops}
 }
 
 func (h *DomainHandler) List(c *gin.Context) {
@@ -62,12 +65,12 @@ type groupAccessInput struct {
 
 func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	var body struct {
-		Name                string             `json:"name" binding:"required"`
-		CloudflareZoneID    string             `json:"cloudflare_zone_id" binding:"required"`
-		CloudflareAccountID uint               `json:"cloudflare_account_id" binding:"required"`
-		Description         string             `json:"description"`
-		CreditCost          *float64           `json:"credit_cost"`
-		GroupAccess         []groupAccessInput `json:"group_access"`
+		Name              string             `json:"name" binding:"required"`
+		ProviderZoneID    string             `json:"provider_zone_id" binding:"required"`
+		ProviderAccountID uint               `json:"provider_account_id" binding:"required"`
+		Description       string             `json:"description"`
+		CreditCost        *float64           `json:"credit_cost"`
+		GroupAccess       []groupAccessInput `json:"group_access"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
@@ -75,13 +78,13 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	}
 
 	body.Name = strings.TrimSpace(body.Name)
-	body.CloudflareZoneID = strings.TrimSpace(body.CloudflareZoneID)
-	if body.Name == "" || body.CloudflareZoneID == "" {
+	body.ProviderZoneID = strings.TrimSpace(body.ProviderZoneID)
+	if body.Name == "" || body.ProviderZoneID == "" {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
 
-	exists, err := h.repo.DomainExistsByZoneIDOrName(body.CloudflareZoneID, body.Name)
+	exists, err := h.repo.DomainExistsByZoneIDOrName(body.ProviderZoneID, body.Name)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
 		return
@@ -89,6 +92,15 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	if exists {
 		response.ErrorWithKey(c, http.StatusConflict, "domain already exists", "error.domainAlreadyExists")
 		return
+	}
+	account, err := h.repo.FindDNSProviderAccount(body.ProviderAccountID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "provider account not found", "error.cloudflareAccountNotFound")
+		return
+	}
+	provider := model.NormalizeProvider(account.Provider)
+	if provider == "" {
+		provider = model.DNSProviderCloudflare
 	}
 
 	defaultCreditCost := 1.0
@@ -99,12 +111,13 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 	}
 
 	domain := &model.Domain{
-		Name:                body.Name,
-		CloudflareZoneID:    body.CloudflareZoneID,
-		CloudflareAccountID: body.CloudflareAccountID,
-		CreditCost:          model.CreditFromFloat(defaultCreditCost),
-		IsActive:            true,
-		Description:         body.Description,
+		Name:              body.Name,
+		Provider:          provider,
+		ProviderZoneID:    body.ProviderZoneID,
+		ProviderAccountID: body.ProviderAccountID,
+		CreditCost:        model.CreditFromFloat(defaultCreditCost),
+		IsActive:          true,
+		Description:       body.Description,
 	}
 
 	txErr := h.repo.Transaction(func(tx *gorm.DB) error {
@@ -136,7 +149,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 
 	// Audit log
 	if admin := ctxutil.GetUser(c); admin != nil {
-		details, _ := json.Marshal(map[string]interface{}{"domain_name": body.Name, "zone_id": body.CloudflareZoneID})
+		details, _ := json.Marshal(map[string]interface{}{"domain_name": body.Name, "zone_id": body.ProviderZoneID})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:     admin.ID,
 			Action:     "admin_create_domain",
@@ -165,23 +178,36 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		return
 	}
 	var body struct {
-		CloudflareZoneID    *string            `json:"cloudflare_zone_id"`
-		CloudflareAccountID *uint              `json:"cloudflare_account_id"`
-		IsActive            *bool              `json:"is_active"`
-		Description         *string            `json:"description"`
-		GroupAccess         []groupAccessInput `json:"group_access"`
+		ProviderZoneID    *string            `json:"provider_zone_id"`
+		ProviderAccountID *uint              `json:"provider_account_id"`
+		IsActive          *bool              `json:"is_active"`
+		Description       *string            `json:"description"`
+		GroupAccess       []groupAccessInput `json:"group_access"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
+	nextProvider := ""
+	if body.ProviderAccountID != nil {
+		account, findErr := h.repo.FindDNSProviderAccount(*body.ProviderAccountID)
+		if findErr != nil {
+			response.ErrorWithKey(c, http.StatusBadRequest, "provider account not found", "error.cloudflareAccountNotFound")
+			return
+		}
+		nextProvider = model.NormalizeProvider(account.Provider)
+		if nextProvider == "" {
+			nextProvider = model.DNSProviderCloudflare
+		}
+	}
 
 	if err := h.repo.Transaction(func(tx *gorm.DB) error {
-		if body.CloudflareZoneID != nil {
-			domain.CloudflareZoneID = *body.CloudflareZoneID
+		if body.ProviderZoneID != nil {
+			domain.ProviderZoneID = *body.ProviderZoneID
 		}
-		if body.CloudflareAccountID != nil {
-			domain.CloudflareAccountID = *body.CloudflareAccountID
+		if body.ProviderAccountID != nil {
+			domain.ProviderAccountID = *body.ProviderAccountID
+			domain.Provider = nextProvider
 		}
 		if body.IsActive != nil {
 			domain.IsActive = *body.IsActive
@@ -364,21 +390,6 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 		}
 	}
 
-	if len(candidates) > 0 {
-		if domain.CloudflareAccountID == 0 {
-			response.ErrorWithKeyData(c, http.StatusConflict, "cloudflare account is missing", "error.cloudflareAccountNotFound", gin.H{
-				"pending_delete_count": len(candidates),
-			})
-			return
-		}
-		if _, err := h.repo.FindCloudflareAccount(domain.CloudflareAccountID); err != nil {
-			response.ErrorWithKeyData(c, http.StatusConflict, "cloudflare account not found", "error.cloudflareAccountNotFound", gin.H{
-				"pending_delete_count": len(candidates),
-			})
-			return
-		}
-	}
-
 	// 收集退还积分信息 — 使用 ClaimCost 而非 re-query 当前组价格
 	type refundItem struct {
 		userID    uint
@@ -420,95 +431,101 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 	for i, s := range subdomains {
 		subdomainIDs[i] = s.ID
 	}
-
-	queuedOps := 0
-	if err := h.repo.Transaction(func(tx *gorm.DB) error {
-		if refund {
-			for _, item := range refundItems {
-				descParams, _ := json.Marshal(map[string]interface{}{"fqdn": item.subFQDN})
-				if item.claimCost > 0 {
-					if err := h.repo.RefundCredits(tx, item.userID, item.claimCost, "txn.subdomainDeletedRefund", descParams); err != nil {
-						return err
-					}
-				} else {
-					if err := h.repo.DeductCredits(tx, item.userID, -item.claimCost, "txn.subdomainDeletedDeduct", descParams); err != nil {
-						return err
-					}
-				}
-			}
-		}
-		if len(candidates) > 0 {
-			for _, item := range candidates {
-				if _, err := enqueueCloudflareTask(
-					h.repo,
-					tx,
-					cloudflareTaskResourceDNSRecord,
-					item.rec.ID,
-					model.CloudflareTaskActionDeleteDNSRecord,
-					model.CloudflareTaskPayload{
-						CloudflareAccountID: domain.CloudflareAccountID,
-						ZoneID:              domain.CloudflareZoneID,
-						RecordID:            item.rec.CloudflareRecordID,
-						RecordType:          item.rec.Type,
-						Name:                item.rec.Name,
-						Content:             item.rec.Content,
-					},
-					fmt.Sprintf("domain:delete:%d:%s", item.rec.ID, item.rec.CloudflareRecordID),
-				); err != nil {
-					return err
-				}
-				queuedOps++
-			}
-		}
-		if len(subdomainIDs) > 0 {
-			if err := tx.Where("subdomain_id IN ?", subdomainIDs).Delete(&model.DNSRecord{}).Error; err != nil {
-				return err
-			}
-			if err := tx.Where("domain_id = ?", domain.ID).Delete(&model.Subdomain{}).Error; err != nil {
-				return err
-			}
-		}
-		if err := h.repo.DeleteDomain(tx, domain.ID); err != nil {
-			return err
-		}
-		if admin := ctxutil.GetUser(c); admin != nil {
-			details, _ := json.Marshal(map[string]interface{}{
-				"domain_name":     domain.Name,
-				"subdomain_count": len(subdomains),
-				"dns_record_count": func() int {
-					n := 0
-					for _, s := range subdomains {
-						n += len(s.DNSRecords)
-					}
-					return n
-				}(),
-				"refunded":         refund,
-				"cf_queued_count":  queuedOps,
-				"cf_skipped_count": len(candidates) - queuedOps,
-			})
-			if err := tx.Create(&model.AuditLog{
-				UserID:     admin.ID,
-				Action:     "admin_delete_domain",
-				Resource:   "domain",
-				ResourceID: domain.ID,
-				Details:    details,
-			}).Error; err != nil {
-				return err
-			}
-		}
-		return nil
-	}); err != nil {
-		if errors.Is(err, gorm.ErrInvalidData) {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to deduct credits", "error.failedToDeductCredits")
-			return
-		}
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to delete domain", "error.failedToDeleteDomain")
+	key, ok := idempotencyKeyFromHeader(c)
+	if !ok {
 		return
 	}
-	data := gin.H{"message": "domain deleted"}
-	if queuedOps > 0 {
-		data["sync_status"] = "processing"
-		data["operation_count"] = queuedOps
-	}
-	response.OK(c, data)
+	scope := fmt.Sprintf("admin:domain:delete:%d", domain.ID)
+	result := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
+		items := make([]service.BatchDeleteItem, 0, len(candidates))
+		for _, item := range candidates {
+			items = append(items, service.BatchDeleteItem{
+				RecordID:          item.rec.ID,
+				SubdomainFQDN:     item.sub.FQDN,
+				Provider:          domain.Provider,
+				ProviderAccountID: domain.ProviderAccountID,
+				ZoneID:            domain.ProviderZoneID,
+				ProviderRecordID:  item.rec.ProviderRecordID,
+				RecordType:        item.rec.Type,
+				Name:              item.rec.Name,
+				Content:           item.rec.Content,
+			})
+		}
+		deleteResult := h.ops.DeleteRecordsBatch(ctx, items, 3)
+		if deleteResult.Failed > 0 {
+			failures := make([]cfFailureRecord, 0, len(deleteResult.Failures))
+			for _, f := range deleteResult.Failures {
+				failures = append(failures, cfFailureRecord{
+					SubdomainFQDN:    f.SubdomainFQDN,
+					RecordType:       f.RecordType,
+					RecordContent:    f.RecordContent,
+					ProviderRecordID: f.ProviderRecordID,
+					Error:            f.Error,
+				})
+			}
+			return service.OperationResult{
+				HTTPStatus: http.StatusConflict,
+				Message:    "some cloudflare dns records failed to delete",
+				MessageKey: "error.cloudflareDeleteFailed",
+				Data:       gin.H{"failed_records": failures},
+			}, nil
+		}
+
+		if err := h.repo.Transaction(func(tx *gorm.DB) error {
+			if refund {
+				for _, item := range refundItems {
+					descParams, _ := json.Marshal(map[string]interface{}{"fqdn": item.subFQDN})
+					if item.claimCost > 0 {
+						if err := h.repo.RefundCredits(tx, item.userID, item.claimCost, "txn.subdomainDeletedRefund", descParams); err != nil {
+							return err
+						}
+					} else {
+						if err := h.repo.DeductCredits(tx, item.userID, -item.claimCost, "txn.subdomainDeletedDeduct", descParams); err != nil {
+							return err
+						}
+					}
+				}
+			}
+			if len(subdomainIDs) > 0 {
+				if err := tx.Where("subdomain_id IN ?", subdomainIDs).Delete(&model.DNSRecord{}).Error; err != nil {
+					return err
+				}
+				if err := tx.Where("domain_id = ?", domain.ID).Delete(&model.Subdomain{}).Error; err != nil {
+					return err
+				}
+			}
+			if err := h.repo.DeleteDomain(tx, domain.ID); err != nil {
+				return err
+			}
+			if admin := ctxutil.GetUser(c); admin != nil {
+				details, _ := json.Marshal(map[string]interface{}{
+					"domain_name":      domain.Name,
+					"subdomain_count":  len(subdomains),
+					"dns_record_count": deleteResult.Succeeded,
+					"refunded":         refund,
+				})
+				if err := tx.Create(&model.AuditLog{
+					UserID:     admin.ID,
+					Action:     "admin_delete_domain",
+					Resource:   "domain",
+					ResourceID: domain.ID,
+					Details:    details,
+				}).Error; err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
+			if errors.Is(err, gorm.ErrInvalidData) {
+				return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to deduct credits", MessageKey: "error.failedToDeductCredits", Retryable: true}, nil
+			}
+			return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to delete domain", MessageKey: "error.failedToDeleteDomain", Retryable: true}, nil
+		}
+		return service.OperationResult{
+			HTTPStatus: http.StatusOK,
+			Message:    "ok",
+			Data:       gin.H{"message": "domain deleted", "deleted_dns_count": deleteResult.Succeeded},
+		}, nil
+	})
+	writeOperationResult(c, result)
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
 	"hl6-server/pkg/validator"
 )
@@ -22,10 +24,11 @@ import (
 type SubdomainHandler struct {
 	repo   *repository.Repository
 	broker *SSEBroker
+	ops    *service.DNSOperationService
 }
 
-func NewSubdomainHandler(repo *repository.Repository, broker *SSEBroker) *SubdomainHandler {
-	return &SubdomainHandler{repo: repo, broker: broker}
+func NewSubdomainHandler(repo *repository.Repository, broker *SSEBroker, ops *service.DNSOperationService) *SubdomainHandler {
+	return &SubdomainHandler{repo: repo, broker: broker, ops: ops}
 }
 
 func (h *SubdomainHandler) List(c *gin.Context) {
@@ -209,62 +212,75 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 		return
 	}
 
-	operationCount := len(sub.DNSRecords)
-	if operationCount > 0 {
-		if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
-			return
-		}
-	}
-
-	queuedOps := 0
-	if err := h.repo.Transaction(func(tx *gorm.DB) error {
-		for _, record := range sub.DNSRecords {
-			if _, err := enqueueCloudflareTask(
-				h.repo,
-				tx,
-				cloudflareTaskResourceDNSRecord,
-				record.ID,
-				model.CloudflareTaskActionDeleteDNSRecord,
-				model.CloudflareTaskPayload{
-					CloudflareAccountID: sub.Domain.CloudflareAccountID,
-					ZoneID:              sub.Domain.CloudflareZoneID,
-					RecordID:            record.CloudflareRecordID,
-					RecordType:          record.Type,
-					Name:                record.Name,
-					Content:             record.Content,
-				},
-				fmt.Sprintf("subdomain:release:%d:%s", record.ID, record.CloudflareRecordID),
-			); err != nil {
-				return err
-			}
-			queuedOps++
-		}
-		if err := tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{}).Error; err != nil {
-			return err
-		}
-		if err := tx.Delete(sub).Error; err != nil {
-			return err
-		}
-		details, _ := json.Marshal(map[string]interface{}{"fqdn": sub.FQDN, "operation_count": queuedOps})
-		return tx.Create(&model.AuditLog{
-			UserID:     user.ID,
-			Action:     "release_subdomain",
-			Resource:   "subdomain",
-			ResourceID: sub.ID,
-			Details:    details,
-		}).Error
-	}); err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to release subdomain", "error.databaseError")
+	key, ok := idempotencyKeyFromHeader(c)
+	if !ok {
 		return
 	}
-
-	data := gin.H{"message": "subdomain released"}
-	if queuedOps > 0 {
-		data["sync_status"] = "processing"
-		data["operation_count"] = queuedOps
-	}
-	response.OK(c, data)
+	scope := fmt.Sprintf("subdomain:release:user:%d:sub:%d", user.ID, sub.ID)
+	result := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
+		items := make([]service.BatchDeleteItem, 0, len(sub.DNSRecords))
+		for _, record := range sub.DNSRecords {
+			items = append(items, service.BatchDeleteItem{
+				RecordID:          record.ID,
+				SubdomainFQDN:     sub.FQDN,
+				Provider:          sub.Domain.Provider,
+				ProviderAccountID: sub.Domain.ProviderAccountID,
+				ZoneID:            sub.Domain.ProviderZoneID,
+				ProviderRecordID:  record.ProviderRecordID,
+				RecordType:        record.Type,
+				Name:              record.Name,
+				Content:           record.Content,
+			})
+		}
+		deleteResult := h.ops.DeleteRecordsBatch(ctx, items, 3)
+		if deleteResult.Failed > 0 {
+			failures := make([]cfFailureRecord, 0, len(deleteResult.Failures))
+			for _, f := range deleteResult.Failures {
+				failures = append(failures, cfFailureRecord{
+					SubdomainFQDN:    f.SubdomainFQDN,
+					RecordType:       f.RecordType,
+					RecordContent:    f.RecordContent,
+					ProviderRecordID: f.ProviderRecordID,
+					Error:            f.Error,
+				})
+			}
+			return service.OperationResult{
+				HTTPStatus: http.StatusConflict,
+				Message:    "some cloudflare dns records failed to delete",
+				MessageKey: "error.cloudflareDeleteFailed",
+				Data:       gin.H{"failed_records": failures},
+			}, nil
+		}
+		if err := h.repo.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Delete(sub).Error; err != nil {
+				return err
+			}
+			details, _ := json.Marshal(map[string]interface{}{"fqdn": sub.FQDN, "deleted_dns_count": deleteResult.Succeeded})
+			return tx.Create(&model.AuditLog{
+				UserID:     user.ID,
+				Action:     "release_subdomain",
+				Resource:   "subdomain",
+				ResourceID: sub.ID,
+				Details:    details,
+			}).Error
+		}); err != nil {
+			return service.OperationResult{
+				HTTPStatus: http.StatusInternalServerError,
+				Message:    "failed to release subdomain",
+				MessageKey: "error.databaseError",
+				Retryable:  true,
+			}, nil
+		}
+		return service.OperationResult{
+			HTTPStatus: http.StatusOK,
+			Message:    "ok",
+			Data:       gin.H{"message": "subdomain released", "deleted_dns_count": deleteResult.Succeeded},
+		}, nil
+	})
+	writeOperationResult(c, result)
 }
 
 func (h *SubdomainHandler) AdminListClaimed(c *gin.Context) {
@@ -308,88 +324,103 @@ func (h *SubdomainHandler) AdminRelease(c *gin.Context) {
 		return
 	}
 
-	operationCount := len(sub.DNSRecords)
-	if operationCount > 0 {
-		if _, err := h.repo.FindCloudflareAccount(sub.Domain.CloudflareAccountID); err != nil {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
-			return
-		}
-	}
-
-	queuedOps := 0
-	if err := h.repo.Transaction(func(tx *gorm.DB) error {
-		for _, record := range sub.DNSRecords {
-			if _, err := enqueueCloudflareTask(
-				h.repo,
-				tx,
-				cloudflareTaskResourceDNSRecord,
-				record.ID,
-				model.CloudflareTaskActionDeleteDNSRecord,
-				model.CloudflareTaskPayload{
-					CloudflareAccountID: sub.Domain.CloudflareAccountID,
-					ZoneID:              sub.Domain.CloudflareZoneID,
-					RecordID:            record.CloudflareRecordID,
-					RecordType:          record.Type,
-					Name:                record.Name,
-					Content:             record.Content,
-				},
-				fmt.Sprintf("admin:subdomain:release:%d:%s", record.ID, record.CloudflareRecordID),
-			); err != nil {
-				return err
-			}
-			queuedOps++
-		}
-		if err := tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{}).Error; err != nil {
-			return err
-		}
-		if err := tx.Delete(&model.Subdomain{}, sub.ID).Error; err != nil {
-			return err
-		}
-		details, _ := json.Marshal(map[string]interface{}{
-			"fqdn":    sub.FQDN,
-			"user_id": sub.UserID,
-			"notify":  body.Notify,
-			"op_cnt":  queuedOps,
-		})
-		return tx.Create(&model.AuditLog{
-			UserID:     admin.ID,
-			Action:     "admin_release_subdomain",
-			Resource:   "subdomain",
-			ResourceID: sub.ID,
-			Details:    details,
-		}).Error
-	}); err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to release subdomain", "error.databaseError")
+	key, ok := idempotencyKeyFromHeader(c)
+	if !ok {
 		return
 	}
+	scope := fmt.Sprintf("admin:subdomain:release:%d", sub.ID)
+	result := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
+		items := make([]service.BatchDeleteItem, 0, len(sub.DNSRecords))
+		for _, record := range sub.DNSRecords {
+			items = append(items, service.BatchDeleteItem{
+				RecordID:          record.ID,
+				SubdomainFQDN:     sub.FQDN,
+				Provider:          sub.Domain.Provider,
+				ProviderAccountID: sub.Domain.ProviderAccountID,
+				ZoneID:            sub.Domain.ProviderZoneID,
+				ProviderRecordID:  record.ProviderRecordID,
+				RecordType:        record.Type,
+				Name:              record.Name,
+				Content:           record.Content,
+			})
+		}
+		deleteResult := h.ops.DeleteRecordsBatch(ctx, items, 3)
+		if deleteResult.Failed > 0 {
+			failures := make([]cfFailureRecord, 0, len(deleteResult.Failures))
+			for _, f := range deleteResult.Failures {
+				failures = append(failures, cfFailureRecord{
+					SubdomainFQDN:    f.SubdomainFQDN,
+					RecordType:       f.RecordType,
+					RecordContent:    f.RecordContent,
+					ProviderRecordID: f.ProviderRecordID,
+					Error:            f.Error,
+				})
+			}
+			return service.OperationResult{
+				HTTPStatus: http.StatusConflict,
+				Message:    "some cloudflare dns records failed to delete",
+				MessageKey: "error.cloudflareDeleteFailed",
+				Data:       gin.H{"failed_records": failures},
+			}, nil
+		}
 
-	if body.Notify {
-		title := fmt.Sprintf("%s 认领已被管理员释放", sub.FQDN)
-		content := fmt.Sprintf("您的认领 %s 已被管理员释放，相关解析记录已被删除。", sub.FQDN)
-		if reason != "" {
-			content = fmt.Sprintf("您的认领 %s 已被管理员释放，相关解析记录已被删除。\n原因：%s", sub.FQDN, reason)
+		if err := h.repo.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Where("subdomain_id = ?", sub.ID).Delete(&model.DNSRecord{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Delete(&model.Subdomain{}, sub.ID).Error; err != nil {
+				return err
+			}
+			details, _ := json.Marshal(map[string]interface{}{
+				"fqdn":              sub.FQDN,
+				"user_id":           sub.UserID,
+				"notify":            body.Notify,
+				"deleted_dns_count": deleteResult.Succeeded,
+			})
+			return tx.Create(&model.AuditLog{
+				UserID:     admin.ID,
+				Action:     "admin_release_subdomain",
+				Resource:   "subdomain",
+				ResourceID: sub.ID,
+				Details:    details,
+			}).Error
+		}); err != nil {
+			return service.OperationResult{
+				HTTPStatus: http.StatusInternalServerError,
+				Message:    "failed to release subdomain",
+				MessageKey: "error.databaseError",
+				Retryable:  true,
+			}, nil
 		}
-		targetIDs, _ := json.Marshal([]uint{sub.UserID})
-		notification := &model.Notification{
-			Title:      title,
-			Content:    content,
-			Type:       "urgent",
-			TargetType: "users",
-			TargetIDs:  targetIDs,
-			CreatedBy:  admin.ID,
-		}
-		if err := h.repo.CreateNotificationWithImages(notification); err != nil {
-			log.Printf("failed to create notification: %v", err)
-		} else if h.broker != nil {
-			event := SSEEvent{Event: "new_notification", Data: fmt.Sprintf(`{"id":%d}`, notification.ID)}
-			h.broker.SendToUsers([]uint{sub.UserID}, event)
-		}
-	}
 
-	data := gin.H{"message": "subdomain released"}
-	if queuedOps > 0 {
-		data["sync_status"] = "processing"
-		data["operation_count"] = queuedOps
-	}
-	response.OK(c, data)
+		if body.Notify {
+			title := fmt.Sprintf("%s 认领已被管理员释放", sub.FQDN)
+			content := fmt.Sprintf("您的认领 %s 已被管理员释放，相关解析记录已被删除。", sub.FQDN)
+			if reason != "" {
+				content = fmt.Sprintf("您的认领 %s 已被管理员释放，相关解析记录已被删除。\n原因：%s", sub.FQDN, reason)
+			}
+			targetIDs, _ := json.Marshal([]uint{sub.UserID})
+			notification := &model.Notification{
+				Title:      title,
+				Content:    content,
+				Type:       "urgent",
+				TargetType: "users",
+				TargetIDs:  targetIDs,
+				CreatedBy:  admin.ID,
+			}
+			if err := h.repo.CreateNotificationWithImages(notification); err != nil {
+				log.Printf("failed to create notification: %v", err)
+			} else if h.broker != nil {
+				event := SSEEvent{Event: "new_notification", Data: fmt.Sprintf(`{"id":%d}`, notification.ID)}
+				h.broker.SendToUsers([]uint{sub.UserID}, event)
+			}
+		}
+
+		return service.OperationResult{
+			HTTPStatus: http.StatusOK,
+			Message:    "ok",
+			Data:       gin.H{"message": "subdomain released", "deleted_dns_count": deleteResult.Succeeded},
+		}, nil
+	})
+	writeOperationResult(c, result)
 }

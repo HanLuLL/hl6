@@ -45,10 +45,10 @@ import { api, getErrorMessage, ApiError } from "@/lib/api";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown, Plus, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { CloudflareZone, CloudflareAccount, DomainWithGroupAccess, UserGroup } from "@/types";
+import type { DNSProviderZone, DNSProviderAccount, DomainWithGroupAccess, UserGroup } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DNSRecordsContent } from "./dns-records";
-import { CloudflareAccountsContent } from "./cloudflare-accounts";
+import { DNSProviderAccountsContent } from "./cloudflare-accounts";
 import { ClaimedSubdomainsContent } from "./claimed-subdomains";
 
 interface GroupAccessEntry {
@@ -57,18 +57,19 @@ interface GroupAccessEntry {
   max_dns_records?: number | null;
 }
 
-interface CfFailureRecord {
+interface DNSFailureRecord {
   subdomain_fqdn: string;
   record_type: string;
   record_content: string;
-  cloudflare_record_id: string;
+  provider_record_id: string;
   error: string;
 }
 
 export default function AdminDomainsPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = searchParams.get("tab") || "dns-records";
+  const rawTab = searchParams.get("tab");
+  const currentTab = rawTab === "cloudflare" ? "dns-providers" : (rawTab || "dns-records");
 
   return (
     <div className="space-y-6">
@@ -91,7 +92,7 @@ export default function AdminDomainsPage() {
           <TabsTrigger value="dns-records">{t("adminDomains.tabDnsRecords")}</TabsTrigger>
           <TabsTrigger value="claimed">{t("adminDomains.tabClaimed")}</TabsTrigger>
           <TabsTrigger value="domains">{t("adminDomains.tabDomains")}</TabsTrigger>
-          <TabsTrigger value="cloudflare">{t("adminDomains.tabCloudflare")}</TabsTrigger>
+          <TabsTrigger value="dns-providers">DNS 供应商账号</TabsTrigger>
         </TabsList>
         <TabsContent value="dns-records" className="space-y-6 mt-4">
           <DNSRecordsContent />
@@ -102,8 +103,8 @@ export default function AdminDomainsPage() {
         <TabsContent value="domains" className="space-y-6 mt-4">
           <DomainsContent />
         </TabsContent>
-        <TabsContent value="cloudflare" className="mt-4">
-          <CloudflareAccountsContent />
+        <TabsContent value="dns-providers" className="mt-4">
+          <DNSProviderAccountsContent />
         </TabsContent>
       </Tabs>
     </div>
@@ -147,8 +148,8 @@ function DomainsContent() {
   const [subdomainMinLength, setSubdomainMinLength] = useState("1");
   const [subdomainMaxLength, setSubdomainMaxLength] = useState("63");
   const [editDomain, setEditDomain] = useState<DomainWithGroupAccess | null>(null);
-  const [selectedAccount, setSelectedAccount] = useState<CloudflareAccount | null>(null);
-  const [selectedZone, setSelectedZone] = useState<CloudflareZone | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<DNSProviderAccount | null>(null);
+  const [selectedZone, setSelectedZone] = useState<DNSProviderZone | null>(null);
   const [description, setDescription] = useState("");
   const [groupAccess, setGroupAccess] = useState<GroupAccessEntry[]>([]);
 
@@ -156,12 +157,12 @@ function DomainsContent() {
   const [deleteDomain, setDeleteDomain] = useState<DomainWithGroupAccess | null>(null);
   const [refundCredits, setRefundCredits] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
-  const [cfFailures, setCfFailures] = useState<CfFailureRecord[] | null>(null);
+  const [cfFailures, setCfFailures] = useState<DNSFailureRecord[] | null>(null);
 
   const { data: cfAccounts } = useQuery({
-    queryKey: ["admin-cloudflare-accounts"],
+    queryKey: ["admin-dns-provider-accounts"],
     queryFn: async () => {
-      const res = await api.adminListCloudflareAccounts();
+      const res = await api.adminListDNSProviderAccounts();
       return res.data;
     },
     staleTime: 30_000,
@@ -206,7 +207,7 @@ function DomainsContent() {
     },
     onError: (err) => {
       if (err instanceof ApiError && err.data && typeof err.data === "object" && "failed_records" in err.data) {
-        setCfFailures((err.data as { failed_records: CfFailureRecord[] }).failed_records);
+        setCfFailures((err.data as { failed_records: DNSFailureRecord[] }).failed_records);
       } else {
         toast.error(getErrorMessage(err, t));
       }
@@ -304,7 +305,7 @@ function DomainsContent() {
               {domains?.map((domain) => (
                 <TableRow key={domain.id} className="cursor-pointer" onClick={() => setEditDomain(domain)}>
                   <TableCell className="font-medium">{domain.name}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{domain.cloudflare_zone_id.slice(0, 12)}...</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{domain.provider_zone_id.slice(0, 12)}...</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {domain.group_access?.map((ga) => (
@@ -382,6 +383,7 @@ function DomainsContent() {
                 value={selectedZone}
                 onSelect={setSelectedZone}
                 accountId={selectedAccount?.id ?? null}
+                accountProvider={selectedAccount?.provider ?? null}
                 existingDomains={domains ?? []}
                 required
               />
@@ -403,8 +405,8 @@ function DomainsContent() {
                 if (!selectedZone || !selectedAccount) return;
                 createMutation.mutate({
                   name: selectedZone.name,
-                  cloudflare_zone_id: selectedZone.id,
-                  cloudflare_account_id: selectedAccount.id,
+                  provider_zone_id: selectedZone.id,
+                  provider_account_id: selectedAccount.id,
                   description,
                   group_access: groupAccess,
                 });
@@ -777,9 +779,9 @@ function GroupAccessEditor({ groups, value, onChange }: {
 }
 
 function AccountCombobox({ accounts, value, onSelect, required = false }: {
-  accounts: CloudflareAccount[];
-  value: CloudflareAccount | null;
-  onSelect: (account: CloudflareAccount | null) => void;
+  accounts: DNSProviderAccount[];
+  value: DNSProviderAccount | null;
+  onSelect: (account: DNSProviderAccount | null) => void;
   required?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -797,7 +799,7 @@ function AccountCombobox({ accounts, value, onSelect, required = false }: {
           data-hotkey-filled={required ? (value ? "true" : "false") : undefined}
           className="w-full justify-between font-normal"
         >
-          {value ? value.name : t("adminCloudflare.selectAccount")}
+          {value ? `${value.name} (${value.provider})` : t("adminCloudflare.selectAccount")}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -818,7 +820,8 @@ function AccountCombobox({ accounts, value, onSelect, required = false }: {
                 >
                   <Check className={cn("mr-2 h-4 w-4", value?.id === account.id ? "opacity-100" : "opacity-0")} />
                   <span className="flex-1">{account.name}</span>
-                  <span className="text-xs text-muted-foreground ml-2">{account.token_hint}</span>
+                  <Badge variant="secondary" className="text-[10px]">{account.provider}</Badge>
+                  <span className="text-xs text-muted-foreground ml-2">{account.credential_hint}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -829,10 +832,11 @@ function AccountCombobox({ accounts, value, onSelect, required = false }: {
   );
 }
 
-function ZoneCombobox({ value, onSelect, accountId, existingDomains, required = false }: {
-  value: CloudflareZone | null;
-  onSelect: (zone: CloudflareZone | null) => void;
+function ZoneCombobox({ value, onSelect, accountId, accountProvider, existingDomains, required = false }: {
+  value: DNSProviderZone | null;
+  onSelect: (zone: DNSProviderZone | null) => void;
   accountId: number | null;
+  accountProvider: string | null;
   existingDomains: DomainWithGroupAccess[];
   required?: boolean;
 }) {
@@ -840,9 +844,9 @@ function ZoneCombobox({ value, onSelect, accountId, existingDomains, required = 
   const { t } = useTranslation();
 
   const { data: zones, isLoading } = useQuery({
-    queryKey: ["admin-cloudflare-zones", accountId],
+    queryKey: ["admin-dns-provider-zones", accountId],
     queryFn: async () => {
-      const res = await api.adminListCloudflareZones(accountId!);
+      const res = await api.adminListDNSProviderZones(accountId!);
       return res.data;
     },
     enabled: !!accountId,
@@ -854,7 +858,11 @@ function ZoneCombobox({ value, onSelect, accountId, existingDomains, required = 
       return [];
     }
 
-    const existingZoneIds = new Set(existingDomains.map((d) => d.cloudflare_zone_id));
+    const existingZoneIds = new Set(
+      existingDomains
+        .filter((d) => !accountProvider || d.provider === accountProvider)
+        .map((d) => d.provider_zone_id),
+    );
     const existingNamesLower = new Set(existingDomains.map((d) => d.name.trim().toLowerCase()));
 
     return zones.filter((zone) => {
@@ -866,7 +874,7 @@ function ZoneCombobox({ value, onSelect, accountId, existingDomains, required = 
       }
       return true;
     });
-  }, [zones, existingDomains]);
+  }, [zones, existingDomains, accountProvider]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

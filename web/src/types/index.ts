@@ -28,8 +28,9 @@ export interface User {
 export interface Domain {
   id: number;
   name: string;
-  cloudflare_zone_id: string;
-  cloudflare_account_id: number;
+  provider: string;
+  provider_zone_id: string;
+  provider_account_id: number;
   credit_cost: number;
   is_active: boolean;
   description: string;
@@ -57,7 +58,7 @@ export interface DNSRecord {
   content: string;
   ttl: number;
   proxied: boolean;
-  cloudflare_record_id: string;
+  provider_record_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -124,16 +125,17 @@ export interface AuditLog {
   created_at: string;
 }
 
-export interface CloudflareZone {
+export interface DNSProviderZone {
   id: string;
   name: string;
   status: string;
 }
 
-export interface CloudflareAccount {
+export interface DNSProviderAccount {
   id: number;
+  provider: string;
   name: string;
-  token_hint: string;
+  credential_hint: string;
   created_at: string;
   updated_at: string;
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"hl6-server/internal/model"
 	"hl6-server/internal/oidc"
 	"hl6-server/internal/repository"
+	"hl6-server/internal/service"
 	"hl6-server/pkg/crypto"
 	"hl6-server/pkg/response"
 )
@@ -44,14 +46,16 @@ var allowedConfigKeys = map[string]bool{
 type AdminHandler struct {
 	repo         *repository.Repository
 	cfg          *config.Config
+	ops          *service.DNSOperationService
 	urlResolver  *URLResolver
 	oidcResolver *OIDCRuntimeResolver
 }
 
-func NewAdminHandler(repo *repository.Repository, cfg *config.Config) *AdminHandler {
+func NewAdminHandler(repo *repository.Repository, cfg *config.Config, ops *service.DNSOperationService) *AdminHandler {
 	return &AdminHandler{
 		repo:         repo,
 		cfg:          cfg,
+		ops:          ops,
 		urlResolver:  NewURLResolver(repo, cfg),
 		oidcResolver: NewOIDCRuntimeResolver(repo, cfg),
 	}
@@ -134,23 +138,6 @@ func (h *AdminHandler) Stats(c *gin.Context) {
 		return
 	}
 	response.OK(c, stats)
-}
-
-func (h *AdminHandler) ListDeadCloudflareTasks(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
-	if limit < 1 {
-		limit = 50
-	}
-	if limit > 200 {
-		limit = 200
-	}
-
-	tasks, err := h.repo.ListDeadCloudflareTasks(limit)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list cloudflare tasks", "error.databaseError")
-		return
-	}
-	response.OK(c, tasks)
 }
 
 func (h *AdminHandler) AuditLogs(c *gin.Context) {
@@ -407,45 +394,50 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 	}
 
 	reason := strings.TrimSpace(body.Reason)
-
-	result, failures, err := executeAdminBanUserWithCleanup(h.repo, admin.ID, target, reason)
-	if len(failures) > 0 {
-		response.ErrorWithKeyData(c, http.StatusConflict, "some cloudflare dns records failed to delete", "error.cloudflareDeleteFailed", gin.H{
-			"failed_records": failures,
-		})
+	key, ok := idempotencyKeyFromHeader(c)
+	if !ok {
 		return
 	}
-	if err != nil {
-		if errors.Is(err, errCannotBanLastActiveAdmin) {
-			response.ErrorWithKey(c, http.StatusBadRequest, "cannot ban last active admin", "error.cannotBanLastAdmin")
-			return
+	scope := fmt.Sprintf("admin:ban:user:%d", target.ID)
+	opResult := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
+		result, failures, err := executeAdminBanUserWithCleanup(h.repo, h.ops, admin.ID, target, reason)
+		if len(failures) > 0 {
+			return service.OperationResult{
+				HTTPStatus: http.StatusConflict,
+				Message:    "some cloudflare dns records failed to delete",
+				MessageKey: "error.cloudflareDeleteFailed",
+				Data:       gin.H{"failed_records": failures},
+			}, nil
 		}
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to ban user", "error.failedToBanUser")
-		return
-	}
+		if err != nil {
+			if errors.Is(err, errCannotBanLastActiveAdmin) {
+				return service.OperationResult{HTTPStatus: http.StatusBadRequest, Message: "cannot ban last active admin", MessageKey: "error.cannotBanLastAdmin"}, nil
+			}
+			return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to ban user", MessageKey: "error.failedToBanUser", Retryable: true}, nil
+		}
 
-	details, _ := json.Marshal(map[string]interface{}{
-		"target_user_id":     target.ID,
-		"target_user_role":   result.TargetRole,
-		"reason":             reason,
-		"delete_resources":   true,
-		"subdomains_deleted": result.SubdomainsDeleted,
-		"cf_queue_count":     result.QueueCount,
+		details, _ := json.Marshal(map[string]interface{}{
+			"target_user_id":     target.ID,
+			"target_user_role":   result.TargetRole,
+			"reason":             reason,
+			"delete_resources":   true,
+			"subdomains_deleted": result.SubdomainsDeleted,
+			"deleted_dns_count":  result.DeletedDNSCount,
+		})
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:     admin.ID,
+			Action:     "admin_ban_user",
+			Resource:   "user",
+			ResourceID: target.ID,
+			Details:    details,
+		})
+		return service.OperationResult{
+			HTTPStatus: http.StatusOK,
+			Message:    "ok",
+			Data:       gin.H{"message": "user banned", "deleted_dns_count": result.DeletedDNSCount},
+		}, nil
 	})
-	h.repo.CreateAuditLog(&model.AuditLog{
-		UserID:     admin.ID,
-		Action:     "admin_ban_user",
-		Resource:   "user",
-		ResourceID: target.ID,
-		Details:    details,
-	})
-
-	data := gin.H{"message": "user banned"}
-	if result.QueueCount > 0 {
-		data["sync_status"] = "processing"
-		data["operation_count"] = result.QueueCount
-	}
-	response.OK(c, data)
+	writeOperationResult(c, opResult)
 }
 
 func (h *AdminHandler) UnbanUser(c *gin.Context) {
