@@ -180,7 +180,7 @@
     "pageTitle": "Operations",
     "pageSubtitle": "Manage users, groups, notifications and credits",
     "tabUsers": "Users",
-    "tabLoginRegistration": "Sign-in/Sign-up",
+    "tabCredits": "Credits",
     "tabGroups": "User Groups",
     "tabNotifications": "Notifications",
     "tabBrand": "Brand",
@@ -456,7 +456,7 @@
     "lockedByEnv": "This field is managed by environment variables",
     "unavailableTitle": "OIDC Not Configured",
     "unavailableDesc": "OIDC configuration is missing and anonymous setup is disabled.",
-    "contactAdmin": "Ask an administrator to restore OIDC settings via environment variables or the Operations > Sign-in/Sign-up tab.",
+    "contactAdmin": "Ask an administrator to restore OIDC settings via environment variables or the System Settings page.",
     "missingFields": "Missing fields: {{fields}}"
   },
   "adminCloudflare": {

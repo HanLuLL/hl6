@@ -180,7 +180,7 @@
     "pageTitle": "运营",
     "pageSubtitle": "管理用户、用户组、通知和积分",
     "tabUsers": "用户",
-    "tabLoginRegistration": "登录/注册",
+    "tabCredits": "积分",
     "tabGroups": "用户组",
     "tabNotifications": "通知",
     "tabBrand": "品牌",
@@ -456,7 +456,7 @@
     "lockedByEnv": "该字段由环境变量接管，无法在页面修改",
     "unavailableTitle": "OIDC 未配置",
     "unavailableDesc": "检测到系统缺少 OIDC 配置，当前不允许匿名提交。",
-    "contactAdmin": "请管理员通过环境变量或运营页「登录/注册」标签恢复 OIDC 配置。",
+    "contactAdmin": "请管理员通过环境变量或系统设置页恢复 OIDC 配置。",
     "missingFields": "缺失字段：{{fields}}"
   },
   "adminCloudflare": {

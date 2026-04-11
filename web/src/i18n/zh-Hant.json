@@ -180,7 +180,7 @@
     "pageTitle": "運營",
     "pageSubtitle": "管理使用者、群組、通知和積分",
     "tabUsers": "使用者",
-    "tabLoginRegistration": "登入/註冊",
+    "tabCredits": "積分",
     "tabGroups": "使用者群組",
     "tabNotifications": "通知",
     "tabBrand": "品牌",
@@ -456,7 +456,7 @@
     "lockedByEnv": "此欄位由環境變數接管，無法在頁面修改",
     "unavailableTitle": "OIDC 尚未設定",
     "unavailableDesc": "系統缺少 OIDC 設定，且目前不允許匿名提交。",
-    "contactAdmin": "請管理員透過環境變數或營運頁「登入/註冊」分頁恢復 OIDC 設定。",
+    "contactAdmin": "請管理員透過環境變數或系統設定頁恢復 OIDC 設定。",
     "missingFields": "缺少欄位：{{fields}}"
   },
   "adminCloudflare": {

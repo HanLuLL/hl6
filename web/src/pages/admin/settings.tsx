@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { api, getErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +24,9 @@ export default function AdminSettingsPage() {
 
   const [frontendUrls, setFrontendUrls] = useState("");
   const [backendUrls, setBackendUrls] = useState("");
+  const [oidcIssuer, setOidcIssuer] = useState("");
+  const [oidcClientID, setOidcClientID] = useState("");
+  const [oidcClientSecret, setOidcClientSecret] = useState("");
 
   useEffect(() => {
     if (!config) {
@@ -43,6 +47,9 @@ export default function AdminSettingsPage() {
 
     setFrontendUrls(frontendText);
     setBackendUrls(backendText);
+    setOidcIssuer(config.oidc_runtime?.issuer ?? values.oidc_issuer ?? "");
+    setOidcClientID(config.oidc_runtime?.client_id ?? values.oidc_client_id ?? "");
+    setOidcClientSecret("");
   }, [config]);
 
   const updateMutation = useMutation({
@@ -66,8 +73,12 @@ export default function AdminSettingsPage() {
   const frontendLocked = !!config?.url_runtime?.frontend_env_locked;
   const backendLocked = !!config?.url_runtime?.backend_env_locked;
   const noEditableUrl = frontendLocked && backendLocked;
+  const oidcIssuerLocked = !!config?.oidc_runtime?.issuer_env_locked;
+  const oidcClientIDLocked = !!config?.oidc_runtime?.client_id_env_locked;
+  const oidcClientSecretLocked = !!config?.oidc_runtime?.client_secret_env_locked;
+  const noEditableOIDC = oidcIssuerLocked && oidcClientIDLocked && oidcClientSecretLocked;
 
-  const sourceLabel = (source?: string) => {
+  const urlSourceLabel = (source?: string) => {
     switch (source) {
       case "env":
         return t("adminSettings.urlSourceEnv");
@@ -80,12 +91,35 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const oidcSourceLabel = (source?: string) => {
+    switch (source) {
+      case "env":
+        return t("adminSettings.urlSourceEnv");
+      case "db":
+        return t("adminSettings.urlSourceDb");
+      default:
+        return t("adminSettings.oidcSourceNone");
+    }
+  };
+
   const saveUrlConfig = () => {
     const payload: Record<string, string> = {};
     if (!frontendLocked) payload.frontend_urls = frontendUrls.trim();
     if (!backendLocked) payload.backend_urls = backendUrls.trim();
     if (Object.keys(payload).length === 0) return;
     updateMutation.mutate(payload);
+  };
+
+  const saveOIDCConfig = () => {
+    const payload: Record<string, string> = {};
+    if (!oidcIssuerLocked) payload.oidc_issuer = oidcIssuer.trim();
+    if (!oidcClientIDLocked) payload.oidc_client_id = oidcClientID.trim();
+    if (!oidcClientSecretLocked && oidcClientSecret.trim() !== "") {
+      payload.oidc_client_secret = oidcClientSecret.trim();
+    }
+    if (Object.keys(payload).length === 0) return;
+    updateMutation.mutate(payload);
+    setOidcClientSecret("");
   };
 
   if (isLoading) {
@@ -123,6 +157,87 @@ export default function AdminSettingsPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>{t("adminSettings.oidcTitle")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("adminSettings.oidcDesc")}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t("adminSettings.oidcIssuer")}</Label>
+              <Input
+                value={oidcIssuer}
+                onChange={(e) => setOidcIssuer(e.target.value)}
+                placeholder="https://issuer.example.com"
+                disabled={oidcIssuerLocked}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("adminSettings.currentSource", { source: oidcSourceLabel(config?.oidc_runtime?.issuer_source) })}
+              </p>
+              {oidcIssuerLocked && (
+                <p className="text-xs text-muted-foreground">{t("adminSettings.urlLockedByEnv")}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("adminSettings.oidcClientId")}</Label>
+              <Input
+                value={oidcClientID}
+                onChange={(e) => setOidcClientID(e.target.value)}
+                placeholder="client-id"
+                disabled={oidcClientIDLocked}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("adminSettings.currentSource", { source: oidcSourceLabel(config?.oidc_runtime?.client_id_source) })}
+              </p>
+              {oidcClientIDLocked && (
+                <p className="text-xs text-muted-foreground">{t("adminSettings.urlLockedByEnv")}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("adminSettings.oidcClientSecret")}</Label>
+            <Input
+              type="password"
+              value={oidcClientSecret}
+              onChange={(e) => setOidcClientSecret(e.target.value)}
+              placeholder={t("adminSettings.oidcSecretKeepHint")}
+              disabled={oidcClientSecretLocked}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("adminSettings.currentSource", { source: oidcSourceLabel(config?.oidc_runtime?.client_secret_source) })}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {config?.oidc_runtime?.client_secret_configured
+                ? t("adminSettings.oidcSecretConfigured")
+                : t("adminSettings.oidcSecretNotConfigured")}
+            </p>
+            {!oidcClientSecretLocked && (
+              <p className="text-xs text-muted-foreground">{t("adminSettings.oidcSecretKeepHint")}</p>
+            )}
+            {oidcClientSecretLocked && (
+              <p className="text-xs text-muted-foreground">{t("adminSettings.urlLockedByEnv")}</p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {!noEditableOIDC && (
+              <Button
+                onClick={saveOIDCConfig}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? t("common.saving") : t("adminSettings.saveOidc")}
+              </Button>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {config?.oidc_runtime?.configured ? t("adminSettings.oidcConfigured") : t("adminSettings.oidcNotConfigured")}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>{t("adminSettings.urlTitle")}</CardTitle>
           <p className="text-sm text-muted-foreground">{t("adminSettings.urlDesc")}</p>
         </CardHeader>
@@ -139,7 +254,7 @@ export default function AdminSettingsPage() {
               />
               <p className="text-xs text-muted-foreground">{t("adminSettings.urlMultiInputHint")}</p>
               <p className="text-xs text-muted-foreground">
-                {t("adminSettings.currentSource", { source: sourceLabel(config?.url_runtime.frontend_source) })}
+                {t("adminSettings.currentSource", { source: urlSourceLabel(config?.url_runtime.frontend_source) })}
               </p>
               <p className="text-xs text-muted-foreground">
                 {t("adminSettings.activeUrl", { url: config?.url_runtime.frontend_url ?? "-" })}
@@ -159,7 +274,7 @@ export default function AdminSettingsPage() {
               />
               <p className="text-xs text-muted-foreground">{t("adminSettings.urlMultiInputHint")}</p>
               <p className="text-xs text-muted-foreground">
-                {t("adminSettings.currentSource", { source: sourceLabel(config?.url_runtime.backend_source) })}
+                {t("adminSettings.currentSource", { source: urlSourceLabel(config?.url_runtime.backend_source) })}
               </p>
               <p className="text-xs text-muted-foreground">
                 {t("adminSettings.activeUrl", { url: config?.url_runtime.backend_url ?? "-" })}

@@ -24,7 +24,7 @@ function parseGroupIds(raw?: string): number[] {
   return result.sort((a, b) => a - b);
 }
 
-export function LoginRegistrationSettingsContent() {
+export function CreditsSettingsContent() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { data: config, isLoading } = useQuery({
@@ -51,9 +51,6 @@ export function LoginRegistrationSettingsContent() {
   const [dailyCheckinEnabled, setDailyCheckinEnabled] = useState(false);
   const [dailyCheckinCredits, setDailyCheckinCredits] = useState("0");
   const [dailyCheckinGroupIds, setDailyCheckinGroupIds] = useState<number[]>([]);
-  const [oidcIssuer, setOidcIssuer] = useState("");
-  const [oidcClientID, setOidcClientID] = useState("");
-  const [oidcClientSecret, setOidcClientSecret] = useState("");
 
   useEffect(() => {
     if (!config) {
@@ -67,9 +64,6 @@ export function LoginRegistrationSettingsContent() {
     setDailyCheckinEnabled(values.daily_checkin_enabled === "true");
     setDailyCheckinCredits(values.daily_checkin_credits ?? "0");
     setDailyCheckinGroupIds(parseGroupIds(values.daily_checkin_group_ids));
-    setOidcIssuer(config.oidc_runtime?.issuer ?? values.oidc_issuer ?? "");
-    setOidcClientID(config.oidc_runtime?.client_id ?? values.oidc_client_id ?? "");
-    setOidcClientSecret("");
   }, [config]);
 
   const updateMutation = useMutation({
@@ -80,34 +74,6 @@ export function LoginRegistrationSettingsContent() {
     },
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
-
-  const oidcIssuerLocked = !!config?.oidc_runtime?.issuer_env_locked;
-  const oidcClientIDLocked = !!config?.oidc_runtime?.client_id_env_locked;
-  const oidcClientSecretLocked = !!config?.oidc_runtime?.client_secret_env_locked;
-  const noEditableOIDC = oidcIssuerLocked && oidcClientIDLocked && oidcClientSecretLocked;
-
-  const oidcSourceLabel = (source?: string) => {
-    switch (source) {
-      case "env":
-        return t("adminSettings.urlSourceEnv");
-      case "db":
-        return t("adminSettings.urlSourceDb");
-      default:
-        return t("adminSettings.oidcSourceNone");
-    }
-  };
-
-  const saveOIDCConfig = () => {
-    const payload: Record<string, string> = {};
-    if (!oidcIssuerLocked) payload.oidc_issuer = oidcIssuer.trim();
-    if (!oidcClientIDLocked) payload.oidc_client_id = oidcClientID.trim();
-    if (!oidcClientSecretLocked && oidcClientSecret.trim() !== "") {
-      payload.oidc_client_secret = oidcClientSecret.trim();
-    }
-    if (Object.keys(payload).length === 0) return;
-    updateMutation.mutate(payload);
-    setOidcClientSecret("");
-  };
 
   const saveDailyCheckinConfig = () => {
     const filteredGroupIDs = groupsData
@@ -141,87 +107,6 @@ export function LoginRegistrationSettingsContent() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("adminSettings.oidcTitle")}</CardTitle>
-          <p className="text-sm text-muted-foreground">{t("adminSettings.oidcDesc")}</p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-2">
-              <Label>{t("adminSettings.oidcIssuer")}</Label>
-              <Input
-                value={oidcIssuer}
-                onChange={(e) => setOidcIssuer(e.target.value)}
-                placeholder="https://issuer.example.com"
-                disabled={oidcIssuerLocked}
-              />
-              <p className="text-xs text-muted-foreground">
-                {t("adminSettings.currentSource", { source: oidcSourceLabel(config?.oidc_runtime?.issuer_source) })}
-              </p>
-              {oidcIssuerLocked && (
-                <p className="text-xs text-muted-foreground">{t("adminSettings.urlLockedByEnv")}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t("adminSettings.oidcClientId")}</Label>
-              <Input
-                value={oidcClientID}
-                onChange={(e) => setOidcClientID(e.target.value)}
-                placeholder="client-id"
-                disabled={oidcClientIDLocked}
-              />
-              <p className="text-xs text-muted-foreground">
-                {t("adminSettings.currentSource", { source: oidcSourceLabel(config?.oidc_runtime?.client_id_source) })}
-              </p>
-              {oidcClientIDLocked && (
-                <p className="text-xs text-muted-foreground">{t("adminSettings.urlLockedByEnv")}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>{t("adminSettings.oidcClientSecret")}</Label>
-            <Input
-              type="password"
-              value={oidcClientSecret}
-              onChange={(e) => setOidcClientSecret(e.target.value)}
-              placeholder={t("adminSettings.oidcSecretKeepHint")}
-              disabled={oidcClientSecretLocked}
-            />
-            <p className="text-xs text-muted-foreground">
-              {t("adminSettings.currentSource", { source: oidcSourceLabel(config?.oidc_runtime?.client_secret_source) })}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {config?.oidc_runtime?.client_secret_configured
-                ? t("adminSettings.oidcSecretConfigured")
-                : t("adminSettings.oidcSecretNotConfigured")}
-            </p>
-            {!oidcClientSecretLocked && (
-              <p className="text-xs text-muted-foreground">{t("adminSettings.oidcSecretKeepHint")}</p>
-            )}
-            {oidcClientSecretLocked && (
-              <p className="text-xs text-muted-foreground">{t("adminSettings.urlLockedByEnv")}</p>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {!noEditableOIDC && (
-              <Button
-                onClick={saveOIDCConfig}
-                disabled={updateMutation.isPending}
-              >
-                {updateMutation.isPending ? t("common.saving") : t("adminSettings.saveOidc")}
-              </Button>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {config?.oidc_runtime?.configured ? t("adminSettings.oidcConfigured") : t("adminSettings.oidcNotConfigured")}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
       <Card>
         <CardHeader>
           <CardTitle>{t("adminSettings.registrationBonus")}</CardTitle>

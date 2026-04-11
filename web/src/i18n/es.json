@@ -180,7 +180,7 @@
     "pageTitle": "Operaciones",
     "pageSubtitle": "Gestiona usuarios, grupos, notificaciones y créditos",
     "tabUsers": "Usuarios",
-    "tabLoginRegistration": "Inicio/Registro",
+    "tabCredits": "Créditos",
     "tabGroups": "Grupos de usuarios",
     "tabNotifications": "Notificaciones",
     "tabBrand": "Marca",
@@ -456,7 +456,7 @@
     "lockedByEnv": "Este campo está gestionado por variables de entorno",
     "unavailableTitle": "OIDC no configurado",
     "unavailableDesc": "Falta configuración OIDC y el bootstrap anónimo está deshabilitado.",
-    "contactAdmin": "Pide a un administrador que restaure OIDC desde variables de entorno o desde Operaciones > Inicio/Registro.",
+    "contactAdmin": "Pide a un administrador que restaure OIDC desde variables de entorno o desde la página de Configuración del sistema.",
     "missingFields": "Campos faltantes: {{fields}}"
   },
   "adminCloudflare": {
