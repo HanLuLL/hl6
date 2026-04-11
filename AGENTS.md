@@ -63,8 +63,6 @@ cd web && npm run lint     # ESLint
 - **DNS 记录类型**: 支持 A, AAAA, CNAME, TXT，有重复记录拦截和 CNAME 共存规则
 - **角色控制**: 用户 vs 管理员，后端 admin middleware 保护管理路由
 
-# 最高准则
-
 ## 开发要求
 
 - **安全优先**
