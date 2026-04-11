@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -155,7 +156,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	h.setSessionCookie(c, "hl6_state", "", -1, secureCookie)
 
 	// 2. Exchange code for tokens
-	tokenResp, err := h.exchangeCode(provider, runtimeState, code, callbackURL)
+	tokenResp, err := h.exchangeCode(c.Request.Context(), provider, runtimeState, code, callbackURL)
 	if err != nil {
 		log.Printf("token exchange failed: %v", err)
 		c.String(http.StatusBadGateway, "authentication failed")
@@ -417,7 +418,7 @@ func (h *OIDCHandler) Logout(c *gin.Context) {
 	}
 }
 
-func (h *OIDCHandler) exchangeCode(provider *oidc.ProviderConfig, runtimeState *OIDCRuntimeState, code, redirectURI string) (map[string]interface{}, error) {
+func (h *OIDCHandler) exchangeCode(ctx context.Context, provider *oidc.ProviderConfig, runtimeState *OIDCRuntimeState, code, redirectURI string) (map[string]interface{}, error) {
 	data := url.Values{
 		"grant_type":    {"authorization_code"},
 		"code":          {code},
@@ -426,13 +427,23 @@ func (h *OIDCHandler) exchangeCode(provider *oidc.ProviderConfig, runtimeState *
 		"client_secret": {runtimeState.ClientSecret},
 	}
 
-	resp, err := http.Post(provider.TokenEndpoint, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, provider.TokenEndpoint, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create token request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("token request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1024*1024))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read token response: %w", err)
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("token endpoint returned %d: %s", resp.StatusCode, string(body))
 	}

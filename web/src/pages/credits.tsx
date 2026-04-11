@@ -114,10 +114,10 @@ export default function CreditsPage() {
               </div>
             )}
 
-            {!refLoading && refData && refData.data.length > 0 && (
+            {!refLoading && refData && refData.records.length > 0 && (
               <div className="space-y-3">
                 <h4 className="text-sm font-medium text-muted-foreground">{t("referral.records")}</h4>
-                {refData.data.map((r) => (
+                {refData.records.map((r) => (
                   <div key={r.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
                       <p className="text-sm font-medium">{r.invitee_name}</p>
@@ -151,7 +151,7 @@ export default function CreditsPage() {
               </div>
             )}
 
-            {!refLoading && refData && refData.data.length === 0 && (
+            {!refLoading && refData && refData.records.length === 0 && (
               <p className="text-sm text-muted-foreground">{t("referral.noRecords")}</p>
             )}
           </CardContent>

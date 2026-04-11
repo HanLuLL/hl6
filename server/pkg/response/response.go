@@ -23,6 +23,16 @@ type PaginatedResponse struct {
 	PerPage    int         `json:"per_page"`
 }
 
+type OffsetPaginatedResponse struct {
+	Code       int         `json:"code"`
+	Message    string      `json:"message"`
+	MessageKey string      `json:"message_key,omitempty"`
+	Data       interface{} `json:"data,omitempty"`
+	Total      int64       `json:"total"`
+	Offset     int         `json:"offset"`
+	Limit      int         `json:"limit"`
+}
+
 func OK(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, Response{Code: 0, Message: "ok", Data: data})
 }
@@ -51,5 +61,16 @@ func Paginated(c *gin.Context, data interface{}, total int64, page, perPage int)
 		Total:   total,
 		Page:    page,
 		PerPage: perPage,
+	})
+}
+
+func OffsetPaginated(c *gin.Context, data interface{}, total int64, offset, limit int) {
+	c.JSON(http.StatusOK, OffsetPaginatedResponse{
+		Code:    0,
+		Message: "ok",
+		Data:    data,
+		Total:   total,
+		Offset:  offset,
+		Limit:   limit,
 	})
 }

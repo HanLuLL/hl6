@@ -200,7 +200,7 @@ export const api = {
 
   // Referrals
   getReferrals: (page = 1, perPage = 20) =>
-    request<ReferralInfo>(`/referrals?page=${page}&per_page=${perPage}`),
+    request<ApiResponse<ReferralInfo>>(`/referrals?page=${page}&per_page=${perPage}`),
 
   // Admin
   adminCreateDomain: (data: { name: string; cloudflare_zone_id: string; cloudflare_account_id: number; description: string; group_access: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>

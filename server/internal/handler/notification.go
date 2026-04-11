@@ -53,14 +53,7 @@ func (h *NotificationHandler) List(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    0,
-		"message": "ok",
-		"data":    notifications,
-		"total":   total,
-		"offset":  offset,
-		"limit":   limit,
-	})
+	response.OffsetPaginated(c, notifications, total, offset, limit)
 }
 
 func (h *NotificationHandler) Get(c *gin.Context) {

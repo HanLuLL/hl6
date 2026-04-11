@@ -4,6 +4,9 @@ import (
 	"time"
 
 	"hl6-server/internal/model"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func (r *Repository) ListSubdomainsByUser(userID uint) ([]model.Subdomain, error) {
@@ -25,6 +28,17 @@ func (r *Repository) ListSubdomainsByUserWithRecords(userID uint) ([]model.Subdo
 func (r *Repository) FindSubdomain(id uint) (*model.Subdomain, error) {
 	var sub model.Subdomain
 	err := r.DB.Preload("Domain").Preload("DNSRecords").First(&sub, id).Error
+	return &sub, err
+}
+
+func (r *Repository) LockSubdomainForUpdate(tx *gorm.DB, id uint) (*model.Subdomain, error) {
+	db := r.DB
+	if tx != nil {
+		db = tx
+	}
+
+	var sub model.Subdomain
+	err := db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&sub, id).Error
 	return &sub, err
 }
 

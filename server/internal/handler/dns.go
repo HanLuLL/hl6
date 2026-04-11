@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
@@ -24,6 +25,14 @@ type DNSHandler struct {
 	repo   *repository.Repository
 	broker *SSEBroker
 }
+
+var (
+	errDNSDuplicateRecord        = errors.New("duplicate dns record")
+	errDNSCNAMEConflictWithOther = errors.New("cname conflicts with existing non-cname records")
+	errDNSOtherConflictWithCNAME = errors.New("non-cname conflicts with existing cname record")
+	errDNSCNAMEAlreadyExists     = errors.New("cname already exists")
+	errDNSRecordLimitExceeded    = errors.New("dns record limit exceeded")
+)
 
 func NewDNSHandler(repo *repository.Repository, broker *SSEBroker) *DNSHandler {
 	return &DNSHandler{repo: repo, broker: broker}
@@ -67,62 +76,14 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 		return
 	}
 
-	if body.Type == "CNAME" {
-		hasOther, err := h.repo.HasNonCNAMERecords(sub.ID)
-		if err != nil {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
-			return
-		}
-		if hasOther {
-			response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.cnameConflictWithOther")
-			return
-		}
-		hasCNAME, err := h.repo.HasCNAMERecord(sub.ID)
-		if err != nil {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
-			return
-		}
-		if hasCNAME {
-			response.ErrorWithKey(c, http.StatusConflict, "CNAME record already exists", "error.cnameAlreadyExists")
-			return
-		}
-	} else {
-		hasCNAME, err := h.repo.HasCNAMERecord(sub.ID)
-		if err != nil {
-			response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
-			return
-		}
-		if hasCNAME {
-			response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.otherConflictWithCname")
-			return
-		}
-	}
-
-	dup, err := h.repo.HasDuplicateRecord(sub.ID, body.Type, body.Content)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
-		return
-	}
-	if dup {
-		response.ErrorWithKey(c, http.StatusConflict, "duplicate record", "error.duplicateRecord")
-		return
-	}
-
 	// 检查域名+用户组的 DNS 记录数上限
 	user := ctxutil.GetUser(c)
+	var maxDNSRecords *int
 	if user != nil && user.GroupID != nil {
 		access, err := h.repo.FindDomainGroupAccess(sub.DomainID, *user.GroupID)
 		if err == nil && access.MaxDNSRecords != nil {
-			count, cntErr := h.repo.CountDNSRecordsBySubdomain(sub.ID)
-			if cntErr != nil {
-				response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
-				return
-			}
-			if int(count) >= *access.MaxDNSRecords {
-				response.ErrorWithKey(c, http.StatusUnprocessableEntity,
-					"dns record limit exceeded", "error.dnsRecordLimitExceeded")
-				return
-			}
+			limit := *access.MaxDNSRecords
+			maxDNSRecords = &limit
 		}
 	}
 
@@ -150,6 +111,54 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 	}
 	var task *model.CloudflareTask
 	if err := h.repo.Transaction(func(tx *gorm.DB) error {
+		if _, err := h.repo.LockSubdomainForUpdate(tx, sub.ID); err != nil {
+			return err
+		}
+
+		var cnameCount int64
+		if err := tx.Model(&model.DNSRecord{}).
+			Where("subdomain_id = ? AND type = ?", sub.ID, "CNAME").
+			Count(&cnameCount).Error; err != nil {
+			return err
+		}
+
+		if body.Type == "CNAME" {
+			var otherCount int64
+			if err := tx.Model(&model.DNSRecord{}).
+				Where("subdomain_id = ? AND type <> ?", sub.ID, "CNAME").
+				Count(&otherCount).Error; err != nil {
+				return err
+			}
+			if otherCount > 0 {
+				return errDNSCNAMEConflictWithOther
+			}
+			if cnameCount > 0 {
+				return errDNSCNAMEAlreadyExists
+			}
+		} else if cnameCount > 0 {
+			return errDNSOtherConflictWithCNAME
+		}
+
+		var dupCount int64
+		if err := tx.Model(&model.DNSRecord{}).
+			Where("subdomain_id = ? AND type = ? AND content = ?", sub.ID, body.Type, body.Content).
+			Count(&dupCount).Error; err != nil {
+			return err
+		}
+		if dupCount > 0 {
+			return errDNSDuplicateRecord
+		}
+
+		if maxDNSRecords != nil {
+			var currentCount int64
+			if err := tx.Model(&model.DNSRecord{}).Where("subdomain_id = ?", sub.ID).Count(&currentCount).Error; err != nil {
+				return err
+			}
+			if int(currentCount) >= *maxDNSRecords {
+				return errDNSRecordLimitExceeded
+			}
+		}
+
 		if err := tx.Create(record).Error; err != nil {
 			return err
 		}
@@ -176,6 +185,41 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 		task = queued
 		return h.repo.UpdateDNSRecordSyncState(tx, record.ID, "pending_create", &task.ID, "", nil)
 	}); err != nil {
+		switch {
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			response.ErrorWithKey(c, http.StatusNotFound, "subdomain not found", "error.subdomainNotFound")
+			return
+		case errors.Is(err, errDNSCNAMEConflictWithOther):
+			response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.cnameConflictWithOther")
+			return
+		case errors.Is(err, errDNSCNAMEAlreadyExists):
+			response.ErrorWithKey(c, http.StatusConflict, "CNAME record already exists", "error.cnameAlreadyExists")
+			return
+		case errors.Is(err, errDNSOtherConflictWithCNAME):
+			response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.otherConflictWithCname")
+			return
+		case errors.Is(err, errDNSDuplicateRecord):
+			response.ErrorWithKey(c, http.StatusConflict, "duplicate record", "error.duplicateRecord")
+			return
+		case errors.Is(err, errDNSRecordLimitExceeded):
+			response.ErrorWithKey(c, http.StatusUnprocessableEntity, "dns record limit exceeded", "error.dnsRecordLimitExceeded")
+			return
+		}
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			if strings.EqualFold(pgErr.ConstraintName, "idx_dns_records_subdomain_cname_unique") {
+				if body.Type == "CNAME" {
+					response.ErrorWithKey(c, http.StatusConflict, "CNAME record already exists", "error.cnameAlreadyExists")
+				} else {
+					response.ErrorWithKey(c, http.StatusConflict, "CNAME record cannot coexist with other records", "error.otherConflictWithCname")
+				}
+				return
+			}
+			response.ErrorWithKey(c, http.StatusConflict, "duplicate record", "error.duplicateRecord")
+			return
+		}
+
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to save record", "error.failedToSaveRecord")
 		return
 	}
@@ -290,6 +334,11 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 		task = queued
 		return h.repo.UpdateDNSRecordSyncState(tx, record.ID, "pending_update", &task.ID, "", nil)
 	}); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			response.ErrorWithKey(c, http.StatusConflict, "duplicate record", "error.duplicateRecord")
+			return
+		}
 		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
 		return
 	}

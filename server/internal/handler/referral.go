@@ -59,12 +59,10 @@ func (h *ReferralHandler) GetReferralInfo(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":             0,
-		"message":          "ok",
+	response.OK(c, gin.H{
 		"referral_code":    user.ReferralCode,
 		"referral_enabled": referralEnabled,
-		"data":             items,
+		"records":          items,
 		"total":            total,
 		"page":             page,
 		"per_page":         perPage,

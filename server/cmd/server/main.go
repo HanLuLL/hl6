@@ -65,6 +65,8 @@ func main() {
 		log.Fatal("failed to migrate:", err)
 	}
 
+	ensureDNSRecordConstraints(db)
+
 	if err := verifyRequiredTables(db, []interface{}{
 		&model.User{},
 		&model.UserGroup{},
@@ -169,6 +171,18 @@ func verifyRequiredTables(db *gorm.DB, tables []interface{}) error {
 		}
 	}
 	return nil
+}
+
+func ensureDNSRecordConstraints(db *gorm.DB) {
+	statements := []string{
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_dns_records_subdomain_type_content_unique ON dns_records (subdomain_id, type, content)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_dns_records_subdomain_cname_unique ON dns_records (subdomain_id) WHERE type = 'CNAME'`,
+	}
+	for _, stmt := range statements {
+		if err := db.Exec(stmt).Error; err != nil {
+			log.Printf("warning: failed to ensure dns record constraint (%s): %v", stmt, err)
+		}
+	}
 }
 
 func seedDefaults(db *gorm.DB) {

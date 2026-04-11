@@ -187,11 +187,9 @@ export interface ReferralRecord {
 }
 
 export interface ReferralInfo {
-  code: number;
-  message: string;
   referral_code: string;
   referral_enabled: boolean;
-  data: ReferralRecord[];
+  records: ReferralRecord[];
   total: number;
   page: number;
   per_page: number;

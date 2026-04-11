@@ -6,7 +6,7 @@ export function useReferrals(page = 1, perPage = 20) {
     queryKey: ["referrals", page, perPage],
     queryFn: async () => {
       const res = await api.getReferrals(page, perPage);
-      return res;
+      return res.data;
     },
     staleTime: 30_000,
   });

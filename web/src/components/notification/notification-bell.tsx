@@ -1,17 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { useUnreadStatus } from "@/hooks/use-notifications";
-import { useNotificationSSE } from "@/hooks/use-sse";
-import { useAuth } from "@/hooks/use-auth";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { NotificationList } from "./notification-list";
 
 export function NotificationBell() {
   const { t } = useTranslation();
-  const { isAuthenticated } = useAuth();
   const { data: hasUnread } = useUnreadStatus();
-
-  useNotificationSSE(isAuthenticated);
 
   return (
     <Popover>

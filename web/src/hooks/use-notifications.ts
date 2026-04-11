@@ -17,6 +17,7 @@ export function useNotifications() {
     },
     initialPageParam: 0,
     staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 }
 
