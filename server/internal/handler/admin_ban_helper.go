@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"hl6-server/internal/model"
@@ -21,22 +20,23 @@ type adminBanExecutionResult struct {
 }
 
 func executeAdminBanUserWithCleanup(
+	ctx context.Context,
 	repo *repository.Repository,
 	ops *service.DNSOperationService,
 	adminID uint,
 	target *model.User,
 	reason string,
-) (adminBanExecutionResult, []cfFailureRecord, error) {
+) (adminBanExecutionResult, []cfFailureRecord, *uint, error) {
 	result := adminBanExecutionResult{}
 	if target == nil {
-		return result, nil, gorm.ErrRecordNotFound
+		return result, nil, nil, gorm.ErrRecordNotFound
 	}
 
 	result.TargetRole = target.Role
 
 	subdomains, err := repo.ListSubdomainsByUserWithRecords(target.ID)
 	if err != nil {
-		return result, nil, err
+		return result, nil, nil, err
 	}
 
 	type deleteCandidate struct {
@@ -74,7 +74,7 @@ func executeAdminBanUserWithCleanup(
 	}
 
 	if len(failures) > 0 {
-		return result, failures, nil
+		return result, failures, nil, nil
 	}
 
 	batchItems := make([]service.BatchDeleteItem, 0, len(candidates))
@@ -89,10 +89,19 @@ func executeAdminBanUserWithCleanup(
 			RecordType:        item.rec.Type,
 			Name:              item.rec.Name,
 			Content:           item.rec.Content,
+			TTL:               item.rec.TTL,
+			Proxied:           item.rec.Proxied,
 		})
 	}
 
-	deleteResult := ops.DeleteRecordsBatch(context.Background(), batchItems, 3)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	deleteResult := ops.DeleteRecordsBatch(ctx, batchItems, 3)
+	if deleteResult.Async {
+		jobID := deleteResult.JobID
+		return result, nil, &jobID, nil
+	}
 	if deleteResult.Failed > 0 {
 		for _, f := range deleteResult.Failures {
 			failures = append(failures, cfFailureRecord{
@@ -104,7 +113,7 @@ func executeAdminBanUserWithCleanup(
 			})
 		}
 		result.DeletedDNSCount = deleteResult.Succeeded
-		return result, failures, nil
+		return result, failures, nil, nil
 	}
 
 	subdomainIDs := make([]uint, 0, len(subdomains))
@@ -157,18 +166,11 @@ func executeAdminBanUserWithCleanup(
 		}
 		return nil
 	}); err != nil {
-		return result, nil, err
+		return result, nil, nil, err
 	}
 
 	result.TargetRole = targetRole
 	result.SubdomainsDeleted = len(subdomainIDs)
 	result.DeletedDNSCount = deleteResult.Succeeded
-	return result, nil, nil
-}
-
-func composeBatchScope(prefix string, ids []uint) string {
-	if len(ids) == 0 {
-		return prefix + ":none"
-	}
-	return fmt.Sprintf("%s:first:%d:last:%d:count:%d", prefix, ids[0], ids[len(ids)-1], len(ids))
+	return result, nil, nil, nil
 }

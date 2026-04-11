@@ -19,7 +19,8 @@ import (
 
 const internalSessionSecretKey = "_internal_session_secret"
 const (
-	referralCodeBackfillMaxRetries = 20
+	referralCodeBackfillMaxRetries       = 20
+	migrationAdvisoryLockKey       int64 = 19490333
 )
 
 func main() {
@@ -32,52 +33,8 @@ func main() {
 		log.Fatal("failed to connect database:", err)
 	}
 
-	preMigrateDNSLegacyObjects(db)
-
-	// Rename logto_id column to external_id (idempotent)
-	var colExists bool
-	db.Raw("SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'logto_id')").Scan(&colExists)
-	if colExists {
-		if err := db.Exec("ALTER TABLE users RENAME COLUMN logto_id TO external_id").Error; err != nil {
-			log.Fatal("failed to rename logto_id column:", err)
-		}
-		log.Println("Renamed column users.logto_id → external_id")
-	}
-
-	if err := db.AutoMigrate(
-		&model.User{},
-		&model.UserGroup{},
-		&model.DNSProviderAccount{},
-		&model.Domain{},
-		&model.DomainGroupAccess{},
-		&model.Subdomain{},
-		&model.DNSRecord{},
-		&model.DNSOperationRequest{},
-		&model.DNSOperationEvent{},
-		&model.CreditBalance{},
-		&model.CreditTransaction{},
-		&model.DailyCheckinClaim{},
-		&model.AuditLog{},
-		&model.SystemConfig{},
-		&model.Notification{},
-		&model.NotificationRead{},
-		&model.NotificationImage{},
-		&model.BrandingAsset{},
-		&model.UserReferral{},
-	); err != nil {
+	if err := runSchemaMigrations(db); err != nil {
 		log.Fatal("failed to migrate:", err)
-	}
-	migrateDNSProviderFields(db)
-	cleanupLegacyDNSSyncSchema(db)
-
-	ensureDNSRecordConstraints(db)
-
-	if err := verifyRequiredTables(db, []interface{}{
-		&model.User{},
-		&model.UserGroup{},
-		&model.SystemConfig{},
-	}); err != nil {
-		log.Fatal("database schema verification failed:", err)
 	}
 
 	log.Println("Database migrated successfully")
@@ -178,58 +135,159 @@ func verifyRequiredTables(db *gorm.DB, tables []interface{}) error {
 	return nil
 }
 
-func ensureDNSRecordConstraints(db *gorm.DB) {
+func runSchemaMigrations(db *gorm.DB) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", migrationAdvisoryLockKey).Error; err != nil {
+			return fmt.Errorf("acquire migration advisory lock: %w", err)
+		}
+
+		if err := preMigrateDNSLegacyObjects(tx); err != nil {
+			return err
+		}
+
+		// Rename logto_id column to external_id (idempotent)
+		var colExists bool
+		if err := tx.Raw("SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'logto_id')").Scan(&colExists).Error; err != nil {
+			return err
+		}
+		if colExists {
+			if err := tx.Exec("ALTER TABLE users RENAME COLUMN logto_id TO external_id").Error; err != nil {
+				return fmt.Errorf("rename logto_id column: %w", err)
+			}
+			log.Println("Renamed column users.logto_id → external_id")
+		}
+
+		if err := tx.AutoMigrate(
+			&model.User{},
+			&model.UserGroup{},
+			&model.DNSProviderAccount{},
+			&model.Domain{},
+			&model.DomainGroupAccess{},
+			&model.Subdomain{},
+			&model.DNSRecord{},
+			&model.DNSOperationRequest{},
+			&model.DNSOperationEvent{},
+			&model.DNSBulkJob{},
+			&model.DNSBulkJobItem{},
+			&model.CreditBalance{},
+			&model.CreditTransaction{},
+			&model.DailyCheckinClaim{},
+			&model.AuditLog{},
+			&model.SystemConfig{},
+			&model.Notification{},
+			&model.NotificationRead{},
+			&model.NotificationImage{},
+			&model.BrandingAsset{},
+			&model.UserReferral{},
+		); err != nil {
+			return err
+		}
+		if err := migrateDNSProviderFields(tx); err != nil {
+			return err
+		}
+		if err := cleanupLegacyDNSSyncSchema(tx); err != nil {
+			return err
+		}
+		if err := ensureDNSRecordConstraints(tx); err != nil {
+			return err
+		}
+
+		if err := verifyRequiredTables(tx, []interface{}{
+			&model.User{},
+			&model.UserGroup{},
+			&model.SystemConfig{},
+		}); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func ensureDNSRecordConstraints(db *gorm.DB) error {
 	statements := []string{
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_dns_records_subdomain_type_content_unique ON dns_records (subdomain_id, type, content)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_dns_records_subdomain_cname_unique ON dns_records (subdomain_id) WHERE type = 'CNAME'`,
 	}
 	for _, stmt := range statements {
 		if err := db.Exec(stmt).Error; err != nil {
-			log.Printf("warning: failed to ensure dns record constraint (%s): %v", stmt, err)
+			return fmt.Errorf("ensure dns record constraint (%s): %w", stmt, err)
 		}
 	}
+	return nil
 }
 
-func preMigrateDNSLegacyObjects(db *gorm.DB) {
-	statements := []string{
-		`ALTER TABLE IF EXISTS cloudflare_accounts RENAME TO dns_provider_accounts`,
-		`ALTER TABLE IF EXISTS dns_records RENAME COLUMN cloudflare_record_id TO provider_record_id`,
+func preMigrateDNSLegacyObjects(db *gorm.DB) error {
+	if err := renameTableIfExists(db, "cloudflare_accounts", "dns_provider_accounts"); err != nil {
+		return err
 	}
-	for _, stmt := range statements {
-		if err := db.Exec(stmt).Error; err != nil {
-			log.Printf("warning: pre-migrate dns legacy object failed (%s): %v", stmt, err)
-		}
+	if err := renameColumnIfExists(db, "dns_records", "cloudflare_record_id", "provider_record_id"); err != nil {
+		return err
 	}
+	if err := renameColumnIfExists(db, "domains", "cloudflare_zone_id", "provider_zone_id"); err != nil {
+		return err
+	}
+	if err := renameColumnIfExists(db, "domains", "cloudflare_account_id", "provider_account_id"); err != nil {
+		return err
+	}
+	return nil
 }
 
-func migrateDNSProviderFields(db *gorm.DB) {
+func migrateDNSProviderFields(db *gorm.DB) error {
 	statements := []string{
 		`ALTER TABLE IF EXISTS domains ADD COLUMN IF NOT EXISTS provider varchar(32)`,
 		`UPDATE domains SET provider = 'cloudflare' WHERE provider IS NULL OR provider = ''`,
 		`ALTER TABLE IF EXISTS dns_provider_accounts ADD COLUMN IF NOT EXISTS provider varchar(32)`,
 		`ALTER TABLE IF EXISTS dns_provider_accounts ADD COLUMN IF NOT EXISTS credentials text`,
 		`UPDATE dns_provider_accounts SET provider = 'cloudflare' WHERE provider IS NULL OR provider = ''`,
-		`UPDATE dns_provider_accounts SET credentials = api_token WHERE (credentials IS NULL OR credentials = '') AND api_token IS NOT NULL`,
 	}
 	for _, stmt := range statements {
 		if err := db.Exec(stmt).Error; err != nil {
-			log.Printf("warning: failed to migrate dns provider fields (%s): %v", stmt, err)
+			return fmt.Errorf("migrate dns provider fields (%s): %w", stmt, err)
 		}
 	}
+	if db.Migrator().HasTable("dns_provider_accounts") && db.Migrator().HasColumn("dns_provider_accounts", "api_token") {
+		stmt := `UPDATE dns_provider_accounts SET credentials = api_token WHERE (credentials IS NULL OR credentials = '') AND api_token IS NOT NULL`
+		if err := db.Exec(stmt).Error; err != nil {
+			return fmt.Errorf("migrate dns provider credentials from legacy api_token (%s): %w", stmt, err)
+		}
+	}
+	return nil
 }
 
-func cleanupLegacyDNSSyncSchema(db *gorm.DB) {
+func cleanupLegacyDNSSyncSchema(db *gorm.DB) error {
 	statements := []string{
 		`ALTER TABLE IF EXISTS dns_records DROP COLUMN IF EXISTS sync_status`,
 		`ALTER TABLE IF EXISTS dns_records DROP COLUMN IF EXISTS sync_operation_id`,
 		`ALTER TABLE IF EXISTS dns_records DROP COLUMN IF EXISTS sync_error`,
+		`ALTER TABLE IF EXISTS dns_provider_accounts DROP COLUMN IF EXISTS api_token`,
 		`DROP TABLE IF EXISTS cloudflare_tasks`,
 	}
 	for _, stmt := range statements {
 		if err := db.Exec(stmt).Error; err != nil {
-			log.Printf("warning: failed to cleanup legacy dns sync schema (%s): %v", stmt, err)
+			return fmt.Errorf("cleanup legacy dns sync schema (%s): %w", stmt, err)
 		}
 	}
+	return nil
+}
+
+func renameTableIfExists(db *gorm.DB, oldName, newName string) error {
+	if !db.Migrator().HasTable(oldName) || db.Migrator().HasTable(newName) {
+		return nil
+	}
+	if err := db.Migrator().RenameTable(oldName, newName); err != nil {
+		return fmt.Errorf("rename table %s -> %s: %w", oldName, newName, err)
+	}
+	return nil
+}
+
+func renameColumnIfExists(db *gorm.DB, table, oldName, newName string) error {
+	if !db.Migrator().HasTable(table) || !db.Migrator().HasColumn(table, oldName) || db.Migrator().HasColumn(table, newName) {
+		return nil
+	}
+	if err := db.Migrator().RenameColumn(table, oldName, newName); err != nil {
+		return fmt.Errorf("rename column %s.%s -> %s: %w", table, oldName, newName, err)
+	}
+	return nil
 }
 
 func seedDefaults(db *gorm.DB) {

@@ -23,6 +23,8 @@ import type {
   UserWithInviter,
   AdminDNSRecord,
   AdminClaimedSubdomain,
+  DNSBulkJob,
+  DNSBulkJobItem,
   ReservedSubdomainPrefixSettings,
   SubdomainLengthSettings,
   AdminConfigPayload,
@@ -291,8 +293,8 @@ export const api = {
     request<ApiResponse<{ domain: Domain; group_access: DomainGroupAccess[] }>>("/admin/domains", { method: "POST", body: JSON.stringify(data) }),
   adminUpdateDomain: (id: number, data: { provider_zone_id?: string; provider_account_id?: number; is_active?: boolean; description?: string; group_access?: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
     request<ApiResponse<{ domain: Domain; group_access: DomainGroupAccess[] }>>(`/admin/domains/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-  adminDeleteDomain: (id: number, options?: { force?: boolean; refund?: boolean; idempotencyKey?: string; timeoutMs?: number }) =>
-    request<ApiResponse<{ message: string }>>(`/admin/domains/${id}?force=${options?.force ?? false}&refund=${options?.refund ?? false}`, {
+  adminDeleteDomain: (id: number, options?: { refund?: boolean; idempotencyKey?: string; timeoutMs?: number }) =>
+    request<ApiResponse<{ message: string }>>(`/admin/domains/${id}?refund=${options?.refund ?? false}`, {
       method: "DELETE",
       idempotencyKey: options?.idempotencyKey,
       timeoutMs: options?.timeoutMs,
@@ -384,6 +386,13 @@ export const api = {
       idempotencyKey: opts?.idempotencyKey,
       timeoutMs: opts?.timeoutMs,
     }),
+  adminGetDNSBulkJob: (id: number) =>
+    request<ApiResponse<DNSBulkJob>>(`/admin/dns-bulk-jobs/${id}`),
+  adminListDNSBulkJobItems: (id: number, page = 1, perPage = 20, status = "") => {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    if (status) params.set("status", status);
+    return request<PaginatedResponse<DNSBulkJobItem[]>>(`/admin/dns-bulk-jobs/${id}/items?${params.toString()}`);
+  },
   adminListClaimedSubdomains: (page = 1, perPage = 20, search = "") => {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
     if (search) params.set("search", search);

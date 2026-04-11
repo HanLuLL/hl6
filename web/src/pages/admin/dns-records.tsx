@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, getErrorMessage } from "@/lib/api";
+import { ApiError, api, createIdempotencyKey, getErrorMessage, isRetryableMutationError } from "@/lib/api";
 import { toast } from "sonner";
 import { Copy } from "lucide-react";
 import { CopyableEmail } from "@/components/ui/copyable-email";
@@ -54,6 +54,7 @@ export function DNSRecordsContent() {
   const [sendNotify, setSendNotify] = useState(false);
   const [banUser, setBanUser] = useState(true);
   const [reason, setReason] = useState("");
+  const [isDeleteRetrying, setIsDeleteRetrying] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -95,8 +96,20 @@ export function DNSRecordsContent() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id, notify, banUser, reason }: { id: number; notify: boolean; banUser: boolean; reason?: string }) =>
-      api.adminDeleteDNSRecord(id, { notify, reason, ban_user: banUser }),
+    mutationFn: async ({ id, notify, banUser, reason }: { id: number; notify: boolean; banUser: boolean; reason?: string }) => {
+      const idempotencyKey = createIdempotencyKey();
+      try {
+        return await api.adminDeleteDNSRecord(id, { notify, reason, ban_user: banUser }, { idempotencyKey, timeoutMs: 3000 });
+      } catch (err) {
+        if (!isRetryableMutationError(err)) {
+          throw err;
+        }
+        setIsDeleteRetrying(true);
+        return api.adminDeleteDNSRecord(id, { notify, reason, ban_user: banUser }, { idempotencyKey, timeoutMs: 3000 });
+      } finally {
+        setIsDeleteRetrying(false);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-dns-records"] });
       toast.success(t("adminDnsRecords.recordDeleted"));
@@ -106,7 +119,14 @@ export function DNSRecordsContent() {
       setBanUser(true);
       setReason("");
     },
-    onError: (err) => toast.error(getErrorMessage(err, t)),
+    onError: (err) => {
+      if (err instanceof ApiError && err.data && typeof err.data === "object" && "bulk_job_id" in err.data) {
+        const jobID = (err.data as { bulk_job_id: number }).bulk_job_id;
+        toast.error(`DNS 批量任务已排队（Job #${jobID}），请等待完成后重试操作`);
+        return;
+      }
+      toast.error(getErrorMessage(err, t));
+    },
   });
 
   const records = data?.records ?? [];
@@ -393,12 +413,12 @@ export function DNSRecordsContent() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setDeleteRecord(null); setSendNotify(false); setBanUser(true); setReason(""); }} disabled={deleteMutation.isPending}>
+            <Button variant="outline" onClick={() => { setDeleteRecord(null); setSendNotify(false); setBanUser(true); setReason(""); }} disabled={deleteMutation.isPending || isDeleteRetrying}>
               {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
-              disabled={deleteMutation.isPending || (banUser && reason.trim() === "")}
+              disabled={deleteMutation.isPending || isDeleteRetrying || (banUser && reason.trim() === "")}
               onClick={() => deleteRecord && deleteMutation.mutate({
                 id: deleteRecord.id,
                 notify: sendNotify,
@@ -407,7 +427,7 @@ export function DNSRecordsContent() {
               })}
               data-dialog-primary="true"
             >
-              {deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
+              {isDeleteRetrying ? `${t("common.retry")}...` : deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, getErrorMessage } from "@/lib/api";
+import { ApiError, api, createIdempotencyKey, getErrorMessage, isRetryableMutationError } from "@/lib/api";
 import type { AdminClaimedSubdomain } from "@/types";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +38,7 @@ export function ClaimedSubdomainsContent() {
   const [releaseTarget, setReleaseTarget] = useState<AdminClaimedSubdomain | null>(null);
   const [sendNotify, setSendNotify] = useState(false);
   const [reason, setReason] = useState("");
+  const [isReleaseRetrying, setIsReleaseRetrying] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -60,8 +61,20 @@ export function ClaimedSubdomainsContent() {
   });
 
   const releaseMutation = useMutation({
-    mutationFn: ({ id, notify, reason }: { id: number; notify: boolean; reason?: string }) =>
-      api.adminReleaseClaimedSubdomain(id, { notify, reason }),
+    mutationFn: async ({ id, notify, reason }: { id: number; notify: boolean; reason?: string }) => {
+      const idempotencyKey = createIdempotencyKey();
+      try {
+        return await api.adminReleaseClaimedSubdomain(id, { notify, reason }, { idempotencyKey, timeoutMs: 3000 });
+      } catch (err) {
+        if (!isRetryableMutationError(err)) {
+          throw err;
+        }
+        setIsReleaseRetrying(true);
+        return api.adminReleaseClaimedSubdomain(id, { notify, reason }, { idempotencyKey, timeoutMs: 3000 });
+      } finally {
+        setIsReleaseRetrying(false);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-claimed-subdomains"] });
       queryClient.invalidateQueries({ queryKey: ["admin-dns-records"] });
@@ -72,6 +85,11 @@ export function ClaimedSubdomainsContent() {
       setReason("");
     },
     onError: (err) => {
+      if (err instanceof ApiError && err.data && typeof err.data === "object" && "bulk_job_id" in err.data) {
+        const jobID = (err.data as { bulk_job_id: number }).bulk_job_id;
+        toast.error(`DNS 批量任务已排队（Job #${jobID}），请等待完成后重试释放`);
+        return;
+      }
       toast.error(getErrorMessage(err, t));
     },
   });
@@ -236,13 +254,13 @@ export function ClaimedSubdomainsContent() {
                 setSendNotify(false);
                 setReason("");
               }}
-              disabled={releaseMutation.isPending}
+              disabled={releaseMutation.isPending || isReleaseRetrying}
             >
               {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
-              disabled={releaseMutation.isPending}
+              disabled={releaseMutation.isPending || isReleaseRetrying}
               onClick={() => releaseTarget && releaseMutation.mutate({
                 id: releaseTarget.id,
                 notify: sendNotify,
@@ -250,7 +268,7 @@ export function ClaimedSubdomainsContent() {
               })}
               data-dialog-primary="true"
             >
-              {releaseMutation.isPending ? t("common.deleting") : t("adminDomains.releaseClaimed")}
+              {isReleaseRetrying ? `${t("common.retry")}...` : releaseMutation.isPending ? t("common.deleting") : t("adminDomains.releaseClaimed")}
             </Button>
           </DialogFooter>
         </DialogContent>

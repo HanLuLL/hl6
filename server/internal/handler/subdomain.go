@@ -230,9 +230,19 @@ func (h *SubdomainHandler) Release(c *gin.Context) {
 				RecordType:        record.Type,
 				Name:              record.Name,
 				Content:           record.Content,
+				TTL:               record.TTL,
+				Proxied:           record.Proxied,
 			})
 		}
 		deleteResult := h.ops.DeleteRecordsBatch(ctx, items, 3)
+		if deleteResult.Async {
+			return service.OperationResult{
+				HTTPStatus: http.StatusConflict,
+				Message:    "dns bulk delete queued, retry release after job succeeds",
+				MessageKey: "error.cloudflareOperationInProgress",
+				Data:       gin.H{"bulk_job_id": deleteResult.JobID, "bulk_async": true},
+			}, nil
+		}
 		if deleteResult.Failed > 0 {
 			failures := make([]cfFailureRecord, 0, len(deleteResult.Failures))
 			for _, f := range deleteResult.Failures {
@@ -342,9 +352,19 @@ func (h *SubdomainHandler) AdminRelease(c *gin.Context) {
 				RecordType:        record.Type,
 				Name:              record.Name,
 				Content:           record.Content,
+				TTL:               record.TTL,
+				Proxied:           record.Proxied,
 			})
 		}
 		deleteResult := h.ops.DeleteRecordsBatch(ctx, items, 3)
+		if deleteResult.Async {
+			return service.OperationResult{
+				HTTPStatus: http.StatusConflict,
+				Message:    "dns bulk delete queued, retry release after job succeeds",
+				MessageKey: "error.cloudflareOperationInProgress",
+				Data:       gin.H{"bulk_job_id": deleteResult.JobID, "bulk_async": true},
+			}, nil
+		}
 		if deleteResult.Failed > 0 {
 			failures := make([]cfFailureRecord, 0, len(deleteResult.Failures))
 			for _, f := range deleteResult.Failures {

@@ -28,6 +28,6 @@ func (r *Repository) DeleteDNSProviderAccount(id uint) error {
 
 func (r *Repository) CountDomainsByAccount(accountID uint) (int64, error) {
 	var count int64
-	err := r.DB.Model(&model.Domain{}).Where("cloudflare_account_id = ?", accountID).Count(&count).Error
+	err := r.DB.Model(&model.Domain{}).Where("provider_account_id = ?", accountID).Count(&count).Error
 	return count, err
 }

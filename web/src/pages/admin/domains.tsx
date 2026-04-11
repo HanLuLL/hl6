@@ -41,14 +41,14 @@ import {
 } from "@/components/ui/command";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, getErrorMessage, ApiError } from "@/lib/api";
+import { api, getErrorMessage, ApiError, createIdempotencyKey, isRetryableMutationError } from "@/lib/api";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown, Plus, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DNSProviderZone, DNSProviderAccount, DomainWithGroupAccess, UserGroup } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DNSRecordsContent } from "./dns-records";
-import { DNSProviderAccountsContent } from "./cloudflare-accounts";
+import { DNSProviderAccountsContent } from "./dns-provider-accounts";
 import { ClaimedSubdomainsContent } from "./claimed-subdomains";
 
 interface GroupAccessEntry {
@@ -158,6 +158,7 @@ function DomainsContent() {
   const [refundCredits, setRefundCredits] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
   const [cfFailures, setCfFailures] = useState<DNSFailureRecord[] | null>(null);
+  const [isDeleteRetrying, setIsDeleteRetrying] = useState(false);
 
   const { data: cfAccounts } = useQuery({
     queryKey: ["admin-dns-provider-accounts"],
@@ -195,8 +196,20 @@ function DomainsContent() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id, force, refund }: { id: number; force: boolean; refund: boolean }) =>
-      api.adminDeleteDomain(id, { force, refund }),
+    mutationFn: async ({ id, refund }: { id: number; refund: boolean }) => {
+      const idempotencyKey = createIdempotencyKey();
+      try {
+        return await api.adminDeleteDomain(id, { refund, idempotencyKey, timeoutMs: 3000 });
+      } catch (err) {
+        if (!isRetryableMutationError(err)) {
+          throw err;
+        }
+        setIsDeleteRetrying(true);
+        return api.adminDeleteDomain(id, { refund, idempotencyKey, timeoutMs: 3000 });
+      } finally {
+        setIsDeleteRetrying(false);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-domains"] });
       toast.success(t("adminDomains.domainDeleted"));
@@ -208,6 +221,9 @@ function DomainsContent() {
     onError: (err) => {
       if (err instanceof ApiError && err.data && typeof err.data === "object" && "failed_records" in err.data) {
         setCfFailures((err.data as { failed_records: DNSFailureRecord[] }).failed_records);
+      } else if (err instanceof ApiError && err.data && typeof err.data === "object" && "bulk_job_id" in err.data) {
+        const jobID = (err.data as { bulk_job_id: number }).bulk_job_id;
+        toast.error(`DNS 批量任务已排队（Job #${jobID}），请等待完成后重试删除`);
       } else {
         toast.error(getErrorMessage(err, t));
       }
@@ -572,16 +588,16 @@ function DomainsContent() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setDeleteDomain(null); setDeleteInput(""); setRefundCredits(false); }} disabled={deleteMutation.isPending}>
+            <Button variant="outline" onClick={() => { setDeleteDomain(null); setDeleteInput(""); setRefundCredits(false); }} disabled={deleteMutation.isPending || isDeleteRetrying}>
               {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
-              disabled={deleteInput !== deleteDomain?.name || deleteMutation.isPending}
-              onClick={() => deleteDomain && deleteMutation.mutate({ id: deleteDomain.id, force: false, refund: refundCredits })}
+              disabled={deleteInput !== deleteDomain?.name || deleteMutation.isPending || isDeleteRetrying}
+              onClick={() => deleteDomain && deleteMutation.mutate({ id: deleteDomain.id, refund: refundCredits })}
               data-dialog-primary="true"
             >
-              {deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
+              {isDeleteRetrying ? `${t("common.retry")}...` : deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -619,14 +635,6 @@ function DomainsContent() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCfFailures(null)}>
               {t("common.cancel")}
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={deleteMutation.isPending}
-              onClick={() => deleteDomain && deleteMutation.mutate({ id: deleteDomain.id, force: true, refund: refundCredits })}
-              data-dialog-primary="true"
-            >
-              {deleteMutation.isPending ? t("common.deleting") : t("adminDomains.forceDelete")}
             </Button>
           </DialogFooter>
         </DialogContent>

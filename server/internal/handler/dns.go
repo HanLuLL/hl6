@@ -464,7 +464,16 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 			}
 			var failures []cfFailureRecord
 			var banErr error
-			banResult, failures, banErr = executeAdminBanUserWithCleanup(h.repo, h.ops, admin.ID, target, reason)
+			var asyncJobID *uint
+			banResult, failures, asyncJobID, banErr = executeAdminBanUserWithCleanup(ctx, h.repo, h.ops, admin.ID, target, reason)
+			if asyncJobID != nil {
+				return service.OperationResult{
+					HTTPStatus: http.StatusConflict,
+					Message:    "dns bulk delete queued, retry ban after job succeeds",
+					MessageKey: "error.cloudflareOperationInProgress",
+					Data:       gin.H{"bulk_job_id": *asyncJobID, "bulk_async": true},
+				}, nil
+			}
 			if len(failures) > 0 {
 				return service.OperationResult{
 					HTTPStatus: http.StatusConflict,
@@ -555,6 +564,34 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 		return service.OperationResult{HTTPStatus: http.StatusOK, Message: "ok", Data: data}, nil
 	})
 	writeOperationResult(c, result)
+}
+
+func (h *DNSHandler) AdminGetBulkJob(c *gin.Context) {
+	jobID, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	job, err := h.repo.FindDNSBulkJob(jobID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusNotFound, "bulk job not found", "error.recordNotFound")
+		return
+	}
+	response.OK(c, job)
+}
+
+func (h *DNSHandler) AdminListBulkJobItems(c *gin.Context) {
+	jobID, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	page, perPage := helpers.ParsePageParams(c, 20, 200)
+	status := strings.TrimSpace(c.Query("status"))
+	items, total, err := h.repo.ListDNSBulkJobItems(jobID, page, perPage, status)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list bulk job items", "error.failedToListRecords")
+		return
+	}
+	response.Paginated(c, items, total, page, perPage)
 }
 
 func normalizeDNSRecordTTL(provider string, requestedTTL int, currentTTL int) int {

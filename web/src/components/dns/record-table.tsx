@@ -117,6 +117,7 @@ export function RecordTable({ subdomainId, records }: RecordTableProps) {
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title={t("recordTable.deleteTitle")}
         description={t("recordTable.deleteDesc", { type: deleteTarget?.type, content: deleteTarget?.content })}
+        confirmText={deleteRecord.isRetrying ? `${t("common.retry")}...` : t("common.confirm")}
         onConfirm={handleDelete}
         destructive
         loading={deleteRecord.isPending || deleteRecord.isRetrying}

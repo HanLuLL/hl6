@@ -32,7 +32,7 @@ function providerLabel(provider: string): string {
   return providerOptions.find((p) => p.value === provider)?.label ?? provider;
 }
 
-export default function AdminCloudflareAccountsPage() {
+export default function AdminDNSProviderAccountsPage() {
   return <DNSProviderAccountsContent />;
 }
 

@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -23,6 +24,7 @@ type Config struct {
 	FrontendURLEnvSet bool
 	AllowedOrigins    []string
 	EncryptionKey     []byte
+	DNSBatchThreshold int
 }
 
 func Load() *Config {
@@ -63,6 +65,7 @@ func Load() *Config {
 		BackendURLEnvSet:  len(backendURLs) > 0,
 		FrontendURLEnvSet: len(frontendURLs) > 0,
 		AllowedOrigins:    parseList(getEnv("ALLOWED_ORIGINS", "")),
+		DNSBatchThreshold: getEnvInt("DNS_BATCH_ASYNC_THRESHOLD", getEnvInt("DNS_BATCH_THRESHOLD", 200)),
 	}
 
 	if keyHex := getEnv("ENCRYPTION_KEY", ""); keyHex != "" {
@@ -112,4 +115,17 @@ func firstOrEmpty(values []string) string {
 		return ""
 	}
 	return values[0]
+}
+
+func getEnvInt(key string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil {
+		log.Printf("invalid %s=%q, fallback to %d", key, raw, fallback)
+		return fallback
+	}
+	return v
 }

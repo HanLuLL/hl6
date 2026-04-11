@@ -140,6 +140,43 @@ export interface DNSProviderAccount {
   updated_at: string;
 }
 
+export interface DNSBulkJob {
+  id: number;
+  scope: string;
+  status: "pending" | "running" | "succeeded" | "failed";
+  total_items: number;
+  succeeded_items: number;
+  failed_items: number;
+  max_attempts: number;
+  message: string;
+  started_at?: string;
+  finished_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DNSBulkJobItem {
+  id: number;
+  job_id: number;
+  record_id: number;
+  subdomain_fqdn: string;
+  provider: string;
+  provider_account_id: number;
+  zone_id: string;
+  provider_record_id: string;
+  record_type: string;
+  name: string;
+  content: string;
+  ttl: number;
+  proxied: boolean;
+  attempts: number;
+  status: "pending" | "running" | "succeeded" | "failed";
+  last_error: string;
+  finished_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DomainGroupAccess {
   id: number;
   domain_id: number;

@@ -54,8 +54,8 @@ type Domain struct {
 	ID                uint      `json:"id" gorm:"primaryKey"`
 	Name              string    `json:"name" gorm:"uniqueIndex;not null"`
 	Provider          string    `json:"provider" gorm:"type:varchar(32);not null;default:cloudflare;index"`
-	ProviderZoneID    string    `json:"provider_zone_id" gorm:"column:cloudflare_zone_id;not null"`
-	ProviderAccountID uint      `json:"provider_account_id" gorm:"column:cloudflare_account_id;not null;default:0"`
+	ProviderZoneID    string    `json:"provider_zone_id" gorm:"not null"`
+	ProviderAccountID uint      `json:"provider_account_id" gorm:"not null;default:0"`
 	CreditCost        Credit    `json:"credit_cost" gorm:"type:bigint;default:10"`
 	IsActive          bool      `json:"is_active" gorm:"default:true"`
 	Description       string    `json:"description"`
@@ -128,13 +128,12 @@ type AuditLog struct {
 }
 
 type DNSProviderAccount struct {
-	ID             uint      `json:"id" gorm:"primaryKey"`
-	Provider       string    `json:"provider" gorm:"type:varchar(32);not null;default:cloudflare;index"`
-	Name           string    `json:"name" gorm:"not null"`
-	Credentials    string    `json:"-" gorm:"type:text"`
-	LegacyAPIToken string    `json:"-" gorm:"column:api_token"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID          uint      `json:"id" gorm:"primaryKey"`
+	Provider    string    `json:"provider" gorm:"type:varchar(32);not null;default:cloudflare;index"`
+	Name        string    `json:"name" gorm:"not null"`
+	Credentials string    `json:"-" gorm:"type:text"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type DNSProviderAccountView struct {
@@ -148,11 +147,7 @@ type DNSProviderAccountView struct {
 
 func (a *DNSProviderAccount) ToView() DNSProviderAccountView {
 	hint := ""
-	raw := a.Credentials
-	if raw == "" {
-		raw = a.LegacyAPIToken
-	}
-	trimmed := strings.TrimSpace(raw)
+	trimmed := strings.TrimSpace(a.Credentials)
 	if trimmed != "" && strings.HasPrefix(trimmed, "{") {
 		var m map[string]string
 		if err := json.Unmarshal([]byte(trimmed), &m); err == nil {

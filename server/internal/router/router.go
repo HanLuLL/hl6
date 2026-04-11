@@ -35,7 +35,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	adminH := handler.NewAdminHandler(repo, cfg, dnsOps)
 	brandingH := handler.NewBrandingHandler(repo, cfg)
 	referralH := handler.NewReferralHandler(repo)
-	dnsAccountH := handler.NewDNSProviderAccountHandler(repo, cfg)
+	dnsAccountH := handler.NewDNSProviderAccountHandler(repo, cfg, dnsOps)
 
 	dnsH := handler.NewDNSHandler(repo, sseBroker, dnsOps)
 	notifH := handler.NewNotificationHandler(repo, sseBroker)
@@ -101,6 +101,8 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.POST("/credits/grant", creditH.AdminGrant)
 	admin.GET("/dns-records", dnsH.AdminListRecords)
 	admin.DELETE("/dns-records/:id", dnsH.AdminDeleteRecord)
+	admin.GET("/dns-bulk-jobs/:id", dnsH.AdminGetBulkJob)
+	admin.GET("/dns-bulk-jobs/:id/items", dnsH.AdminListBulkJobItems)
 	admin.GET("/claimed-subdomains", subdomainH.AdminListClaimed)
 	admin.DELETE("/claimed-subdomains/:id", subdomainH.AdminRelease)
 	admin.GET("/users", adminH.ListUsers)

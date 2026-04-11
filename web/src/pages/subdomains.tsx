@@ -92,7 +92,7 @@ export default function SubdomainsPage() {
                       variant="ghost"
                       className="text-destructive"
                       onClick={() => setReleaseTarget({ id: sub.id, fqdn: sub.fqdn })}
-                      disabled={release.isPending}
+                      disabled={release.isPending || release.isRetrying}
                     >
                       {t("subdomains.release")}
                     </Button>
@@ -109,11 +109,12 @@ export default function SubdomainsPage() {
         onOpenChange={(open) => !open && setReleaseTarget(null)}
         title={t("subdomains.releaseTitle")}
         description={t("subdomains.releaseDesc", { fqdn: releaseTarget?.fqdn })}
+        confirmText={release.isRetrying ? `${t("common.retry")}...` : t("common.confirm")}
         confirmInput={releaseTarget?.fqdn}
         confirmInputLabel={t("subdomains.releaseInputLabel", { fqdn: releaseTarget?.fqdn })}
         onConfirm={handleRelease}
         destructive
-        loading={release.isPending}
+        loading={release.isPending || release.isRetrying}
       />
     </div>
   );

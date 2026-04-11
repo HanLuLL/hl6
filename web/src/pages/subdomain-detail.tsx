@@ -116,7 +116,7 @@ export default function SubdomainDetailPage() {
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setShowAddRecord(true)}>{t("subdomains.addRecord")}</Button>
-          <Button variant="destructive" onClick={() => setShowRelease(true)} disabled={release.isPending}>
+          <Button variant="destructive" onClick={() => setShowRelease(true)} disabled={release.isPending || release.isRetrying}>
             {t("subdomains.release")}
           </Button>
         </div>
@@ -144,11 +144,12 @@ export default function SubdomainDetailPage() {
         onOpenChange={setShowRelease}
         title={t("subdomains.releaseTitle")}
         description={t("subdomains.releaseDesc", { fqdn: subdomain.fqdn })}
+        confirmText={release.isRetrying ? `${t("common.retry")}...` : t("common.confirm")}
         confirmInput={subdomain.fqdn}
         confirmInputLabel={t("subdomains.releaseInputLabel", { fqdn: subdomain.fqdn })}
         onConfirm={handleRelease}
         destructive
-        loading={release.isPending}
+        loading={release.isPending || release.isRetrying}
       />
     </div>
   );
