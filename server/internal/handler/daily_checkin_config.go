@@ -91,19 +91,27 @@ func normalizeBooleanConfig(raw string) (string, error) {
 }
 
 func normalizeDailyCheckinCredits(raw string) (string, error) {
+	return normalizeNonNegativeCreditConfig(raw)
+}
+
+func normalizeNonNegativeCreditConfig(raw string) (string, error) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
 		trimmed = "0"
 	}
 	if !dailyCheckinCreditPattern.MatchString(trimmed) {
-		return "", fmt.Errorf("invalid daily checkin credits %q", raw)
+		return "", fmt.Errorf("invalid credit config %q", raw)
 	}
 
 	f, err := strconv.ParseFloat(trimmed, 64)
-	if err != nil || f < 0 {
-		return "", fmt.Errorf("invalid daily checkin credits %q", raw)
+	if err != nil {
+		return "", fmt.Errorf("invalid credit config %q", raw)
 	}
-	return formatCreditConfigValue(model.CreditFromFloat(f)), nil
+	credit, err := model.ParseDisplayCredit(f, false, true)
+	if err != nil {
+		return "", fmt.Errorf("invalid credit config %q", raw)
+	}
+	return formatCreditConfigValue(credit), nil
 }
 
 func parseDailyCheckinGroupIDs(raw string) ([]uint, error) {
@@ -174,15 +182,27 @@ func validateDailyCheckinGroupsExist(repo *repository.Repository, ids []uint) er
 }
 
 func parseDailyCheckinRewardForRuntime(raw string) model.Credit {
+	amount, ok := parseNonNegativeCreditConfigForRuntime(raw)
+	if !ok || amount <= 0 {
+		return 0
+	}
+	return amount
+}
+
+func parseNonNegativeCreditConfigForRuntime(raw string) (model.Credit, bool) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
-		return 0
+		return 0, true
 	}
 	f, err := strconv.ParseFloat(trimmed, 64)
-	if err != nil || f <= 0 {
-		return 0
+	if err != nil {
+		return 0, false
 	}
-	return model.CreditFromFloat(f)
+	credit, err := model.ParseDisplayCredit(f, false, true)
+	if err != nil {
+		return 0, false
+	}
+	return credit, true
 }
 
 func formatCreditConfigValue(amount model.Credit) string {

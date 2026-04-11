@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -289,8 +288,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 		// Grant registration bonus
 		if bonusStr, err := h.repo.GetSystemConfig("registration_bonus_credits"); err == nil {
-			if bonus, err := strconv.ParseFloat(bonusStr, 64); err == nil && bonus > 0 {
-				amount := model.CreditFromFloat(bonus)
+			if amount, ok := parseNonNegativeCreditConfigForRuntime(bonusStr); ok && amount > 0 {
 				if err := h.repo.GrantCredits(tx, user.ID, amount, "txn.registrationBonus", nil); err != nil {
 					tx.Rollback()
 					c.String(http.StatusInternalServerError, "failed to grant registration bonus")
@@ -529,16 +527,14 @@ func (h *OIDCHandler) processReferral(tx *gorm.DB, newUser *model.User, refCode 
 	if err != nil {
 		inviteeCreditsStr = "0"
 	}
-	inviterCreditsFloat, err := strconv.ParseFloat(inviterCreditsStr, 64)
-	if err != nil {
-		inviterCreditsFloat = 0
+	inviterCredits, inviterOK := parseNonNegativeCreditConfigForRuntime(inviterCreditsStr)
+	if !inviterOK {
+		inviterCredits = 0
 	}
-	inviteeCreditsFloat, err := strconv.ParseFloat(inviteeCreditsStr, 64)
-	if err != nil {
-		inviteeCreditsFloat = 0
+	inviteeCredits, inviteeOK := parseNonNegativeCreditConfigForRuntime(inviteeCreditsStr)
+	if !inviteeOK {
+		inviteeCredits = 0
 	}
-	inviterCredits := model.CreditFromFloat(inviterCreditsFloat)
-	inviteeCredits := model.CreditFromFloat(inviteeCreditsFloat)
 
 	// Grant credits to inviter
 	if inviterCredits > 0 {

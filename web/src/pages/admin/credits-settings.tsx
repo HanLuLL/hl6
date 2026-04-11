@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 
+const MAX_CREDIT_AMOUNT = 100000;
+
 function parseGroupIds(raw?: string): number[] {
   if (!raw) return [];
   const values = raw.split(",");
@@ -22,6 +24,18 @@ function parseGroupIds(raw?: string): number[] {
     result.push(parsed);
   }
   return result.sort((a, b) => a - b);
+}
+
+function normalizeCreditInput(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (trimmed === "") return "0";
+  const value = Number(trimmed);
+  if (!Number.isFinite(value)) return null;
+  if (value < 0 || value > MAX_CREDIT_AMOUNT) return null;
+  if (Math.abs(value * 10 - Math.round(value * 10)) > 1e-9) return null;
+  const scaled = Math.round(value * 10);
+  if (scaled % 10 === 0) return String(scaled / 10);
+  return (scaled / 10).toFixed(1);
 }
 
 export function CreditsSettingsContent() {
@@ -76,6 +90,11 @@ export function CreditsSettingsContent() {
   });
 
   const saveDailyCheckinConfig = () => {
+    const normalizedCredits = normalizeCreditInput(dailyCheckinCredits);
+    if (normalizedCredits === null) {
+      toast.error(t("error.invalidCreditAmount"));
+      return;
+    }
     const filteredGroupIDs = groupsData
       ? dailyCheckinGroupIds.filter((id) => groupsData.some((g) => g.id === id))
       : dailyCheckinGroupIds;
@@ -84,8 +103,30 @@ export function CreditsSettingsContent() {
     }
     updateMutation.mutate({
       daily_checkin_enabled: dailyCheckinEnabled ? "true" : "false",
-      daily_checkin_credits: dailyCheckinCredits.trim() || "0",
+      daily_checkin_credits: normalizedCredits,
       daily_checkin_group_ids: filteredGroupIDs.join(","),
+    });
+  };
+
+  const saveRegistrationBonus = () => {
+    const normalized = normalizeCreditInput(bonusCredits);
+    if (normalized === null) {
+      toast.error(t("error.invalidCreditAmount"));
+      return;
+    }
+    updateMutation.mutate({ registration_bonus_credits: normalized });
+  };
+
+  const saveReferralCredits = () => {
+    const inviter = normalizeCreditInput(referralInviterCredits);
+    const invitee = normalizeCreditInput(referralInviteeCredits);
+    if (inviter === null || invitee === null) {
+      toast.error(t("error.invalidCreditAmount"));
+      return;
+    }
+    updateMutation.mutate({
+      referral_inviter_credits: inviter,
+      referral_invitee_credits: invitee,
     });
   };
 
@@ -119,12 +160,14 @@ export function CreditsSettingsContent() {
               <Input
                 type="number"
                 min="0"
+                max={MAX_CREDIT_AMOUNT}
+                step="0.1"
                 value={bonusCredits}
                 onChange={(e) => setBonusCredits(e.target.value)}
               />
             </div>
             <Button
-              onClick={() => updateMutation.mutate({ registration_bonus_credits: bonusCredits })}
+              onClick={saveRegistrationBonus}
               disabled={updateMutation.isPending}
             >
               {updateMutation.isPending ? t("common.saving") : t("common.save")}
@@ -156,6 +199,8 @@ export function CreditsSettingsContent() {
               <Input
                 type="number"
                 min="0"
+                max={MAX_CREDIT_AMOUNT}
+                step="0.1"
                 value={referralInviterCredits}
                 onChange={(e) => setReferralInviterCredits(e.target.value)}
               />
@@ -165,15 +210,14 @@ export function CreditsSettingsContent() {
               <Input
                 type="number"
                 min="0"
+                max={MAX_CREDIT_AMOUNT}
+                step="0.1"
                 value={referralInviteeCredits}
                 onChange={(e) => setReferralInviteeCredits(e.target.value)}
               />
             </div>
             <Button
-              onClick={() => updateMutation.mutate({
-                referral_inviter_credits: referralInviterCredits,
-                referral_invitee_credits: referralInviteeCredits,
-              })}
+              onClick={saveReferralCredits}
               disabled={updateMutation.isPending}
             >
               {updateMutation.isPending ? t("common.saving") : t("common.save")}
@@ -202,6 +246,7 @@ export function CreditsSettingsContent() {
             <Input
               type="number"
               min="0"
+              max={MAX_CREDIT_AMOUNT}
               step="0.1"
               value={dailyCheckinCredits}
               onChange={(e) => setDailyCheckinCredits(e.target.value)}

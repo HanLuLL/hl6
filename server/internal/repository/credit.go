@@ -3,11 +3,17 @@ package repository
 import (
 	"encoding/json"
 	"errors"
+	"math"
 
 	"hl6-server/internal/model"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+)
+
+var (
+	ErrInvalidCreditAmount = errors.New("invalid credit amount")
+	ErrCreditOverflow      = errors.New("credit balance overflow")
 )
 
 func (r *Repository) GetCreditBalance(userID uint) (*model.CreditBalance, error) {
@@ -23,6 +29,9 @@ func (r *Repository) EnsureCreditBalance(userID uint) (*model.CreditBalance, err
 }
 
 func (r *Repository) DeductCredits(tx *gorm.DB, userID uint, amount model.Credit, descriptionKey string, descriptionParams json.RawMessage) error {
+	if amount <= 0 {
+		return ErrInvalidCreditAmount
+	}
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		return err
@@ -46,6 +55,9 @@ func (r *Repository) DeductCredits(tx *gorm.DB, userID uint, amount model.Credit
 }
 
 func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount model.Credit, descriptionKey string, descriptionParams json.RawMessage) error {
+	if amount <= 0 {
+		return ErrInvalidCreditAmount
+	}
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -55,6 +67,9 @@ func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount model.Credit,
 		if err := tx.Create(&balance).Error; err != nil {
 			return err
 		}
+	}
+	if balance.Balance > model.Credit(math.MaxInt64)-amount {
+		return ErrCreditOverflow
 	}
 	balance.Balance += amount
 	if err := tx.Save(&balance).Error; err != nil {
@@ -72,9 +87,15 @@ func (r *Repository) GrantCredits(tx *gorm.DB, userID uint, amount model.Credit,
 }
 
 func (r *Repository) RefundCredits(tx *gorm.DB, userID uint, amount model.Credit, descriptionKey string, descriptionParams json.RawMessage) error {
+	if amount <= 0 {
+		return ErrInvalidCreditAmount
+	}
 	var balance model.CreditBalance
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ?", userID).First(&balance).Error; err != nil {
 		return err
+	}
+	if balance.Balance > model.Credit(math.MaxInt64)-amount {
+		return ErrCreditOverflow
 	}
 	balance.Balance += amount
 	if err := tx.Save(&balance).Error; err != nil {

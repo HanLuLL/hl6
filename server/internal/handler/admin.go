@@ -400,7 +400,15 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 	}
 	scope := fmt.Sprintf("admin:ban:user:%d", target.ID)
 	opResult := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
-		result, failures, err := executeAdminBanUserWithCleanup(h.repo, h.ops, admin.ID, target, reason)
+		result, failures, asyncJobID, err := executeAdminBanUserWithCleanup(ctx, h.repo, h.ops, admin.ID, target, reason)
+		if asyncJobID != nil {
+			return service.OperationResult{
+				HTTPStatus: http.StatusConflict,
+				Message:    "dns bulk delete queued, retry ban after job succeeds",
+				MessageKey: "error.cloudflareOperationInProgress",
+				Data:       gin.H{"bulk_job_id": *asyncJobID, "bulk_async": true},
+			}, nil
+		}
 		if len(failures) > 0 {
 			return service.OperationResult{
 				HTTPStatus: http.StatusConflict,
@@ -694,6 +702,36 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 		}
 		normalizedConfigValues[configKeyDailyCheckinEnabled] = normalized
 		details[configKeyDailyCheckinEnabled] = normalized
+	}
+
+	if raw, ok := body["registration_bonus_credits"]; ok {
+		normalized, err := normalizeNonNegativeCreditConfig(raw)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusBadRequest, "invalid registration_bonus_credits", "error.invalidCreditAmount")
+			return
+		}
+		normalizedConfigValues["registration_bonus_credits"] = normalized
+		details["registration_bonus_credits"] = normalized
+	}
+
+	if raw, ok := body["referral_inviter_credits"]; ok {
+		normalized, err := normalizeNonNegativeCreditConfig(raw)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusBadRequest, "invalid referral_inviter_credits", "error.invalidCreditAmount")
+			return
+		}
+		normalizedConfigValues["referral_inviter_credits"] = normalized
+		details["referral_inviter_credits"] = normalized
+	}
+
+	if raw, ok := body["referral_invitee_credits"]; ok {
+		normalized, err := normalizeNonNegativeCreditConfig(raw)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusBadRequest, "invalid referral_invitee_credits", "error.invalidCreditAmount")
+			return
+		}
+		normalizedConfigValues["referral_invitee_credits"] = normalized
+		details["referral_invitee_credits"] = normalized
 	}
 
 	if raw, ok := body[configKeyDailyCheckinCredits]; ok {

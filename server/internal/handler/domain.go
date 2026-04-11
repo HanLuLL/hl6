@@ -84,87 +84,88 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		return
 	}
 
-	exists, err := h.repo.DomainExistsByZoneIDOrName(body.ProviderZoneID, body.Name)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "database error", "error.databaseError")
+	key, ok := idempotencyKeyFromHeader(c)
+	if !ok {
 		return
 	}
-	if exists {
-		response.ErrorWithKey(c, http.StatusConflict, "domain already exists", "error.domainAlreadyExists")
-		return
-	}
-	account, err := h.repo.FindDNSProviderAccount(body.ProviderAccountID)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusBadRequest, "provider account not found", "error.cloudflareAccountNotFound")
-		return
-	}
-	provider := model.NormalizeProvider(account.Provider)
-	if provider == "" {
-		provider = model.DNSProviderCloudflare
-	}
-
-	defaultCreditCost := 1.0
-	if body.CreditCost != nil {
-		defaultCreditCost = *body.CreditCost
-	} else if len(body.GroupAccess) > 0 {
-		defaultCreditCost = body.GroupAccess[0].CreditCost
-	}
-
-	domain := &model.Domain{
-		Name:              body.Name,
-		Provider:          provider,
-		ProviderZoneID:    body.ProviderZoneID,
-		ProviderAccountID: body.ProviderAccountID,
-		CreditCost:        model.CreditFromFloat(defaultCreditCost),
-		IsActive:          true,
-		Description:       body.Description,
-	}
-
-	txErr := h.repo.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(domain).Error; err != nil {
-			return err
+	scope := fmt.Sprintf("admin:domain:create:%s:%s:%d", strings.ToLower(body.Name), body.ProviderZoneID, body.ProviderAccountID)
+	result := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
+		exists, err := h.repo.DomainExistsByZoneIDOrName(body.ProviderZoneID, body.Name)
+		if err != nil {
+			return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "database error", MessageKey: "error.databaseError", Retryable: true}, nil
 		}
-		for _, ga := range body.GroupAccess {
-			access := model.DomainGroupAccess{
-				DomainID:      domain.ID,
-				GroupID:       ga.GroupID,
-				CreditCost:    model.CreditFromFloat(ga.CreditCost),
-				MaxDNSRecords: ga.MaxDNSRecords,
-			}
-			if err := tx.Create(&access).Error; err != nil {
+		if exists {
+			return service.OperationResult{HTTPStatus: http.StatusConflict, Message: "domain already exists", MessageKey: "error.domainAlreadyExists"}, nil
+		}
+		account, err := h.repo.FindDNSProviderAccount(body.ProviderAccountID)
+		if err != nil {
+			return service.OperationResult{HTTPStatus: http.StatusBadRequest, Message: "provider account not found", MessageKey: "error.cloudflareAccountNotFound"}, nil
+		}
+		provider := model.NormalizeProvider(account.Provider)
+		if provider == "" {
+			provider = model.DNSProviderCloudflare
+		}
+		defaultCreditCost := 1.0
+		if body.CreditCost != nil {
+			defaultCreditCost = *body.CreditCost
+		} else if len(body.GroupAccess) > 0 {
+			defaultCreditCost = body.GroupAccess[0].CreditCost
+		}
+		domain := &model.Domain{
+			Name:              body.Name,
+			Provider:          provider,
+			ProviderZoneID:    body.ProviderZoneID,
+			ProviderAccountID: body.ProviderAccountID,
+			CreditCost:        model.CreditFromFloat(defaultCreditCost),
+			IsActive:          true,
+			Description:       body.Description,
+		}
+		txErr := h.repo.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Create(domain).Error; err != nil {
 				return err
 			}
-		}
-		return nil
-	})
-	if txErr != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(txErr, &pgErr) && pgErr.Code == "23505" {
-			response.ErrorWithKey(c, http.StatusConflict, "domain already exists", "error.domainAlreadyExists")
-			return
-		}
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create domain", "error.failedToCreateDomain")
-		return
-	}
-
-	// Audit log
-	if admin := ctxutil.GetUser(c); admin != nil {
-		details, _ := json.Marshal(map[string]interface{}{"domain_name": body.Name, "zone_id": body.ProviderZoneID})
-		h.repo.CreateAuditLog(&model.AuditLog{
-			UserID:     admin.ID,
-			Action:     "admin_create_domain",
-			Resource:   "domain",
-			ResourceID: domain.ID,
-			Details:    details,
+			for _, ga := range body.GroupAccess {
+				access := model.DomainGroupAccess{
+					DomainID:      domain.ID,
+					GroupID:       ga.GroupID,
+					CreditCost:    model.CreditFromFloat(ga.CreditCost),
+					MaxDNSRecords: ga.MaxDNSRecords,
+				}
+				if err := tx.Create(&access).Error; err != nil {
+					return err
+				}
+			}
+			return nil
 		})
-	}
+		if txErr != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(txErr, &pgErr) && pgErr.Code == "23505" {
+				return service.OperationResult{HTTPStatus: http.StatusConflict, Message: "domain already exists", MessageKey: "error.domainAlreadyExists"}, nil
+			}
+			return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to create domain", MessageKey: "error.failedToCreateDomain", Retryable: true}, nil
+		}
 
-	accesses, err := h.repo.ListDomainGroupAccess(domain.ID)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load group access", "error.failedToLoadGroupAccess")
-		return
-	}
-	response.Created(c, gin.H{"domain": domain, "group_access": accesses})
+		if admin := ctxutil.GetUser(c); admin != nil {
+			details, _ := json.Marshal(map[string]interface{}{"domain_name": body.Name, "zone_id": body.ProviderZoneID})
+			h.repo.CreateAuditLog(&model.AuditLog{
+				UserID:     admin.ID,
+				Action:     "admin_create_domain",
+				Resource:   "domain",
+				ResourceID: domain.ID,
+				Details:    details,
+			})
+		}
+		accesses, err := h.repo.ListDomainGroupAccess(domain.ID)
+		if err != nil {
+			return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to load group access", MessageKey: "error.failedToLoadGroupAccess", Retryable: true}, nil
+		}
+		return service.OperationResult{
+			HTTPStatus: http.StatusCreated,
+			Message:    "created",
+			Data:       gin.H{"domain": domain, "group_access": accesses},
+		}, nil
+	})
+	writeOperationResult(c, result)
 }
 
 func (h *DomainHandler) AdminUpdate(c *gin.Context) {
@@ -201,59 +202,68 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		}
 	}
 
-	if err := h.repo.Transaction(func(tx *gorm.DB) error {
-		if body.ProviderZoneID != nil {
-			domain.ProviderZoneID = *body.ProviderZoneID
-		}
-		if body.ProviderAccountID != nil {
-			domain.ProviderAccountID = *body.ProviderAccountID
-			domain.Provider = nextProvider
-		}
-		if body.IsActive != nil {
-			domain.IsActive = *body.IsActive
-		}
-		if body.Description != nil {
-			domain.Description = *body.Description
-		}
-		if err := tx.Save(domain).Error; err != nil {
-			return err
-		}
-		if body.GroupAccess != nil {
-			var accesses []model.DomainGroupAccess
-			for _, ga := range body.GroupAccess {
-				accesses = append(accesses, model.DomainGroupAccess{
-					GroupID:       ga.GroupID,
-					CreditCost:    model.CreditFromFloat(ga.CreditCost),
-					MaxDNSRecords: ga.MaxDNSRecords,
-				})
+	key, ok := idempotencyKeyFromHeader(c)
+	if !ok {
+		return
+	}
+	scope := fmt.Sprintf("admin:domain:update:%d", domain.ID)
+	result := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
+		if err := h.repo.Transaction(func(tx *gorm.DB) error {
+			if body.ProviderZoneID != nil {
+				domain.ProviderZoneID = *body.ProviderZoneID
 			}
-			if err := h.repo.ReplaceDomainGroupAccess(tx, domain.ID, accesses); err != nil {
+			if body.ProviderAccountID != nil {
+				domain.ProviderAccountID = *body.ProviderAccountID
+				domain.Provider = nextProvider
+			}
+			if body.IsActive != nil {
+				domain.IsActive = *body.IsActive
+			}
+			if body.Description != nil {
+				domain.Description = *body.Description
+			}
+			if err := tx.Save(domain).Error; err != nil {
 				return err
 			}
+			if body.GroupAccess != nil {
+				var accesses []model.DomainGroupAccess
+				for _, ga := range body.GroupAccess {
+					accesses = append(accesses, model.DomainGroupAccess{
+						GroupID:       ga.GroupID,
+						CreditCost:    model.CreditFromFloat(ga.CreditCost),
+						MaxDNSRecords: ga.MaxDNSRecords,
+					})
+				}
+				if err := h.repo.ReplaceDomainGroupAccess(tx, domain.ID, accesses); err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
+			return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to update domain", MessageKey: "error.failedToUpdateDomain", Retryable: true}, nil
 		}
-		return nil
-	}); err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update domain", "error.failedToUpdateDomain")
-		return
-	}
 
-	if admin := ctxutil.GetUser(c); admin != nil {
-		details, _ := json.Marshal(map[string]interface{}{"domain_name": domain.Name})
-		h.repo.CreateAuditLog(&model.AuditLog{
-			UserID:     admin.ID,
-			Action:     "admin_update_domain",
-			Resource:   "domain",
-			ResourceID: domain.ID,
-			Details:    details,
-		})
-	}
-
-	accessList, err := h.repo.ListDomainGroupAccess(domain.ID)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load group access", "error.failedToLoadGroupAccess")
-		return
-	}
-	response.OK(c, gin.H{"domain": domain, "group_access": accessList})
+		if admin := ctxutil.GetUser(c); admin != nil {
+			details, _ := json.Marshal(map[string]interface{}{"domain_name": domain.Name})
+			h.repo.CreateAuditLog(&model.AuditLog{
+				UserID:     admin.ID,
+				Action:     "admin_update_domain",
+				Resource:   "domain",
+				ResourceID: domain.ID,
+				Details:    details,
+			})
+		}
+		accessList, err := h.repo.ListDomainGroupAccess(domain.ID)
+		if err != nil {
+			return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to load group access", MessageKey: "error.failedToLoadGroupAccess", Retryable: true}, nil
+		}
+		return service.OperationResult{
+			HTTPStatus: http.StatusOK,
+			Message:    "ok",
+			Data:       gin.H{"domain": domain, "group_access": accessList},
+		}, nil
+	})
+	writeOperationResult(c, result)
 }
 
 func (h *DomainHandler) AdminListDomainsFull(c *gin.Context) {
@@ -449,9 +459,19 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 				RecordType:        item.rec.Type,
 				Name:              item.rec.Name,
 				Content:           item.rec.Content,
+				TTL:               item.rec.TTL,
+				Proxied:           item.rec.Proxied,
 			})
 		}
 		deleteResult := h.ops.DeleteRecordsBatch(ctx, items, 3)
+		if deleteResult.Async {
+			return service.OperationResult{
+				HTTPStatus: http.StatusConflict,
+				Message:    "dns bulk delete queued, retry parent action after job succeeds",
+				MessageKey: "error.cloudflareOperationInProgress",
+				Data:       gin.H{"bulk_job_id": deleteResult.JobID, "bulk_async": true},
+			}, nil
+		}
 		if deleteResult.Failed > 0 {
 			failures := make([]cfFailureRecord, 0, len(deleteResult.Failures))
 			for _, f := range deleteResult.Failures {
@@ -479,7 +499,7 @@ func (h *DomainHandler) AdminDelete(c *gin.Context) {
 						if err := h.repo.RefundCredits(tx, item.userID, item.claimCost, "txn.subdomainDeletedRefund", descParams); err != nil {
 							return err
 						}
-					} else {
+					} else if item.claimCost < 0 {
 						if err := h.repo.DeductCredits(tx, item.userID, -item.claimCost, "txn.subdomainDeletedDeduct", descParams); err != nil {
 							return err
 						}

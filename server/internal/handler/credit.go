@@ -161,7 +161,13 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
 		return
 	}
-	if body.Amount == 0 {
+
+	amount, err := model.ParseDisplayCredit(body.Amount, true, true)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid amount", "error.invalidCreditAmount")
+		return
+	}
+	if amount == 0 {
 		response.ErrorWithKey(c, http.StatusBadRequest, "amount cannot be zero", "error.amountCannotBeZero")
 		return
 	}
@@ -176,12 +182,10 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 		return
 	}
 
-	amount := model.CreditFromFloat(body.Amount)
-
 	admin := ctxutil.GetUser(c)
 
 	txErr := h.repo.Transaction(func(tx *gorm.DB) error {
-		if body.Amount > 0 {
+		if amount > 0 {
 			descKey := "txn.adminGrant"
 			var descParams json.RawMessage
 			if body.Description != "" {
@@ -203,7 +207,7 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 			}
 			return nil
 		}
-		deductAmount := model.CreditFromFloat(-body.Amount)
+		deductAmount := -amount
 		descKey := "txn.adminDeduct"
 		var descParams json.RawMessage
 		if body.Description != "" {
@@ -230,7 +234,15 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 			response.ErrorWithKey(c, http.StatusPaymentRequired, "insufficient credits", "error.insufficientCredits")
 			return
 		}
-		if body.Amount > 0 {
+		if errors.Is(txErr, repository.ErrInvalidCreditAmount) {
+			response.ErrorWithKey(c, http.StatusBadRequest, "invalid amount", "error.invalidCreditAmount")
+			return
+		}
+		if errors.Is(txErr, repository.ErrCreditOverflow) {
+			response.ErrorWithKey(c, http.StatusBadRequest, "credit overflow", "error.invalidCreditAmount")
+			return
+		}
+		if amount > 0 {
 			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to grant credits", "error.failedToGrantCredits")
 		} else {
 			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to deduct credits", "error.failedToDeductCredits")
@@ -245,7 +257,7 @@ func (h *CreditHandler) AdminGrant(c *gin.Context) {
 	}
 	response.OK(c, gin.H{
 		"user_id": body.UserID,
-		"granted": body.Amount,
+		"granted": amount,
 		"balance": balance.Balance,
 	})
 }

@@ -30,7 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, getErrorMessage } from "@/lib/api";
+import { ApiError, api, createIdempotencyKey, getErrorMessage, isRetryableMutationError } from "@/lib/api";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CopyableEmail } from "@/components/ui/copyable-email";
@@ -42,10 +42,20 @@ import { CreditsSettingsContent } from "./credits-settings";
 import { useAuth } from "@/hooks/use-auth";
 
 const PAGE_SIZE = 30;
+const MAX_CREDIT_AMOUNT = 100000;
 
 function formatCredits(value?: number): string {
   const safe = typeof value === "number" && Number.isFinite(value) ? value : 0;
   return safe.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+}
+
+function parseCreditInput(raw: string, allowNegative: boolean): number | null {
+  const value = Number(raw.trim());
+  if (!Number.isFinite(value)) return null;
+  if (!allowNegative && value < 0) return null;
+  if (Math.abs(value) > MAX_CREDIT_AMOUNT) return null;
+  if (Math.abs(value * 10 - Math.round(value * 10)) > 1e-9) return null;
+  return value;
 }
 
 function formatDate(value?: string, withTime = false): string {
@@ -123,6 +133,21 @@ function UsersContent() {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [banUserId, setBanUserId] = useState<number | null>(null);
   const [banReason, setBanReason] = useState("");
+  const [isBanRetrying, setIsBanRetrying] = useState(false);
+
+  const submitGrant = () => {
+    if (!grantUserId) return;
+    const amount = parseCreditInput(grantAmount, true);
+    if (amount === null || amount === 0) {
+      toast.error(t("error.invalidCreditAmount"));
+      return;
+    }
+    grantMutation.mutate({
+      user_id: grantUserId,
+      amount,
+      description: grantDesc || t("adminUsers.adminGrant"),
+    });
+  };
 
   const grantMutation = useMutation({
     mutationFn: api.adminGrantCredits,
@@ -147,17 +172,34 @@ function UsersContent() {
   });
 
   const banMutation = useMutation({
-    mutationFn: ({ userId, reason }: { userId: number; reason: string }) =>
-      api.adminBanUser(userId, {
-        reason,
-      }),
+    mutationFn: async ({ userId, reason }: { userId: number; reason: string }) => {
+      const idempotencyKey = createIdempotencyKey();
+      try {
+        return await api.adminBanUser(userId, { reason }, { idempotencyKey, timeoutMs: 3000 });
+      } catch (err) {
+        if (!isRetryableMutationError(err)) {
+          throw err;
+        }
+        setIsBanRetrying(true);
+        return api.adminBanUser(userId, { reason }, { idempotencyKey, timeoutMs: 3000 });
+      } finally {
+        setIsBanRetrying(false);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       toast.success(t("adminUsers.banSuccess"));
       setBanUserId(null);
       setBanReason("");
     },
-    onError: (err) => toast.error(getErrorMessage(err, t)),
+    onError: (err) => {
+      if (err instanceof ApiError && err.data && typeof err.data === "object" && "bulk_job_id" in err.data) {
+        const jobID = (err.data as { bulk_job_id: number }).bulk_job_id;
+        toast.error(`DNS 批量任务已排队（Job #${jobID}），请等待完成后重试封禁`);
+        return;
+      }
+      toast.error(getErrorMessage(err, t));
+    },
   });
 
   const unbanMutation = useMutation({
@@ -328,7 +370,7 @@ function UsersContent() {
                             setBanUserId(user.id);
                             setBanReason("");
                           }}
-                          disabled={banMutation.isPending || user.id === currentUser?.id}
+                          disabled={banMutation.isPending || isBanRetrying || user.id === currentUser?.id}
                         >
                           {t("adminUsers.banUser")}
                         </Button>
@@ -375,17 +417,17 @@ function UsersContent() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBanUserId(null)}>{t("common.cancel")}</Button>
+            <Button variant="outline" onClick={() => setBanUserId(null)} disabled={banMutation.isPending || isBanRetrying}>{t("common.cancel")}</Button>
             <Button
               variant="destructive"
               onClick={() => banUserId && banMutation.mutate({
                 userId: banUserId,
                 reason: banReason.trim(),
               })}
-              disabled={banMutation.isPending}
+              disabled={banMutation.isPending || isBanRetrying}
               data-dialog-primary="true"
             >
-              {banMutation.isPending ? t("common.saving") : t("adminUsers.banUser")}
+              {isBanRetrying ? `${t("common.retry")}...` : banMutation.isPending ? t("common.saving") : t("adminUsers.banUser")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -397,7 +439,14 @@ function UsersContent() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>{t("adminUsers.amount")}</Label>
-              <Input type="number" min="0" step="any" value={grantAmount} onChange={(e) => setGrantAmount(e.target.value)} />
+              <Input
+                type="number"
+                min={-MAX_CREDIT_AMOUNT}
+                max={MAX_CREDIT_AMOUNT}
+                step="0.1"
+                value={grantAmount}
+                onChange={(e) => setGrantAmount(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>{t("adminUsers.descriptionOptional")}</Label>
@@ -407,11 +456,7 @@ function UsersContent() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setGrantUserId(null)}>{t("common.cancel")}</Button>
             <Button
-              onClick={() => grantMutation.mutate({
-                user_id: grantUserId!,
-                amount: parseFloat(grantAmount) || 1,
-                description: grantDesc || t("adminUsers.adminGrant"),
-              })}
+              onClick={submitGrant}
               disabled={grantMutation.isPending}
               data-dialog-primary="true"
             >
