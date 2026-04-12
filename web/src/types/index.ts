@@ -34,6 +34,9 @@ export interface Domain {
   credit_cost: number;
   is_active: boolean;
   description: string;
+  migration_state: "idle" | "running" | "partial_failed" | "queued";
+  migration_read_only: boolean;
+  last_migration_task_id?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -131,13 +134,127 @@ export interface DNSProviderZone {
   status: string;
 }
 
+export type DNSProviderCode =
+  | "cloudflare"
+  | "dnspod"
+  | "aliyun_dns"
+  | "dns_com"
+  | "dnsla"
+  | "westcn_dns"
+  | "huawei_cloud_dns"
+  | "baidu_cloud_dns"
+  | "aws_route53"
+  | "google_cloud_dns";
+
+export type DNSProviderAccountStatus = "active" | "degraded" | "disabled";
+
 export interface DNSProviderAccount {
   id: number;
-  provider: string;
+  provider: DNSProviderCode;
   name: string;
   credential_hint: string;
+  status: DNSProviderAccountStatus;
+  last_verified_at?: string | null;
+  last_error_category?: string | null;
+  last_error_message?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// ---- Migration Types ----
+
+export type MigrationTaskStatus =
+  | "pending"
+  | "running"
+  | "succeeded"
+  | "partial_failed"
+  | "failed"
+  | "cancelled";
+
+export type MigrationItemStatus =
+  | "pending"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "skipped";
+
+export interface DomainDNSMigrationTask {
+  id: number;
+  domain_id: number;
+  status: MigrationTaskStatus;
+  queue_seq: number;
+  triggered_by: number;
+  source_provider: DNSProviderCode;
+  source_account_id: number;
+  source_zone_id: string;
+  target_provider: DNSProviderCode;
+  target_account_id: number;
+  target_zone_id: string;
+  reason?: string;
+  total_items: number;
+  succeeded_items: number;
+  failed_items: number;
+  retried_items: number;
+  last_error_category?: string | null;
+  last_error_message?: string | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DomainDNSMigrationItem {
+  id: number;
+  task_id: number;
+  dns_record_id: number;
+  record_type: string;
+  name: string;
+  content: string;
+  ttl: number;
+  proxied: boolean;
+  source_provider_record_id?: string;
+  target_provider_record_id?: string;
+  status: MigrationItemStatus;
+  attempts: number;
+  last_error_category?: string | null;
+  last_error_message?: string | null;
+  conflict_overwritten: boolean;
+  finished_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateMigrationResult {
+  task_id: number;
+  status: MigrationTaskStatus;
+  queue_position: number;
+  domain_migration_state: string;
+}
+
+export interface RetryFailuresResult {
+  retried_items: number;
+  remaining_failed_items: number;
+  status: MigrationTaskStatus;
+}
+
+export interface CleanupSourceResult {
+  cleanup_total: number;
+  cleanup_succeeded: number;
+  cleanup_failed: number;
+}
+
+// ---- Provider Status ----
+
+export interface DNSProviderStatusEntry {
+  provider: DNSProviderCode;
+  accounts_total: number;
+  accounts_active: number;
+  last_verified_at?: string | null;
+  last_failure_at?: string | null;
+  last_failure_category?: string | null;
+  failure_count_24h: number;
+  migration_queue_size: number;
+  health: "healthy" | "degraded" | "unhealthy";
 }
 
 export interface DNSBulkJob {

@@ -51,16 +51,19 @@ type SystemConfig struct {
 }
 
 type Domain struct {
-	ID                uint      `json:"id" gorm:"primaryKey"`
-	Name              string    `json:"name" gorm:"uniqueIndex;not null"`
-	Provider          string    `json:"provider" gorm:"type:varchar(32);not null;default:cloudflare;index"`
-	ProviderZoneID    string    `json:"provider_zone_id" gorm:"not null"`
-	ProviderAccountID uint      `json:"provider_account_id" gorm:"not null;default:0"`
-	CreditCost        Credit    `json:"credit_cost" gorm:"type:bigint;default:10"`
-	IsActive          bool      `json:"is_active" gorm:"default:true"`
-	Description       string    `json:"description"`
-	CreatedAt         time.Time `json:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at"`
+	ID                    uint      `json:"id" gorm:"primaryKey"`
+	Name                  string    `json:"name" gorm:"uniqueIndex;not null"`
+	Provider              string    `json:"provider" gorm:"type:varchar(32);not null;default:cloudflare;index"`
+	ProviderZoneID        string    `json:"provider_zone_id" gorm:"not null"`
+	ProviderAccountID     uint      `json:"provider_account_id" gorm:"not null;default:0"`
+	CreditCost            Credit    `json:"credit_cost" gorm:"type:bigint;default:10"`
+	IsActive              bool      `json:"is_active" gorm:"default:true"`
+	Description           string    `json:"description"`
+	MigrationState        string    `json:"migration_state" gorm:"type:varchar(24);not null;default:idle;index"`
+	MigrationReadOnly     bool      `json:"migration_read_only" gorm:"not null;default:false"`
+	LastMigrationTaskID   *uint     `json:"last_migration_task_id" gorm:"index"`
+	CreatedAt             time.Time `json:"created_at"`
+	UpdatedAt             time.Time `json:"updated_at"`
 }
 
 type Subdomain struct {
@@ -127,22 +130,37 @@ type AuditLog struct {
 	CreatedAt  time.Time       `json:"created_at"`
 }
 
+// DNSProviderAccount status values
+const (
+	DNSProviderAccountStatusActive   = "active"
+	DNSProviderAccountStatusDegraded = "degraded"
+	DNSProviderAccountStatusDisabled = "disabled"
+)
+
 type DNSProviderAccount struct {
-	ID          uint      `json:"id" gorm:"primaryKey"`
-	Provider    string    `json:"provider" gorm:"type:varchar(32);not null;default:cloudflare;index"`
-	Name        string    `json:"name" gorm:"not null"`
-	Credentials string    `json:"-" gorm:"type:text"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID                uint       `json:"id" gorm:"primaryKey"`
+	Provider          string     `json:"provider" gorm:"type:varchar(32);not null;default:cloudflare;index"`
+	Name              string     `json:"name" gorm:"not null"`
+	Credentials       string     `json:"-" gorm:"type:text"`
+	Status            string     `json:"status" gorm:"type:varchar(16);not null;default:active;index"`
+	LastVerifiedAt    *time.Time `json:"last_verified_at"`
+	LastErrorCategory string     `json:"last_error_category" gorm:"type:varchar(32)"`
+	LastErrorMessage  string     `json:"last_error_message" gorm:"type:text"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
 }
 
 type DNSProviderAccountView struct {
-	ID             uint      `json:"id"`
-	Provider       string    `json:"provider"`
-	Name           string    `json:"name"`
-	CredentialHint string    `json:"credential_hint"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID                uint       `json:"id"`
+	Provider          string     `json:"provider"`
+	Name              string     `json:"name"`
+	CredentialHint    string     `json:"credential_hint"`
+	Status            string     `json:"status"`
+	LastVerifiedAt    *time.Time `json:"last_verified_at"`
+	LastErrorCategory string     `json:"last_error_category,omitempty"`
+	LastErrorMessage  string     `json:"last_error_message,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
 }
 
 func (a *DNSProviderAccount) ToView() DNSProviderAccountView {
@@ -159,6 +177,7 @@ func (a *DNSProviderAccount) ToView() DNSProviderAccountView {
 				"api_user",
 				"username",
 				"project_id",
+				"api_id",
 			} {
 				if v := strings.TrimSpace(m[k]); v != "" {
 					if len(v) > 4 {
@@ -174,13 +193,21 @@ func (a *DNSProviderAccount) ToView() DNSProviderAccountView {
 	if hint == "" && len(trimmed) >= 4 {
 		hint = "..." + trimmed[len(trimmed)-4:]
 	}
+	status := a.Status
+	if status == "" {
+		status = DNSProviderAccountStatusActive
+	}
 	return DNSProviderAccountView{
-		ID:             a.ID,
-		Provider:       a.Provider,
-		Name:           a.Name,
-		CredentialHint: hint,
-		CreatedAt:      a.CreatedAt,
-		UpdatedAt:      a.UpdatedAt,
+		ID:                a.ID,
+		Provider:          a.Provider,
+		Name:              a.Name,
+		CredentialHint:    hint,
+		Status:            status,
+		LastVerifiedAt:    a.LastVerifiedAt,
+		LastErrorCategory: a.LastErrorCategory,
+		LastErrorMessage:  a.LastErrorMessage,
+		CreatedAt:         a.CreatedAt,
+		UpdatedAt:         a.UpdatedAt,
 	}
 }
 

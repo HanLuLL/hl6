@@ -11,9 +11,9 @@
 
 **Purpose**: 补齐跨阶段共用的配置与骨架文件。
 
-- [ ] T001 扩展迁移队列/worker 配置读取与环境变量说明在 `server/internal/config/config.go` 和 `.env.example`
-- [ ] T002 [P] 创建迁移领域后端骨架文件 `server/internal/model/domain_dns_migration.go`、`server/internal/repository/domain_migration.go`、`server/internal/service/domain_migration_service.go`、`server/internal/handler/domain_migration.go`
-- [ ] T003 [P] 创建迁移领域前端骨架与占位接口在 `web/src/types/index.ts`、`web/src/lib/api.ts`、`web/src/hooks/use-domain-migrations.ts`
+- [X] T001 扩展迁移队列/worker 配置读取与环境变量说明在 `server/internal/config/config.go` 和 `.env.example`
+- [X] T002 [P] 创建迁移领域后端骨架文件 `server/internal/model/domain_dns_migration.go`、`server/internal/repository/domain_migration.go`、`server/internal/service/domain_migration_service.go`、`server/internal/handler/domain_migration.go`
+- [X] T003 [P] 创建迁移领域前端骨架与占位接口在 `web/src/types/index.ts`、`web/src/lib/api.ts`、`web/src/hooks/use-domain-migrations.ts`
 
 ---
 
@@ -23,13 +23,13 @@
 
 **⚠️ CRITICAL**: 本阶段完成前，不进入任何用户故事实现。
 
-- [ ] T004 扩展供应商枚举并明确排除 `dnsdun` 在 `server/internal/model/dns_provider.go`
-- [ ] T005 [P] 实现官方 SDK 适配器 `server/internal/service/route53.go`、`server/internal/service/google_cloud_dns.go`、`server/internal/service/baidu_cloud_dns.go`
-- [ ] T006 [P] 实现官方 API HTTP 适配器 `server/internal/service/dns_com.go`、`server/internal/service/dnsla.go`、`server/internal/service/westcn_dns.go`
-- [ ] T007 接入多供应商工厂分支与凭据解析在 `server/internal/service/provider_factory.go` 和 `server/internal/service/provider_helpers.go`
-- [ ] T008 建立统一错误语义映射与可重试判定在 `server/internal/service/provider_errors.go`、`server/internal/service/dns_operation_service.go`、`server/internal/handler/operation_result.go`
-- [ ] T009 注册新增模型迁移与关键索引约束在 `server/cmd/server/main.go`
-- [ ] T010 初始化迁移服务并完成路由层注入准备在 `server/internal/router/router.go`
+- [X] T004 扩展供应商枚举并明确排除 `dnsdun` 在 `server/internal/model/dns_provider.go`
+- [X] T005 [P] 实现官方 SDK 适配器 `server/internal/service/route53.go`、`server/internal/service/google_cloud_dns.go`、`server/internal/service/baidu_cloud_dns.go`
+- [X] T006 [P] 实现官方 API HTTP 适配器 `server/internal/service/dns_com.go`、`server/internal/service/dnsla.go`、`server/internal/service/westcn_dns.go`
+- [X] T007 接入多供应商工厂分支与凭据解析在 `server/internal/service/provider_factory.go` 和 `server/internal/service/provider_helpers.go`
+- [X] T008 建立统一错误语义映射与可重试判定在 `server/internal/service/provider_errors.go`、`server/internal/service/dns_operation_service.go`、`server/internal/handler/operation_result.go`
+- [X] T009 注册新增模型迁移与关键索引约束在 `server/cmd/server/main.go`
+- [X] T010 初始化迁移服务并完成路由层注入准备在 `server/internal/router/router.go`
 
 **Checkpoint**: Foundation ready - 可以开始用户故事实现。
 
@@ -43,13 +43,13 @@
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] 扩展供应商账号模型与视图字段（status/last_verified/last_error）在 `server/internal/model/models.go`
-- [ ] T012 [US1] 实现供应商账号状态读写与校验仓储方法在 `server/internal/repository/dns_provider_account.go`
-- [ ] T013 [US1] 在账号创建/更新/列表/zone 查询中接入凭据最小字段校验与连通性验证在 `server/internal/handler/dns_provider_account.go`
-- [ ] T014 [US1] 在域名创建与更新时阻断禁用/无效账号绑定在 `server/internal/handler/domain.go` 和 `server/internal/repository/domain.go`
-- [ ] T015 [P] [US1] 扩展管理端供应商账号 API 类型定义在 `web/src/types/index.ts` 和 `web/src/lib/api.ts`
-- [ ] T016 [US1] 更新供应商账号管理页支持 10 家供应商动态凭据表单与状态列在 `web/src/pages/admin/dns-provider-accounts.tsx`
-- [ ] T017 [P] [US1] 补齐供应商名称与账号状态多语言文案在 `web/src/i18n/zh.json`、`web/src/i18n/en.json`、`web/src/i18n/zh-Hant.json`、`web/src/i18n/es.json`、`web/src/i18n/ru.json`、`web/src/i18n/ja.json`
+- [X] T011 [US1] 扩展供应商账号模型与视图字段（status/last_verified/last_error）在 `server/internal/model/models.go`
+- [X] T012 [US1] 实现供应商账号状态读写与校验仓储方法在 `server/internal/repository/dns_provider_account.go`
+- [X] T013 [US1] 在账号创建/更新/列表/zone 查询中接入凭据最小字段校验与连通性验证在 `server/internal/handler/dns_provider_account.go`
+- [X] T014 [US1] 在域名创建与更新时阻断禁用/无效账号绑定在 `server/internal/handler/domain.go` 和 `server/internal/repository/domain.go`
+- [X] T015 [P] [US1] 扩展管理端供应商账号 API 类型定义在 `web/src/types/index.ts` 和 `web/src/lib/api.ts`
+- [X] T016 [US1] 更新供应商账号管理页支持 10 家供应商动态凭据表单与状态列在 `web/src/pages/admin/dns-provider-accounts.tsx`
+- [X] T017 [P] [US1] 补齐供应商名称与账号状态多语言文案在 `web/src/i18n/zh.json`、`web/src/i18n/en.json`、`web/src/i18n/zh-Hant.json`、`web/src/i18n/es.json`、`web/src/i18n/ru.json`、`web/src/i18n/ja.json`
 
 **Checkpoint**: US1 可独立验收并可作为 MVP 演示。
 
@@ -63,19 +63,19 @@
 
 ### Implementation for User Story 2
 
-- [ ] T018 [US2] 定义迁移任务/任务项模型与域名迁移态字段在 `server/internal/model/domain_dns_migration.go` 和 `server/internal/model/models.go`
-- [ ] T019 [US2] 实现迁移任务仓储（创建、串行抢占、详情分页、失败项筛选）在 `server/internal/repository/domain_migration.go`
-- [ ] T020 [US2] 实现迁移编排服务（创建即切换、队列串行执行）在 `server/internal/service/domain_migration_service.go`
-- [ ] T021 [US2] 实现失败项增量重试与冲突 upsert 覆盖审计在 `server/internal/service/domain_migration_service.go` 和 `server/internal/service/dns_operation_service.go`
-- [ ] T022 [US2] 实现源供应商清理与强制确认校验（`confirm_domain_name` + `confirm_phrase`）在 `server/internal/handler/domain_migration.go` 和 `server/internal/service/domain_migration_service.go`
-- [ ] T023 [US2] 在域名更新流程接入“有记录即创建异步迁移任务”逻辑在 `server/internal/handler/domain.go`
-- [ ] T024 [US2] 在 DNS 写接口增加迁移只读拦截并返回 `409` + `domain_migration_read_only` 在 `server/internal/handler/dns.go`
-- [ ] T025 [US2] 注册迁移接口路由（create/list/detail/retry/cleanup）在 `server/internal/router/router.go`
-- [ ] T026 [P] [US2] 扩展前端迁移任务类型与 API 方法在 `web/src/types/index.ts` 和 `web/src/lib/api.ts`
-- [ ] T027 [P] [US2] 实现迁移 React Query hooks 在 `web/src/hooks/use-domain-migrations.ts` 和 `web/src/hooks/use-dns-records.ts`
-- [ ] T028 [US2] 在域名管理页实现迁移发起、队列展示、失败项重试、cleanup 二次确认弹窗在 `web/src/pages/admin/domains.tsx`
-- [ ] T029 [US2] 在子域名详情和 DNS 组件实现迁移只读禁写与提示在 `web/src/pages/subdomain-detail.tsx`、`web/src/components/dns/record-form.tsx`、`web/src/components/dns/record-table.tsx`
-- [ ] T030 [P] [US2] 补齐迁移状态、只读错误、cleanup 确认多语言文案在 `web/src/i18n/zh.json`、`web/src/i18n/en.json`、`web/src/i18n/zh-Hant.json`、`web/src/i18n/es.json`、`web/src/i18n/ru.json`、`web/src/i18n/ja.json`
+- [X] T018 [US2] 定义迁移任务/任务项模型与域名迁移态字段在 `server/internal/model/domain_dns_migration.go` 和 `server/internal/model/models.go`
+- [X] T019 [US2] 实现迁移任务仓储（创建、串行抢占、详情分页、失败项筛选）在 `server/internal/repository/domain_migration.go`
+- [X] T020 [US2] 实现迁移编排服务（创建即切换、队列串行执行）在 `server/internal/service/domain_migration_service.go`
+- [X] T021 [US2] 实现失败项增量重试与冲突 upsert 覆盖审计在 `server/internal/service/domain_migration_service.go` 和 `server/internal/service/dns_operation_service.go`
+- [X] T022 [US2] 实现源供应商清理与强制确认校验（`confirm_domain_name` + `confirm_phrase`）在 `server/internal/handler/domain_migration.go` 和 `server/internal/service/domain_migration_service.go`
+- [X] T023 [US2] 在域名更新流程接入“有记录即创建异步迁移任务”逻辑在 `server/internal/handler/domain.go`
+- [X] T024 [US2] 在 DNS 写接口增加迁移只读拦截并返回 `409` + `domain_migration_read_only` 在 `server/internal/handler/dns.go`
+- [X] T025 [US2] 注册迁移接口路由（create/list/detail/retry/cleanup）在 `server/internal/router/router.go`
+- [X] T026 [P] [US2] 扩展前端迁移任务类型与 API 方法在 `web/src/types/index.ts` 和 `web/src/lib/api.ts`
+- [X] T027 [P] [US2] 实现迁移 React Query hooks 在 `web/src/hooks/use-domain-migrations.ts` 和 `web/src/hooks/use-dns-records.ts`
+- [X] T028 [US2] 在域名管理页实现迁移发起、队列展示、失败项重试、cleanup 二次确认弹窗在 `web/src/pages/admin/domains.tsx`
+- [X] T029 [US2] 在子域名详情和 DNS 组件实现迁移只读禁写与提示在 `web/src/pages/subdomain-detail.tsx`、`web/src/components/dns/record-form.tsx`、`web/src/components/dns/record-table.tsx`
+- [X] T030 [P] [US2] 补齐迁移状态、只读错误、cleanup 确认多语言文案在 `web/src/i18n/zh.json`、`web/src/i18n/en.json`、`web/src/i18n/zh-Hant.json`、`web/src/i18n/es.json`、`web/src/i18n/ru.json`、`web/src/i18n/ja.json`
 
 **Checkpoint**: US2 可独立验收（含迁移队列与只读策略）。
 
@@ -89,12 +89,12 @@
 
 ### Implementation for User Story 3
 
-- [ ] T031 [US3] 扩展 DNS 操作事件字段（error_category/retryable/latency_ms）并写入持久化在 `server/internal/model/dns_operation.go`、`server/internal/repository/dns_operation.go`、`server/internal/service/dns_operation_service.go`
-- [ ] T032 [US3] 实现供应商状态聚合查询（账号状态、最近失败、24h 失败数、迁移队列）在 `server/internal/repository/dns_provider_status.go`
-- [ ] T033 [US3] 新增状态总览接口 `GET /api/v1/admin/dns-providers/status` 在 `server/internal/handler/admin.go` 和 `server/internal/router/router.go`
-- [ ] T034 [US3] 对接状态总览前端类型与 API 在 `web/src/types/index.ts` 和 `web/src/lib/api.ts`
-- [ ] T035 [US3] 在管理员供应商账号页展示健康状态与最近失败事件在 `web/src/pages/admin/dns-provider-accounts.tsx`
-- [ ] T036 [P] [US3] 补齐错误分类与健康状态多语言文案在 `web/src/i18n/zh.json`、`web/src/i18n/en.json`、`web/src/i18n/zh-Hant.json`、`web/src/i18n/es.json`、`web/src/i18n/ru.json`、`web/src/i18n/ja.json`
+- [X] T031 [US3] 扩展 DNS 操作事件字段（error_category/retryable/latency_ms）并写入持久化在 `server/internal/model/dns_operation.go`、`server/internal/repository/dns_operation.go`、`server/internal/service/dns_operation_service.go`
+- [X] T032 [US3] 实现供应商状态聚合查询（账号状态、最近失败、24h 失败数、迁移队列）在 `server/internal/repository/dns_provider_status.go`
+- [X] T033 [US3] 新增状态总览接口 `GET /api/v1/admin/dns-providers/status` 在 `server/internal/handler/admin.go` 和 `server/internal/router/router.go`
+- [X] T034 [US3] 对接状态总览前端类型与 API 在 `web/src/types/index.ts` 和 `web/src/lib/api.ts`
+- [X] T035 [US3] 在管理员供应商账号页展示健康状态与最近失败事件在 `web/src/pages/admin/dns-provider-accounts.tsx`
+- [X] T036 [P] [US3] 补齐错误分类与健康状态多语言文案在 `web/src/i18n/zh.json`、`web/src/i18n/en.json`、`web/src/i18n/zh-Hant.json`、`web/src/i18n/es.json`、`web/src/i18n/ru.json`、`web/src/i18n/ja.json`
 
 **Checkpoint**: US3 可独立验收并支撑运维排障。
 
@@ -104,10 +104,10 @@
 
 **Purpose**: 收尾、文档与跨故事一致性加固。
 
-- [ ] T037 [P] 更新产品说明与运维文档中的多供应商/迁移队列/清理确认指南在 `README.md`
-- [ ] T038 根据落地实现回写 quickstart 的手工验收步骤与注意事项在 `specs/001-add-dns-providers/quickstart.md`
-- [ ] T039 清理 Cloudflare-only 文案与命名，统一为 provider-neutral 在 `web/src/i18n/en.json`、`web/src/i18n/zh.json`、`server/internal/handler/dns.go`
-- [ ] T040 对齐计划文档与合同文档中的最终接口字段/状态定义在 `specs/001-add-dns-providers/plan.md` 和 `specs/001-add-dns-providers/contracts/dns-provider-api-contract.md`
+- [X] T037 [P] 更新产品说明与运维文档中的多供应商/迁移队列/清理确认指南在 `README.md`
+- [X] T038 根据落地实现回写 quickstart 的手工验收步骤与注意事项在 `specs/001-add-dns-providers/quickstart.md`
+- [X] T039 清理 Cloudflare-only 文案与命名，统一为 provider-neutral 在 `web/src/i18n/en.json`、`web/src/i18n/zh.json`、`server/internal/handler/dns.go`
+- [X] T040 对齐计划文档与合同文档中的最终接口字段/状态定义在 `specs/001-add-dns-providers/plan.md` 和 `specs/001-add-dns-providers/contracts/dns-provider-api-contract.md`
 
 ---
 

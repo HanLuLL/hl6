@@ -50,6 +50,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DNSRecordsContent } from "./dns-records";
 import { DNSProviderAccountsContent } from "./dns-provider-accounts";
 import { ClaimedSubdomainsContent } from "./claimed-subdomains";
+import { useCreateMigration, useDomainMigrations } from "@/hooks/use-domain-migrations";
 
 interface GroupAccessEntry {
   group_id: number;
@@ -160,6 +161,12 @@ function DomainsContent() {
   const [cfFailures, setCfFailures] = useState<DNSFailureRecord[] | null>(null);
   const [isDeleteRetrying, setIsDeleteRetrying] = useState(false);
 
+  // 迁移状态
+  const [migrateDomain, setMigrateDomain] = useState<DomainWithGroupAccess | null>(null);
+  const [migrateTargetAccount, setMigrateTargetAccount] = useState<DNSProviderAccount | null>(null);
+  const [migrateTargetZone, setMigrateTargetZone] = useState<DNSProviderZone | null>(null);
+  const [migrateReason, setMigrateReason] = useState("");
+
   const { data: cfAccounts } = useQuery({
     queryKey: ["admin-dns-provider-accounts"],
     queryFn: async () => {
@@ -229,6 +236,32 @@ function DomainsContent() {
       }
     },
   });
+
+  const createMigration = useCreateMigration();
+
+  const handleStartMigration = () => {
+    if (!migrateDomain || !migrateTargetAccount || !migrateTargetZone) return;
+    createMigration.mutate(
+      {
+        domainId: migrateDomain.id,
+        data: {
+          target_provider_account_id: migrateTargetAccount.id,
+          target_provider_zone_id: migrateTargetZone.id,
+          reason: migrateReason.trim() || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success(t("dnsMigration.createMigration", "迁移任务已创建"));
+          setMigrateDomain(null);
+          setMigrateTargetAccount(null);
+          setMigrateTargetZone(null);
+          setMigrateReason("");
+        },
+        onError: (err) => toast.error(getErrorMessage(err, t)),
+      }
+    );
+  };
 
   const updateReservedPrefixesMutation = useMutation({
     mutationFn: ({ prefixes, minLength, maxLength }: { prefixes: string[]; minLength: number; maxLength: number }) =>
@@ -314,6 +347,7 @@ function DomainsContent() {
                 <TableHead>{t("adminDomains.zoneId")}</TableHead>
                 <TableHead>{t("adminDomains.groupAccess")}</TableHead>
                 <TableHead>{t("adminDomains.status")}</TableHead>
+                <TableHead>{t("dnsMigration.migrationState", "迁移状态")}</TableHead>
                 <TableHead className="text-right">{t("adminDomains.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -339,6 +373,24 @@ function DomainsContent() {
                       {domain.is_active ? t("common.active") : t("common.inactive")}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    {domain.migration_state && domain.migration_state !== "idle" ? (
+                      <Badge
+                        variant={
+                          domain.migration_state === "running"
+                            ? "default"
+                            : domain.migration_state === "partial_failed"
+                            ? "destructive"
+                            : "secondary"
+                        }
+                        className="text-xs"
+                      >
+                        {t(`dnsMigration.status${domain.migration_state.charAt(0).toUpperCase() + domain.migration_state.slice(1).replace(/_([a-z])/g, (_, c) => c.toUpperCase())}`, domain.migration_state)}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
@@ -346,6 +398,19 @@ function DomainsContent() {
                       onClick={() => updateMutation.mutate({ id: domain.id, is_active: !domain.is_active })}
                     >
                       {domain.is_active ? t("common.disable") : t("common.enable")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={domain.migration_state === "running"}
+                      onClick={() => {
+                        setMigrateDomain(domain);
+                        setMigrateTargetAccount(null);
+                        setMigrateTargetZone(null);
+                        setMigrateReason("");
+                      }}
+                    >
+                      {t("dnsMigration.createMigration", "迁移")}
                     </Button>
                     <Button
                       variant="ghost"
@@ -635,6 +700,85 @@ function DomainsContent() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCfFailures(null)}>
               {t("common.cancel")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Migration Dialog */}
+      <Dialog
+        open={!!migrateDomain}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMigrateDomain(null);
+            setMigrateTargetAccount(null);
+            setMigrateTargetZone(null);
+            setMigrateReason("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg" aria-describedby="migrate-domain-desc">
+          <DialogHeader>
+            <DialogTitle>{t("dnsMigration.createMigration", "发起 DNS 迁移")}</DialogTitle>
+            <DialogDescription id="migrate-domain-desc">
+              {t("dnsMigration.createMigrationDesc", "将域名")}
+              {" "}
+              <span className="font-semibold">{migrateDomain?.name}</span>
+              {" "}
+              {t("dnsMigration.createMigrationDescSuffix", "的 DNS 记录迁移到新供应商账号。任务创建后立即切换生效供应商，迁移运行期间写操作暂停。")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>{t("dnsMigration.targetAccount", "目标供应商账号")}</Label>
+              <AccountCombobox
+                accounts={(cfAccounts ?? []).filter((a) => a.id !== migrateDomain?.provider_account_id)}
+                value={migrateTargetAccount}
+                onSelect={(account) => {
+                  setMigrateTargetAccount(account);
+                  setMigrateTargetZone(null);
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("dnsMigration.targetZone", "目标 Zone")}</Label>
+              <ZoneCombobox
+                value={migrateTargetZone}
+                onSelect={setMigrateTargetZone}
+                accountId={migrateTargetAccount?.id ?? null}
+                accountProvider={migrateTargetAccount?.provider ?? null}
+                existingDomains={[]}
+              />
+              {migrateTargetAccount && !migrateTargetZone && (
+                <p className="text-xs text-muted-foreground">
+                  {t("adminCloudflare.selectAccountFirst", "请先选择目标 Zone")}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("dnsMigration.reason", "迁移原因（可选）")}</Label>
+              <Input
+                value={migrateReason}
+                onChange={(e) => setMigrateReason(e.target.value)}
+                placeholder={t("dnsMigration.reason", "迁移原因（可选）")}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setMigrateDomain(null)}
+              disabled={createMigration.isPending}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              disabled={!migrateTargetAccount || !migrateTargetZone || createMigration.isPending}
+              onClick={handleStartMigration}
+            >
+              {createMigration.isPending
+                ? t("common.saving", "提交中...")
+                : t("dnsMigration.createMigration", "发起迁移")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -54,9 +54,32 @@ func (h *DNSHandler) ListRecords(c *gin.Context) {
 	response.OK(c, records)
 }
 
+// checkMigrationReadOnly returns true (and writes the 409 response) if the domain
+// associated with the subdomain is currently in read-only migration state.
+func (h *DNSHandler) checkMigrationReadOnly(c *gin.Context, sub *model.Subdomain) bool {
+	if sub == nil {
+		return false
+	}
+	if sub.Domain.MigrationReadOnly {
+		c.JSON(http.StatusConflict, response.Response{
+			Code:    -1,
+			Message: "domain is in read-only state during DNS migration",
+			Data: map[string]string{
+				"error_category":   "domain_migration_read_only",
+				"migration_state":  sub.Domain.MigrationState,
+			},
+		})
+		return true
+	}
+	return false
+}
+
 func (h *DNSHandler) CreateRecord(c *gin.Context) {
 	sub := h.getSubdomain(c)
 	if sub == nil {
+		return
+	}
+	if h.checkMigrationReadOnly(c, sub) {
 		return
 	}
 	var body struct {
@@ -99,7 +122,7 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 	ttl := normalizeDNSRecordTTL(sub.Domain.Provider, 0, 0)
 
 	if _, err := h.repo.FindDNSProviderAccount(sub.Domain.ProviderAccountID); err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "cloudflare account not found", "error.cloudflareAccountNotFound")
+		response.ErrorWithKey(c, http.StatusInternalServerError, "provider account not found", "error.cloudflareAccountNotFound")
 		return
 	}
 
@@ -233,6 +256,9 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 	if sub == nil {
 		return
 	}
+	if h.checkMigrationReadOnly(c, sub) {
+		return
+	}
 	recordID, ok := helpers.ParseUintParam(c, "recordId")
 	if !ok {
 		return
@@ -321,6 +347,9 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 func (h *DNSHandler) DeleteRecord(c *gin.Context) {
 	sub := h.getSubdomain(c)
 	if sub == nil {
+		return
+	}
+	if h.checkMigrationReadOnly(c, sub) {
 		return
 	}
 	recordID, ok := helpers.ParseUintParam(c, "recordId")
@@ -470,15 +499,15 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 				return service.OperationResult{
 					HTTPStatus: http.StatusConflict,
 					Message:    "dns bulk delete queued, retry ban after job succeeds",
-					MessageKey: "error.cloudflareOperationInProgress",
+					MessageKey: "error.dnsOperationInProgress",
 					Data:       gin.H{"bulk_job_id": *asyncJobID, "bulk_async": true},
 				}, nil
 			}
 			if len(failures) > 0 {
 				return service.OperationResult{
 					HTTPStatus: http.StatusConflict,
-					Message:    "some cloudflare dns records failed to delete",
-					MessageKey: "error.cloudflareDeleteFailed",
+					Message:    "some dns records failed to delete",
+					MessageKey: "error.dnsDeleteFailed",
 					Data:       gin.H{"failed_records": failures},
 				}, nil
 			}

@@ -103,6 +103,13 @@ export default function SubdomainDetailPage() {
         <span className="text-foreground">{subdomain.fqdn}</span>
       </div>
 
+      {/* Migration read-only warning */}
+      {subdomain.domain.migration_read_only && (
+        <div className="rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-950 dark:text-yellow-200">
+          {t("dnsMigration.readOnlyWarning", "该域名正在迁移中，DNS 写操作暂时不可用")}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -115,7 +122,12 @@ export default function SubdomainDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setShowAddRecord(true)}>{t("subdomains.addRecord")}</Button>
+          <Button
+            onClick={() => setShowAddRecord(true)}
+            disabled={subdomain.domain.migration_read_only}
+          >
+            {t("subdomains.addRecord")}
+          </Button>
           <Button variant="destructive" onClick={() => setShowRelease(true)} disabled={release.isPending || release.isRetrying}>
             {t("subdomains.release")}
           </Button>
@@ -129,7 +141,7 @@ export default function SubdomainDetailPage() {
           <Badge variant="secondary">{t("subdomains.total", { count: records?.length ?? 0 })}</Badge>
         </CardHeader>
         <CardContent>
-          <RecordTable subdomainId={subdomainId} records={records || []} />
+          <RecordTable subdomainId={subdomainId} records={records || []} readOnly={subdomain.domain.migration_read_only} />
         </CardContent>
       </Card>
 

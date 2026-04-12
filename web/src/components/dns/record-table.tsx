@@ -18,9 +18,10 @@ import { RecordForm } from "./record-form";
 interface RecordTableProps {
   subdomainId: number;
   records: DNSRecord[];
+  readOnly?: boolean;
 }
 
-export function RecordTable({ subdomainId, records }: RecordTableProps) {
+export function RecordTable({ subdomainId, records, readOnly }: RecordTableProps) {
   const [editRecord, setEditRecord] = useState<DNSRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DNSRecord | null>(null);
   const deleteRecord = useDeleteRecord(subdomainId);
@@ -85,7 +86,7 @@ export function RecordTable({ subdomainId, records }: RecordTableProps) {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => setEditRecord(record)}>
+                    <Button variant="ghost" size="sm" onClick={() => setEditRecord(record)} disabled={readOnly}>
                       {t("common.edit")}
                     </Button>
                     <Button
@@ -93,7 +94,7 @@ export function RecordTable({ subdomainId, records }: RecordTableProps) {
                       size="sm"
                       className="text-destructive"
                       onClick={() => setDeleteTarget(record)}
-                      disabled={deleteRecord.isPending || deleteRecord.isRetrying}
+                      disabled={deleteRecord.isPending || deleteRecord.isRetrying || readOnly}
                     >
                       {t("common.delete")}
                     </Button>

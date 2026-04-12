@@ -140,6 +140,17 @@ func (h *AdminHandler) Stats(c *gin.Context) {
 	response.OK(c, stats)
 }
 
+// GetDNSProviderStatus returns aggregated health status for all DNS providers.
+// GET /api/v1/admin/dns-providers/status
+func (h *AdminHandler) GetDNSProviderStatus(c *gin.Context) {
+	entries, err := h.repo.GetDNSProviderStatus()
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to get provider status", "error.databaseError")
+		return
+	}
+	response.OK(c, entries)
+}
+
 func (h *AdminHandler) AuditLogs(c *gin.Context) {
 	page, perPage := helpers.ParsePageParams(c, 15, 100)
 	operator := strings.TrimSpace(c.Query("operator"))

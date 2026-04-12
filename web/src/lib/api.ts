@@ -28,6 +28,12 @@ import type {
   ReservedSubdomainPrefixSettings,
   SubdomainLengthSettings,
   AdminConfigPayload,
+  DomainDNSMigrationTask,
+  DomainDNSMigrationItem,
+  CreateMigrationResult,
+  RetryFailuresResult,
+  CleanupSourceResult,
+  DNSProviderStatusEntry,
   OIDCStatusPayload,
 } from "@/types";
 
@@ -370,6 +376,59 @@ export const api = {
     request<ApiResponse<DNSProviderAccount>>(`/admin/dns-accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   adminDeleteDNSProviderAccount: (id: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/dns-accounts/${id}`, { method: "DELETE" }),
+
+  // Admin: DNS Provider Status
+  adminGetDNSProviderStatus: () =>
+    request<ApiResponse<DNSProviderStatusEntry[]>>("/admin/dns-providers/status"),
+
+  // Admin: Domain DNS Migrations
+  adminCreateDomainMigration: (
+    domainId: number,
+    data: { target_provider_account_id: number; target_provider_zone_id: string; reason?: string }
+  ) =>
+    request<ApiResponse<CreateMigrationResult>>(`/admin/domains/${domainId}/migrations`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  adminListDomainMigrations: (domainId: number, params?: { status?: string; page?: number; per_page?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.set("status", params.status);
+    if (params?.page) q.set("page", String(params.page));
+    if (params?.per_page) q.set("per_page", String(params.per_page));
+    const qs = q.toString();
+    return request<ApiResponse<{ tasks: DomainDNSMigrationTask[]; total: number; page: number; per_page: number }>>(
+      `/admin/domains/${domainId}/migrations${qs ? `?${qs}` : ""}`
+    );
+  },
+  adminGetDomainMigration: (domainId: number, taskId: number, params?: { page?: number; per_page?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.set("page", String(params.page));
+    if (params?.per_page) q.set("per_page", String(params.per_page));
+    const qs = q.toString();
+    return request<
+      ApiResponse<{
+        task: DomainDNSMigrationTask;
+        items: DomainDNSMigrationItem[];
+        item_total: number;
+        page: number;
+        per_page: number;
+      }>
+    >(`/admin/domains/${domainId}/migrations/${taskId}${qs ? `?${qs}` : ""}`);
+  },
+  adminRetryMigrationFailures: (domainId: number, taskId: number) =>
+    request<ApiResponse<RetryFailuresResult>>(
+      `/admin/domains/${domainId}/migrations/${taskId}/retry-failures`,
+      { method: "POST" }
+    ),
+  adminCleanupMigrationSource: (
+    domainId: number,
+    taskId: number,
+    data: { confirm_domain_name: string; confirm_phrase: string }
+  ) =>
+    request<ApiResponse<CleanupSourceResult>>(
+      `/admin/domains/${domainId}/migrations/${taskId}/cleanup-source`,
+      { method: "POST", body: JSON.stringify(data) }
+    ),
 
   // Admin: DNS Records
   adminListDNSRecords: (page = 1, perPage = 20, search = "", domainId?: number, groupId?: number) => {

@@ -41,6 +41,7 @@ func ParseProviderCredentials(provider, raw string) (map[string]string, error) {
 	return credentials, nil
 }
 
+
 func BuildProviderClient(provider string, credentials map[string]string) (DNSProviderClient, error) {
 	switch model.NormalizeProvider(provider) {
 	case model.DNSProviderCloudflare:
@@ -49,6 +50,7 @@ func BuildProviderClient(provider string, credentials map[string]string) (DNSPro
 			return nil, errors.New("cloudflare api_token is required")
 		}
 		return NewCloudflareService(token)
+
 	case model.DNSProviderDNSPod:
 		secretID := pickCredential(credentials, "secret_id", "secretid", "access_key_id", "ak")
 		secretKey := pickCredential(credentials, "secret_key", "secretkey", "access_key_secret", "sk")
@@ -57,6 +59,7 @@ func BuildProviderClient(provider string, credentials map[string]string) (DNSPro
 			return nil, errors.New("dnspod secret_id and secret_key are required")
 		}
 		return NewDNSPodService(secretID, secretKey, region)
+
 	case model.DNSProviderAliDNS:
 		accessKeyID := pickCredential(credentials, "access_key_id", "ak", "secret_id")
 		accessKeySecret := pickCredential(credentials, "access_key_secret", "sk", "secret_key")
@@ -66,6 +69,7 @@ func BuildProviderClient(provider string, credentials map[string]string) (DNSPro
 			return nil, errors.New("aliyun dns access_key_id and access_key_secret are required")
 		}
 		return NewAliDNSService(accessKeyID, accessKeySecret, regionID, endpoint)
+
 	case model.DNSProviderHuaweiDNS:
 		ak := pickCredential(credentials, "ak", "access_key_id", "secret_id")
 		sk := pickCredential(credentials, "sk", "access_key_secret", "secret_key")
@@ -76,6 +80,55 @@ func BuildProviderClient(provider string, credentials map[string]string) (DNSPro
 			return nil, errors.New("huawei cloud dns ak and sk are required")
 		}
 		return NewHuaweiDNSService(ak, sk, region, endpoint, projectID)
+
+	case model.DNSProviderAWSRoute53:
+		accessKeyID := pickCredential(credentials, "access_key_id", "ak")
+		accessKeySecret := pickCredential(credentials, "access_key_secret", "secret_key", "sk")
+		region := pickCredential(credentials, "region", "region_id")
+		if accessKeyID == "" || accessKeySecret == "" {
+			return nil, errors.New("aws_route53 access_key_id and access_key_secret are required")
+		}
+		return NewRoute53Service(accessKeyID, accessKeySecret, region)
+
+	case model.DNSProviderGoogleDNS:
+		serviceAccountJSON := pickCredential(credentials, "service_account_json")
+		if serviceAccountJSON == "" {
+			return nil, errors.New("google_cloud_dns service_account_json is required")
+		}
+		return NewGoogleCloudDNSService(serviceAccountJSON)
+
+	case model.DNSProviderBaiduDNS:
+		accessKey := pickCredential(credentials, "access_key", "ak", "access_key_id")
+		secretKey := pickCredential(credentials, "secret_key", "sk", "access_key_secret")
+		if accessKey == "" || secretKey == "" {
+			return nil, errors.New("baidu_cloud_dns access_key and secret_key are required")
+		}
+		return NewBaiduCloudDNSService(accessKey, secretKey)
+
+	case model.DNSProviderDNSCom:
+		apiID := pickCredential(credentials, "api_id")
+		apiKey := pickCredential(credentials, "api_key")
+		if apiID == "" || apiKey == "" {
+			return nil, errors.New("dns_com api_id and api_key are required")
+		}
+		return NewDNSComService(apiID, apiKey)
+
+	case model.DNSProviderDNSLA:
+		apiID := pickCredential(credentials, "api_id")
+		apiSecret := pickCredential(credentials, "api_secret")
+		if apiID == "" || apiSecret == "" {
+			return nil, errors.New("dnsla api_id and api_secret are required")
+		}
+		return NewDNSLAService(apiID, apiSecret)
+
+	case model.DNSProviderWestCN:
+		username := pickCredential(credentials, "username")
+		password := pickCredential(credentials, "password")
+		if username == "" || password == "" {
+			return nil, errors.New("westcn_dns username and password are required")
+		}
+		return NewWestCNDNSService(username, password)
+
 	default:
 		return nil, fmt.Errorf("unsupported provider %q", provider)
 	}

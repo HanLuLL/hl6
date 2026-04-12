@@ -76,14 +76,17 @@ func (h *DNSProviderAccountHandler) Create(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, "credentials are required")
 		return
 	}
-	if _, err := service.BuildProviderClient(provider, body.Credentials); err != nil {
+
+	client, buildErr := service.BuildProviderClient(provider, body.Credentials)
+	if buildErr != nil {
 		status := http.StatusBadRequest
-		if errors.Is(err, service.ErrProviderNotImplemented) {
+		if errors.Is(buildErr, service.ErrProviderNotImplemented) {
 			status = http.StatusUnprocessableEntity
 		}
-		response.Error(c, status, err.Error())
+		response.Error(c, status, buildErr.Error())
 		return
 	}
+	verifyErr := h.verifyConnectivity(c, client)
 
 	key, ok := idempotencyKeyFromHeader(c)
 	if !ok {
@@ -99,18 +102,39 @@ func (h *DNSProviderAccountHandler) Create(c *gin.Context) {
 		if err != nil {
 			return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to encrypt credentials", MessageKey: "error.encryptionFailed", Retryable: true}, nil
 		}
+		accountStatus := model.DNSProviderAccountStatusActive
+		var lastErrCat, lastErrMsg string
+		if verifyErr != nil {
+			accountStatus = model.DNSProviderAccountStatusDegraded
+			errCat, _ := service.ClassifyProviderError(verifyErr)
+			lastErrCat = string(errCat)
+			lastErrMsg = verifyErr.Error()
+		}
 		account := &model.DNSProviderAccount{
-			Provider:    provider,
-			Name:        strings.TrimSpace(body.Name),
-			Credentials: encCredentials,
+			Provider:          provider,
+			Name:              strings.TrimSpace(body.Name),
+			Credentials:       encCredentials,
+			Status:            accountStatus,
+			LastErrorCategory: lastErrCat,
+			LastErrorMessage:  lastErrMsg,
 		}
 		if err := h.repo.CreateDNSProviderAccount(account); err != nil {
 			return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to create account", MessageKey: "error.failedToCreateDNSProviderAccount", Retryable: true}, nil
+		}
+		if verifyErr == nil {
+			_ = h.repo.UpdateDNSProviderAccountVerified(account.ID)
 		}
 		account.Credentials = string(rawJSON)
 		return service.OperationResult{HTTPStatus: http.StatusCreated, Message: "created", Data: account.ToView()}, nil
 	})
 	writeOperationResult(c, result)
+}
+
+// verifyConnectivity calls ListZones to check provider connectivity.
+// Returns nil if successful (account is reachable), non-nil error otherwise.
+func (h *DNSProviderAccountHandler) verifyConnectivity(c *gin.Context, client service.DNSProviderClient) error {
+	_, err := client.ListZones(c.Request.Context())
+	return err
 }
 
 func (h *DNSProviderAccountHandler) Update(c *gin.Context) {
@@ -205,14 +229,18 @@ func (h *DNSProviderAccountHandler) Update(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, "credentials are required")
 		return
 	}
-	if _, err := service.BuildProviderClient(account.Provider, credentialsForValidation); err != nil {
+
+	updateClient, buildErr := service.BuildProviderClient(account.Provider, credentialsForValidation)
+	if buildErr != nil {
 		status := http.StatusBadRequest
-		if errors.Is(err, service.ErrProviderNotImplemented) {
+		if errors.Is(buildErr, service.ErrProviderNotImplemented) {
 			status = http.StatusUnprocessableEntity
 		}
-		response.Error(c, status, err.Error())
+		response.Error(c, status, buildErr.Error())
 		return
 	}
+	// Verify connectivity with the (potentially updated) credentials
+	verifyErr := h.verifyConnectivity(c, updateClient)
 
 	key, ok := idempotencyKeyFromHeader(c)
 	if !ok {
@@ -231,8 +259,22 @@ func (h *DNSProviderAccountHandler) Update(c *gin.Context) {
 			}
 			account.Credentials = encCredentials
 		}
+		// Update status based on connectivity result
+		if verifyErr == nil {
+			account.Status = model.DNSProviderAccountStatusActive
+			account.LastErrorCategory = ""
+			account.LastErrorMessage = ""
+		} else {
+			account.Status = model.DNSProviderAccountStatusDegraded
+			errCat, _ := service.ClassifyProviderError(verifyErr)
+			account.LastErrorCategory = string(errCat)
+			account.LastErrorMessage = verifyErr.Error()
+		}
 		if err := h.repo.UpdateDNSProviderAccount(account); err != nil {
 			return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to update account", MessageKey: "error.failedToUpdateDNSProviderAccount", Retryable: true}, nil
+		}
+		if verifyErr == nil {
+			_ = h.repo.UpdateDNSProviderAccountVerified(account.ID)
 		}
 		plain := h.decryptRawCredentials(accountCredentialRaw(account))
 		account.Credentials = plain

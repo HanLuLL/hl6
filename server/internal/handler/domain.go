@@ -101,6 +101,9 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		if err != nil {
 			return service.OperationResult{HTTPStatus: http.StatusBadRequest, Message: "provider account not found", MessageKey: "error.cloudflareAccountNotFound"}, nil
 		}
+		if account.Status == model.DNSProviderAccountStatusDisabled {
+			return service.OperationResult{HTTPStatus: http.StatusConflict, Message: "provider account is disabled", MessageKey: "error.providerAccountDisabled"}, nil
+		}
 		provider := model.NormalizeProvider(account.Provider)
 		if provider == "" {
 			provider = model.DNSProviderCloudflare
@@ -194,6 +197,10 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		account, findErr := h.repo.FindDNSProviderAccount(*body.ProviderAccountID)
 		if findErr != nil {
 			response.ErrorWithKey(c, http.StatusBadRequest, "provider account not found", "error.cloudflareAccountNotFound")
+			return
+		}
+		if account.Status == model.DNSProviderAccountStatusDisabled {
+			response.Error(c, http.StatusConflict, "provider account is disabled")
 			return
 		}
 		nextProvider = model.NormalizeProvider(account.Provider)

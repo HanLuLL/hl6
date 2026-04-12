@@ -22,6 +22,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
 	repo := repository.New(db)
 	dnsOps := service.NewDNSOperationService(repo, cfg)
+	migSvc := service.NewDomainMigrationService(repo, cfg)
 
 	auth := middleware.NewAuthMiddleware(cfg.SessionSecret, repo)
 	rl := middleware.NewRateLimiter(100, time.Minute)
@@ -36,6 +37,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	brandingH := handler.NewBrandingHandler(repo, cfg)
 	referralH := handler.NewReferralHandler(repo)
 	dnsAccountH := handler.NewDNSProviderAccountHandler(repo, cfg, dnsOps)
+	migH := handler.NewDomainMigrationHandler(migSvc)
 
 	dnsH := handler.NewDNSHandler(repo, sseBroker, dnsOps)
 	notifH := handler.NewNotificationHandler(repo, sseBroker)
@@ -93,6 +95,12 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.PUT("/domains/:id", domainH.AdminUpdate)
 	admin.DELETE("/domains/:id", domainH.AdminDelete)
 	admin.GET("/domains-full", domainH.AdminListDomainsFull)
+	// Migration routes
+	admin.POST("/domains/:id/migrations", migH.Create)
+	admin.GET("/domains/:id/migrations", migH.List)
+	admin.GET("/domains/:id/migrations/:taskId", migH.Get)
+	admin.POST("/domains/:id/migrations/:taskId/retry-failures", migH.RetryFailures)
+	admin.POST("/domains/:id/migrations/:taskId/cleanup-source", migH.CleanupSource)
 	admin.GET("/dns-accounts", dnsAccountH.List)
 	admin.POST("/dns-accounts", dnsAccountH.Create)
 	admin.PUT("/dns-accounts/:id", dnsAccountH.Update)
@@ -117,6 +125,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	admin.PUT("/config", adminH.UpdateConfig)
 	admin.POST("/config/url-confirm", adminH.ConfirmURLConfig)
 	admin.GET("/stats", adminH.Stats)
+	admin.GET("/dns-providers/status", adminH.GetDNSProviderStatus)
 	admin.GET("/audit-logs", adminH.AuditLogs)
 	admin.GET("/notifications", notifAdminH.List)
 	admin.POST("/notifications", notifAdminH.Create)

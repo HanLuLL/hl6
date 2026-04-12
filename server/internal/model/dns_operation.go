@@ -41,6 +41,9 @@ type DNSOperationEvent struct {
 	ProviderZone  string          `json:"provider_zone,omitempty" gorm:"type:varchar(191);index"`
 	RecordID      uint            `json:"record_id,omitempty" gorm:"index"`
 	ProviderRecID string          `json:"provider_record_id,omitempty" gorm:"type:varchar(191)"`
+	ErrorCategory string          `json:"error_category,omitempty" gorm:"type:varchar(32);index"`
+	Retryable     bool            `json:"retryable" gorm:"not null;default:false"`
+	LatencyMs     int64           `json:"latency_ms" gorm:"not null;default:0"`
 	CreatedAt     time.Time       `json:"created_at"`
 }
 

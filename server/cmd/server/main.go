@@ -169,6 +169,8 @@ func runSchemaMigrations(db *gorm.DB) error {
 			&model.DNSOperationEvent{},
 			&model.DNSBulkJob{},
 			&model.DNSBulkJobItem{},
+			&model.DomainDNSMigrationTask{},
+			&model.DomainDNSMigrationItem{},
 			&model.CreditBalance{},
 			&model.CreditTransaction{},
 			&model.DailyCheckinClaim{},
@@ -191,6 +193,12 @@ func runSchemaMigrations(db *gorm.DB) error {
 		if err := ensureDNSRecordConstraints(tx); err != nil {
 			return err
 		}
+		if err := ensureMigrationConstraints(tx); err != nil {
+			return err
+		}
+		if err := migrateDNSProviderAccountStatus(tx); err != nil {
+			return err
+		}
 
 		if err := verifyRequiredTables(tx, []interface{}{
 			&model.User{},
@@ -201,6 +209,26 @@ func runSchemaMigrations(db *gorm.DB) error {
 		}
 		return nil
 	})
+}
+
+func ensureMigrationConstraints(db *gorm.DB) error {
+	statements := []string{
+		// Ensure only one running migration per domain at a time
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_migration_one_running_per_domain ON domain_dns_migration_tasks (domain_id) WHERE status = 'running'`,
+		// Index for worker to pick up pending tasks efficiently
+		`CREATE INDEX IF NOT EXISTS idx_migration_tasks_status_domain ON domain_dns_migration_tasks (status, domain_id)`,
+	}
+	for _, stmt := range statements {
+		if err := db.Exec(stmt).Error; err != nil {
+			return fmt.Errorf("ensure migration constraint (%s): %w", stmt, err)
+		}
+	}
+	return nil
+}
+
+func migrateDNSProviderAccountStatus(db *gorm.DB) error {
+	// Set default status for existing accounts that have no status
+	return db.Exec(`UPDATE dns_provider_accounts SET status = 'active' WHERE status IS NULL OR status = ''`).Error
 }
 
 func ensureDNSRecordConstraints(db *gorm.DB) error {
