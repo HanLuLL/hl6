@@ -70,6 +70,8 @@ func (s *DomainMigrationService) Repo() *repository.Repository {
 }
 
 // resumePendingTasks resets any stuck-running tasks to pending and resumes pending tasks on startup.
+// Tasks are grouped by domain and only the first (lowest queue_seq) task per domain is started,
+// preserving serial execution order within each domain.
 func (s *DomainMigrationService) resumePendingTasks() {
 	if s.repo == nil {
 		return
@@ -79,7 +81,14 @@ func (s *DomainMigrationService) resumePendingTasks() {
 	if err != nil {
 		return
 	}
+	// Only start the first pending task per domain (lowest queue_seq).
+	// Subsequent tasks will be picked up by finishTask → FindNextPendingMigrationTask.
+	seen := make(map[uint]bool, len(tasks))
 	for _, task := range tasks {
+		if seen[task.DomainID] {
+			continue
+		}
+		seen[task.DomainID] = true
 		go s.runTask(task.ID)
 	}
 }
@@ -301,8 +310,11 @@ func (s *DomainMigrationService) finishTask(task *model.DomainDNSMigrationTask, 
 
 	// Update domain migration state
 	domainState := model.DomainMigrationStateIdle
-	if status == model.MigrationTaskStatusPartialFailed {
+	switch status {
+	case model.MigrationTaskStatusPartialFailed:
 		domainState = model.DomainMigrationStatePartialFailed
+	case model.MigrationTaskStatusFailed:
+		domainState = model.DomainMigrationStateFailed
 	}
 
 	taskIDPtr := task.ID
@@ -352,22 +364,29 @@ func (s *DomainMigrationService) RetryFailures(ctx context.Context, taskID uint)
 			opCtx2, cancel2 := context.WithTimeout(ctx, 30*time.Second)
 			updateErr := targetClient.UpdateRecord(opCtx2, task.TargetZoneID, existingID, item.RecordType, item.Name, item.Content, item.TTL, item.Proxied)
 			cancel2()
-			if updateErr == nil {
-				overwriteBefore, _ := json.Marshal(map[string]string{"provider_record_id": existingID})
-				overwriteAfter, _ := json.Marshal(map[string]string{"provider_record_id": existingID, "content": item.Content})
+			if updateErr != nil {
+				errCat, _ := ClassifyProviderError(updateErr)
 				_ = s.repo.UpdateMigrationItem(item.ID, map[string]interface{}{
-					"status":                   model.MigrationItemStatusSucceeded,
-					"target_provider_record_id": existingID,
-					"conflict_overwritten":      true,
-					"overwrite_before":          overwriteBefore,
-					"overwrite_after":           overwriteAfter,
-					"last_error_category":       "",
-					"last_error_message":        "",
-					"finished_at":               &finishedAt,
-					"attempts":                  gorm.Expr("attempts + 1"),
+					"last_error_category": string(errCat),
+					"last_error_message":  updateErr.Error(),
+					"attempts":            gorm.Expr("attempts + 1"),
 				})
-				retried++
+				continue
 			}
+			overwriteBefore, _ := json.Marshal(map[string]string{"provider_record_id": existingID})
+			overwriteAfter, _ := json.Marshal(map[string]string{"provider_record_id": existingID, "content": item.Content})
+			_ = s.repo.UpdateMigrationItem(item.ID, map[string]interface{}{
+				"status":                   model.MigrationItemStatusSucceeded,
+				"target_provider_record_id": existingID,
+				"conflict_overwritten":      true,
+				"overwrite_before":          overwriteBefore,
+				"overwrite_after":           overwriteAfter,
+				"last_error_category":       "",
+				"last_error_message":        "",
+				"finished_at":               &finishedAt,
+				"attempts":                  gorm.Expr("attempts + 1"),
+			})
+			retried++
 			continue
 		}
 

@@ -29,6 +29,7 @@ const (
 	DomainMigrationStateIdle          = "idle"
 	DomainMigrationStateRunning       = "running"
 	DomainMigrationStatePartialFailed = "partial_failed"
+	DomainMigrationStateFailed        = "failed"
 	DomainMigrationStateQueued        = "queued"
 )
 

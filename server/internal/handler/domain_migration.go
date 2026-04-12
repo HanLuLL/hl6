@@ -53,12 +53,15 @@ func (h *DomainMigrationHandler) Create(c *gin.Context) {
 		Reason:                  strings.TrimSpace(body.Reason),
 	})
 	if err != nil {
-		status := http.StatusInternalServerError
 		var pe *service.ProviderError
-		if errors.As(err, &pe) {
-			status = http.StatusBadRequest
+		switch {
+		case errors.As(err, &pe):
+			response.Error(c, http.StatusBadRequest, err.Error())
+		case isClientError(err):
+			response.Error(c, http.StatusBadRequest, err.Error())
+		default:
+			response.Error(c, http.StatusInternalServerError, err.Error())
 		}
-		response.Error(c, status, err.Error())
 		return
 	}
 

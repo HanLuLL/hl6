@@ -50,7 +50,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DNSRecordsContent } from "./dns-records";
 import { DNSProviderAccountsContent } from "./dns-provider-accounts";
 import { ClaimedSubdomainsContent } from "./claimed-subdomains";
-import { useCreateMigration, useDomainMigrations } from "@/hooks/use-domain-migrations";
+import { useCreateMigration } from "@/hooks/use-domain-migrations";
 
 interface GroupAccessEntry {
   group_id: number;

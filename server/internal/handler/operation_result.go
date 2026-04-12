@@ -9,6 +9,27 @@ import (
 	"hl6-server/pkg/response"
 )
 
+// isClientError returns true for errors that originate from invalid caller input
+// (domain/account not found, account disabled, missing zone) so they map to 4xx.
+func isClientError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	clientPrefixes := []string{
+		"domain not found",
+		"target provider account not found",
+		"target provider account is disabled",
+		"target_provider_zone_id is required",
+	}
+	for _, p := range clientPrefixes {
+		if strings.Contains(msg, p) {
+			return true
+		}
+	}
+	return false
+}
+
 func idempotencyKeyFromHeader(c *gin.Context) (string, bool) {
 	key := strings.TrimSpace(c.GetHeader("X-Idempotency-Key"))
 	if key == "" {
