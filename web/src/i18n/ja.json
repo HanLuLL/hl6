@@ -630,6 +630,7 @@
     "failedToFetchJWKS": "認証の検証に失敗しました",
     "migrateToRequired": "移行先の指定が必要です",
     "invalidMigrateTo": "無効な移行先",
+    "migrationTaskBlocked": "このドメインには未完了の移行タスクがあります。先に解消してから新規作成してください。",
     "invalidID": "無効な ID",
     "cloudflareOperationInProgress": "別の DNS 同期操作が進行中です",
     "cloudflareDeleteFailed": "Cloudflare から DNS レコードの削除に失敗しました",

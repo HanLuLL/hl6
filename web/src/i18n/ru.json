@@ -630,6 +630,7 @@
     "failedToFetchJWKS": "Не удалось проверить аутентификацию",
     "migrateToRequired": "Необходимо указать цель миграции",
     "invalidMigrateTo": "Недопустимая цель миграции",
+    "migrationTaskBlocked": "Для этого домена уже есть незавершённая задача миграции. Сначала завершите её.",
     "invalidID": "Недействительный ID",
     "cloudflareOperationInProgress": "Выполняется другая операция синхронизации DNS",
     "cloudflareDeleteFailed": "Не удалось удалить DNS-запись из Cloudflare",

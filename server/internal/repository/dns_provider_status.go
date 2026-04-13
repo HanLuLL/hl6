@@ -44,17 +44,33 @@ func (r *Repository) GetDNSProviderStatus() ([]DNSProviderStatusEntry, error) {
 		LastFailureCategory string
 	}
 	since := time.Now().Add(-24 * time.Hour)
-	var failureRows []failureRow
+	var failureCountRows []failureRow
 	if err := r.DB.Model(&model.DNSOperationEvent{}).
-		Select("provider, COUNT(*) as failure_count, MAX(created_at) as last_failure_at, MAX(error_category) as last_failure_category").
+		Select("provider, COUNT(*) as failure_count").
 		Where("success = false AND created_at >= ? AND provider != ''", since).
 		Group("provider").
-		Scan(&failureRows).Error; err != nil {
+		Scan(&failureCountRows).Error; err != nil {
 		return nil, err
 	}
-	failureMap := make(map[string]failureRow, len(failureRows))
-	for _, f := range failureRows {
+	failureMap := make(map[string]failureRow, len(failureCountRows))
+	for _, f := range failureCountRows {
 		failureMap[f.Provider] = f
+	}
+
+	var latestFailureRows []failureRow
+	if err := r.DB.Model(&model.DNSOperationEvent{}).
+		Select("DISTINCT ON (provider) provider, created_at as last_failure_at, error_category as last_failure_category").
+		Where("success = false AND created_at >= ? AND provider != ''", since).
+		Order("provider, created_at DESC, id DESC").
+		Scan(&latestFailureRows).Error; err != nil {
+		return nil, err
+	}
+	for _, latest := range latestFailureRows {
+		row := failureMap[latest.Provider]
+		row.Provider = latest.Provider
+		row.LastFailureAt = latest.LastFailureAt
+		row.LastFailureCategory = latest.LastFailureCategory
+		failureMap[latest.Provider] = row
 	}
 
 	// Get migration queue sizes per provider (via target_provider)

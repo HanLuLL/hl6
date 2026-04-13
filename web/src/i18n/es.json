@@ -630,6 +630,7 @@
     "failedToFetchJWKS": "Error al verificar autenticación",
     "migrateToRequired": "Se requiere destino de migración",
     "invalidMigrateTo": "Destino de migración inválido",
+    "migrationTaskBlocked": "Este dominio ya tiene una tarea de migración sin finalizar. Resuélvela antes de crear una nueva.",
     "invalidID": "ID no válido",
     "cloudflareOperationInProgress": "Otra operación de sincronización DNS está en curso",
     "cloudflareDeleteFailed": "Error al eliminar el registro DNS de Cloudflare",

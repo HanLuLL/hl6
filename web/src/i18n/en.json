@@ -630,6 +630,7 @@
     "failedToFetchJWKS": "Failed to verify authentication",
     "migrateToRequired": "Migration target is required",
     "invalidMigrateTo": "Invalid migration target",
+    "migrationTaskBlocked": "This domain already has an unfinished migration task. Resolve it before creating a new task.",
     "invalidID": "Invalid ID",
     "cloudflareOperationInProgress": "Another DNS sync operation is in progress",
     "cloudflareDeleteFailed": "Failed to delete DNS record from Cloudflare",

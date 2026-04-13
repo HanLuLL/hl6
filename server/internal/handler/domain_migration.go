@@ -53,8 +53,14 @@ func (h *DomainMigrationHandler) Create(c *gin.Context) {
 		Reason:                  strings.TrimSpace(body.Reason),
 	})
 	if err != nil {
+		var blocked *service.MigrationTaskBlockedError
 		var pe *service.ProviderError
 		switch {
+		case errors.As(err, &blocked):
+			response.ErrorWithKeyData(c, http.StatusConflict, err.Error(), "error.migrationTaskBlocked", gin.H{
+				"blocking_task_id": blocked.TaskID,
+				"blocking_status":  blocked.TaskStatus,
+			})
 		case errors.As(err, &pe):
 			response.Error(c, http.StatusBadRequest, err.Error())
 		case isClientError(err):
@@ -138,6 +144,11 @@ func (h *DomainMigrationHandler) RetryFailures(c *gin.Context) {
 
 	result, err := h.migSvc.RetryFailures(c.Request.Context(), taskID)
 	if err != nil {
+		var pe *service.ProviderError
+		if errors.As(err, &pe) && pe.Category == service.ErrCategoryInvalidRequest {
+			response.Error(c, http.StatusBadRequest, err.Error())
+			return
+		}
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}

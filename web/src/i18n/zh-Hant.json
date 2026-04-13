@@ -630,6 +630,7 @@
     "failedToFetchJWKS": "驗證身分失敗",
     "migrateToRequired": "需要指定遷移目標",
     "invalidMigrateTo": "無效的遷移目標",
+    "migrationTaskBlocked": "目前網域存在未完成的遷移任務，請先處理後再發起新任務",
     "invalidID": "無效的 ID",
     "cloudflareOperationInProgress": "此 DNS 記錄正在同步中，請稍後再試",
     "cloudflareDeleteFailed": "無法從 Cloudflare 刪除 DNS 記錄",

@@ -34,7 +34,7 @@ export interface Domain {
   credit_cost: number;
   is_active: boolean;
   description: string;
-  migration_state: "idle" | "running" | "partial_failed" | "queued";
+  migration_state: "idle" | "running" | "partial_failed" | "failed" | "queued";
   migration_read_only: boolean;
   last_migration_task_id?: number | null;
   created_at: string;

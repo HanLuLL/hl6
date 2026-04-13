@@ -630,6 +630,7 @@
     "failedToFetchJWKS": "验证身份失败",
     "migrateToRequired": "需要指定迁移目标",
     "invalidMigrateTo": "无效的迁移目标",
+    "migrationTaskBlocked": "当前域名存在未完成的迁移任务，请先处理后再发起新任务",
     "invalidID": "无效的 ID",
     "cloudflareOperationInProgress": "该 DNS 记录正在同步中，请稍后再试",
     "cloudflareDeleteFailed": "无法从 Cloudflare 删除 DNS 记录",

@@ -379,7 +379,7 @@ function DomainsContent() {
                         variant={
                           domain.migration_state === "running"
                             ? "default"
-                            : domain.migration_state === "partial_failed"
+                            : domain.migration_state === "partial_failed" || domain.migration_state === "failed"
                             ? "destructive"
                             : "secondary"
                         }
@@ -402,7 +402,7 @@ function DomainsContent() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      disabled={domain.migration_state === "running"}
+                      disabled={["running", "queued"].includes(domain.migration_state)}
                       onClick={() => {
                         setMigrateDomain(domain);
                         setMigrateTargetAccount(null);
@@ -725,7 +725,7 @@ function DomainsContent() {
               {" "}
               <span className="font-semibold">{migrateDomain?.name}</span>
               {" "}
-              {t("dnsMigration.createMigrationDescSuffix", "的 DNS 记录迁移到新供应商账号。任务创建后立即切换生效供应商，迁移运行期间写操作暂停。")}
+              {t("dnsMigration.createMigrationDescSuffix", "的 DNS 记录迁移到新供应商账号。迁移运行期间写操作暂停。")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
