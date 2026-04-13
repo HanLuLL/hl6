@@ -9,7 +9,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
-	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
@@ -31,18 +30,14 @@ func NewNotificationHandler(repo *repository.Repository, broker *SSEBroker) *Not
 }
 
 func (h *NotificationHandler) List(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
 		return
 	}
 
 	offset, limit := helpers.ParseOffsetLimit(c, 20, 50)
 
-	groupID := uint(0)
-	if user.GroupID != nil {
-		groupID = *user.GroupID
-	}
+	groupID := userGroupID(user)
 
 	notifications, total, err := h.repo.ListNotificationsForUser(
 		user.ID, groupID, user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
@@ -57,9 +52,8 @@ func (h *NotificationHandler) List(c *gin.Context) {
 }
 
 func (h *NotificationHandler) Get(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
 		return
 	}
 
@@ -68,10 +62,7 @@ func (h *NotificationHandler) Get(c *gin.Context) {
 		return
 	}
 
-	groupID := uint(0)
-	if user.GroupID != nil {
-		groupID = *user.GroupID
-	}
+	groupID := userGroupID(user)
 
 	notification, err := h.repo.FindNotificationForUser(
 		id, user.ID, groupID,
@@ -86,9 +77,8 @@ func (h *NotificationHandler) Get(c *gin.Context) {
 }
 
 func (h *NotificationHandler) MarkRead(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
 		return
 	}
 
@@ -98,10 +88,7 @@ func (h *NotificationHandler) MarkRead(c *gin.Context) {
 	}
 
 	// Verify visibility before marking read
-	groupID := uint(0)
-	if user.GroupID != nil {
-		groupID = *user.GroupID
-	}
+	groupID := userGroupID(user)
 	if _, err := h.repo.FindNotificationForUser(id, user.ID, groupID, user.CreatedAt.Format("2006-01-02T15:04:05Z07:00")); err != nil {
 		response.ErrorWithKey(c, http.StatusNotFound, "notification not found", "error.notificationNotFound")
 		return
@@ -116,16 +103,12 @@ func (h *NotificationHandler) MarkRead(c *gin.Context) {
 }
 
 func (h *NotificationHandler) UnreadStatus(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
 		return
 	}
 
-	groupID := uint(0)
-	if user.GroupID != nil {
-		groupID = *user.GroupID
-	}
+	groupID := userGroupID(user)
 
 	hasUnread, err := h.repo.HasUnreadNotifications(
 		user.ID, groupID,
@@ -140,9 +123,9 @@ func (h *NotificationHandler) UnreadStatus(c *gin.Context) {
 }
 
 func (h *NotificationHandler) SSE(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.Abort()
 		return
 	}
 
@@ -175,9 +158,9 @@ func (h *NotificationHandler) SSE(c *gin.Context) {
 }
 
 func (h *NotificationHandler) GetImage(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.Abort()
 		return
 	}
 
@@ -195,10 +178,7 @@ func (h *NotificationHandler) GetImage(c *gin.Context) {
 	// Permission check
 	if img.NotificationID != nil {
 		// Image is linked to a notification — verify user can see that notification
-		groupID := uint(0)
-		if user.GroupID != nil {
-			groupID = *user.GroupID
-		}
+		groupID := userGroupID(user)
 		if _, err := h.repo.FindNotificationForUser(*img.NotificationID, user.ID, groupID, user.CreatedAt.Format("2006-01-02T15:04:05Z07:00")); err != nil {
 			c.AbortWithStatus(http.StatusNotFound)
 			return

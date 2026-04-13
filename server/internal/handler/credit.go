@@ -25,9 +25,8 @@ func NewCreditHandler(repo *repository.Repository) *CreditHandler {
 }
 
 func (h *CreditHandler) GetBalance(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 	balance, err := h.repo.EnsureCreditBalance(user.ID)
@@ -47,9 +46,8 @@ func (h *CreditHandler) GetBalance(c *gin.Context) {
 }
 
 func (h *CreditHandler) ListTransactions(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 	page, perPage := helpers.ParsePageParams(c, 20, 100)
@@ -63,9 +61,8 @@ func (h *CreditHandler) ListTransactions(c *gin.Context) {
 }
 
 func (h *CreditHandler) GetDailyCheckinStatus(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 
@@ -94,9 +91,8 @@ func (h *CreditHandler) GetDailyCheckinStatus(c *gin.Context) {
 }
 
 func (h *CreditHandler) DailyCheckin(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 

@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"hl6-server/internal/repository"
-	"hl6-server/internal/ctxutil"
 	"hl6-server/pkg/response"
 )
 
@@ -18,9 +17,8 @@ func NewAuthHandler(repo *repository.Repository) *AuthHandler {
 }
 
 func (h *AuthHandler) Me(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 	balance, err := h.repo.EnsureCreditBalance(user.ID)

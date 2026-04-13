@@ -38,9 +38,8 @@ func NewDomainHandler(repo *repository.Repository, ops *service.DNSOperationServ
 }
 
 func (h *DomainHandler) List(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 

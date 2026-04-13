@@ -20,7 +20,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"hl6-server/internal/config"
-	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
@@ -73,9 +72,8 @@ func (h *BrandingHandler) GetFavicon(c *gin.Context) {
 }
 
 func (h *BrandingHandler) AdminUpdateBranding(c *gin.Context) {
-	admin := ctxutil.GetUser(c)
+	admin := mustGetUser(c)
 	if admin == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
 		return
 	}
 
@@ -117,9 +115,8 @@ func (h *BrandingHandler) AdminUpdateBranding(c *gin.Context) {
 }
 
 func (h *BrandingHandler) AdminUploadLogo(c *gin.Context) {
-	admin := ctxutil.GetUser(c)
+	admin := mustGetUser(c)
 	if admin == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
 		return
 	}
 
@@ -208,9 +205,8 @@ func (h *BrandingHandler) AdminUploadLogo(c *gin.Context) {
 }
 
 func (h *BrandingHandler) AdminDeleteLogo(c *gin.Context) {
-	admin := ctxutil.GetUser(c)
+	admin := mustGetUser(c)
 	if admin == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
 		return
 	}
 

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
@@ -19,9 +18,8 @@ func NewReferralHandler(repo *repository.Repository) *ReferralHandler {
 }
 
 func (h *ReferralHandler) GetReferralInfo(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
 		return
 	}
 

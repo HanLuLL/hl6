@@ -12,7 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
-	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
@@ -32,9 +31,8 @@ func NewSubdomainHandler(repo *repository.Repository, broker *SSEBroker, ops *se
 }
 
 func (h *SubdomainHandler) List(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 	subs, err := h.repo.ListSubdomainsByUser(user.ID)
@@ -58,9 +56,8 @@ func (h *SubdomainHandler) Settings(c *gin.Context) {
 }
 
 func (h *SubdomainHandler) Get(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 	id, ok := helpers.ParseUintParam(c, "id")
@@ -80,9 +77,8 @@ func (h *SubdomainHandler) Get(c *gin.Context) {
 }
 
 func (h *SubdomainHandler) Claim(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 	var body struct {
@@ -193,9 +189,8 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 }
 
 func (h *SubdomainHandler) Release(c *gin.Context) {
-	user := ctxutil.GetUser(c)
+	user := mustGetUser(c)
 	if user == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "user not found", "error.userNotFound")
 		return
 	}
 	id, ok := helpers.ParseUintParam(c, "id")
@@ -306,9 +301,8 @@ func (h *SubdomainHandler) AdminListClaimed(c *gin.Context) {
 }
 
 func (h *SubdomainHandler) AdminRelease(c *gin.Context) {
-	admin := ctxutil.GetUser(c)
+	admin := mustGetUser(c)
 	if admin == nil {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
 		return
 	}
 
