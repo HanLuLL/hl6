@@ -67,16 +67,8 @@ cd web && npm run lint     # ESLint
 
 - **安全优先**
 - 网络搜索 API 文档，而非猜测
-- 除非明确提到，禁止写单元测试、跑编译
-- 探索代码库，思考可否复用之前代码
-
-## 对话要求
-
-- 主动追问用户，确保思想对齐：目标用户、核心功能、不做的功能、未提及的可能问题
+- 除非明确提到，不写单元测试、不跑编译
 
 ## Active Technologies
 - Go 1.25.5（后端），TypeScript 5 + React 19（前端） + Gin、GORM、PostgreSQL driver、cloudflare-go/v4、tencentcloud-sdk-go、alibabacloud alidns SDK、huaweicloud-sdk-go-v3、TanStack React Query、i18next (001-add-dns-providers)
 - Go 1.25.5（后端），TypeScript 5.9 + React 19（前端） + Gin、GORM、PostgreSQL driver、cloudflare-go/v4、tencentcloud-sdk-go（dnspod）、alidns-20150109/v5、huaweicloud-sdk-go-v3、baidubce/bce-sdk-go、AWS SDK for Go v2（Route53）、google.golang.org/api/dns/v1、TanStack React Query、i18nex (001-add-dns-providers)
-
-## Recent Changes
-- 001-add-dns-providers: Added Go 1.25.5（后端），TypeScript 5 + React 19（前端） + Gin、GORM、PostgreSQL driver、cloudflare-go/v4、tencentcloud-sdk-go、alibabacloud alidns SDK、huaweicloud-sdk-go-v3、TanStack React Query、i18next

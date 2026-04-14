@@ -1,50 +1,55 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
-
-## Core Principles
-
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
-
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
-
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
-
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
-
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
-
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
-
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
-
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
-
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+- # 厚浪云 Constitution (宪章)
+  
+  ------
+  
+  ## 核心原则 (Core Principles)
+  
+  ### I. 质量、安全与体验优先
+  
+  - **核心要求：** 所有功能、内容和交互决策 **MUST** 同时满足质量、安全、用户体验三个维度。
+  - **交付准则：** 任一维度存在明显缺口时不得交付。
+  - **实现细节：** **MUST** 明确处理错误状态、边界输入、权限控制、内容可信度与数据暴露风险，并保证核心流程在正常条件下顺畅完成。
+  - **设定理由：** 厚浪云服务真实出行与实时导览场景，任何缺陷或高认知负担都会直接破坏用户信任。
+  
+  ### II. 简洁实现与合理复用
+  
+  - **准入机制：** 新增抽象、组件、服务或依赖前，**MUST** 先证明现有结构无法安全复用。
+  - **代码质量：** 实现 **MUST** 保持命名清晰、职责单一、依赖边界明确。
+  - **演进策略：** 仅在可维护性优于复制粘贴时进行复用；未经说明不得为假设的未来场景预埋复杂结构。
+  
+  ### III. 以用户为中心的前端体验
+  
+  - **设计出发点：** 涉及前端的需求 **MUST** 从用户目标、操作路径和理解成本出发。
+  - **必要元素：** 明确页面布局、信息层级、关键文案、空状态、反馈时机和风格一致性。
+  - **设定理由：** 导览产品常用于移动与分心场景，布局混乱或反馈滞后会严重阻碍任务完成。
+  
+  ### IV. 模糊需求先澄清，隐含细节先提案
+  
+  - **禁令：** 当边界或异常场景不明确时，团队 **MUST** 先提出具体问题，严禁主观猜测。
+  - **转化义务：** 对于方向性想法，交付前 **MUST** 主动转换为可落地细节（如组件行为、视觉参考）并向用户确认。
+  - **设定理由：** 抽象偏好具象化是减少返工、避免误解的前提。
+  
+  ------
+  
+  ## 实施约束
+  
+  > [!IMPORTANT]
+  >
+  > **方案规范**
+  >
+  > - **基础要求：** 所有方案文档 **MUST** 明确记录目标用户、主流程、范围边界、关键假设与验收方式。
+  > - **前端细化：** 必须补充布局、层级及状态反馈。仅描述为“更好看/更简洁”的方案视为**不合格输入**。
+  
+  - **安全先行：** 涉及风险的功能 **MUST** 在方案阶段明确规避策略，严禁事后补救。
+  - **边界守卫：** 未经用户确认，不得擅自扩展需求范围或替用户决定关键呈现。
+  
+  ------
+  
+  ## 协作流程
+  
+  | **阶段**     | **关键行动要求 (MUST)**                                      |
+  | ------------ | ------------------------------------------------------------ |
+  | **计划前置** | 识别不明晰场景、缺失边界，记录为明确问题或提案。             |
+  | **宪章检查** | **Constitution Check** 需覆盖质量、安全、复杂度及验证策略；缺失项视为计划未完成。 |
+  | **任务拆解** | 必须体现“用户确认”与“前端细化”活动，严禁跳过验收环节。       |
+  | **评审交付** | 检查宪章遵守情况；若有偏离，须记录原因、影响范围及用户确认结果。 |
