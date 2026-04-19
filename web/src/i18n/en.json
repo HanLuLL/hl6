@@ -68,7 +68,8 @@
     "mySubdomains": "My Subdomains",
     "dnsRecords": "DNS Records",
     "recentTransactions": "Recent Transactions",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "viewDetails": "View details"
   },
   "notFound": {
     "title": "Page not found",
@@ -548,7 +549,7 @@
     "userNotFoundPleaseSync": "User not found, please sync first",
     "invalidRequestBody": "Invalid request body",
     "insufficientCredits": "Insufficient credits",
-    "subdomainAlreadyTaken": "Subdomain already taken",
+    "subdomainAlreadyTaken": "Subdomain already taken. Please try a different prefix.",
     "domainNotFoundOrInactive": "Domain not found or inactive",
     "noGroupAssigned": "User has no group assigned",
     "groupNoAccess": "Your group does not have access to this domain",
@@ -568,7 +569,7 @@
     "invalidSubdomainName": "Invalid subdomain name: must contain only lowercase letters, numbers, and hyphens",
     "invalidSubdomainLength": "Subdomain length does not match current settings",
     "invalidSubdomainLengthConfig": "Invalid subdomain length settings",
-    "subdomainNotClaimable": "This subdomain cannot be claimed",
+    "subdomainNotClaimable": "This subdomain cannot be claimed. Please try a different prefix.",
     "invalidReservedPrefix": "Invalid reserved prefix",
     "invalidIPv4": "Invalid IPv4 address: {{value}}",
     "invalidIPv6": "Invalid IPv6 address: {{value}}",

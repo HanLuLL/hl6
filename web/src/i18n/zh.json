@@ -68,7 +68,8 @@
     "mySubdomains": "我的子域名",
     "dnsRecords": "DNS 记录",
     "recentTransactions": "最近交易",
-    "viewAll": "查看全部"
+    "viewAll": "查看全部",
+    "viewDetails": "查看详情"
   },
   "notFound": {
     "title": "页面不存在",
@@ -548,7 +549,7 @@
     "userNotFoundPleaseSync": "用户未找到，请先同步",
     "invalidRequestBody": "无效的请求内容",
     "insufficientCredits": "积分不足",
-    "subdomainAlreadyTaken": "子域名已被占用",
+    "subdomainAlreadyTaken": "子域名已被占用，请更换前缀重试",
     "domainNotFoundOrInactive": "域名未找到或已停用",
     "noGroupAssigned": "用户未分配用户组",
     "groupNoAccess": "您的用户组无权访问此域名",
@@ -568,7 +569,7 @@
     "invalidSubdomainName": "无效的子域名：只能包含小写字母、数字和连字符",
     "invalidSubdomainLength": "子域名长度不符合当前配置",
     "invalidSubdomainLengthConfig": "子域名长度配置无效",
-    "subdomainNotClaimable": "该子域无法申请",
+    "subdomainNotClaimable": "该子域无法申请，请更换前缀重试",
     "invalidReservedPrefix": "保留前缀格式无效",
     "invalidIPv4": "无效的 IPv4 地址：{{value}}",
     "invalidIPv6": "无效的 IPv6 地址：{{value}}",

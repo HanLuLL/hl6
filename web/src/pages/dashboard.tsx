@@ -18,14 +18,17 @@ export default function DashboardPage() {
     {
       title: t("dashboard.creditsBalance"),
       icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+      href: "/credits",
     },
     {
       title: t("dashboard.mySubdomains"),
       icon: "M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9",
+      href: "/subdomains",
     },
     {
       title: t("dashboard.dnsRecords"),
       icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10",
+      href: "/subdomains",
     },
   ];
 
@@ -55,6 +58,11 @@ export default function DashboardPage() {
               ) : (
                 <div className="text-3xl font-bold">{statValues[i]}</div>
               )}
+              <div className="mt-3 flex justify-end">
+                <Link to={stat.href} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  {t("dashboard.viewDetails")} &rarr;
+                </Link>
+              </div>
             </CardContent>
           </Card>
         ))}

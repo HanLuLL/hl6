@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation, Trans } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,6 +26,7 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
   const claim = useClaimSubdomain();
   const { data: subdomainSettings } = useSubdomainSettings();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const minLength = subdomainSettings?.min_length ?? 1;
   const maxLength = subdomainSettings?.max_length ?? 63;
   const normalizedName = name.trim();
@@ -37,9 +39,10 @@ export function ClaimDialog({ domain, open, onOpenChange }: ClaimDialogProps) {
     claim.mutate(
       { domain_id: domain.id, name: normalizedName.toLowerCase() },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
           setName("");
           onOpenChange(false);
+          navigate(`/subdomains/${res.data.id}`);
         },
       }
     );
