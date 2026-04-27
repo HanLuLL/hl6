@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/alibabacloud-go/alidns-20150109/v5 v5.3.4
-	github.com/alibabacloud-go/darabonba-openapi/v2 v2.1.14
+	github.com/alibabacloud-go/darabonba-openapi/v2 v2.1.16
 	github.com/aws/aws-sdk-go-v2 v1.41.5
 	github.com/aws/aws-sdk-go-v2/config v1.32.14
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.14
