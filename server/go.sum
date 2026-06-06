@@ -244,6 +244,8 @@ github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORR
 github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.192 h1:xgKdmcALGqLGBrBG8stMli0k+irufCeNPenn76Y4U9o=
 github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.192/go.mod h1:M+yna96Fx9o5GbIUnF3OvVvQGjgfVSyeJbV9Yb1z/wI=
+github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.199 h1:mPzaN5CadyxTg1mHCZd+IUQITeIRMN83Gafr44ikMYY=
+github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.199/go.mod h1:M+yna96Fx9o5GbIUnF3OvVvQGjgfVSyeJbV9Yb1z/wI=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=
