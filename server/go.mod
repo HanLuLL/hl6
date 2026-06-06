@@ -13,7 +13,7 @@ require (
 	github.com/chai2010/webp v1.4.0
 	github.com/cloudflare/cloudflare-go/v4 v4.6.0
 	github.com/gin-gonic/gin v1.12.0
-	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.192
+	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.199
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lestrrat-go/jwx/v2 v2.1.6
