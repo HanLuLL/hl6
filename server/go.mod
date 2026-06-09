@@ -14,7 +14,7 @@ require (
 	github.com/cloudflare/cloudflare-go/v4 v4.6.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.199
-	github.com/jackc/pgx/v5 v5.6.0
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lestrrat-go/jwx/v2 v2.1.6
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.112
