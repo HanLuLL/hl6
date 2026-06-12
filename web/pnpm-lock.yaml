@@ -18,34 +18,34 @@ importers:
         specifier: ^5.90.21
         version: 5.101.0(react@19.2.7)
       '@tiptap/core':
-        specifier: ^3.26.1
+        specifier: ^3.26.0
         version: 3.26.1(@tiptap/pm@3.26.1)
       '@tiptap/extension-color':
-        specifier: ^3.26.1
+        specifier: ^3.26.0
         version: 3.26.1(@tiptap/extension-text-style@3.26.1(@tiptap/core@3.26.1(@tiptap/pm@3.26.1)))
       '@tiptap/extension-image':
-        specifier: ^3.26.1
+        specifier: ^3.26.0
         version: 3.26.1(@tiptap/core@3.26.1(@tiptap/pm@3.26.1))
       '@tiptap/extension-link':
-        specifier: ^3.26.1
+        specifier: ^3.26.0
         version: 3.26.1(@tiptap/core@3.26.1(@tiptap/pm@3.26.1))(@tiptap/pm@3.26.1)
       '@tiptap/extension-placeholder':
-        specifier: ^3.26.1
+        specifier: ^3.26.0
         version: 3.26.1(@tiptap/extensions@3.26.1(@tiptap/core@3.26.1(@tiptap/pm@3.26.1))(@tiptap/pm@3.26.1))
       '@tiptap/extension-text-style':
-        specifier: ^3.26.1
+        specifier: ^3.26.0
         version: 3.26.1(@tiptap/core@3.26.1(@tiptap/pm@3.26.1))
       '@tiptap/extension-underline':
-        specifier: ^3.26.1
+        specifier: ^3.26.0
         version: 3.26.1(@tiptap/core@3.26.1(@tiptap/pm@3.26.1))
       '@tiptap/pm':
-        specifier: ^3.26.1
+        specifier: ^3.26.0
         version: 3.26.1
       '@tiptap/react':
-        specifier: ^3.26.1
+        specifier: ^3.26.0
         version: 3.26.1(@floating-ui/dom@1.7.6)(@tiptap/core@3.26.1(@tiptap/pm@3.26.1))(@tiptap/pm@3.26.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tiptap/starter-kit':
-        specifier: ^3.26.1
+        specifier: ^3.26.0
         version: 3.26.1
       '@types/dompurify':
         specifier: ^3.0.5
@@ -60,8 +60,8 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       dompurify:
-        specifier: ^3.3.1
-        version: 3.4.9
+        specifier: ^3.4.10
+        version: 3.4.10
       i18next:
         specifier: ^25.8.13
         version: 25.10.10(typescript@5.9.3)
@@ -2389,8 +2389,8 @@ packages:
     resolution: {integrity: sha512-DPi0FmjiSU5EvQV0++GFDOJ9ASQUVFh5kD+OzOnYdi7n3Wpm9hWWGfB/O2blfHcMVTL5WkQXSnRiK9makhrcnw==}
     engines: {node: '>=0.3.1'}
 
-  dompurify@3.4.8:
-    resolution: {integrity: sha512-yb1cEmaOum7wFvOCSQxyfgVlv5D47Rc30iZWoMpbDIWTnJ6grDDQyu2KFJzB2k7u0pMuJcQ1zphH//fFnw2tjQ==}
+  dompurify@3.4.10:
+    resolution: {integrity: sha512-0xzNv0e7oYC6yyuOGZIABPM4qtg3QxLFniDNPP4ZP90wR8Yq3zgwpRbrNiT4N3IKqDbbYFEJLV+JWEs19aZ//w==}
 
   dompurify@3.4.9:
     resolution: {integrity: sha512-4dPSRMRDqHvs0V4YDFCsaIZo4if5u0xM+llyxiM2fwuZFdKArUBAF3VtI2+n8NKg9P870WMdYk0UhqQNoWXbfQ==}
@@ -5842,7 +5842,7 @@ snapshots:
 
   '@types/dompurify@3.2.0':
     dependencies:
-      dompurify: 3.4.8
+      dompurify: 3.4.9
 
   '@types/estree-jsx@1.0.5':
     dependencies:
@@ -6248,7 +6248,7 @@ snapshots:
 
   diff@8.0.4: {}
 
-  dompurify@3.4.8:
+  dompurify@3.4.10:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
