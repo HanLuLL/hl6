@@ -17,7 +17,7 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lestrrat-go/jwx/v2 v2.1.6
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.115
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.116
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.78
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.275.0
