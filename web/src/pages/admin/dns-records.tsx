@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ApiError, api, createIdempotencyKey, getErrorMessage, isRetryableMutationError } from "@/lib/api";
+import { api, createIdempotencyKey, getErrorMessage, isRetryableMutationError } from "@/lib/api";
 import { toast } from "sonner";
 import { Copy } from "lucide-react";
 import { CopyableEmail } from "@/components/ui/copyable-email";

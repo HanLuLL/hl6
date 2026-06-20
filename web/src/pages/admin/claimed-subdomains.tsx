@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError, api, createIdempotencyKey, getErrorMessage, isRetryableMutationError } from "@/lib/api";
+import { api, createIdempotencyKey, getErrorMessage, isRetryableMutationError } from "@/lib/api";
 import type { AdminClaimedSubdomain } from "@/types";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";

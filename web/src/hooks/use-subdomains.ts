@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ApiError, api, createIdempotencyKey, getErrorMessage, isRetryableMutationError } from "@/lib/api";
+import { api, createIdempotencyKey, getErrorMessage, isRetryableMutationError } from "@/lib/api";
 import { handleDnsBulkJobError } from "@/lib/dns-bulk-job-error";
 
 const DEFAULT_SUBDOMAIN_SETTINGS = {
