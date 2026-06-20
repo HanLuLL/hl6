@@ -88,11 +88,10 @@ func (w *AuditScanWorker) autoClaimLoop(ctx context.Context) {
 
 func (w *AuditScanWorker) handleMessage(ctx context.Context, id string, values map[string]interface{}) {
 	fqdn := stringField(values["fqdn"])
-	subIDStr := stringField(values["subdomain_id"])
-	subID64, _ := strconv.ParseUint(subIDStr, 10, 64)
-	subID := uint(subID64)
+	subID := uintField(values["subdomain_id"])
 
 	if subID == 0 || fqdn == "" {
+		slog.Warn("audit scan worker: drop invalid task", "id", id, "subdomain_id", values["subdomain_id"], "fqdn", fqdn)
 		_ = w.queue.Ack(ctx, id)
 		return
 	}
@@ -113,6 +112,41 @@ func stringField(v interface{}) string {
 	default:
 		return ""
 	}
+}
+
+// uintField 解析队列字段中的无符号整数。进程内队列保留 Go 原生数值类型；Redis Stream 返回字符串。
+func uintField(v interface{}) uint {
+	switch t := v.(type) {
+	case uint:
+		return t
+	case uint8:
+		return uint(t)
+	case uint16:
+		return uint(t)
+	case uint32:
+		return uint(t)
+	case uint64:
+		return uint(t)
+	case int:
+		if t > 0 {
+			return uint(t)
+		}
+	case int64:
+		if t > 0 {
+			return uint(t)
+		}
+	case string:
+		n, err := strconv.ParseUint(t, 10, 64)
+		if err == nil {
+			return uint(n)
+		}
+	case []byte:
+		n, err := strconv.ParseUint(string(t), 10, 64)
+		if err == nil {
+			return uint(n)
+		}
+	}
+	return 0
 }
 
 func AuditConsumerName(workerIndex int) string {
