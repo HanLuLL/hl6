@@ -364,6 +364,7 @@
     "searchPlaceholder": "名前またはコンテンツで検索...",
     "filterByDomain": "すべてのドメイン",
     "filterByGroup": "すべてのグループ",
+    "totalRecords": "解析レコード {{count}} 件",
     "noRecords": "DNSレコードが見つかりません",
     "recordDetail": "レコード詳細",
     "deleteRecord": "レコード削除",

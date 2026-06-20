@@ -364,6 +364,7 @@
     "searchPlaceholder": "Buscar por nombre o contenido...",
     "filterByDomain": "Todos los dominios",
     "filterByGroup": "Todos los grupos",
+    "totalRecords": "{{count}} registros DNS en total",
     "noRecords": "No se encontraron registros DNS",
     "recordDetail": "Detalle del registro",
     "deleteRecord": "Eliminar registro",

@@ -364,6 +364,7 @@
     "searchPlaceholder": "Поиск по имени или содержимому...",
     "filterByDomain": "Все домены",
     "filterByGroup": "Все группы",
+    "totalRecords": "Всего {{count}} DNS записей",
     "noRecords": "DNS записи не найдены",
     "recordDetail": "Детали записи",
     "deleteRecord": "Удалить запись",

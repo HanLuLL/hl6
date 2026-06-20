@@ -322,11 +322,17 @@ export function DNSRecordsContent() {
       </Card>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {t("common.pageOf", { page, total: totalPages })}
-          </p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {totalPages > 1 && (
+            <>
+              {t("common.pageOf", { page, total: totalPages })}
+              <span className="ml-2">· </span>
+            </>
+          )}
+          {t("adminDnsRecords.totalRecords", { count: total })}
+        </p>
+        {totalPages > 1 && (
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
               {t("common.previous")}
@@ -335,8 +341,8 @@ export function DNSRecordsContent() {
               {t("common.next")}
             </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Detail Dialog */}
       <RecordDetailDialog

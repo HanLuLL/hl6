@@ -364,6 +364,7 @@
     "searchPlaceholder": "按名称或内容搜索...",
     "filterByDomain": "全部域名",
     "filterByGroup": "全部用户组",
+    "totalRecords": "共 {{count}} 条解析",
     "noRecords": "暂无解析记录",
     "recordDetail": "解析详情",
     "deleteRecord": "删除解析",
