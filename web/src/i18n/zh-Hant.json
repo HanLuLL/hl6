@@ -915,6 +915,7 @@
       "rescan": "立即重扫",
       "bulkRescan": "批量重扫 ({{count}})",
       "bulkRescanQueued": "已入队 {{count}} 个扫描任务",
+      "bulkRescanPartial": "已入队 {{queued}} 个，跳过 {{skipped}} 个",
       "openSite": "打开网站"
     },
     "hoursSinceScan": "{{hours}} 小时前",

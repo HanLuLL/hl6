@@ -915,6 +915,7 @@
       "rescan": "Rescan now",
       "bulkRescan": "Bulk rescan ({{count}})",
       "bulkRescanQueued": "Queued {{count}} scans",
+      "bulkRescanPartial": "Queued {{queued}}, skipped {{skipped}}",
       "openSite": "Open site"
     },
     "hoursSinceScan": "{{hours}}h ago",
