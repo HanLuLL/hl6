@@ -9,6 +9,7 @@ import { api, getErrorMessage } from "@/lib/api";
 import { useCredits, useDailyCheckinStatus, useTransactions } from "@/hooks/use-credits";
 import { useReferrals } from "@/hooks/use-referrals";
 import { toast } from "sonner";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function CreditsPage() {
   const queryClient = useQueryClient();
@@ -19,6 +20,7 @@ export default function CreditsPage() {
   const [refPage, setRefPage] = useState(1);
   const { data: refData, isLoading: refLoading } = useReferrals(refPage, 10);
   const { t } = useTranslation();
+  useDocumentTitle(t("credits.title"));
   const claimMutation = useMutation({
     mutationFn: api.claimDailyCheckin,
     onSuccess: (res) => {

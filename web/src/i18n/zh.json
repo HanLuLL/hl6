@@ -46,8 +46,7 @@
     "featureCloudflareTitle": "Cloudflare 驱动",
     "featureCloudflareDesc": "DNS 记录直接与 Cloudflare 同步，提供企业级的可靠性和速度。",
     "featureControlTitle": "完全控制",
-    "featureControlDesc": "管理 A、AAAA、CNAME 和 TXT 记录。切换 Cloudflare 代理。设置自定义 TTL 值。",
-    "copyright": "SubDomain © {{year}}"
+    "featureControlDesc": "管理 A、AAAA、CNAME 和 TXT 记录。切换 Cloudflare 代理。设置自定义 TTL 值。"
   },
   "nav": {
     "dashboard": "控制台",

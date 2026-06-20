@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useBranding } from "@/hooks/use-branding";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -25,6 +26,7 @@ export default function LandingPage() {
   const { isAuthenticated, signIn } = useAuth();
   const branding = useBranding();
   const { t } = useTranslation();
+  useDocumentTitle();
   const [searchParams, setSearchParams] = useSearchParams();
   const ref = searchParams.get("ref") ?? undefined;
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -187,10 +189,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        <p>{t("landing.copyright", { year: new Date().getFullYear() })}</p>
-        <div className="mt-3">
-          <SiteFooter withBorder={false} centered />
-        </div>
+        <SiteFooter withBorder={false} centered />
       </footer>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

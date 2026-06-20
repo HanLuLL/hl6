@@ -5,12 +5,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubdomains } from "@/hooks/use-subdomains";
 import { useCredits } from "@/hooks/use-credits";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function DashboardPage() {
   const { user, credits } = useAuth();
   const { data: subdomains, isLoading: subdomainsLoading } = useSubdomains();
   const { data: creditData, isLoading: creditsLoading } = useCredits();
   const { t } = useTranslation();
+  useDocumentTitle(t("dashboard.title"));
 
   const isLoading = subdomainsLoading || creditsLoading;
 

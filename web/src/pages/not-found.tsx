@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function NotFoundPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t("notFound.title"));
 
   return (
     <div className="flex min-h-[65vh] items-center justify-center px-2 py-6 sm:px-4 sm:py-10">

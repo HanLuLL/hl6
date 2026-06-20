@@ -7,11 +7,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useSubdomains, useReleaseSubdomain } from "@/hooks/use-subdomains";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function SubdomainsPage() {
   const { data: subdomains, isLoading } = useSubdomains();
   const release = useReleaseSubdomain();
   const { t } = useTranslation();
+  useDocumentTitle(t("subdomains.title"));
   const [releaseTarget, setReleaseTarget] = useState<{ id: number; fqdn: string } | null>(null);
 
   const handleRelease = () => {

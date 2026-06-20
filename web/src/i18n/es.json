@@ -46,8 +46,7 @@
     "featureCloudflareTitle": "Potenciado por Cloudflare",
     "featureCloudflareDesc": "Los registros DNS se sincronizan directamente con Cloudflare para una fiabilidad y velocidad de nivel empresarial.",
     "featureControlTitle": "Control total",
-    "featureControlDesc": "Gestiona registros A, AAAA, CNAME y TXT. Activa o desactiva el proxy de Cloudflare. Configura valores TTL personalizados.",
-    "copyright": "SubDomain © {{year}}"
+    "featureControlDesc": "Gestiona registros A, AAAA, CNAME y TXT. Activa o desactiva el proxy de Cloudflare. Configura valores TTL personalizados."
   },
   "nav": {
     "dashboard": "Panel de control",

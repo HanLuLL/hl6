@@ -46,8 +46,7 @@
     "featureCloudflareTitle": "На базе Cloudflare",
     "featureCloudflareDesc": "DNS-записи синхронизируются напрямую с Cloudflare, обеспечивая надёжность и скорость корпоративного уровня.",
     "featureControlTitle": "Полный контроль",
-    "featureControlDesc": "Управляйте записями A, AAAA, CNAME и TXT. Переключайте прокси Cloudflare. Устанавливайте собственные значения TTL.",
-    "copyright": "SubDomain © {{year}}"
+    "featureControlDesc": "Управляйте записями A, AAAA, CNAME и TXT. Переключайте прокси Cloudflare. Устанавливайте собственные значения TTL."
   },
   "nav": {
     "dashboard": "Панель управления",

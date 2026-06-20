@@ -10,6 +10,7 @@ import { useSubdomain, useReleaseSubdomain } from "@/hooks/use-subdomains";
 import { useDNSRecords } from "@/hooks/use-dns-records";
 import { RecordTable } from "@/components/dns/record-table";
 import { RecordForm } from "@/components/dns/record-form";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function SubdomainDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,7 @@ export default function SubdomainDetailPage() {
   const { t } = useTranslation();
   const subdomainId = parseInt(id || "0");
   const { data: subdomain, isLoading } = useSubdomain(subdomainId);
+  useDocumentTitle(subdomain?.fqdn ?? t("subdomains.title"));
   const { data: records } = useDNSRecords(subdomainId);
   const release = useReleaseSubdomain();
   const [showAddRecord, setShowAddRecord] = useState(false);

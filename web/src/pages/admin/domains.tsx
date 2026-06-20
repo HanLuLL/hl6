@@ -51,6 +51,7 @@ import { DNSRecordsContent } from "./dns-records";
 import { DNSProviderAccountsContent } from "./dns-provider-accounts";
 import { ClaimedSubdomainsContent } from "./claimed-subdomains";
 import { useCreateMigration } from "@/hooks/use-domain-migrations";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 interface GroupAccessEntry {
   group_id: number;
@@ -68,6 +69,7 @@ interface DNSFailureRecord {
 
 export default function AdminDomainsPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t("adminDomains.title"));
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get("tab");
   const currentTab = rawTab === "cloudflare" ? "dns-providers" : (rawTab || "dns-records");

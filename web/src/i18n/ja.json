@@ -46,8 +46,7 @@
     "featureCloudflareTitle": "Cloudflare 基盤",
     "featureCloudflareDesc": "DNSレコードは Cloudflare と直接同期し、エンタープライズグレードの信頼性と速度を提供します。",
     "featureControlTitle": "フルコントロール",
-    "featureControlDesc": "A、AAAA、CNAME、TXT レコードを管理。Cloudflare プロキシの切り替え。カスタム TTL 値の設定。",
-    "copyright": "SubDomain © {{year}}"
+    "featureControlDesc": "A、AAAA、CNAME、TXT レコードを管理。Cloudflare プロキシの切り替え。カスタム TTL 値の設定。"
   },
   "nav": {
     "dashboard": "ダッシュボード",

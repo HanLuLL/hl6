@@ -6,11 +6,13 @@ import { ClaimDialog } from "@/components/domain/claim-dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Domain } from "@/types";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function DomainsPage() {
   const { data: domains, isLoading } = useDomains();
   const [claimDomain, setClaimDomain] = useState<Domain | null>(null);
   const { t } = useTranslation();
+  useDocumentTitle(t("domains.title"));
 
   return (
     <div className="space-y-6">

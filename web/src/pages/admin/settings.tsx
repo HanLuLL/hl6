@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+  useDocumentTitle(t("adminSettings.title"));
   const { data: config, isLoading } = useQuery({
     queryKey: ["admin-config"],
     queryFn: async () => {

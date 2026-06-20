@@ -40,6 +40,7 @@ import { NotificationsContent } from "./notifications";
 import { BrandContent } from "./brand";
 import { CreditsSettingsContent } from "./credits-settings";
 import { useAuth } from "@/hooks/use-auth";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 const PAGE_SIZE = 30;
 const MAX_CREDIT_AMOUNT = 100000;
@@ -599,6 +600,7 @@ function UserDetailRow({
 
 export default function AdminUsersPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t("adminUsers.pageTitle"));
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab");
   const currentTab = tab && ["users", "groups", "notifications", "brand", "credits"].includes(tab)

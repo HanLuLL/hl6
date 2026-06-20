@@ -46,8 +46,7 @@
     "featureCloudflareTitle": "Cloudflare Powered",
     "featureCloudflareDesc": "DNS records sync directly with Cloudflare for enterprise-grade reliability and speed.",
     "featureControlTitle": "Full Control",
-    "featureControlDesc": "Manage A, AAAA, CNAME, and TXT records. Toggle Cloudflare proxy. Set custom TTL values.",
-    "copyright": "SubDomain © {{year}}"
+    "featureControlDesc": "Manage A, AAAA, CNAME, and TXT records. Toggle Cloudflare proxy. Set custom TTL values."
   },
   "nav": {
     "dashboard": "Dashboard",

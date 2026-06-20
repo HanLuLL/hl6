@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function CallbackPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  useDocumentTitle(t("common.signingIn"));
 
   useEffect(() => {
     // Backend handles callback and redirects to /dashboard.

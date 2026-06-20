@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CopyableEmail } from "@/components/ui/copyable-email";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
@@ -24,6 +25,7 @@ export default function AdminAuditLogsPage() {
   const [action, setAction] = useState("");
   const [debouncedAction, setDebouncedAction] = useState("");
   const { t } = useTranslation();
+  useDocumentTitle(t("auditLogs.title"));
 
   useEffect(() => {
     const timer = setTimeout(() => {
