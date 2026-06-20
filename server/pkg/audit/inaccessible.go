@@ -37,6 +37,18 @@ func IsSiteUnreachable(dual DualFetchResult) bool {
 	return IsChannelInaccessible(dual.HTTPS.FetchResult) && IsChannelInaccessible(dual.HTTP.FetchResult)
 }
 
+// ConfirmedUnreachable 两次双通道探测均不可访问时返回 true。
+// 任一次可访问则不算不可达；仅完成一次且不可达时返回 false（尚未确认）。
+func ConfirmedUnreachable(first DualFetchResult, second *DualFetchResult) bool {
+	if !IsSiteUnreachable(first) {
+		return false
+	}
+	if second == nil {
+		return false
+	}
+	return IsSiteUnreachable(*second)
+}
+
 // HasPrivateIPError 任一通道因 SSRF 拦截失败。
 func HasPrivateIPError(dual DualFetchResult) bool {
 	return errors.Is(dual.HTTPS.Error, ErrPrivateIP) || errors.Is(dual.HTTP.Error, ErrPrivateIP)

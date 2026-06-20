@@ -32,13 +32,13 @@ func NewAuditRuleEngine(repo *repository.Repository) *AuditRuleEngine {
 	return &AuditRuleEngine{repo: repo}
 }
 
-// MatchAll 加载所有已启用规则，对双通道结果返回全部命中。
-func (e *AuditRuleEngine) MatchAll(ctx context.Context, domainID uint, dual audit.DualFetchResult) ([]MatchedRule, error) {
+// MatchAll 加载所有已启用规则，对双次探测结果返回全部命中。
+func (e *AuditRuleEngine) MatchAll(ctx context.Context, domainID uint, probe audit.DualFetchProbeResult) ([]MatchedRule, error) {
 	rules, err := e.repo.ListEnabledAuditRules()
 	if err != nil {
 		return nil, err
 	}
-	return e.MatchAllDualWithRules(domainID, dual, rules), nil
+	return e.MatchAllProbeWithRules(domainID, probe, rules), nil
 }
 
 // MatchAllWithRules 对给定规则列表执行单通道匹配（兼容旧调用）。
@@ -49,8 +49,17 @@ func (e *AuditRuleEngine) MatchAllWithRules(domainID uint, fr audit.FetchResult,
 	return e.MatchAllDualWithRules(domainID, dual, rules)
 }
 
-// MatchAllDualWithRules 双通道规则匹配（试跑草稿规则用）。
+// MatchAllDualWithRules 双通道规则匹配（兼容旧调用，不做双次不可达确认）。
 func (e *AuditRuleEngine) MatchAllDualWithRules(domainID uint, dual audit.DualFetchResult, rules []model.AuditRule) []MatchedRule {
+	return e.MatchAllProbeWithRules(domainID, audit.DualFetchProbeResult{Primary: dual, First: dual}, rules)
+}
+
+// MatchAllProbeWithRules 双次探测结果规则匹配（试跑草稿规则用）。
+func (e *AuditRuleEngine) MatchAllProbeWithRules(domainID uint, probe audit.DualFetchProbeResult, rules []model.AuditRule) []MatchedRule {
+	if probe.SkipRuleMatch {
+		return nil
+	}
+	dual := probe.Primary
 	var matches []MatchedRule
 	for i := range rules {
 		rule := &rules[i]
@@ -61,10 +70,14 @@ func (e *AuditRuleEngine) MatchAllDualWithRules(domainID uint, dual audit.DualFe
 			continue
 		}
 		if rule.MatchType == model.AuditMatchUnreachable {
-			if audit.IsSiteUnreachable(dual) {
+			if probe.ConfirmedUnreachable() {
+				summaryDual := probe.First
+				if probe.Second != nil {
+					summaryDual = *probe.Second
+				}
 				matches = append(matches, MatchedRule{
 					Rule:    rule,
-					Snippet: helpers.TruncateRunes(audit.UnreachableChannelSummary(dual), 200),
+					Snippet: helpers.TruncateRunes(audit.UnreachableChannelSummary(summaryDual), 200),
 				})
 			}
 			continue

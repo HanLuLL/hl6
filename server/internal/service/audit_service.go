@@ -61,7 +61,8 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 		return
 	}
 
-	dual := s.fetcher.FetchDual(ctx, fqdn)
+	probe := s.fetcher.FetchDualConfirmed(ctx, fqdn)
+	dual := probe.Primary
 	primaryCh := dual.PrimaryChannel()
 	combinedHash := audit.CombinedContentHash(dual)
 
@@ -75,9 +76,9 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 		FetchDetails:   buildFetchDetails(dual),
 		MatchedRules:   model.MatchedRulesSlice{},
 	}
-	scan.Status = s.scanStatusFromDual(dual)
+	scan.Status = s.scanStatusFromProbe(probe)
 
-	skipRuleMatch := false
+	skipRuleMatch := probe.SkipRuleMatch
 	if combinedHash != "" {
 		prevHash, prevAt, hashErr := s.repo.FindLatestCleanScanHash(target.ID)
 		if hashErr == nil && prevHash == combinedHash {
@@ -89,7 +90,7 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 	}
 
 	if !skipRuleMatch && !audit.HasPrivateIPError(dual) {
-		matches, matchErr := s.engine.MatchAll(ctx, sub.DomainID, dual)
+		matches, matchErr := s.engine.MatchAll(ctx, sub.DomainID, probe)
 		if matchErr != nil {
 			slog.Warn("audit scan: rule matching error", "fqdn", fqdn, "err", matchErr)
 		}
@@ -398,11 +399,11 @@ func (s *AuditService) RestoreSubdomain(ctx context.Context, sub *model.Subdomai
 	return nil
 }
 
-func (s *AuditService) scanStatusFromDual(dual audit.DualFetchResult) string {
-	if audit.HasPrivateIPError(dual) {
+func (s *AuditService) scanStatusFromProbe(probe audit.DualFetchProbeResult) string {
+	if audit.HasPrivateIPError(probe.Primary) {
 		return model.ScanStatusError
 	}
-	if audit.IsSiteUnreachable(dual) {
+	if probe.ConfirmedUnreachable() {
 		return model.ScanStatusUnreachable
 	}
 	return model.ScanStatusClean
@@ -469,7 +470,7 @@ func (s *AuditService) sendAuditCustomNotification(userID uint, fqdn string, rul
 }
 
 func (s *AuditService) TestRuleMatch(ctx context.Context, fqdn string, domainID uint, rules []model.AuditRule) (audit.DualFetchResult, []MatchedRule, *MatchedRule) {
-	dual := s.fetcher.FetchDual(ctx, fqdn)
-	matches := s.engine.MatchAllDualWithRules(domainID, dual, rules)
-	return dual, matches, PickPrimaryMatch(matches)
+	probe := s.fetcher.FetchDualConfirmed(ctx, fqdn)
+	matches := s.engine.MatchAllProbeWithRules(domainID, probe, rules)
+	return probe.Primary, matches, PickPrimaryMatch(matches)
 }

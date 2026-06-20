@@ -882,7 +882,7 @@
       "regex": "Regex",
       "status_eq": "Status equals",
       "unreachable": "サイト到達不可",
-      "unreachableHint": "HTTPS と HTTP の両方が到達不可のときに一致。マッチ対象の設定は不要です。単一チャネルが到達不可とみなされる場合：(1) 接続失敗・タイムアウト（DNS 解決失敗、接続拒否、TLS ハンドシェイク失敗など）；(2) 接続は成功したが取得に失敗（レスポンス本文の読み取り失敗など。プライベート IP への SSRF ブロックは除く）；(3) HTTP ステータスが 403・500・502・503・504（404 は対象外）。"
+      "unreachableHint": "初回が到達不可の場合は自動で再試行します。両方の試行が到達不可のときのみ一致し、いずれか一方でも到達可能なら一致しません（初回不可・二次可の場合は他のルールも評価しません）。マッチ対象の設定は不要です。単一チャネルが到達不可とみなされる場合：(1) 接続失敗・タイムアウト（DNS 解決失敗、接続拒否、TLS ハンドシェイク失敗など）；(2) 接続は成功したが取得に失敗（レスポンス本文の読み取り失敗など。プライベート IP への SSRF ブロックは除く）；(3) HTTP ステータスが 403・500・502・503・504（404 は対象外）。"
     },
     "keywordLogic": {
       "any": "Match any keyword",
@@ -917,8 +917,14 @@
       "updated": "Rule updated",
       "deleted": "Rule deleted",
       "empty": "No rules",
-      "keywordPlaceholder": "Type keyword and press Enter",
-      "scopeHint": "Empty = all root domains",
+      "keywordPlaceholder": "キーワードを入力して Enter",
+      "scopeHint": "未選択の場合はすべてのルートドメインに適用",
+      "scopeSelected": "{{count}} 件のルートドメインを選択",
+      "configured": "設定済み",
+      "sections": {
+        "basics": "基本情報",
+        "match": "検出条件"
+      },
       "fields": {
         "name": "Name",
         "targets": "Targets",
