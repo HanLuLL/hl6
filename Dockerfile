@@ -14,7 +14,7 @@ ENV APP_GIT_COMMIT=$APP_GIT_COMMIT
 
 RUN npm run build
 
-FROM mirror.houlang.cloud/dh/golang:1.25.6-alpine AS server-builder
+FROM mirror.houlang.cloud/dh/golang:1.25.8-alpine AS server-builder
 
 WORKDIR /src
 
