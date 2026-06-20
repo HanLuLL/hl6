@@ -31,12 +31,12 @@ function readEnvValue(keys: string[]): string | null {
 }
 
 const gitBranch =
-  readEnvValue(["CI_COMMIT_REF_NAME", "CI_COMMIT_BRANCH"]) ??
+  readEnvValue(["APP_GIT_BRANCH", "CI_COMMIT_REF_NAME", "CI_COMMIT_BRANCH"]) ??
   readGitValue("git rev-parse --abbrev-ref HEAD") ??
   "unknown"
 
 const gitCommit =
-  readEnvValue(["CI_COMMIT_SHORT_SHA"]) ??
+  readEnvValue(["APP_GIT_COMMIT", "CI_COMMIT_SHORT_SHA"]) ??
   readEnvValue(["CI_COMMIT_SHA"])?.slice(0, 8) ??
   readGitValue("git rev-parse --short HEAD") ??
   "unknown"
