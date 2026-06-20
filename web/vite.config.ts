@@ -2,7 +2,7 @@ import { execSync } from "node:child_process"
 import path from "node:path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
+import { defineConfig, loadEnv } from "vite"
 
 const projectRoot = path.resolve(__dirname, "..")
 
@@ -41,7 +41,12 @@ const gitCommit =
   readGitValue("git rev-parse --short HEAD") ??
   "unknown"
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, projectRoot, "")
+  const serverPort = env.SERVER_PORT || "8081"
+  const devPort = Number(env.VITE_DEV_PORT || "5174")
+
+  return {
   envDir: projectRoot,
   define: {
     __APP_GIT_BRANCH__: JSON.stringify(gitBranch),
@@ -54,8 +59,11 @@ export default defineConfig({
     },
   },
   server: {
+    port: devPort,
+    strictPort: true,
     proxy: {
-      "/api": "http://localhost:8080",
+      "/api": `http://localhost:${serverPort}`,
     },
   },
+  }
 })

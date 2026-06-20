@@ -109,7 +109,7 @@ func (r *URLResolver) Resolve(c *gin.Context) (*URLConfigState, error) {
 	}
 
 	if len(state.FrontendURLs) == 0 {
-		state.FrontendURLs = []string{"http://localhost:5173"}
+		state.FrontendURLs = []string{"http://localhost:5174"}
 		state.FrontendSource = urlSourceFallback
 	}
 	if len(state.BackendURLs) == 0 {
