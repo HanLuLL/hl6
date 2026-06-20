@@ -28,6 +28,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Globe,
@@ -38,15 +40,31 @@ import {
   ShieldCheck,
   ClipboardList,
   SlidersHorizontal,
-  ChevronLeft,
-  ChevronRight,
+  ChevronDown,
   Menu,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import type { BrandingResponse } from "@/types";
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
+const SIDEBAR_NAV_SECTIONS_KEY = "sidebar-nav-sections";
+
+type NavSectionId = "admin";
+type NavSectionsCollapsed = Record<NavSectionId, boolean>;
+
+const DEFAULT_NAV_SECTIONS: NavSectionsCollapsed = { admin: false };
+
+function loadNavSectionsCollapsed(): NavSectionsCollapsed {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_NAV_SECTIONS_KEY);
+    if (!raw) return DEFAULT_NAV_SECTIONS;
+    const parsed = JSON.parse(raw) as Partial<NavSectionsCollapsed>;
+    return { ...DEFAULT_NAV_SECTIONS, ...parsed };
+  } catch {
+    return DEFAULT_NAV_SECTIONS;
+  }
+}
 
 type NavItem = {
   labelKey: string;
@@ -73,7 +91,9 @@ function NavLink({ item, onClick, collapsed }: { item: NavItem; onClick?: () => 
   const location = useLocation();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const active = location.pathname === item.href;
+  const active =
+    location.pathname === item.href ||
+    (item.href !== "/" && location.pathname.startsWith(`${item.href}/`));
   const Icon = item.icon;
 
   return (
@@ -83,27 +103,90 @@ function NavLink({ item, onClick, collapsed }: { item: NavItem; onClick?: () => 
       onMouseEnter={() => prefetchRouteData(queryClient, item.href)}
       onFocus={() => prefetchRouteData(queryClient, item.href)}
       title={collapsed ? t(item.labelKey) : undefined}
-      className={`relative flex items-center rounded-lg text-sm transition-colors ${
+      className={`flex items-center rounded-lg text-sm transition-colors ${
         collapsed ? "justify-center px-2 py-2" : "gap-3 px-3 py-2"
       } ${
         active
-          ? "bg-brand/10 text-brand font-medium"
+          ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
       }`}
     >
-      {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full bg-brand" />
-      )}
       <Icon className="h-4 w-4 shrink-0" />
       {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
     </Link>
   );
 }
 
+function NavSection({
+  sectionId,
+  titleKey,
+  items,
+  collapsed: sidebarCollapsed,
+  sectionCollapsed,
+  onSectionCollapsedChange,
+  onNavigate,
+}: {
+  sectionId: NavSectionId;
+  titleKey: string;
+  items: NavItem[];
+  collapsed?: boolean;
+  sectionCollapsed: boolean;
+  onSectionCollapsedChange: (id: NavSectionId, collapsed: boolean) => void;
+  onNavigate?: () => void;
+}) {
+  const { t } = useTranslation();
+  const showItems = sidebarCollapsed || !sectionCollapsed;
+
+  return (
+    <>
+      <div className="my-3 border-t" />
+      {sidebarCollapsed ? (
+        showItems &&
+        items.map((item) => (
+          <NavLink key={item.href} item={item} onClick={onNavigate} collapsed={sidebarCollapsed} />
+        ))
+      ) : (
+        <Collapsible
+          open={!sectionCollapsed}
+          onOpenChange={(open) => onSectionCollapsedChange(sectionId, !open)}
+        >
+          <CollapsibleTrigger
+            className={cn(
+              "mb-1 flex w-full items-center justify-between rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-wider",
+              "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+            )}
+          >
+            <span>{t(titleKey)}</span>
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 transition-transform duration-200 ease-out",
+                !sectionCollapsed && "rotate-180",
+              )}
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-1">
+            {items.map((item) => (
+              <NavLink key={item.href} item={item} onClick={onNavigate} collapsed={false} />
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+    </>
+  );
+}
+
 function SidebarContent({ onNavigate, collapsed, branding }: { onNavigate?: () => void; collapsed?: boolean; branding: BrandingResponse }) {
   const { user } = useAuth();
-  const { t } = useTranslation();
   const isAdmin = user?.role === "admin";
+  const [sectionsCollapsed, setSectionsCollapsed] = useState(loadNavSectionsCollapsed);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_NAV_SECTIONS_KEY, JSON.stringify(sectionsCollapsed));
+  }, [sectionsCollapsed]);
+
+  const setSectionCollapsed = useCallback((id: NavSectionId, sectionCollapsed: boolean) => {
+    setSectionsCollapsed((prev) => ({ ...prev, [id]: sectionCollapsed }));
+  }, []);
 
   return (
     <div className="flex h-full flex-col">
@@ -115,18 +198,20 @@ function SidebarContent({ onNavigate, collapsed, branding }: { onNavigate?: () =
           {!collapsed && <span>{branding.name}</span>}
         </Link>
       </div>
-      <nav className={`flex-1 space-y-0.5 ${collapsed ? "p-2" : "p-3"}`}>
+      <nav className={`flex-1 space-y-1 ${collapsed ? "p-2" : "p-4"}`}>
         {navItems.map((item) => (
           <NavLink key={item.href} item={item} onClick={onNavigate} collapsed={collapsed} />
         ))}
         {isAdmin && (
-          <>
-            <div className="my-3 border-t" />
-            {!collapsed && <p className="mb-1.5 px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{t("nav.admin")}</p>}
-            {adminItems.map((item) => (
-              <NavLink key={item.href} item={item} onClick={onNavigate} collapsed={collapsed} />
-            ))}
-          </>
+          <NavSection
+            sectionId="admin"
+            titleKey="nav.admin"
+            items={adminItems}
+            collapsed={collapsed}
+            sectionCollapsed={sectionsCollapsed.admin}
+            onSectionCollapsedChange={setSectionCollapsed}
+            onNavigate={onNavigate}
+          />
         )}
       </nav>
     </div>
@@ -189,7 +274,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className={`hidden border-r bg-sidebar-background lg:flex lg:flex-col shrink-0 sticky top-0 h-screen transition-all duration-300 ${collapsed ? "w-16" : "w-60"}`}>
+      <aside className={`hidden border-r bg-sidebar-background lg:flex lg:flex-col shrink-0 sticky top-0 h-screen transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
         <div className="flex-1 overflow-hidden">
           <SidebarContent collapsed={collapsed} branding={branding} />
         </div>
@@ -201,14 +286,17 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             title={collapsed ? t("common.expand", "Expand") : t("common.collapse", "Collapse")}
           >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`}>
+              <path d="M11 17l-5-5 5-5" />
+              <path d="M18 17l-5-5 5-5" />
+            </svg>
           </Button>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Header */}
-        <header className="flex h-14 items-center gap-3 border-b bg-background/95 backdrop-blur-sm px-4 lg:px-5 sticky top-0 z-40">
+        <header className="flex h-14 items-center gap-4 border-b border-border/60 bg-background/80 px-4 backdrop-blur-xl lg:px-6 sticky top-0 z-40">
           {/* Mobile menu */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
@@ -216,7 +304,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
                 <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-60 p-0">
+            <SheetContent side="left" className="w-64 p-0">
               <SidebarContent onNavigate={() => setMobileOpen(false)} branding={branding} />
             </SheetContent>
           </Sheet>
