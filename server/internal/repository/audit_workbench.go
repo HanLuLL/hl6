@@ -129,11 +129,12 @@ LEFT JOIN LATERAL (
 		ar.name AS matched_rule_name
 	FROM subdomain_scans ss
 	LEFT JOIN audit_rules ar ON ar.id = ss.matched_rule_id
-	WHERE ss.subdomain_id = s.id AND ss.status = ?
-	ORDER BY ss.created_at DESC LIMIT 1
+	WHERE ss.subdomain_id = s.id
+	  AND ss.id = latest_scan.id
+	  AND latest_scan.status = 'violation'
 ) latest_violation ON true
 `
-	args := []interface{}{model.ScanStatusViolation}
+	args := []interface{}{}
 	where := "WHERE 1=1"
 
 	if len(filter.Statuses) > 0 {
@@ -402,9 +403,15 @@ func (r *Repository) GetAuditSubdomainDetail(id uint) (*AuditSubdomainDetailBund
 			ar.name AS matched_rule_name
 		FROM subdomain_scans ss
 		LEFT JOIN audit_rules ar ON ar.id = ss.matched_rule_id
-		WHERE ss.subdomain_id = ? AND ss.status = ?
-		ORDER BY ss.created_at DESC LIMIT 1
-	`, sub.ID, model.ScanStatusViolation).Scan(&violation).Error
+		JOIN LATERAL (
+			SELECT ls.id, ls.status
+			FROM subdomain_scans ls
+			WHERE ls.subdomain_id = ss.subdomain_id
+			ORDER BY ls.created_at DESC
+			LIMIT 1
+		) latest ON latest.id = ss.id AND latest.status = ?
+		WHERE ss.subdomain_id = ?
+	`, model.ScanStatusViolation, sub.ID).Scan(&violation).Error
 
 	bundle := &AuditSubdomainDetailBundle{
 		Subdomain:         *sub,
