@@ -882,7 +882,7 @@
       "regex": "Regex",
       "status_eq": "Status equals",
       "unreachable": "Sitio inaccesible",
-      "unreachableHint": "Si el primer intento es inaccesible, se reintenta automáticamente. Solo coincide cuando ambos intentos son inaccesibles; cualquier intento exitoso no coincide (si el primero falla pero el segundo tiene éxito, tampoco se evalúan otras reglas). No requiere objetivos de coincidencia. Un canal es inaccesible si: (1) la conexión falla o hay timeout (p. ej. fallo DNS, conexión rechazada, fallo en el handshake TLS); (2) la conexión se estableció pero falla la obtención, como al leer el cuerpo de la respuesta (se excluyen bloqueos SSRF por IP privada); (3) el estado HTTP es 403, 500, 502, 503 o 504 (404 no cuenta)."
+      "unreachableHint": "Si el primer intento es inaccesible, se reintenta automáticamente. Solo coincide cuando ambos intentos son inaccesibles; cualquier intento exitoso no coincide (si el primero falla pero el segundo tiene éxito, tampoco se evalúan otras reglas). No requiere objetivos de coincidencia. Un canal es inaccesible si: (1) la conexión falla o hay timeout (p. ej. fallo DNS, conexión rechazada, fallo en el handshake TLS); (2) la conexión se estableció pero falla la obtención, como al leer el cuerpo de la respuesta (se excluyen bloqueos SSRF por IP privada); (3) cualquier estado HTTP 5xx; (4) la mayoría de los 4xx, excepto 401, 404 y 429."
     },
     "keywordLogic": {
       "any": "Match any keyword",

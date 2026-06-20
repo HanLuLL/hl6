@@ -6,13 +6,21 @@ import (
 	"strings"
 )
 
-// InaccessibleHTTPStatusCodes HTTP 层视为不可访问的状态码（不含 404）。
-var InaccessibleHTTPStatusCodes = map[int]bool{
-	403: true,
-	500: true,
-	502: true,
-	503: true,
-	504: true,
+// IsHTTPStatusInaccessible 判定 HTTP 响应状态码是否视为不可访问。
+// 5xx 一律不可访问；4xx 默认不可访问，401/404/429 除外。
+func IsHTTPStatusInaccessible(code int) bool {
+	if code >= 500 {
+		return true
+	}
+	if code < 400 || code >= 500 {
+		return false
+	}
+	switch code {
+	case 401, 404, 429:
+		return false
+	default:
+		return true
+	}
 }
 
 // IsChannelInaccessible 判定单协议通道是否不可访问。
@@ -26,7 +34,7 @@ func IsChannelInaccessible(fr FetchResult) bool {
 		}
 		return true
 	case FetchStatusClean:
-		return InaccessibleHTTPStatusCodes[fr.StatusCode]
+		return IsHTTPStatusInaccessible(fr.StatusCode)
 	default:
 		return false
 	}

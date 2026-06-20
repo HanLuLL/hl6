@@ -882,7 +882,7 @@
       "regex": "Regex",
       "status_eq": "Status equals",
       "unreachable": "Site unreachable",
-      "unreachableHint": "If the first probe is inaccessible, a second attempt runs automatically. Matches only when both attempts are inaccessible; any successful attempt does not match (if the first fails but the second succeeds, no other rules are evaluated either). No match targets required. A channel is inaccessible if: (1) the connection fails or times out (e.g. DNS failure, connection refused, TLS handshake failure); (2) the connection succeeded but fetching fails, such as while reading the response body (private-IP SSRF blocks are excluded); (3) the HTTP status is 403, 500, 502, 503, or 504 (404 does not count)."
+      "unreachableHint": "If the first probe is inaccessible, a second attempt runs automatically. Matches only when both attempts are inaccessible; any successful attempt does not match (if the first fails but the second succeeds, no other rules are evaluated either). No match targets required. A channel is inaccessible if: (1) the connection fails or times out (e.g. DNS failure, connection refused, TLS handshake failure); (2) the connection succeeded but fetching fails, such as while reading the response body (private-IP SSRF blocks are excluded); (3) any HTTP 5xx status; (4) most 4xx statuses, except 401, 404, and 429."
     },
     "keywordLogic": {
       "any": "Match any keyword",
