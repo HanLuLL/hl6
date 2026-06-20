@@ -4,6 +4,9 @@ WORKDIR /src
 
 RUN apk add --no-cache build-base
 
+ARG GOPROXY=https://goproxy.cn,direct
+ENV GOPROXY=$GOPROXY
+
 COPY server/go.mod server/go.sum ./
 RUN go mod download
 
