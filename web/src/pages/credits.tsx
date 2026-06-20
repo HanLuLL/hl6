@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, getErrorMessage } from "@/lib/api";
@@ -10,6 +9,7 @@ import { useCredits, useDailyCheckinStatus, useTransactions } from "@/hooks/use-
 import { useReferrals } from "@/hooks/use-referrals";
 import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { Coins, CalendarCheck, CheckCircle2, Copy } from "lucide-react";
 
 export default function CreditsPage() {
   const queryClient = useQueryClient();
@@ -21,6 +21,7 @@ export default function CreditsPage() {
   const { data: refData, isLoading: refLoading } = useReferrals(refPage, 10);
   const { t } = useTranslation();
   useDocumentTitle(t("credits.title"));
+
   const claimMutation = useMutation({
     mutationFn: api.claimDailyCheckin,
     onSuccess: (res) => {
@@ -33,13 +34,10 @@ export default function CreditsPage() {
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
-  const typeBadge = (type: string) => {
-    switch (type) {
-      case "grant": return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{t("credits.grant")}</Badge>;
-      case "deduct": return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">{t("credits.deduct")}</Badge>;
-      case "refund": return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{t("credits.refund")}</Badge>;
-      default: return <Badge variant="outline">{type}</Badge>;
-    }
+  const txTypeColor: Record<string, string> = {
+    grant: "bg-green-500",
+    deduct: "bg-red-500",
+    refund: "bg-brand",
   };
 
   const referralEnabled = refData?.referral_enabled ?? false;
@@ -58,48 +56,73 @@ export default function CreditsPage() {
         <p className="text-muted-foreground">{t("credits.subtitle")}</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-muted-foreground">{t("credits.currentBalance")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {creditLoading ? (
-            <Skeleton className="h-10 w-20" />
-          ) : (
-            <div className="text-4xl font-bold">{creditData?.balance ?? 0}</div>
-          )}
-          <p className="text-sm text-muted-foreground mt-1">{t("credits.creditsAvailable")}</p>
-        </CardContent>
-      </Card>
-
-      {checkinStatus?.enabled && (
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Balance card — large display */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{t("credits.dailyCheckinTitle")}</CardTitle>
-            <p className="text-sm text-muted-foreground">{t("credits.dailyCheckinDesc")}</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {t("credits.dailyCheckinReward", { amount: checkinStatus.reward })}
-            </p>
-            <Button
-              onClick={() => claimMutation.mutate()}
-              disabled={checkinStatus.claimed_today || claimMutation.isPending}
-            >
-              {checkinStatus.claimed_today
-                ? t("credits.dailyCheckinClaimed")
-                : claimMutation.isPending
-                  ? t("credits.dailyCheckingIn")
-                  : t("credits.dailyCheckinNow")}
-            </Button>
+          <CardContent className="px-6 py-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">{t("credits.currentBalance")}</p>
+                {creditLoading ? (
+                  <Skeleton className="h-14 w-24" />
+                ) : (
+                  <div className="text-6xl font-bold tabular-nums leading-none">{creditData?.balance ?? 0}</div>
+                )}
+                <p className="text-sm text-muted-foreground mt-2">{t("credits.creditsAvailable")}</p>
+              </div>
+              <div className="rounded-xl bg-brand-muted p-3">
+                <Coins className="h-6 w-6 text-brand" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-      )}
 
+        {/* Daily check-in CTA */}
+        {checkinStatus?.enabled && (
+          <Card className={checkinStatus.claimed_today ? "opacity-75" : ""}>
+            <CardContent className="px-6 py-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">{t("credits.dailyCheckinTitle")}</p>
+                  <p className="text-lg font-semibold mt-0.5">
+                    {checkinStatus.claimed_today
+                      ? t("credits.dailyCheckinClaimed")
+                      : t("credits.dailyCheckinReward", { amount: checkinStatus.reward })}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">{t("credits.dailyCheckinDesc")}</p>
+                  <Button
+                    className={`mt-4 ${!checkinStatus.claimed_today ? "bg-brand hover:bg-brand/90 text-brand-foreground" : ""}`}
+                    variant={checkinStatus.claimed_today ? "outline" : "default"}
+                    onClick={() => claimMutation.mutate()}
+                    disabled={checkinStatus.claimed_today || claimMutation.isPending}
+                    size="sm"
+                  >
+                    {checkinStatus.claimed_today ? (
+                      <>
+                        <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                        {t("credits.dailyCheckinClaimed")}
+                      </>
+                    ) : claimMutation.isPending ? (
+                      t("credits.dailyCheckingIn")
+                    ) : (
+                      <>
+                        <CalendarCheck className="mr-1.5 h-3.5 w-3.5" />
+                        {t("credits.dailyCheckinNow")}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Referral */}
       {referralEnabled && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{t("referral.title")}</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">{t("referral.title")}</CardTitle>
             <p className="text-sm text-muted-foreground">{t("referral.subtitle")}</p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -107,36 +130,39 @@ export default function CreditsPage() {
               <Skeleton className="h-9 w-full" />
             ) : (
               <div className="flex items-center gap-2">
-                <code className="flex-1 rounded-md border bg-muted px-3 py-2 text-sm truncate">
+                <code className="flex-1 rounded-md border bg-muted px-3 py-2 text-xs truncate font-mono">
                   {referralLink}
                 </code>
-                <Button variant="outline" size="sm" onClick={copyLink}>
+                <Button variant="outline" size="sm" onClick={copyLink} className="shrink-0 gap-1.5">
+                  <Copy className="h-3.5 w-3.5" />
                   {t("referral.copy")}
                 </Button>
               </div>
             )}
 
             {!refLoading && refData && refData.records.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-muted-foreground">{t("referral.records")}</h4>
-                {refData.records.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div>
-                      <p className="text-sm font-medium">{r.invitee_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(r.invitee_created_at).toLocaleDateString()}
-                      </p>
+              <div className="space-y-1">
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{t("referral.records")}</h4>
+                <div className="divide-y">
+                  {refData.records.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between py-3">
+                      <div>
+                        <p className="text-sm font-medium">{r.invitee_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(r.invitee_created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        {r.inviter_credits > 0 && (
+                          <p className="text-sm font-medium text-green-600 dark:text-green-400">+{r.inviter_credits}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(r.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      {r.inviter_credits > 0 && (
-                        <p className="text-sm font-medium text-green-600">+{r.inviter_credits}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(r.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
                 {refData.total > 10 && (
                   <div className="flex justify-center gap-2 pt-2">
                     <Button variant="outline" size="sm" disabled={refPage <= 1} onClick={() => setRefPage((p) => p - 1)}>
@@ -160,17 +186,18 @@ export default function CreditsPage() {
         </Card>
       )}
 
+      {/* Transaction history */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{t("credits.transactionHistory")}</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">{t("credits.transactionHistory")}</CardTitle>
         </CardHeader>
         <CardContent>
           {txnLoading ? (
-            <div className="space-y-3">
+            <div className="divide-y">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
+                <div key={i} className="flex items-center justify-between py-3">
                   <div className="flex items-center gap-3">
-                    <Skeleton className="h-5 w-14 rounded-full" />
+                    <Skeleton className="h-2 w-2 rounded-full" />
                     <div className="space-y-1">
                       <Skeleton className="h-4 w-40" />
                       <Skeleton className="h-3 w-28" />
@@ -186,20 +213,20 @@ export default function CreditsPage() {
           ) : !txnData?.data || txnData.data.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">{t("credits.noTransactions")}</p>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y">
               {txnData.data.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                <div key={tx.id} className="flex items-center justify-between py-3 text-sm">
                   <div className="flex items-center gap-3">
-                    {typeBadge(tx.type)}
+                    <span className={`h-2 w-2 rounded-full shrink-0 ${txTypeColor[tx.type] ?? "bg-muted-foreground"}`} />
                     <div>
-                      <p className="text-sm font-medium">{t(tx.description_key, tx.description_params ?? {})}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-medium leading-none">{t(tx.description_key, tx.description_params ?? {})}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {new Date(tx.created_at).toLocaleString()}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-medium ${tx.amount > 0 ? "text-green-600" : "text-red-600"}`}>
+                  <div className="text-right shrink-0 ml-4">
+                    <p className={`font-medium tabular-nums ${tx.amount > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                       {tx.amount > 0 ? "+" : ""}{tx.amount}
                     </p>
                     <p className="text-xs text-muted-foreground">{t("credits.balance", { balance: tx.balance_after })}</p>
