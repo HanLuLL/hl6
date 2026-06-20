@@ -35,8 +35,7 @@ import { toast } from "sonner";
 import { Copy } from "lucide-react";
 import { CopyableEmail } from "@/components/ui/copyable-email";
 import type { AdminDNSRecord } from "@/types";
-
-const DEFAULT_BAN_REASON = "该账户违反平台规定";
+import { handleDnsBulkJobError } from "@/lib/dns-bulk-job-error";
 
 export function DNSRecordsContent() {
   const { t } = useTranslation();
@@ -120,12 +119,7 @@ export function DNSRecordsContent() {
       setReason("");
     },
     onError: (err) => {
-      if (err instanceof ApiError && err.data && typeof err.data === "object" && "bulk_job_id" in err.data) {
-        const jobID = (err.data as { bulk_job_id: number }).bulk_job_id;
-        toast.error(`DNS 批量任务已排队（Job #${jobID}），请等待完成后重试操作`);
-        return;
-      }
-      toast.error(getErrorMessage(err, t));
+      handleDnsBulkJobError(err, t, "operation", (e) => toast.error(getErrorMessage(e, t)));
     },
   });
 
@@ -405,7 +399,7 @@ export function DNSRecordsContent() {
                   onKeyDown={(e) => {
                     if (e.key === "Tab" && !e.shiftKey && banUser && reason.trim() === "") {
                       e.preventDefault();
-                      setReason(DEFAULT_BAN_REASON);
+                      setReason(t("adminDnsRecords.defaultBanReason"));
                     }
                   }}
                 />

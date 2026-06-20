@@ -14,7 +14,6 @@ const (
 	ErrCategoryPermissionDenied        ProviderErrorCategory = "permission_denied"
 	ErrCategoryRecordConflict          ProviderErrorCategory = "record_conflict"
 	ErrCategoryRecordNotFound          ProviderErrorCategory = "record_not_found"
-	ErrCategoryRateLimited             ProviderErrorCategory = "rate_limited"
 	ErrCategoryProviderUnavailable     ProviderErrorCategory = "provider_unavailable"
 	ErrCategoryInvalidRequest          ProviderErrorCategory = "invalid_request"
 	ErrCategoryDomainMigrationReadOnly ProviderErrorCategory = "domain_migration_read_only"
@@ -78,14 +77,10 @@ func ClassifyProviderError(err error) (ProviderErrorCategory, bool) {
 		return ErrCategoryPermissionDenied, false
 	}
 
-	// Rate limiting
-	if containsAny(msg, "rate limit", "too many requests", "429", "throttl") {
-		return ErrCategoryRateLimited, true
-	}
-
 	// Provider unavailable / transient
 	if containsAny(msg, "timeout", "connection refused", "connection reset", "eof",
-		"service unavailable", "502", "503", "504", "temporarily") {
+		"service unavailable", "502", "503", "504", "temporarily",
+		"rate limit", "too many requests", "429", "throttl") {
 		return ErrCategoryProviderUnavailable, true
 	}
 
@@ -115,7 +110,7 @@ func ClassifyProviderError(err error) (ProviderErrorCategory, bool) {
 // IsRetryableCategory returns true if the error category is generally retryable.
 func IsRetryableCategory(category ProviderErrorCategory) bool {
 	switch category {
-	case ErrCategoryRateLimited, ErrCategoryProviderUnavailable:
+	case ErrCategoryProviderUnavailable:
 		return true
 	case ErrCategoryDomainMigrationReadOnly:
 		return true // conditional: retry after migration completes

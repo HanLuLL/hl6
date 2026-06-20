@@ -45,7 +45,7 @@ cd web && npm run lint     # ESLint
 
 - `cmd/server/` — 入口点（自动迁移、数据种子）
 - `internal/handler/` — HTTP handlers（auth, domain, subdomain, dns, credit, admin）
-- `internal/middleware/` — 中间件（auth, CORS, rate limiting, admin 权限）
+- `internal/middleware/` — 中间件（auth, CORS, admin 权限）
 - `internal/repository/` — GORM 数据访问层
 - `internal/service/` — Cloudflare DNS 操作服务
 - `internal/router/` — Gin 路由配置
@@ -63,28 +63,8 @@ cd web && npm run lint     # ESLint
 - **DNS 记录类型**: 支持 A, AAAA, CNAME, TXT，有重复记录拦截和 CNAME 共存规则
 - **角色控制**: 用户 vs 管理员，后端 admin middleware 保护管理路由
 
-### 内容审核（Content Audit）
-
-与 **操作审计日志**（`/admin/audit-logs`）独立：
-
-| 功能 | 路由 | 说明 |
-|------|------|------|
-| 内容审核 | `/admin/audit` | 规则、扫描、封禁、恢复 |
-| 操作审计日志 | `/admin/audit-logs` | 管理员操作留痕 |
-
-- **触发**: 定时调度、子域认领、创建 A/AAAA/CNAME、管理员重扫
-- **队列**: `REDIS_ADDR` 配置时用 Redis Stream；未配置时进程内 channel 降级（单实例开发可用）
-- **封禁**: 删除供应商 DNS + 本地 `suspended` 状态；用户侧 DNS 只读
-- **通知**: 封禁等审核通知使用 `message_key` i18n（`notification.subdomainSuspended`）
-
-环境变量：`REDIS_ADDR`（可选）、`AUDIT_SCAN_INTERVAL`（默认 30m）、`AUDIT_SCAN_WORKER_COUNT`（默认 2）、`AUDIT_SCAN_TIMEOUT`（默认 15s）
-
 ## 开发要求
 
 - **安全优先**
 - 网络搜索 API 文档，而非猜测
 - 除非明确提到，不写单元测试、不跑编译
-
-## Active Technologies
-- Go 1.25.5（后端），TypeScript 5 + React 19（前端） + Gin、GORM、PostgreSQL driver、cloudflare-go/v4、tencentcloud-sdk-go、alibabacloud alidns SDK、huaweicloud-sdk-go-v3、TanStack React Query、i18next (001-add-dns-providers)
-- Go 1.25.5（后端），TypeScript 5.9 + React 19（前端） + Gin、GORM、PostgreSQL driver、cloudflare-go/v4、tencentcloud-sdk-go（dnspod）、alidns-20150109/v5、huaweicloud-sdk-go-v3、baidubce/bce-sdk-go、AWS SDK for Go v2（Route53）、google.golang.org/api/dns/v1、TanStack React Query、i18nex (001-add-dns-providers)

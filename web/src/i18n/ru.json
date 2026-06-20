@@ -6,6 +6,7 @@
     "saving": "Сохранение...",
     "create": "Создать",
     "creating": "Создание...",
+    "add": "Добавить",
     "edit": "Редактировать",
     "delete": "Удалить",
     "enable": "Включить",
@@ -32,7 +33,16 @@
     "errorMessage": "При загрузке страницы произошла непредвиденная ошибка. Пожалуйста, попробуйте снова.",
     "retry": "Повторить",
     "hotkeyGuide": "Esc закрывает или возвращает назад; Cmd/Ctrl + Enter подтверждает.",
-    "gotIt": "Понятно"
+    "gotIt": "Понятно",
+    "close": "Закрыть",
+    "expand": "Развернуть",
+    "collapse": "Свернуть",
+    "toggleTheme": "Переключить тему"
+  },
+  "footer": {
+    "openSource": "Houlang Open Source",
+    "branch": "Ветка",
+    "commit": "Коммит"
   },
   "landing": {
     "dashboard": "Панель управления",
@@ -85,7 +95,8 @@
     "mySubdomains": "Мои поддомены",
     "dnsRecords": "DNS-записи",
     "recentTransactions": "Последние транзакции",
-    "viewAll": "Смотреть все"
+    "viewAll": "Смотреть все",
+    "viewDetails": "Подробнее"
   },
   "notFound": {
     "title": "Страница не найдена",
@@ -287,7 +298,8 @@
     "tabDnsRecords": "DNS записи",
     "tabClaimed": "Список занятых",
     "tabDomains": "Домены",
-    "tabCloudflare": "Аккаунты Cloudflare",
+    "tabCloudflare": "Аккаунты DNS-провайдеров",
+    "tabDnsProviders": "Аккаунты DNS-провайдеров",
     "title": "Управление доменами",
     "subtitle": "Добавление и настройка корневых доменов",
     "addDomain": "Добавить домен",
@@ -371,7 +383,8 @@
     "proxied": "Проксирование",
     "cloudflareId": "Cloudflare ID",
     "domain": "Домен",
-    "userName": "Имя пользователя"
+    "userName": "Имя пользователя",
+    "defaultBanReason": "Этот аккаунт нарушил правила платформы"
   },
   "auditLogs": {
     "title": "Журнал аудита",
@@ -579,7 +592,6 @@
     "missingToken": "Отсутствует токен авторизации",
     "invalidToken": "Недействительный токен",
     "adminRequired": "Требуется доступ администратора",
-    "rateLimitExceeded": "Превышен лимит запросов",
     "cnameConflictWithOther": "Запись CNAME не может сосуществовать с другими записями",
     "cnameAlreadyExists": "Запись CNAME уже существует",
     "otherConflictWithCname": "Запись CNAME не может сосуществовать с другими записями",
@@ -704,7 +716,11 @@
     "invalidAuditRuleTarget": "Недопустимая цель правила",
     "invalidAuditRuleMatchType": "Недопустимый тип сопоставления",
     "invalidAuditRulePattern": "Недопустимый шаблон правила",
-    "invalidAuditRuleCombination": "Недопустимая комбинация цели и типа"
+    "invalidAuditRuleCombination": "Недопустимая комбинация цели и типа",
+    "dnsBulkJobQueuedBan": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите блокировку после завершения.",
+    "dnsBulkJobQueuedDelete": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите удаление после завершения.",
+    "dnsBulkJobQueuedRelease": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите освобождение после завершения.",
+    "dnsBulkJobQueuedOperation": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите операцию после завершения."
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -742,11 +758,39 @@
     "selectAccount": "Выберите аккаунт...",
     "verifyConnectivity": "Проверить подключение",
     "verifySuccess": "Подключение подтверждено",
-    "verifyFailed": "Ошибка проверки подключения"
+    "verifyFailed": "Ошибка проверки подключения",
+    "credentialFields": {
+      "api_token": "API Token",
+      "secret_id": "SecretId",
+      "secret_key": "SecretKey",
+      "region_optional": "Region (необязательно)",
+      "access_key_id": "AccessKey ID",
+      "access_key_secret": "AccessKey Secret",
+      "region_id_optional": "Region ID (необязательно)",
+      "endpoint_optional": "Endpoint (необязательно)",
+      "ak": "AK",
+      "sk": "SK",
+      "project_id_optional": "Project ID (необязательно)",
+      "access_key": "Access Key",
+      "secret_access_key": "Secret Access Key",
+      "region_optional_default": "Region (необязательно, по умолчанию us-east-1)",
+      "service_account_json": "Service Account JSON",
+      "api_id": "API ID",
+      "api_key": "API Key",
+      "api_secret": "API Secret",
+      "username": "Имя пользователя",
+      "password": "Пароль"
+    },
+    "fieldKeepUnchanged": "Оставьте пустым, чтобы сохранить текущее значение"
   },
   "dnsMigration": {
     "title": "Задачи миграции DNS",
     "createMigration": "Начать миграцию",
+    "createMigrationTitle": "Запустить миграцию DNS",
+    "createMigrationShort": "Мигрировать",
+    "migrationTaskCreated": "Задача миграции создана",
+    "createMigrationDescription": "Перенести DNS-записи домена {{name}} на новый аккаунт провайдера. Запись приостанавливается на время миграции.",
+    "selectTargetZoneFirst": "Сначала выберите целевую зону",
     "targetAccount": "Целевой аккаунт провайдера",
     "targetZone": "Целевая зона",
     "reason": "Причина (необязательно)",
@@ -756,6 +800,7 @@
     "statusPartialFailed": "Частичная ошибка",
     "statusFailed": "Ошибка",
     "statusCancelled": "Отменено",
+    "statusQueued": "В очереди",
     "queuePosition": "Позиция в очереди",
     "totalItems": "Всего элементов",
     "succeededItems": "Успешно",
@@ -775,7 +820,6 @@
     "permission_denied": "Отказано в доступе",
     "record_conflict": "Конфликт записей",
     "record_not_found": "Запись не найдена",
-    "rate_limited": "Превышен лимит запросов",
     "provider_unavailable": "Провайдер недоступен",
     "invalid_request": "Неверный запрос",
     "domain_migration_read_only": "Только чтение во время миграции",

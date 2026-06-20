@@ -169,7 +169,7 @@ export default function LandingPage() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               )}
-              <span className="text-xs text-muted-foreground">{t("landing.noCardRequired", "No credit card required")}</span>
+              <span className="text-xs text-muted-foreground">{t("landing.noCardRequired")}</span>
             </div>
           </div>
 
@@ -227,8 +227,8 @@ export default function LandingPage() {
       <section className="py-20 border-t border-border/50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-10">
-            <h2 className="text-2xl font-bold tracking-tight">{t("landing.featuresTitle", "Everything you need")}</h2>
-            <p className="mt-2 text-muted-foreground">{t("landing.featuresSubtitle", "Built for developers who want DNS without the overhead.")}</p>
+            <h2 className="text-2xl font-bold tracking-tight">{t("landing.featuresTitle")}</h2>
+            <p className="mt-2 text-muted-foreground">{t("landing.featuresSubtitle")}</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {/* Wide card */}
@@ -240,7 +240,7 @@ export default function LandingPage() {
               <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{t("landing.featureInstantDesc")}</p>
               <div className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                {t("landing.featureLive", "Live propagation monitoring")}
+                {t("landing.featureLive")}
               </div>
             </div>
             {/* Narrow card */}
@@ -262,9 +262,9 @@ export default function LandingPage() {
             {/* Stat card */}
             <div className="lg:col-span-2 rounded-xl border p-7 bg-brand/5 border-brand/20 flex items-center justify-between gap-6">
               <div>
-                <p className="text-sm font-medium text-brand mb-1">{t("landing.statLabel", "Supported record types")}</p>
+                <p className="text-sm font-medium text-brand mb-1">{t("landing.statLabel")}</p>
                 <p className="text-3xl font-bold text-foreground">A · AAAA · CNAME · TXT</p>
-                <p className="mt-1.5 text-sm text-muted-foreground">{t("landing.statDesc", "Full DNS record management with validation & conflict detection")}</p>
+                <p className="mt-1.5 text-sm text-muted-foreground">{t("landing.statDesc")}</p>
               </div>
             </div>
           </div>
@@ -275,13 +275,13 @@ export default function LandingPage() {
       <section className="py-20 border-t border-border/50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-10">
-            <h2 className="text-2xl font-bold tracking-tight">{t("landing.howTitle", "Get started in minutes")}</h2>
+            <h2 className="text-2xl font-bold tracking-tight">{t("landing.howTitle")}</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { step: "01", title: t("landing.step1Title", "Claim a subdomain"), desc: t("landing.step1Desc", "Browse available domains and claim a subdomain with your account.") },
-              { step: "02", title: t("landing.step2Title", "Add DNS records"), desc: t("landing.step2Desc", "Create A, AAAA, CNAME or TXT records directly from the dashboard.") },
-              { step: "03", title: t("landing.step3Title", "Go live"), desc: t("landing.step3Desc", "Records propagate automatically via Cloudflare. No manual steps needed.") },
+              { step: "01", title: t("landing.step1Title"), desc: t("landing.step1Desc") },
+              { step: "02", title: t("landing.step2Title"), desc: t("landing.step2Desc") },
+              { step: "03", title: t("landing.step3Title"), desc: t("landing.step3Desc") },
             ].map((s, i) => (
               <div key={i} className="flex gap-5">
                 <div className="shrink-0 w-10 h-10 rounded-lg bg-brand-muted flex items-center justify-center">
@@ -309,11 +309,11 @@ export default function LandingPage() {
                 {branding.name}
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {t("landing.footerTagline", "Subdomain and DNS management for developers.")}
+                {t("landing.footerTagline")}
               </p>
             </div>
             <div>
-              <p className="text-xs font-medium text-foreground mb-3 uppercase tracking-wide">{t("landing.footerLinks", "Platform")}</p>
+              <p className="text-xs font-medium text-foreground mb-3 uppercase tracking-wide">{t("landing.footerLinks")}</p>
               <ul className="space-y-2">
                 {isAuthenticated ? (
                   <>
@@ -331,7 +331,7 @@ export default function LandingPage() {
               </ul>
             </div>
             <div>
-              <p className="text-xs font-medium text-foreground mb-3 uppercase tracking-wide">{t("landing.footerPrefs", "Preferences")}</p>
+              <p className="text-xs font-medium text-foreground mb-3 uppercase tracking-wide">{t("landing.footerPrefs")}</p>
               <div className="flex items-center gap-2">
                 <LanguageToggle />
                 <ThemeToggle />

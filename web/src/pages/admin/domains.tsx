@@ -52,6 +52,7 @@ import { DNSProviderAccountsContent } from "./dns-provider-accounts";
 import { ClaimedSubdomainsContent } from "./claimed-subdomains";
 import { useCreateMigration } from "@/hooks/use-domain-migrations";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { handleDnsBulkJobError } from "@/lib/dns-bulk-job-error";
 
 interface GroupAccessEntry {
   group_id: number;
@@ -95,7 +96,7 @@ export default function AdminDomainsPage() {
           <TabsTrigger value="dns-records">{t("adminDomains.tabDnsRecords")}</TabsTrigger>
           <TabsTrigger value="claimed">{t("adminDomains.tabClaimed")}</TabsTrigger>
           <TabsTrigger value="domains">{t("adminDomains.tabDomains")}</TabsTrigger>
-          <TabsTrigger value="dns-providers">DNS 供应商账号</TabsTrigger>
+          <TabsTrigger value="dns-providers">{t("adminDomains.tabDnsProviders")}</TabsTrigger>
         </TabsList>
         <TabsContent value="dns-records" className="space-y-6 mt-4">
           <DNSRecordsContent />
@@ -231,8 +232,7 @@ function DomainsContent() {
       if (err instanceof ApiError && err.data && typeof err.data === "object" && "failed_records" in err.data) {
         setCfFailures((err.data as { failed_records: DNSFailureRecord[] }).failed_records);
       } else if (err instanceof ApiError && err.data && typeof err.data === "object" && "bulk_job_id" in err.data) {
-        const jobID = (err.data as { bulk_job_id: number }).bulk_job_id;
-        toast.error(`DNS 批量任务已排队（Job #${jobID}），请等待完成后重试删除`);
+        handleDnsBulkJobError(err, t, "delete", (e) => toast.error(getErrorMessage(e, t)));
       } else {
         toast.error(getErrorMessage(err, t));
       }
@@ -254,7 +254,7 @@ function DomainsContent() {
       },
       {
         onSuccess: () => {
-          toast.success(t("dnsMigration.createMigration", "迁移任务已创建"));
+          toast.success(t("dnsMigration.migrationTaskCreated"));
           setMigrateDomain(null);
           setMigrateTargetAccount(null);
           setMigrateTargetZone(null);
@@ -349,7 +349,7 @@ function DomainsContent() {
                 <TableHead>{t("adminDomains.zoneId")}</TableHead>
                 <TableHead>{t("adminDomains.groupAccess")}</TableHead>
                 <TableHead>{t("adminDomains.status")}</TableHead>
-                <TableHead>{t("dnsMigration.migrationState", "迁移状态")}</TableHead>
+                <TableHead>{t("dnsMigration.migrationState")}</TableHead>
                 <TableHead className="text-right">{t("adminDomains.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -412,7 +412,7 @@ function DomainsContent() {
                         setMigrateReason("");
                       }}
                     >
-                      {t("dnsMigration.createMigration", "迁移")}
+                      {t("dnsMigration.createMigrationShort")}
                     </Button>
                     <Button
                       variant="ghost"
@@ -721,18 +721,14 @@ function DomainsContent() {
       >
         <DialogContent className="max-w-lg" aria-describedby="migrate-domain-desc">
           <DialogHeader>
-            <DialogTitle>{t("dnsMigration.createMigration", "发起 DNS 迁移")}</DialogTitle>
+            <DialogTitle>{t("dnsMigration.createMigrationTitle")}</DialogTitle>
             <DialogDescription id="migrate-domain-desc">
-              {t("dnsMigration.createMigrationDesc", "将域名")}
-              {" "}
-              <span className="font-semibold">{migrateDomain?.name}</span>
-              {" "}
-              {t("dnsMigration.createMigrationDescSuffix", "的 DNS 记录迁移到新供应商账号。迁移运行期间写操作暂停。")}
+              {t("dnsMigration.createMigrationDescription", { name: migrateDomain?.name ?? "" })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>{t("dnsMigration.targetAccount", "目标供应商账号")}</Label>
+              <Label>{t("dnsMigration.targetAccount")}</Label>
               <AccountCombobox
                 accounts={(cfAccounts ?? []).filter((a) => a.id !== migrateDomain?.provider_account_id)}
                 value={migrateTargetAccount}
@@ -743,7 +739,7 @@ function DomainsContent() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>{t("dnsMigration.targetZone", "目标 Zone")}</Label>
+              <Label>{t("dnsMigration.targetZone")}</Label>
               <ZoneCombobox
                 value={migrateTargetZone}
                 onSelect={setMigrateTargetZone}
@@ -753,16 +749,16 @@ function DomainsContent() {
               />
               {migrateTargetAccount && !migrateTargetZone && (
                 <p className="text-xs text-muted-foreground">
-                  {t("adminCloudflare.selectAccountFirst", "请先选择目标 Zone")}
+                  {t("dnsMigration.selectTargetZoneFirst")}
                 </p>
               )}
             </div>
             <div className="space-y-1.5">
-              <Label>{t("dnsMigration.reason", "迁移原因（可选）")}</Label>
+              <Label>{t("dnsMigration.reason")}</Label>
               <Input
                 value={migrateReason}
                 onChange={(e) => setMigrateReason(e.target.value)}
-                placeholder={t("dnsMigration.reason", "迁移原因（可选）")}
+                placeholder={t("dnsMigration.reason")}
               />
             </div>
           </div>
@@ -779,8 +775,8 @@ function DomainsContent() {
               onClick={handleStartMigration}
             >
               {createMigration.isPending
-                ? t("common.saving", "提交中...")
-                : t("dnsMigration.createMigration", "发起迁移")}
+                ? t("common.saving")
+                : t("dnsMigration.createMigration")}
             </Button>
           </DialogFooter>
         </DialogContent>

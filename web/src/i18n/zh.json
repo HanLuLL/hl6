@@ -6,6 +6,7 @@
     "saving": "保存中...",
     "create": "创建",
     "creating": "创建中...",
+    "add": "添加",
     "edit": "编辑",
     "delete": "删除",
     "enable": "启用",
@@ -32,7 +33,16 @@
     "errorMessage": "页面加载时发生了意外错误，请重试。",
     "retry": "重试",
     "hotkeyGuide": "Esc 关闭或返回上一步；Cmd/Ctrl + Enter 确认",
-    "gotIt": "知道了"
+    "gotIt": "知道了",
+    "close": "关闭",
+    "expand": "展开",
+    "collapse": "收起",
+    "toggleTheme": "切换主题"
+  },
+  "footer": {
+    "openSource": "厚浪开源",
+    "branch": "分支",
+    "commit": "提交"
   },
   "landing": {
     "dashboard": "控制台",
@@ -288,7 +298,8 @@
     "tabDnsRecords": "解析列表",
     "tabClaimed": "认领列表",
     "tabDomains": "域名管理",
-    "tabCloudflare": "Cloudflare 账号",
+    "tabCloudflare": "DNS 供应商账号",
+    "tabDnsProviders": "DNS 供应商账号",
     "title": "域名管理",
     "subtitle": "添加和配置根域名",
     "addDomain": "添加域名",
@@ -372,7 +383,8 @@
     "proxied": "代理状态",
     "cloudflareId": "Cloudflare ID",
     "domain": "域名",
-    "userName": "用户名"
+    "userName": "用户名",
+    "defaultBanReason": "该账户违反平台规定"
   },
   "auditLogs": {
     "title": "审计日志",
@@ -580,7 +592,6 @@
     "missingToken": "缺少授权令牌",
     "invalidToken": "无效的令牌",
     "adminRequired": "需要管理员权限",
-    "rateLimitExceeded": "请求过于频繁",
     "cnameConflictWithOther": "CNAME 记录不能与其他记录共存",
     "cnameAlreadyExists": "CNAME 记录已存在",
     "otherConflictWithCname": "CNAME 记录不能与其他记录共存",
@@ -705,7 +716,11 @@
     "invalidAuditRuleTarget": "无效的匹配目标",
     "invalidAuditRuleMatchType": "无效的匹配类型",
     "invalidAuditRulePattern": "无效的规则内容",
-    "invalidAuditRuleCombination": "匹配目标与匹配类型组合无效"
+    "invalidAuditRuleCombination": "匹配目标与匹配类型组合无效",
+    "dnsBulkJobQueuedBan": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试封禁",
+    "dnsBulkJobQueuedDelete": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试删除",
+    "dnsBulkJobQueuedRelease": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试释放",
+    "dnsBulkJobQueuedOperation": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试操作"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -743,11 +758,39 @@
     "selectAccount": "选择账号...",
     "verifyConnectivity": "验证连通性",
     "verifySuccess": "连通性验证成功",
-    "verifyFailed": "连通性验证失败"
+    "verifyFailed": "连通性验证失败",
+    "credentialFields": {
+      "api_token": "API Token",
+      "secret_id": "SecretId",
+      "secret_key": "SecretKey",
+      "region_optional": "Region（可选）",
+      "access_key_id": "AccessKey ID",
+      "access_key_secret": "AccessKey Secret",
+      "region_id_optional": "Region ID（可选）",
+      "endpoint_optional": "Endpoint（可选）",
+      "ak": "AK",
+      "sk": "SK",
+      "project_id_optional": "Project ID（可选）",
+      "access_key": "Access Key",
+      "secret_access_key": "Secret Access Key",
+      "region_optional_default": "Region（可选，默认 us-east-1）",
+      "service_account_json": "Service Account JSON",
+      "api_id": "API ID",
+      "api_key": "API Key",
+      "api_secret": "API Secret",
+      "username": "用户名",
+      "password": "密码"
+    },
+    "fieldKeepUnchanged": "留空保持不变"
   },
   "dnsMigration": {
     "title": "DNS 迁移任务",
     "createMigration": "发起迁移",
+    "createMigrationTitle": "发起 DNS 迁移",
+    "createMigrationShort": "迁移",
+    "migrationTaskCreated": "迁移任务已创建",
+    "createMigrationDescription": "将域名 {{name}} 的 DNS 记录迁移到新供应商账号。迁移运行期间写操作暂停。",
+    "selectTargetZoneFirst": "请先选择目标 Zone",
     "targetAccount": "目标供应商账号",
     "targetZone": "目标 Zone",
     "reason": "迁移原因（可选）",
@@ -757,6 +800,7 @@
     "statusPartialFailed": "部分失败",
     "statusFailed": "失败",
     "statusCancelled": "已取消",
+    "statusQueued": "排队中",
     "queuePosition": "排队位置",
     "totalItems": "总计条目",
     "succeededItems": "成功",
@@ -776,7 +820,6 @@
     "permission_denied": "权限不足",
     "record_conflict": "记录冲突",
     "record_not_found": "记录未找到",
-    "rate_limited": "请求频率限制",
     "provider_unavailable": "供应商不可用",
     "invalid_request": "无效请求",
     "domain_migration_read_only": "迁移中，暂不可写",

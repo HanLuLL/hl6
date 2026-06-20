@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ApiError, api, createIdempotencyKey, getErrorMessage, isRetryableMutationError } from "@/lib/api";
+import { handleDnsBulkJobError } from "@/lib/dns-bulk-job-error";
 
 const DEFAULT_SUBDOMAIN_SETTINGS = {
   min_length: 1,
@@ -101,12 +102,7 @@ export function useReleaseSubdomain() {
       queryClient.invalidateQueries({ queryKey: ["credits"] });
     },
     onError: (err) => {
-      if (err instanceof ApiError && err.data && typeof err.data === "object" && "bulk_job_id" in err.data) {
-        const jobID = (err.data as { bulk_job_id: number }).bulk_job_id;
-        toast.error(`DNS 批量任务已排队（Job #${jobID}），请等待完成后重试释放`);
-        return;
-      }
-      toast.error(getErrorMessage(err, t));
+      handleDnsBulkJobError(err, t, "release", (e) => toast.error(getErrorMessage(e, t)));
     },
   });
   return { ...mutation, isRetrying };

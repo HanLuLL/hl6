@@ -6,6 +6,7 @@
     "saving": "儲存中...",
     "create": "建立",
     "creating": "建立中...",
+    "add": "新增",
     "edit": "編輯",
     "delete": "刪除",
     "enable": "啟用",
@@ -32,7 +33,16 @@
     "errorMessage": "載入頁面時發生了意外錯誤，請重試。",
     "retry": "重試",
     "hotkeyGuide": "Esc 關閉或返回上一步；Cmd/Ctrl + Enter 確認",
-    "gotIt": "知道了"
+    "gotIt": "知道了",
+    "close": "關閉",
+    "expand": "展開",
+    "collapse": "收起",
+    "toggleTheme": "切換主題"
+  },
+  "footer": {
+    "openSource": "厚浪開源",
+    "branch": "分支",
+    "commit": "提交"
   },
   "landing": {
     "dashboard": "控制台",
@@ -85,7 +95,8 @@
     "mySubdomains": "我的子網域",
     "dnsRecords": "DNS 記錄",
     "recentTransactions": "最近交易",
-    "viewAll": "查看全部"
+    "viewAll": "查看全部",
+    "viewDetails": "查看詳情"
   },
   "notFound": {
     "title": "頁面不存在",
@@ -287,7 +298,8 @@
     "tabDnsRecords": "解析列表",
     "tabClaimed": "認領列表",
     "tabDomains": "域名管理",
-    "tabCloudflare": "Cloudflare 帳號",
+    "tabCloudflare": "DNS 供應商帳號",
+    "tabDnsProviders": "DNS 供應商帳號",
     "title": "網域管理",
     "subtitle": "新增和設定根網域",
     "addDomain": "新增網域",
@@ -371,7 +383,8 @@
     "proxied": "代理狀態",
     "cloudflareId": "Cloudflare ID",
     "domain": "域名",
-    "userName": "使用者名稱"
+    "userName": "使用者名稱",
+    "defaultBanReason": "該帳戶違反平台規定"
   },
   "auditLogs": {
     "title": "稽核日誌",
@@ -579,7 +592,6 @@
     "missingToken": "缺少授權權杖",
     "invalidToken": "無效的權杖",
     "adminRequired": "需要管理員權限",
-    "rateLimitExceeded": "請求過於頻繁",
     "cnameConflictWithOther": "CNAME 記錄不能與其他記錄共存",
     "cnameAlreadyExists": "CNAME 記錄已存在",
     "otherConflictWithCname": "CNAME 記錄不能與其他記錄共存",
@@ -704,7 +716,11 @@
     "invalidAuditRuleTarget": "無效的匹配目標",
     "invalidAuditRuleMatchType": "無效的匹配類型",
     "invalidAuditRulePattern": "無效的規則內容",
-    "invalidAuditRuleCombination": "匹配目標與匹配類型組合無效"
+    "invalidAuditRuleCombination": "匹配目標與匹配類型組合無效",
+    "dnsBulkJobQueuedBan": "DNS 批次任務已排隊（Job #{{jobID}}），請等待完成後重試封禁",
+    "dnsBulkJobQueuedDelete": "DNS 批次任務已排隊（Job #{{jobID}}），請等待完成後重試刪除",
+    "dnsBulkJobQueuedRelease": "DNS 批次任務已排隊（Job #{{jobID}}），請等待完成後重試釋放",
+    "dnsBulkJobQueuedOperation": "DNS 批次任務已排隊（Job #{{jobID}}），請等待完成後重試操作"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -742,11 +758,39 @@
     "selectAccount": "選擇帳號...",
     "verifyConnectivity": "驗證連線",
     "verifySuccess": "連線驗證成功",
-    "verifyFailed": "連線驗證失敗"
+    "verifyFailed": "連線驗證失敗",
+    "credentialFields": {
+      "api_token": "API Token",
+      "secret_id": "SecretId",
+      "secret_key": "SecretKey",
+      "region_optional": "Region（選填）",
+      "access_key_id": "AccessKey ID",
+      "access_key_secret": "AccessKey Secret",
+      "region_id_optional": "Region ID（選填）",
+      "endpoint_optional": "Endpoint（選填）",
+      "ak": "AK",
+      "sk": "SK",
+      "project_id_optional": "Project ID（選填）",
+      "access_key": "Access Key",
+      "secret_access_key": "Secret Access Key",
+      "region_optional_default": "Region（選填，預設 us-east-1）",
+      "service_account_json": "Service Account JSON",
+      "api_id": "API ID",
+      "api_key": "API Key",
+      "api_secret": "API Secret",
+      "username": "使用者名稱",
+      "password": "密碼"
+    },
+    "fieldKeepUnchanged": "留空保持不變"
   },
   "dnsMigration": {
     "title": "DNS 遷移任務",
     "createMigration": "發起遷移",
+    "createMigrationTitle": "發起 DNS 遷移",
+    "createMigrationShort": "遷移",
+    "migrationTaskCreated": "遷移任務已建立",
+    "createMigrationDescription": "將網域 {{name}} 的 DNS 記錄遷移至新供應商帳號。遷移期間寫入操作暫停。",
+    "selectTargetZoneFirst": "請先選擇目標 Zone",
     "targetAccount": "目標供應商帳號",
     "targetZone": "目標 Zone",
     "reason": "遷移原因（選填）",
@@ -756,6 +800,7 @@
     "statusPartialFailed": "部分失敗",
     "statusFailed": "失敗",
     "statusCancelled": "已取消",
+    "statusQueued": "排隊中",
     "queuePosition": "排隊位置",
     "totalItems": "總計項目",
     "succeededItems": "成功",
@@ -775,7 +820,6 @@
     "permission_denied": "權限不足",
     "record_conflict": "記錄衝突",
     "record_not_found": "記錄未找到",
-    "rate_limited": "請求頻率限制",
     "provider_unavailable": "供應商不可用",
     "invalid_request": "無效請求",
     "domain_migration_read_only": "遷移中，暫不可寫入",

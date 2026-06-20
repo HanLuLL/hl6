@@ -41,6 +41,7 @@ import { BrandContent } from "./brand";
 import { CreditsSettingsContent } from "./credits-settings";
 import { useAuth } from "@/hooks/use-auth";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { handleDnsBulkJobError } from "@/lib/dns-bulk-job-error";
 
 const PAGE_SIZE = 30;
 const MAX_CREDIT_AMOUNT = 100000;
@@ -194,12 +195,7 @@ function UsersContent() {
       setBanReason("");
     },
     onError: (err) => {
-      if (err instanceof ApiError && err.data && typeof err.data === "object" && "bulk_job_id" in err.data) {
-        const jobID = (err.data as { bulk_job_id: number }).bulk_job_id;
-        toast.error(`DNS 批量任务已排队（Job #${jobID}），请等待完成后重试封禁`);
-        return;
-      }
-      toast.error(getErrorMessage(err, t));
+      handleDnsBulkJobError(err, t, "ban", (e) => toast.error(getErrorMessage(e, t)));
     },
   });
 

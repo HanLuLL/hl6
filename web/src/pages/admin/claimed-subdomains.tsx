@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CopyableEmail } from "@/components/ui/copyable-email";
+import { handleDnsBulkJobError } from "@/lib/dns-bulk-job-error";
 
 export function ClaimedSubdomainsContent() {
   const { t } = useTranslation();
@@ -85,12 +86,7 @@ export function ClaimedSubdomainsContent() {
       setReason("");
     },
     onError: (err) => {
-      if (err instanceof ApiError && err.data && typeof err.data === "object" && "bulk_job_id" in err.data) {
-        const jobID = (err.data as { bulk_job_id: number }).bulk_job_id;
-        toast.error(`DNS 批量任务已排队（Job #${jobID}），请等待完成后重试释放`);
-        return;
-      }
-      toast.error(getErrorMessage(err, t));
+      handleDnsBulkJobError(err, t, "release", (e) => toast.error(getErrorMessage(e, t)));
     },
   });
 

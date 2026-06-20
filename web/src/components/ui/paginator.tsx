@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "./button";
 
 interface PaginatorProps {
@@ -8,6 +9,8 @@ interface PaginatorProps {
 }
 
 export function Paginator({ page, totalPages, onPageChange }: PaginatorProps) {
+  const { t } = useTranslation();
+
   if (totalPages <= 1) return null;
 
   const prev = () => onPageChange(Math.max(1, page - 1));
@@ -17,14 +20,14 @@ export function Paginator({ page, totalPages, onPageChange }: PaginatorProps) {
     <div className="flex items-center gap-2">
       <Button variant="outline" size="sm" disabled={page <= 1} onClick={prev}>
         <ChevronLeft className="h-4 w-4" />
-        <span className="sr-only">Previous</span>
+        <span className="sr-only">{t("common.previous")}</span>
       </Button>
       <span className="text-sm text-muted-foreground">
         {page} / {totalPages}
       </span>
       <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={next}>
         <ChevronRight className="h-4 w-4" />
-        <span className="sr-only">Next</span>
+        <span className="sr-only">{t("common.next")}</span>
       </Button>
     </div>
   );

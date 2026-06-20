@@ -1,5 +1,6 @@
 import { Code2, GitBranch, GitCommitHorizontal, type LucideIcon } from "lucide-react";
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 const OPEN_SOURCE_URL = "https://git.houlang.cloud/houlangcloud/hl6";
@@ -29,6 +30,7 @@ function FooterBadge({ icon: Icon, label, value }: FooterBadgeProps): JSX.Elemen
 }
 
 export function SiteFooter({ withBorder = true, centered = false, className }: SiteFooterProps): JSX.Element {
+  const { t } = useTranslation();
   const branch = __APP_GIT_BRANCH__ || "unknown";
   const commit = __APP_GIT_COMMIT__ || "unknown";
   const showBranch = branch.toLowerCase() !== "unknown";
@@ -55,10 +57,10 @@ export function SiteFooter({ withBorder = true, centered = false, className }: S
           className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
         >
           <Code2 className="h-3.5 w-3.5" />
-          <span>厚浪开源</span>
+          <span>{t("footer.openSource")}</span>
         </a>
-        {showBranch && <FooterBadge icon={GitBranch} label="Branch" value={branch} />}
-        {showCommit && <FooterBadge icon={GitCommitHorizontal} label="Commit" value={commit} />}
+        {showBranch && <FooterBadge icon={GitBranch} label={t("footer.branch")} value={branch} />}
+        {showCommit && <FooterBadge icon={GitCommitHorizontal} label={t("footer.commit")} value={commit} />}
       </div>
     </footer>
   );

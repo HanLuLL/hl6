@@ -110,7 +110,7 @@ export default function SubdomainDetailPage() {
       {/* Migration read-only warning */}
       {subdomain.domain.migration_read_only && (
         <div className="rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-950 dark:text-yellow-200">
-          {t("dnsMigration.readOnlyWarning", "该域名正在迁移中，DNS 写操作暂时不可用")}
+          {t("dnsMigration.readOnlyWarning")}
         </div>
       )}
       {isSuspended && (

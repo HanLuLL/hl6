@@ -6,6 +6,7 @@
     "saving": "Saving...",
     "create": "Create",
     "creating": "Creating...",
+    "add": "Add",
     "edit": "Edit",
     "delete": "Delete",
     "enable": "Enable",
@@ -32,7 +33,16 @@
     "errorMessage": "An unexpected error occurred while loading the page. Please try again.",
     "retry": "Retry",
     "hotkeyGuide": "Esc closes or goes back; Cmd/Ctrl + Enter confirms.",
-    "gotIt": "Got it"
+    "gotIt": "Got it",
+    "close": "Close",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "toggleTheme": "Toggle theme"
+  },
+  "footer": {
+    "openSource": "Houlang Open Source",
+    "branch": "Branch",
+    "commit": "Commit"
   },
   "landing": {
     "dashboard": "Dashboard",
@@ -288,7 +298,8 @@
     "tabDnsRecords": "DNS Records",
     "tabClaimed": "Claimed List",
     "tabDomains": "Domains",
-    "tabCloudflare": "Cloudflare Accounts",
+    "tabCloudflare": "DNS Provider Accounts",
+    "tabDnsProviders": "DNS Provider Accounts",
     "title": "Manage Domains",
     "subtitle": "Add and configure root domains",
     "addDomain": "Add Domain",
@@ -372,7 +383,8 @@
     "proxied": "Proxied",
     "cloudflareId": "Cloudflare ID",
     "domain": "Domain",
-    "userName": "User Name"
+    "userName": "User Name",
+    "defaultBanReason": "This account violated platform policies"
   },
   "auditLogs": {
     "title": "Audit Logs",
@@ -580,7 +592,6 @@
     "missingToken": "Missing authorization token",
     "invalidToken": "Invalid token",
     "adminRequired": "Admin access required",
-    "rateLimitExceeded": "Rate limit exceeded",
     "cnameConflictWithOther": "CNAME record cannot coexist with other records",
     "cnameAlreadyExists": "CNAME record already exists",
     "otherConflictWithCname": "CNAME record cannot coexist with other records",
@@ -705,7 +716,11 @@
     "invalidAuditRuleTarget": "Invalid audit rule target",
     "invalidAuditRuleMatchType": "Invalid audit rule match type",
     "invalidAuditRulePattern": "Invalid audit rule pattern",
-    "invalidAuditRuleCombination": "Invalid target and match type combination"
+    "invalidAuditRuleCombination": "Invalid target and match type combination",
+    "dnsBulkJobQueuedBan": "DNS bulk job queued (Job #{{jobID}}). Please retry the ban after it completes.",
+    "dnsBulkJobQueuedDelete": "DNS bulk job queued (Job #{{jobID}}). Please retry the delete after it completes.",
+    "dnsBulkJobQueuedRelease": "DNS bulk job queued (Job #{{jobID}}). Please retry the release after it completes.",
+    "dnsBulkJobQueuedOperation": "DNS bulk job queued (Job #{{jobID}}). Please retry the operation after it completes."
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -743,11 +758,39 @@
     "selectAccount": "Select account...",
     "verifyConnectivity": "Verify Connectivity",
     "verifySuccess": "Connectivity verified",
-    "verifyFailed": "Connectivity check failed"
+    "verifyFailed": "Connectivity check failed",
+    "credentialFields": {
+      "api_token": "API Token",
+      "secret_id": "SecretId",
+      "secret_key": "SecretKey",
+      "region_optional": "Region (optional)",
+      "access_key_id": "AccessKey ID",
+      "access_key_secret": "AccessKey Secret",
+      "region_id_optional": "Region ID (optional)",
+      "endpoint_optional": "Endpoint (optional)",
+      "ak": "AK",
+      "sk": "SK",
+      "project_id_optional": "Project ID (optional)",
+      "access_key": "Access Key",
+      "secret_access_key": "Secret Access Key",
+      "region_optional_default": "Region (optional, default us-east-1)",
+      "service_account_json": "Service Account JSON",
+      "api_id": "API ID",
+      "api_key": "API Key",
+      "api_secret": "API Secret",
+      "username": "Username",
+      "password": "Password"
+    },
+    "fieldKeepUnchanged": "Leave blank to keep unchanged"
   },
   "dnsMigration": {
     "title": "DNS Migration Tasks",
     "createMigration": "Start Migration",
+    "createMigrationTitle": "Start DNS Migration",
+    "createMigrationShort": "Migrate",
+    "migrationTaskCreated": "Migration task created",
+    "createMigrationDescription": "Migrate DNS records for {{name}} to a new provider account. Write operations pause during migration.",
+    "selectTargetZoneFirst": "Select a target zone first",
     "targetAccount": "Target Provider Account",
     "targetZone": "Target Zone",
     "reason": "Reason (optional)",
@@ -757,6 +800,7 @@
     "statusPartialFailed": "Partially Failed",
     "statusFailed": "Failed",
     "statusCancelled": "Cancelled",
+    "statusQueued": "Queued",
     "queuePosition": "Queue Position",
     "totalItems": "Total Items",
     "succeededItems": "Succeeded",
@@ -776,7 +820,6 @@
     "permission_denied": "Permission Denied",
     "record_conflict": "Record Conflict",
     "record_not_found": "Record Not Found",
-    "rate_limited": "Rate Limited",
     "provider_unavailable": "Provider Unavailable",
     "invalid_request": "Invalid Request",
     "domain_migration_read_only": "Read-only During Migration",

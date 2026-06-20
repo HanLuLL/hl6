@@ -6,6 +6,7 @@
     "saving": "Guardando...",
     "create": "Crear",
     "creating": "Creando...",
+    "add": "Añadir",
     "edit": "Editar",
     "delete": "Eliminar",
     "enable": "Activar",
@@ -32,7 +33,16 @@
     "errorMessage": "Ocurrió un error inesperado al cargar la página. Por favor, inténtelo de nuevo.",
     "retry": "Reintentar",
     "hotkeyGuide": "Esc cierra o vuelve atrás; Cmd/Ctrl + Enter confirma.",
-    "gotIt": "Entendido"
+    "gotIt": "Entendido",
+    "close": "Cerrar",
+    "expand": "Expandir",
+    "collapse": "Contraer",
+    "toggleTheme": "Cambiar tema"
+  },
+  "footer": {
+    "openSource": "Houlang Open Source",
+    "branch": "Rama",
+    "commit": "Commit"
   },
   "landing": {
     "dashboard": "Panel de control",
@@ -85,7 +95,8 @@
     "mySubdomains": "Mis subdominios",
     "dnsRecords": "Registros DNS",
     "recentTransactions": "Transacciones recientes",
-    "viewAll": "Ver todo"
+    "viewAll": "Ver todo",
+    "viewDetails": "Ver detalles"
   },
   "notFound": {
     "title": "Página no encontrada",
@@ -287,7 +298,8 @@
     "tabDnsRecords": "Registros DNS",
     "tabClaimed": "Lista de reclamaciones",
     "tabDomains": "Dominios",
-    "tabCloudflare": "Cuentas Cloudflare",
+    "tabCloudflare": "Cuentas de proveedor DNS",
+    "tabDnsProviders": "Cuentas de proveedor DNS",
     "title": "Gestión de dominios",
     "subtitle": "Añade y configura dominios raíz",
     "addDomain": "Añadir dominio",
@@ -371,7 +383,8 @@
     "proxied": "Proxy",
     "cloudflareId": "ID de Cloudflare",
     "domain": "Dominio",
-    "userName": "Nombre de usuario"
+    "userName": "Nombre de usuario",
+    "defaultBanReason": "Esta cuenta violó las políticas de la plataforma"
   },
   "auditLogs": {
     "title": "Registros de auditoría",
@@ -579,7 +592,6 @@
     "missingToken": "Falta el token de autorización",
     "invalidToken": "Token inválido",
     "adminRequired": "Se requiere acceso de administrador",
-    "rateLimitExceeded": "Límite de solicitudes excedido",
     "cnameConflictWithOther": "El registro CNAME no puede coexistir con otros registros",
     "cnameAlreadyExists": "El registro CNAME ya existe",
     "otherConflictWithCname": "El registro CNAME no puede coexistir con otros registros",
@@ -704,7 +716,11 @@
     "invalidAuditRuleTarget": "Objetivo de regla no válido",
     "invalidAuditRuleMatchType": "Tipo de coincidencia no válido",
     "invalidAuditRulePattern": "Patrón de regla no válido",
-    "invalidAuditRuleCombination": "Combinación de objetivo y tipo no válida"
+    "invalidAuditRuleCombination": "Combinación de objetivo y tipo no válida",
+    "dnsBulkJobQueuedBan": "Tarea DNS en cola (Job #{{jobID}}). Reintente el bloqueo cuando finalice.",
+    "dnsBulkJobQueuedDelete": "Tarea DNS en cola (Job #{{jobID}}). Reintente la eliminación cuando finalice.",
+    "dnsBulkJobQueuedRelease": "Tarea DNS en cola (Job #{{jobID}}). Reintente la liberación cuando finalice.",
+    "dnsBulkJobQueuedOperation": "Tarea DNS en cola (Job #{{jobID}}). Reintente la operación cuando finalice."
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -742,11 +758,39 @@
     "selectAccount": "Seleccionar cuenta...",
     "verifyConnectivity": "Verificar conectividad",
     "verifySuccess": "Conectividad verificada",
-    "verifyFailed": "Fallo en verificación de conectividad"
+    "verifyFailed": "Fallo en verificación de conectividad",
+    "credentialFields": {
+      "api_token": "API Token",
+      "secret_id": "SecretId",
+      "secret_key": "SecretKey",
+      "region_optional": "Región (opcional)",
+      "access_key_id": "AccessKey ID",
+      "access_key_secret": "AccessKey Secret",
+      "region_id_optional": "Region ID (opcional)",
+      "endpoint_optional": "Endpoint (opcional)",
+      "ak": "AK",
+      "sk": "SK",
+      "project_id_optional": "Project ID (opcional)",
+      "access_key": "Access Key",
+      "secret_access_key": "Secret Access Key",
+      "region_optional_default": "Región (opcional, predeterminado us-east-1)",
+      "service_account_json": "Service Account JSON",
+      "api_id": "API ID",
+      "api_key": "API Key",
+      "api_secret": "API Secret",
+      "username": "Nombre de usuario",
+      "password": "Contraseña"
+    },
+    "fieldKeepUnchanged": "Dejar en blanco para mantener el valor actual"
   },
   "dnsMigration": {
     "title": "Tareas de migración DNS",
     "createMigration": "Iniciar migración",
+    "createMigrationTitle": "Iniciar migración DNS",
+    "createMigrationShort": "Migrar",
+    "migrationTaskCreated": "Tarea de migración creada",
+    "createMigrationDescription": "Migrar registros DNS de {{name}} a una nueva cuenta de proveedor. Las operaciones de escritura se pausan durante la migración.",
+    "selectTargetZoneFirst": "Seleccione primero una zona destino",
     "targetAccount": "Cuenta de proveedor destino",
     "targetZone": "Zona destino",
     "reason": "Razón (opcional)",
@@ -756,6 +800,7 @@
     "statusPartialFailed": "Parcialmente fallido",
     "statusFailed": "Fallido",
     "statusCancelled": "Cancelado",
+    "statusQueued": "En cola",
     "queuePosition": "Posición en cola",
     "totalItems": "Total de elementos",
     "succeededItems": "Exitosos",
@@ -775,7 +820,6 @@
     "permission_denied": "Permiso denegado",
     "record_conflict": "Conflicto de registro",
     "record_not_found": "Registro no encontrado",
-    "rate_limited": "Límite de velocidad",
     "provider_unavailable": "Proveedor no disponible",
     "invalid_request": "Solicitud inválida",
     "domain_migration_read_only": "Solo lectura durante migración",

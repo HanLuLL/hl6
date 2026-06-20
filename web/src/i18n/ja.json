@@ -6,6 +6,7 @@
     "saving": "保存中...",
     "create": "作成",
     "creating": "作成中...",
+    "add": "追加",
     "edit": "編集",
     "delete": "削除",
     "enable": "有効化",
@@ -32,7 +33,16 @@
     "errorMessage": "ページの読み込み中に予期しないエラーが発生しました。もう一度お試しください。",
     "retry": "再試行",
     "hotkeyGuide": "Esc で閉じる/前に戻る、Cmd/Ctrl + Enter で確定",
-    "gotIt": "了解"
+    "gotIt": "了解",
+    "close": "閉じる",
+    "expand": "展開",
+    "collapse": "折りたたむ",
+    "toggleTheme": "テーマを切り替え"
+  },
+  "footer": {
+    "openSource": "Houlang Open Source",
+    "branch": "ブランチ",
+    "commit": "コミット"
   },
   "landing": {
     "dashboard": "ダッシュボード",
@@ -85,7 +95,8 @@
     "mySubdomains": "マイサブドメイン",
     "dnsRecords": "DNSレコード",
     "recentTransactions": "最近の取引",
-    "viewAll": "すべて表示"
+    "viewAll": "すべて表示",
+    "viewDetails": "詳細を見る"
   },
   "notFound": {
     "title": "ページが見つかりません",
@@ -287,7 +298,8 @@
     "tabDnsRecords": "DNS レコード",
     "tabClaimed": "取得一覧",
     "tabDomains": "ドメイン管理",
-    "tabCloudflare": "Cloudflare アカウント",
+    "tabCloudflare": "DNS プロバイダーアカウント",
+    "tabDnsProviders": "DNS プロバイダーアカウント",
     "title": "ドメイン管理",
     "subtitle": "ルートドメインの追加と設定",
     "addDomain": "ドメインを追加",
@@ -371,7 +383,8 @@
     "proxied": "プロキシ",
     "cloudflareId": "Cloudflare ID",
     "domain": "ドメイン",
-    "userName": "ユーザー名"
+    "userName": "ユーザー名",
+    "defaultBanReason": "このアカウントはプラットフォーム規約に違反しました"
   },
   "auditLogs": {
     "title": "監査ログ",
@@ -579,7 +592,6 @@
     "missingToken": "認証トークンがありません",
     "invalidToken": "無効なトークン",
     "adminRequired": "管理者権限が必要です",
-    "rateLimitExceeded": "リクエスト制限を超えました",
     "cnameConflictWithOther": "CNAMEレコードは他のレコードと共存できません",
     "cnameAlreadyExists": "CNAMEレコードは既に存在します",
     "otherConflictWithCname": "CNAMEレコードは他のレコードと共存できません",
@@ -704,7 +716,11 @@
     "invalidAuditRuleTarget": "無効なマッチ対象です",
     "invalidAuditRuleMatchType": "無効なマッチタイプです",
     "invalidAuditRulePattern": "無効なルール内容です",
-    "invalidAuditRuleCombination": "対象とマッチタイプの組み合わせが無効です"
+    "invalidAuditRuleCombination": "対象とマッチタイプの組み合わせが無効です",
+    "dnsBulkJobQueuedBan": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に BAN を再試行してください。",
+    "dnsBulkJobQueuedDelete": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に削除を再試行してください。",
+    "dnsBulkJobQueuedRelease": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に解放を再試行してください。",
+    "dnsBulkJobQueuedOperation": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に操作を再試行してください。"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -742,11 +758,39 @@
     "selectAccount": "アカウントを選択...",
     "verifyConnectivity": "接続確認",
     "verifySuccess": "接続確認成功",
-    "verifyFailed": "接続確認失敗"
+    "verifyFailed": "接続確認失敗",
+    "credentialFields": {
+      "api_token": "API Token",
+      "secret_id": "SecretId",
+      "secret_key": "SecretKey",
+      "region_optional": "Region（任意）",
+      "access_key_id": "AccessKey ID",
+      "access_key_secret": "AccessKey Secret",
+      "region_id_optional": "Region ID（任意）",
+      "endpoint_optional": "Endpoint（任意）",
+      "ak": "AK",
+      "sk": "SK",
+      "project_id_optional": "Project ID（任意）",
+      "access_key": "Access Key",
+      "secret_access_key": "Secret Access Key",
+      "region_optional_default": "Region（任意、デフォルト us-east-1）",
+      "service_account_json": "Service Account JSON",
+      "api_id": "API ID",
+      "api_key": "API Key",
+      "api_secret": "API Secret",
+      "username": "ユーザー名",
+      "password": "パスワード"
+    },
+    "fieldKeepUnchanged": "空欄のまま現在の値を保持"
   },
   "dnsMigration": {
     "title": "DNS移行タスク",
     "createMigration": "移行を開始",
+    "createMigrationTitle": "DNS 移行を開始",
+    "createMigrationShort": "移行",
+    "migrationTaskCreated": "移行タスクを作成しました",
+    "createMigrationDescription": "ドメイン {{name}} の DNS レコードを新しいプロバイダーアカウントへ移行します。移行中は書き込み操作が一時停止されます。",
+    "selectTargetZoneFirst": "先にターゲット Zone を選択してください",
     "targetAccount": "移行先プロバイダーアカウント",
     "targetZone": "移行先ゾーン",
     "reason": "理由（オプション）",
@@ -756,6 +800,7 @@
     "statusPartialFailed": "一部失敗",
     "statusFailed": "失敗",
     "statusCancelled": "キャンセル",
+    "statusQueued": "キュー待ち",
     "queuePosition": "キュー位置",
     "totalItems": "合計アイテム数",
     "succeededItems": "成功",
@@ -775,7 +820,6 @@
     "permission_denied": "権限なし",
     "record_conflict": "レコードの競合",
     "record_not_found": "レコードが見つかりません",
-    "rate_limited": "レート制限",
     "provider_unavailable": "プロバイダー利用不可",
     "invalid_request": "無効なリクエスト",
     "domain_migration_read_only": "移行中は読み取り専用",

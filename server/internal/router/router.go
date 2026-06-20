@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -43,10 +42,8 @@ func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context) *gin.Engine {
 	h := NewHandlers(cfg, repo, dnsOps, migSvc, sseBroker, audit)
 
 	auth := middleware.NewAuthMiddleware(cfg.SessionSecret, repo)
-	rl := middleware.NewRateLimiter(100, time.Minute)
 
 	api := r.Group("/api/v1")
-	api.Use(rl.Handler())
 
 	api.GET("/branding", h.Branding.GetBranding)
 	api.GET("/branding/logo.webp", h.Branding.GetLogo)

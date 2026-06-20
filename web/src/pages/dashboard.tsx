@@ -72,18 +72,18 @@ export default function DashboardPage() {
         {statDefs.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.title} className="transition-shadow hover:shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-5">
+            <Card key={stat.title} className="gap-0 py-4 transition-shadow hover:shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 px-5 pb-0 pt-0">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{stat.title}</p>
                 <Icon className="h-4 w-4 text-muted-foreground/60 shrink-0" />
               </CardHeader>
-              <CardContent className="px-5 pb-4">
+              <CardContent className="px-5 pb-0 pt-2">
                 {isLoading ? (
-                  <Skeleton className="h-10 w-16 mt-1" />
+                  <Skeleton className="h-9 w-16" />
                 ) : (
-                  <div className="text-4xl font-bold tabular-nums leading-none mt-1">{stat.value}</div>
+                  <div className="text-3xl font-bold tabular-nums leading-none">{stat.value}</div>
                 )}
-                <div className="mt-3">
+                <div className="mt-2">
                   <Link to={stat.href} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                     {t("dashboard.viewDetails")} →
                   </Link>
