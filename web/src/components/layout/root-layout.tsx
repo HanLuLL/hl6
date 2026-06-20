@@ -69,8 +69,6 @@ const adminItems: NavItem[] = [
   { labelKey: "nav.adminSettings", href: "/admin/settings", icon: SlidersHorizontal },
 ];
 
-const allNavItems = [...navItems, ...adminItems];
-
 function NavLink({ item, onClick, collapsed }: { item: NavItem; onClick?: () => void; collapsed?: boolean }) {
   const location = useLocation();
   const { t } = useTranslation();
@@ -132,20 +130,6 @@ function SidebarContent({ onNavigate, collapsed, branding }: { onNavigate?: () =
         )}
       </nav>
     </div>
-  );
-}
-
-function PageTitle() {
-  const location = useLocation();
-  const { t } = useTranslation();
-
-  const item = allNavItems.find((n) => location.pathname === n.href || location.pathname.startsWith(n.href + "/"));
-  if (!item) return null;
-
-  return (
-    <span className="text-sm font-medium text-foreground hidden sm:block">
-      {t(item.labelKey)}
-    </span>
   );
 }
 
@@ -236,8 +220,6 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
               <SidebarContent onNavigate={() => setMobileOpen(false)} branding={branding} />
             </SheetContent>
           </Sheet>
-
-          <PageTitle />
 
           <div className="flex-1" />
 

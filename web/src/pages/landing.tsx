@@ -117,7 +117,7 @@ export default function LandingPage() {
     <div className="min-h-screen flex flex-col">
       {/* Sticky nav */}
       <header className="sticky top-0 z-50 backdrop-blur-sm bg-background/80 border-b border-border/50">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-14">
+        <div className="flex w-full items-center justify-between px-6 h-14">
           <div className="flex items-center gap-2 font-semibold text-base">
             {branding.logo_url && (
               <img src={branding.logo_url} alt={branding.name} className="h-5 w-5 rounded-sm object-contain" />
@@ -141,10 +141,10 @@ export default function LandingPage() {
       </header>
 
       {/* Hero — asymmetric split */}
-      <section className="flex-1 max-w-6xl mx-auto w-full px-6 py-20 md:py-28">
+      <section className="flex-1 max-w-7xl mx-auto w-full px-6 py-20 md:py-28">
         <div className="grid md:grid-cols-[1fr_auto] gap-12 lg:gap-20 items-start">
           {/* Left column */}
-          <div className="max-w-xl">
+          <div className="max-w-3xl">
             <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.1] text-foreground">
               {t("landing.heroTitle")}
               <span className="relative inline-block text-brand">
@@ -152,7 +152,7 @@ export default function LandingPage() {
                 <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-brand/30 rounded-full" />
               </span>
             </h1>
-            <p className="mt-5 text-base text-muted-foreground leading-relaxed max-w-md">
+            <p className="mt-5 text-base text-muted-foreground leading-relaxed">
               {t("landing.heroDesc")}
             </p>
             <div className="mt-8 flex items-center gap-3">
@@ -174,46 +174,48 @@ export default function LandingPage() {
           </div>
 
           {/* Right column — terminal code block */}
-          <div className="hidden md:block w-[360px] lg:w-[400px] shrink-0">
-            <div className="rounded-xl border bg-[oklch(0.10_0_0)] shadow-xl overflow-hidden">
-              <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/10">
+          <div className="hidden md:block w-[380px] lg:w-[440px] xl:w-[500px] shrink-0">
+            <div className="relative rounded-xl border border-brand/20 bg-brand-muted/55 backdrop-blur-xl shadow-xl shadow-brand/12 ring-1 ring-white/80 overflow-hidden dark:border-white/10 dark:bg-[oklch(0.10_0_0)] dark:shadow-xl dark:ring-0">
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand/12 via-brand-muted/30 to-white/50 dark:hidden" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_85%_0%,color-mix(in_oklch,var(--brand)_22%,transparent),transparent_55%)] dark:hidden" />
+              <div className="relative flex items-center gap-1.5 px-4 py-3 border-b border-brand/15 dark:border-white/10">
                 <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
                 <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
                 <span className="h-3 w-3 rounded-full bg-[#28c840]" />
-                <div className="ml-2 flex items-center gap-1.5 text-[11px] text-white/40">
+                <div className="ml-2 flex items-center gap-1.5 text-[11px] text-brand/55 dark:text-white/40">
                   <Terminal className="h-3 w-3" />
                   <span>dns records</span>
                 </div>
               </div>
-              <pre className="px-5 py-4 text-[13px] leading-6 font-mono overflow-x-auto">
+              <pre className="relative px-5 py-4 text-[13px] leading-6 font-mono overflow-x-auto">
                 <code>
-                  <span className="text-white/40"># subdomain DNS records</span>{"\n"}
-                  <span className="text-white/40"># {branding.name || "hl6"} · {new Date().getFullYear()}</span>{"\n\n"}
-                  <span className="text-[#7dd3fc]">A</span>
-                  <span className="text-white/60">{"     "}</span>
-                  <span className="text-[#86efac]">blog</span>
-                  <span className="text-white/40">.example.dev</span>
-                  <span className="text-white/60">{"  →  "}</span>
-                  <span className="text-[#fde68a]">203.0.113.42</span>{"\n"}
-                  <span className="text-[#7dd3fc]">AAAA</span>
-                  <span className="text-white/60">{"  "}</span>
-                  <span className="text-[#86efac]">api</span>
-                  <span className="text-white/40">.example.dev</span>
-                  <span className="text-white/60">{"   →  "}</span>
-                  <span className="text-[#fde68a]">2001:db8::1</span>{"\n"}
-                  <span className="text-[#7dd3fc]">CNAME</span>
-                  <span className="text-white/60">{"  "}</span>
-                  <span className="text-[#86efac]">www</span>
-                  <span className="text-white/40">.example.dev</span>
-                  <span className="text-white/60">{"   →  "}</span>
-                  <span className="text-[#fde68a]">cdn.host.io</span>{"\n"}
-                  <span className="text-[#7dd3fc]">TXT</span>
-                  <span className="text-white/60">{"    "}</span>
-                  <span className="text-[#86efac]">_verify</span>
-                  <span className="text-white/40">.example.dev</span>
-                  <span className="text-white/60">{"  →  "}</span>
-                  <span className="text-[#fde68a]">"v=spf1 ..."</span>{"\n\n"}
-                  <span className="text-white/30">{"# ✓ propagated in ~30s"}</span>
+                  <span className="text-muted-foreground/70 dark:text-white/40"># subdomain DNS records</span>{"\n"}
+                  <span className="text-muted-foreground/70 dark:text-white/40"># {branding.name || "hl6"} · {new Date().getFullYear()}</span>{"\n\n"}
+                  <span className="text-brand dark:text-[#7dd3fc]">A</span>
+                  <span className="text-foreground/40 dark:text-white/60">{"     "}</span>
+                  <span className="text-emerald-600 dark:text-[#86efac]">blog</span>
+                  <span className="text-muted-foreground/55 dark:text-white/40">.example.dev</span>
+                  <span className="text-foreground/40 dark:text-white/60">{"  →  "}</span>
+                  <span className="text-amber-600 dark:text-[#fde68a]">203.0.113.42</span>{"\n"}
+                  <span className="text-brand dark:text-[#7dd3fc]">AAAA</span>
+                  <span className="text-foreground/40 dark:text-white/60">{"  "}</span>
+                  <span className="text-emerald-600 dark:text-[#86efac]">api</span>
+                  <span className="text-muted-foreground/55 dark:text-white/40">.example.dev</span>
+                  <span className="text-foreground/40 dark:text-white/60">{"   →  "}</span>
+                  <span className="text-amber-600 dark:text-[#fde68a]">2001:db8::1</span>{"\n"}
+                  <span className="text-brand dark:text-[#7dd3fc]">CNAME</span>
+                  <span className="text-foreground/40 dark:text-white/60">{"  "}</span>
+                  <span className="text-emerald-600 dark:text-[#86efac]">www</span>
+                  <span className="text-muted-foreground/55 dark:text-white/40">.example.dev</span>
+                  <span className="text-foreground/40 dark:text-white/60">{"   →  "}</span>
+                  <span className="text-amber-600 dark:text-[#fde68a]">cdn.host.io</span>{"\n"}
+                  <span className="text-brand dark:text-[#7dd3fc]">TXT</span>
+                  <span className="text-foreground/40 dark:text-white/60">{"    "}</span>
+                  <span className="text-emerald-600 dark:text-[#86efac]">_verify</span>
+                  <span className="text-muted-foreground/55 dark:text-white/40">.example.dev</span>
+                  <span className="text-foreground/40 dark:text-white/60">{"  →  "}</span>
+                  <span className="text-amber-600 dark:text-[#fde68a]">"v=spf1 ..."</span>{"\n\n"}
+                  <span className="text-muted-foreground/55 dark:text-white/30">{"# ✓ propagated in ~30s"}</span>
                 </code>
               </pre>
             </div>
@@ -223,7 +225,7 @@ export default function LandingPage() {
 
       {/* Features — Bento 2+1 */}
       <section className="py-20 border-t border-border/50">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="mb-10">
             <h2 className="text-2xl font-bold tracking-tight">{t("landing.featuresTitle", "Everything you need")}</h2>
             <p className="mt-2 text-muted-foreground">{t("landing.featuresSubtitle", "Built for developers who want DNS without the overhead.")}</p>
@@ -271,7 +273,7 @@ export default function LandingPage() {
 
       {/* How it works */}
       <section className="py-20 border-t border-border/50">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="mb-10">
             <h2 className="text-2xl font-bold tracking-tight">{t("landing.howTitle", "Get started in minutes")}</h2>
           </div>
@@ -297,7 +299,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-border/50 mt-auto">
-        <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="grid md:grid-cols-3 gap-8 mb-6">
             <div>
               <div className="flex items-center gap-2 font-semibold text-sm mb-2">

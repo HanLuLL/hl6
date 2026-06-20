@@ -13,6 +13,7 @@ type FooterBadgeProps = {
 type SiteFooterProps = {
   withBorder?: boolean;
   centered?: boolean;
+  className?: string;
 };
 
 function FooterBadge({ icon: Icon, label, value }: FooterBadgeProps): JSX.Element {
@@ -27,7 +28,7 @@ function FooterBadge({ icon: Icon, label, value }: FooterBadgeProps): JSX.Elemen
   );
 }
 
-export function SiteFooter({ withBorder = true, centered = false }: SiteFooterProps): JSX.Element {
+export function SiteFooter({ withBorder = true, centered = false, className }: SiteFooterProps): JSX.Element {
   const branch = __APP_GIT_BRANCH__ || "unknown";
   const commit = __APP_GIT_COMMIT__ || "unknown";
   const showBranch = branch.toLowerCase() !== "unknown";
@@ -36,8 +37,9 @@ export function SiteFooter({ withBorder = true, centered = false }: SiteFooterPr
   return (
     <footer
       className={cn(
-        "px-4 py-3 text-xs text-muted-foreground lg:px-6",
-        withBorder && "border-t",
+        "py-3 text-xs text-muted-foreground",
+        withBorder ? "border-t px-4 lg:px-6" : "px-0",
+        className,
       )}
     >
       <div
