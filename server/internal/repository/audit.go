@@ -200,7 +200,7 @@ type AuditScanListFilter struct {
 
 type AuditRuleHitStats struct {
 	RuleID      uint
-	HitCount7d  int64
+	HitCount    int64
 	LastHitAt   *time.Time
 	LastHitFQDN string
 }
@@ -257,17 +257,26 @@ func (r *Repository) ListAuditRuleHitStats(ruleIDs []uint) (map[uint]AuditRuleHi
 	if len(ruleIDs) == 0 {
 		return map[uint]AuditRuleHitStats{}, nil
 	}
-	since := time.Now().Add(-7 * 24 * time.Hour)
 	type row struct {
 		MatchedRuleID uint
-		HitCount7d    int64
+		HitCount      int64
 	}
 	var counts []row
-	if err := r.DB.Model(&model.SubdomainScan{}).
-		Select("matched_rule_id, COUNT(DISTINCT subdomain_id) AS hit_count7d").
-		Where("status = ? AND matched_rule_id IN ? AND created_at >= ?", model.ScanStatusViolation, ruleIDs, since).
-		Group("matched_rule_id").
-		Scan(&counts).Error; err != nil {
+	if err := r.DB.Raw(`
+		SELECT latest_scan.matched_rule_id, COUNT(*) AS hit_count
+		FROM subdomains s
+		JOIN LATERAL (
+			SELECT ss.status, ss.matched_rule_id
+			FROM subdomain_scans ss
+			WHERE ss.subdomain_id = s.id
+			ORDER BY ss.created_at DESC
+			LIMIT 1
+		) latest_scan ON true
+		WHERE s.status = ?
+		  AND latest_scan.status = ?
+		  AND latest_scan.matched_rule_id IN ?
+		GROUP BY latest_scan.matched_rule_id
+	`, model.SubdomainStatusActive, model.ScanStatusViolation, ruleIDs).Scan(&counts).Error; err != nil {
 		return nil, err
 	}
 
@@ -277,21 +286,42 @@ func (r *Repository) ListAuditRuleHitStats(ruleIDs []uint) (map[uint]AuditRuleHi
 	}
 	for _, c := range counts {
 		s := out[c.MatchedRuleID]
-		s.HitCount7d = c.HitCount7d
+		s.HitCount = c.HitCount
 		out[c.MatchedRuleID] = s
 	}
 
-	for _, id := range ruleIDs {
-		var scan model.SubdomainScan
-		err := r.DB.Where("matched_rule_id = ? AND status = ?", id, model.ScanStatusViolation).
-			Order("created_at DESC").Limit(1).First(&scan).Error
-		if err == nil {
-			s := out[id]
-			t := scan.CreatedAt
-			s.LastHitAt = &t
-			s.LastHitFQDN = scan.FQDN
-			out[id] = s
-		}
+	type lastHitRow struct {
+		MatchedRuleID uint
+		FQDN          string
+		CreatedAt     time.Time
+	}
+	var lastHits []lastHitRow
+	if err := r.DB.Raw(`
+		SELECT DISTINCT ON (latest_scan.matched_rule_id)
+			latest_scan.matched_rule_id,
+			s.fqdn,
+			latest_scan.created_at
+		FROM subdomains s
+		JOIN LATERAL (
+			SELECT ss.status, ss.matched_rule_id, ss.created_at
+			FROM subdomain_scans ss
+			WHERE ss.subdomain_id = s.id
+			ORDER BY ss.created_at DESC
+			LIMIT 1
+		) latest_scan ON true
+		WHERE s.status = ?
+		  AND latest_scan.status = ?
+		  AND latest_scan.matched_rule_id IN ?
+		ORDER BY latest_scan.matched_rule_id, latest_scan.created_at DESC
+	`, model.SubdomainStatusActive, model.ScanStatusViolation, ruleIDs).Scan(&lastHits).Error; err != nil {
+		return nil, err
+	}
+	for _, lh := range lastHits {
+		s := out[lh.MatchedRuleID]
+		t := lh.CreatedAt
+		s.LastHitAt = &t
+		s.LastHitFQDN = lh.FQDN
+		out[lh.MatchedRuleID] = s
 	}
 	return out, nil
 }

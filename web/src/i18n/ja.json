@@ -957,7 +957,7 @@
         "targets": "Targets",
         "match": "Match",
         "action": "Action",
-        "hits7d": "Hit domains (7d)",
+        "hitCount": "Hit count",
         "lastHit": "Last hit",
         "enabled": "Enabled"
       },

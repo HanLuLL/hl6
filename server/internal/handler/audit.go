@@ -82,7 +82,7 @@ func NewAuditHandler(
 
 type auditRuleListItem struct {
 	model.AuditRule
-	HitCount7d  int64      `json:"hit_count_7d"`
+	HitCount    int64      `json:"hit_count"`
 	LastHitAt   *time.Time `json:"last_hit_at"`
 	LastHitFQDN string     `json:"last_hit_fqdn"`
 }
@@ -431,7 +431,7 @@ func (h *AuditHandler) ListRules(c *gin.Context) {
 		s := stats[rule.ID]
 		out[i] = auditRuleListItem{
 			AuditRule:   rule,
-			HitCount7d:  s.HitCount7d,
+			HitCount:    s.HitCount,
 			LastHitAt:   s.LastHitAt,
 			LastHitFQDN: s.LastHitFQDN,
 		}

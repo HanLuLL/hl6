@@ -957,7 +957,7 @@
         "targets": "目标",
         "match": "匹配",
         "action": "处置",
-        "hits7d": "命中域名數量",
+        "hitCount": "命中數量",
         "lastHit": "最近命中",
         "enabled": "启用"
       },

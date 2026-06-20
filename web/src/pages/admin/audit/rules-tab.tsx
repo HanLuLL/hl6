@@ -86,7 +86,7 @@ export function RulesTab() {
                   <TableHead>{t("audit.rules.columns.targets")}</TableHead>
                   <TableHead>{t("audit.rules.columns.match")}</TableHead>
                   <TableHead>{t("audit.rules.columns.action")}</TableHead>
-                  <TableHead>{t("audit.rules.columns.hits7d")}</TableHead>
+                  <TableHead>{t("audit.rules.columns.hitCount")}</TableHead>
                   <TableHead>{t("audit.rules.columns.lastHit")}</TableHead>
                   <TableHead>{t("audit.rules.columns.enabled")}</TableHead>
                   <TableHead className="text-right">{t("audit.columns.actions")}</TableHead>
@@ -121,7 +121,7 @@ export function RulesTab() {
                         {t(`audit.actions.${rule.action}`)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{rule.hit_count_7d ?? 0}</TableCell>
+                    <TableCell>{rule.hit_count ?? 0}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {rule.last_hit_at ? (
                         <>

@@ -92,7 +92,7 @@ export interface AuditRule {
   updated_by: number;
   created_at: string;
   updated_at: string;
-  hit_count_7d?: number;
+  hit_count?: number;
   last_hit_at?: string | null;
   last_hit_fqdn?: string;
 }
