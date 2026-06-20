@@ -830,10 +830,9 @@
   },
   "audit": {
     "title": "Content Audit",
-    "description": "Violations, fleet scans, rules, and scan history in one place",
+    "description": "Управление проверкой поддоменов, правилами и историей сканирования в одном месте",
     "tabs": {
-      "violations": "Violations",
-      "sites": "Sites",
+      "domains": "Поддомены",
       "rules": "Rules",
       "history": "History"
     },
@@ -846,11 +845,24 @@
     },
     "filters": {
       "fqdn": "Search FQDN…",
-      "search": "Search FQDN or email…"
+      "search": "Search FQDN or email…",
+      "claimsSearch": "Search FQDN or email…",
+      "scanStatusAll": "Scan status",
+      "recordTypeAll": "All record types",
+      "scanStatus": {
+        "all": "All",
+        "scanned": "Scanned",
+        "never": "Not scanned",
+        "violation": "Violation",
+        "compliant": "Compliant"
+      }
     },
     "columns": {
+      "subdomain": "Поддомен",
       "fqdn": "FQDN",
       "user": "User",
+      "violation": "Нарушение",
+      "dnsRecordCount": "DNS records",
       "status": "Status",
       "latestViolation": "Latest violation",
       "violations7d": "7d violations",
@@ -892,11 +904,11 @@
     "actions": {
       "observe": "Notify only",
       "delete_dns": "Удалить DNS-записи",
-      "site": "Suspend site",
+      "site": "Освободить поддомен",
       "user": "Suspend user",
       "detail": "Details",
       "restore": "Restore",
-      "release": "Release claim",
+      "release": "Освободить поддомен",
       "rescan": "Rescan now",
       "bulkRescan": "Bulk rescan ({{count}})",
       "bulkRescanQueued": "Queued {{count}} scans",
@@ -993,6 +1005,7 @@
       "running": "Загрузка…",
       "noMatch": "Нет совпадений",
       "wouldSuspend": "Будет приостановка",
+      "wouldRelease": "Будет освобождение поддомена",
       "wouldDeleteDns": "Будет удаление DNS-записей",
       "wouldNotSuspend": "Не будет приостановки или удаления DNS",
       "wouldNotifyOnly": "Только уведомление (без блокировки и удаления DNS)",

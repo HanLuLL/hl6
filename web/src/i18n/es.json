@@ -830,10 +830,9 @@
   },
   "audit": {
     "title": "Content Audit",
-    "description": "Violations, fleet scans, rules, and scan history in one place",
+    "description": "Gestiona revisión de subdominios, reglas e historial de escaneos en un solo lugar",
     "tabs": {
-      "violations": "Violations",
-      "sites": "Sites",
+      "domains": "Subdominios",
       "rules": "Rules",
       "history": "History"
     },
@@ -846,11 +845,24 @@
     },
     "filters": {
       "fqdn": "Search FQDN…",
-      "search": "Search FQDN or email…"
+      "search": "Search FQDN or email…",
+      "claimsSearch": "Search FQDN or email…",
+      "scanStatusAll": "Scan status",
+      "recordTypeAll": "All record types",
+      "scanStatus": {
+        "all": "All",
+        "scanned": "Scanned",
+        "never": "Not scanned",
+        "violation": "Violation",
+        "compliant": "Compliant"
+      }
     },
     "columns": {
+      "subdomain": "Subdominio",
       "fqdn": "FQDN",
       "user": "User",
+      "violation": "Infracción",
+      "dnsRecordCount": "DNS records",
       "status": "Status",
       "latestViolation": "Latest violation",
       "violations7d": "7d violations",
@@ -892,11 +904,11 @@
     "actions": {
       "observe": "Notify only",
       "delete_dns": "Eliminar registros DNS",
-      "site": "Suspend site",
-      "user": "Suspend user",
+      "site": "Liberar subdominio",
+      "user": "Suspender usuario",
       "detail": "Details",
       "restore": "Restore",
-      "release": "Release claim",
+      "release": "Liberar subdominio",
       "rescan": "Rescan now",
       "bulkRescan": "Bulk rescan ({{count}})",
       "bulkRescanQueued": "Queued {{count}} scans",
@@ -993,6 +1005,7 @@
       "running": "Obteniendo…",
       "noMatch": "Sin coincidencias",
       "wouldSuspend": "Provocaría suspensión",
+      "wouldRelease": "Provocaría liberación del subdominio",
       "wouldDeleteDns": "Provocaría eliminación de DNS",
       "wouldNotSuspend": "No provocaría suspensión ni eliminación de DNS",
       "wouldNotifyOnly": "Solo notificaría (sin bloqueo ni eliminación de DNS)",

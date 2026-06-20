@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 
@@ -22,13 +23,14 @@ var auditScannableRecordTypes = map[string]bool{
 type AuditService struct {
 	repo     *repository.Repository
 	ops      *DNSOperationService
+	subSvc   *SubdomainService
 	notif    *NotificationService
 	fetcher  *audit.SafeFetcher
 	engine   *AuditRuleEngine
 	auditLog *AuditLogService
 }
 
-func NewAuditService(repo *repository.Repository, ops *DNSOperationService, notif *NotificationService, fetchTimeout time.Duration, auditLog *AuditLogService) *AuditService {
+func NewAuditService(repo *repository.Repository, ops *DNSOperationService, subSvc *SubdomainService, notif *NotificationService, fetchTimeout time.Duration, auditLog *AuditLogService) *AuditService {
 	opts := make([]audit.SafeFetcherOption, 0)
 	if fetchTimeout > 0 {
 		opts = append(opts, audit.WithTimeout(fetchTimeout))
@@ -36,6 +38,7 @@ func NewAuditService(repo *repository.Repository, ops *DNSOperationService, noti
 	return &AuditService{
 		repo:     repo,
 		ops:      ops,
+		subSvc:   subSvc,
 		notif:    notif,
 		fetcher:  audit.NewSafeFetcher(opts...),
 		engine:   NewAuditRuleEngine(repo),
@@ -115,7 +118,7 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 				case model.AuditActionUser:
 					s.suspendUserSubdomains(ctx, sub.UserID, primary.Rule, primary.Snippet)
 				case model.AuditActionSite:
-					s.suspendSubdomain(ctx, sub, primary.Rule, primary.Snippet)
+					s.releaseSubdomainViaRule(ctx, sub, primary.Rule, primary.Snippet)
 				case model.AuditActionDeleteDNS:
 					s.deleteScannableRecords(ctx, sub, primary.Rule, primary.Snippet)
 				case model.AuditActionObserve:
@@ -173,6 +176,33 @@ func (s *AuditService) deleteScannableRecords(ctx context.Context, sub *model.Su
 		"matched_snippet": helpers.TruncateRunes(snippet, 100),
 		"deleted_count":   len(records),
 	})
+	s.notifyBanIfConfigured(sub.UserID, sub.FQDN, rule, snippet)
+	return true
+}
+
+func (s *AuditService) releaseSubdomainViaRule(ctx context.Context, sub *model.Subdomain, rule *model.AuditRule, snippet string) bool {
+	if s.subSvc == nil {
+		slog.Error("audit: release subdomain skipped, subdomain service not configured", "fqdn", sub.FQDN)
+		return false
+	}
+
+	slog.Warn("audit: releasing subdomain", "fqdn", sub.FQDN, "rule", rule.Name, "action", rule.Action)
+
+	result := s.subSvc.ReleaseSubdomain(ctx, sub, ReleaseOpts{
+		ActorID:     sub.UserID,
+		AuditAction: "audit_release_subdomain",
+		AuditExtra: map[string]interface{}{
+			"fqdn":            sub.FQDN,
+			"rule":            rule.Name,
+			"rule_id":         rule.ID,
+			"matched_snippet": helpers.TruncateRunes(snippet, 100),
+		},
+	})
+	if result.HTTPStatus != http.StatusOK {
+		slog.Error("audit: release subdomain failed", "fqdn", sub.FQDN, "status", result.HTTPStatus, "msg", result.Message)
+		return false
+	}
+
 	s.notifyBanIfConfigured(sub.UserID, sub.FQDN, rule, snippet)
 	return true
 }
@@ -452,7 +482,7 @@ func (s *AuditService) sendAuditCustomNotification(userID uint, fqdn string, rul
 	}
 	_, err := s.notif.NotifyUsers(
 		[]uint{userID},
-		0,
+		rule.CreatedBy,
 		"urgent",
 		fqdn,
 		rendered,

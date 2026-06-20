@@ -830,10 +830,9 @@
   },
   "audit": {
     "title": "内容审查",
-    "description": "统一管理违规处置、全站巡检、规则配置与扫描历史",
+    "description": "统一管理子域名审查、规则配置与扫描历史",
     "tabs": {
-      "violations": "违规",
-      "sites": "全站",
+      "domains": "子域名",
       "rules": "规则",
       "history": "历史"
     },
@@ -846,11 +845,24 @@
     },
     "filters": {
       "fqdn": "按 FQDN 搜索…",
-      "search": "搜索 FQDN 或邮箱…"
+      "search": "搜索 FQDN 或邮箱…",
+      "claimsSearch": "搜索 FQDN 或邮箱…",
+      "scanStatusAll": "扫描状态",
+      "recordTypeAll": "全部记录类型",
+      "scanStatus": {
+        "all": "全部",
+        "scanned": "已扫描",
+        "never": "未扫描",
+        "violation": "违规",
+        "compliant": "合规"
+      }
     },
     "columns": {
+      "subdomain": "子域",
       "fqdn": "FQDN",
       "user": "用户",
+      "violation": "违规",
+      "dnsRecordCount": "下属解析数",
       "status": "状态",
       "latestViolation": "最近违规",
       "violations7d": "7日违规",
@@ -892,11 +904,11 @@
     "actions": {
       "observe": "仅通知",
       "delete_dns": "删除解析",
-      "site": "封禁站点",
+      "site": "释放子域",
       "user": "封禁用户",
       "detail": "详情",
       "restore": "恢复",
-      "release": "释放认领",
+      "release": "释放子域",
       "rescan": "立即重扫",
       "bulkRescan": "批量重扫 ({{count}})",
       "bulkRescanQueued": "已入队 {{count}} 个扫描任务",
@@ -993,6 +1005,7 @@
       "running": "抓取中…",
       "noMatch": "未命中任何规则",
       "wouldSuspend": "将触发封禁处置",
+      "wouldRelease": "将触发释放子域",
       "wouldDeleteDns": "将触发删除解析",
       "wouldNotSuspend": "不会触发封禁或删除解析",
       "wouldNotifyOnly": "将仅通知用户（不封禁或删除解析）",

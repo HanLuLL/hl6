@@ -183,10 +183,13 @@ func (h *AuditHandler) GetSummary(c *gin.Context) {
 func (h *AuditHandler) ListCases(c *gin.Context) {
 	page, perPage := helpers.ParsePageParams(c, 20, 100)
 	filter := repository.AuditCasesFilter{
-		Statuses:     queryStringSlice(c, "status"),
-		ScanStatuses: queryStringSlice(c, "scan_status"),
-		RuleIDs:      queryUintSlice(c, "rule_id"),
+		Statuses:    queryStringSlice(c, "status"),
+		ScanStatus:  strings.TrimSpace(c.Query("scan_status")),
+		RuleIDs:     queryUintSlice(c, "rule_id"),
 		DomainIDs:    queryUintSlice(c, "domain_id"),
+		GroupID:      queryOptionalUint(c, "group_id"),
+		RecordTypes:  normalizeDNSRecordTypes(queryStringSlice(c, "record_type")),
+		Search:       strings.TrimSpace(c.Query("search")),
 		UserEmail:    strings.TrimSpace(c.Query("user_email")),
 		FQDN:         strings.TrimSpace(c.Query("fqdn")),
 		Sort:         strings.TrimSpace(c.Query("sort")),
@@ -197,17 +200,6 @@ func (h *AuditHandler) ListCases(c *gin.Context) {
 	filter.ScanTo = queryTimePtr(c, "scan_to")
 
 	items, total, err := h.repo.ListAuditCases(page, perPage, filter)
-	if err != nil {
-		response.InternalError(c, apperr.KeyFailedToListAuditScans)
-		return
-	}
-	response.Paginated(c, items, total, page, perPage)
-}
-
-func (h *AuditHandler) ListSites(c *gin.Context) {
-	page, perPage := helpers.ParsePageParams(c, 20, 100)
-	search := strings.TrimSpace(c.Query("search"))
-	items, total, err := h.repo.ListAuditSites(page, perPage, search)
 	if err != nil {
 		response.InternalError(c, apperr.KeyFailedToListAuditScans)
 		return
@@ -563,6 +555,7 @@ func (h *AuditHandler) TestRule(c *gin.Context) {
 	dual, matches, primary := h.auditSvc.TestRuleMatch(c.Request.Context(), fqdn, domainID, rules)
 	primaryAction := ""
 	wouldSuspend := false
+	wouldRelease := false
 	wouldDeleteDNS := false
 	wouldExempt := false
 	wouldSendBanNotify := false
@@ -575,10 +568,11 @@ func (h *AuditHandler) TestRule(c *gin.Context) {
 				wouldSendExemptNotify = true
 			}
 		} else {
-			wouldSuspend = primaryAction == model.AuditActionSite || primaryAction == model.AuditActionUser
+			wouldRelease = primaryAction == model.AuditActionSite
+			wouldSuspend = primaryAction == model.AuditActionUser
 			wouldDeleteDNS = primaryAction == model.AuditActionDeleteDNS
 			if strings.TrimSpace(primary.Rule.BanNotifyContent) != "" &&
-				(wouldSuspend || wouldDeleteDNS || primaryAction == model.AuditActionObserve) {
+				(wouldSuspend || wouldDeleteDNS || wouldRelease || primaryAction == model.AuditActionObserve) {
 				wouldSendBanNotify = true
 			}
 		}
@@ -606,6 +600,7 @@ func (h *AuditHandler) TestRule(c *gin.Context) {
 		"matched_rules":    service.ToMatchedRuleHits(matches),
 		"primary_action":        primaryAction,
 		"would_suspend":         wouldSuspend,
+		"would_release":         wouldRelease,
 		"would_delete_dns":      wouldDeleteDNS,
 		"would_exempt":          wouldExempt,
 		"would_send_ban_notify": wouldSendBanNotify,
@@ -695,6 +690,43 @@ func queryUintSlice(c *gin.Context, key string) []uint {
 		}
 	}
 	return out
+}
+
+func normalizeDNSRecordTypes(types []string) []string {
+	if len(types) == 0 {
+		return nil
+	}
+	allowed := map[string]string{
+		"a": "A", "aaaa": "AAAA", "cname": "CNAME", "txt": "TXT",
+		"A": "A", "AAAA": "AAAA", "CNAME": "CNAME", "TXT": "TXT",
+	}
+	out := make([]string, 0, len(types))
+	seen := make(map[string]struct{}, len(types))
+	for _, raw := range types {
+		t, ok := allowed[strings.TrimSpace(raw)]
+		if !ok {
+			continue
+		}
+		if _, dup := seen[t]; dup {
+			continue
+		}
+		seen[t] = struct{}{}
+		out = append(out, t)
+	}
+	return out
+}
+
+func queryOptionalUint(c *gin.Context, key string) *uint {
+	raw := strings.TrimSpace(c.Query(key))
+	if raw == "" {
+		return nil
+	}
+	n, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil {
+		return nil
+	}
+	uid := uint(n)
+	return &uid
 }
 
 func queryTimePtr(c *gin.Context, key string) *time.Time {

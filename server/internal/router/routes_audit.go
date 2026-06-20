@@ -6,7 +6,6 @@ func registerAdminAuditRoutes(admin *gin.RouterGroup, h *Handlers) {
 	audit := admin.Group("/audit")
 	audit.GET("/summary", h.Audit.GetSummary)
 	audit.GET("/cases", h.Audit.ListCases)
-	audit.GET("/sites", h.Audit.ListSites)
 	audit.GET("/subdomains/:id", h.Audit.GetSubdomainDetail)
 	audit.GET("/subdomains/:id/scans", h.Audit.ListSubdomainScans)
 	audit.POST("/subdomains/:id/restore", h.Audit.RestoreSubdomain)

@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { ApiError, api, createIdempotencyKey, isRetryableMutationError } from "@/lib/api";
+import { api } from "@/lib/api";
 import { domainToUnicode } from "@/lib/idn";
 import { formatDate } from "@/lib/format-date";
 import { useErrorToast } from "@/hooks/use-error-toast";
@@ -13,11 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import { ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { ReleaseSubdomainDialog } from "./release-subdomain-dialog";
 
 export function AuditDetailSheet({
   subdomainId,
@@ -30,8 +27,6 @@ export function AuditDetailSheet({
   const showError = useErrorToast();
   const queryClient = useQueryClient();
   const [releaseOpen, setReleaseOpen] = useState(false);
-  const [sendNotify, setSendNotify] = useState(false);
-  const [reason, setReason] = useState("");
 
   const { data: detail, isLoading } = useQuery({
     queryKey: ["admin-audit-detail", subdomainId],
@@ -60,33 +55,6 @@ export function AuditDetailSheet({
     mutationFn: () => api.adminRescanAuditSubdomain(subdomainId!),
     onSuccess: () => toast.success(t("audit.detail.rescanQueued")),
     onError: (err) => showError(err),
-  });
-
-  const releaseMutation = useMutation({
-    mutationFn: async (opts: { notify: boolean; reason?: string }) => {
-      const idempotencyKey = createIdempotencyKey();
-      try {
-        return await api.adminReleaseAuditSubdomain(subdomainId!, opts, { idempotencyKey, timeoutMs: 3000 });
-      } catch (err) {
-        if (isRetryableMutationError(err)) {
-          return api.adminReleaseAuditSubdomain(subdomainId!, opts, { idempotencyKey, timeoutMs: 3000 });
-        }
-        throw err;
-      }
-    },
-    onSuccess: () => {
-      toast.success(t("audit.detail.released"));
-      setReleaseOpen(false);
-      onClose();
-      queryClient.invalidateQueries({ queryKey: ["admin-audit-cases"] });
-    },
-    onError: (err: unknown) => {
-      if (err instanceof ApiError && err.data && typeof err.data === "object" && "bulk_job_id" in err.data) {
-        toast.error(t("audit.detail.releaseQueued"));
-        return;
-      }
-      showError(err);
-    },
   });
 
   const sub = detail?.subdomain;
@@ -201,33 +169,12 @@ export function AuditDetailSheet({
         </SheetContent>
       </Sheet>
 
-      <Dialog open={releaseOpen} onOpenChange={setReleaseOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("audit.actions.release")}</DialogTitle>
-            <DialogDescription>{t("audit.detail.releaseConfirm")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={sendNotify} onChange={(e) => setSendNotify(e.target.checked)} />
-              {t("audit.detail.sendNotify")}
-            </label>
-            {sendNotify && (
-              <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("audit.detail.reasonPlaceholder")} />
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReleaseOpen(false)}>{t("common.cancel")}</Button>
-            <Button
-              variant="destructive"
-              disabled={releaseMutation.isPending}
-              onClick={() => releaseMutation.mutate({ notify: sendNotify, reason: sendNotify ? reason : undefined })}
-            >
-              {t("audit.actions.release")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReleaseSubdomainDialog
+        subdomainId={subdomainId}
+        open={releaseOpen}
+        onOpenChange={setReleaseOpen}
+        onSuccess={onClose}
+      />
     </>
   );
 }

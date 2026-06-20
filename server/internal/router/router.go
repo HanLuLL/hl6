@@ -67,7 +67,7 @@ func bootstrapAudit(ctx context.Context, cfg *config.Config, db *gorm.DB, repo *
 	auditLogSvc := service.NewAuditLogService(repo)
 	notifSvc := service.NewNotificationService(repo, ssePub)
 	subSvc := service.NewSubdomainService(repo, dnsOps, auditLogSvc)
-	auditSvc := service.NewAuditService(repo, dnsOps, notifSvc, cfg.AuditScanTimeout, auditLogSvc)
+	auditSvc := service.NewAuditService(repo, dnsOps, subSvc, notifSvc, cfg.AuditScanTimeout, auditLogSvc)
 	auditEnqueue := service.NewAuditEnqueueService(taskQueue, enqueueDedup)
 
 	startAuditWorkers(ctx, cfg, db, repo, taskQueue, schedDedup, auditSvc, auditEnqueue)

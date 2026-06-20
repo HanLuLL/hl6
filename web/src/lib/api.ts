@@ -37,7 +37,6 @@ import type {
   OIDCStatusPayload,
   AuditSummary,
   AuditWorkbenchItem,
-  AuditSiteItem,
   AuditSubdomainDetail,
   AuditRule,
   AuditScenario,
@@ -538,10 +537,6 @@ export const api = {
   adminListAuditCases: (page = 1, perPage = 20, filters: Record<string, string | undefined> = {}) => {
     const path = buildPaginatedQuery("/admin/audit/cases", page, perPage, filters);
     return request<PaginatedResponse<AuditWorkbenchItem[]>>(path);
-  },
-  adminListAuditSites: (page = 1, perPage = 20, search = "") => {
-    const path = buildPaginatedQuery("/admin/audit/sites", page, perPage, { search: search || undefined });
-    return request<PaginatedResponse<AuditSiteItem[]>>(path);
   },
   adminGetAuditSubdomainDetail: (id: number) =>
     request<ApiResponse<AuditSubdomainDetail>>(`/admin/audit/subdomains/${id}`),

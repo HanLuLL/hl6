@@ -830,12 +830,11 @@
   },
   "audit": {
     "title": "內容審查",
-    "description": "統一管理違規處置、全站巡檢、規則配置與掃描歷史",
+    "description": "統一管理子網域審查、規則配置與掃描歷史",
     "tabs": {
-      "violations": "违规",
-      "sites": "全站",
-      "rules": "规则",
-      "history": "历史"
+      "domains": "子網域",
+      "rules": "規則",
+      "history": "歷史"
     },
     "summary": {
       "suspended": "已封禁",
@@ -846,11 +845,24 @@
     },
     "filters": {
       "fqdn": "按 FQDN 搜索…",
-      "search": "搜索 FQDN 或邮箱…"
+      "search": "搜索 FQDN 或邮箱…",
+      "claimsSearch": "搜尋 FQDN 或信箱…",
+      "scanStatusAll": "掃描狀態",
+      "recordTypeAll": "全部記錄類型",
+      "scanStatus": {
+        "all": "全部",
+        "scanned": "已掃描",
+        "never": "未掃描",
+        "violation": "違規",
+        "compliant": "合規"
+      }
     },
     "columns": {
+      "subdomain": "子域",
       "fqdn": "FQDN",
-      "user": "用户",
+      "user": "用戶",
+      "violation": "違規",
+      "dnsRecordCount": "下屬解析數",
       "status": "状态",
       "latestViolation": "最近违规",
       "violations7d": "7日违规",
@@ -892,11 +904,11 @@
     "actions": {
       "observe": "僅通知",
       "delete_dns": "刪除解析",
-      "site": "封禁站點",
-      "user": "封禁用户",
-      "detail": "详情",
-      "restore": "恢复",
-      "release": "释放认领",
+      "site": "釋放子域",
+      "user": "封禁用戶",
+      "detail": "詳情",
+      "restore": "恢復",
+      "release": "釋放子域",
       "rescan": "立即重扫",
       "bulkRescan": "批量重扫 ({{count}})",
       "bulkRescanQueued": "已入队 {{count}} 个扫描任务",
@@ -993,6 +1005,7 @@
       "running": "抓取中…",
       "noMatch": "未命中任何規則",
       "wouldSuspend": "將觸發封禁處置",
+      "wouldRelease": "將觸發釋放子域",
       "wouldDeleteDns": "將觸發刪除解析",
       "wouldNotSuspend": "不會觸發封禁或刪除解析",
       "wouldNotifyOnly": "將僅通知用戶（不封禁或刪除解析）",

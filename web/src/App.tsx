@@ -87,6 +87,8 @@ export default function App() {
             <Route path="/admin/audit" element={<AdminAuditPage />} />
             <Route path="/admin/audit-rules" element={<Navigate to="/admin/audit?tab=rules" replace />} />
             <Route path="/admin/audit-scans" element={<Navigate to="/admin/audit?tab=history" replace />} />
+            <Route path="/admin/audit-violations" element={<Navigate to="/admin/audit?tab=domains" replace />} />
+            <Route path="/admin/audit-sites" element={<Navigate to="/admin/audit?tab=domains" replace />} />
             <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
             <Route path="/admin/groups" element={<Navigate to="/admin/users?tab=groups" replace />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />

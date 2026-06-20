@@ -165,19 +165,6 @@ export interface AuditWorkbenchItem {
   content_changed: boolean;
 }
 
-export interface AuditSiteItem {
-  subdomain_id: number;
-  fqdn: string;
-  domain_id: number;
-  domain_name: string;
-  user_id: number;
-  user_email: string;
-  never_scanned: boolean;
-  hours_since_scan?: number | null;
-  latest_scan_status?: string;
-  latest_scan?: AuditWorkbenchScanBrief | null;
-}
-
 export interface AuditSubdomainDetail {
   subdomain: Subdomain;
   user_email: string;
@@ -221,6 +208,7 @@ export interface AuditRuleTestResult {
   matched_rules: MatchedRuleHit[];
   primary_action: string;
   would_suspend: boolean;
+  would_release?: boolean;
   would_delete_dns: boolean;
   would_exempt?: boolean;
   would_send_ban_notify?: boolean;

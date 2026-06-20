@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"strings"
 	"time"
 
 	"hl6-server/internal/model"
@@ -92,12 +91,14 @@ type AuditWorkbenchItem struct {
 	ContentChanged   bool                          `json:"content_changed"`
 }
 
-// AuditCasesFilter 违规视图筛选。
+// AuditCasesFilter 子域名列表筛选。
 type AuditCasesFilter struct {
 	Statuses       []string
-	ScanStatuses   []string
+	ScanStatus     string
 	RuleIDs        []uint
 	DomainIDs      []uint
+	GroupID        *uint
+	Search         string
 	UserEmail      string
 	FQDN           string
 	SuspendedFrom  *time.Time
@@ -105,6 +106,7 @@ type AuditCasesFilter struct {
 	ScanFrom       *time.Time
 	ScanTo         *time.Time
 	Sort           string
+	RecordTypes    []string
 }
 
 func (r *Repository) ListAuditCases(page, perPage int, filter AuditCasesFilter) ([]AuditWorkbenchItem, int64, error) {
@@ -137,13 +139,23 @@ LEFT JOIN LATERAL (
 		where += " AND s.domain_id IN ?"
 		args = append(args, filter.DomainIDs)
 	}
-	if filter.UserEmail != "" {
-		where += " AND u.email ILIKE ?"
-		args = append(args, "%"+escapeLike(filter.UserEmail)+"%")
+	if filter.GroupID != nil {
+		where += " AND u.group_id = ?"
+		args = append(args, *filter.GroupID)
 	}
-	if filter.FQDN != "" {
-		where += " AND s.fqdn ILIKE ?"
-		args = append(args, "%"+escapeLike(filter.FQDN)+"%")
+	if filter.Search != "" {
+		like := "%" + escapeLike(filter.Search) + "%"
+		where += " AND (s.fqdn ILIKE ? OR u.email ILIKE ?)"
+		args = append(args, like, like)
+	} else {
+		if filter.UserEmail != "" {
+			where += " AND u.email ILIKE ?"
+			args = append(args, "%"+escapeLike(filter.UserEmail)+"%")
+		}
+		if filter.FQDN != "" {
+			where += " AND s.fqdn ILIKE ?"
+			args = append(args, "%"+escapeLike(filter.FQDN)+"%")
+		}
 	}
 	if filter.SuspendedFrom != nil {
 		where += " AND s.suspended_at >= ?"
@@ -165,19 +177,13 @@ LEFT JOIN LATERAL (
 		where += " AND latest_violation.matched_rule_id IN ?"
 		args = append(args, filter.RuleIDs)
 	}
-	if len(filter.ScanStatuses) > 0 {
-		conds := make([]string, 0, len(filter.ScanStatuses))
-		for _, st := range filter.ScanStatuses {
-			switch st {
-			case "never":
-				conds = append(conds, "latest_scan.id IS NULL")
-			case "clean", "violation", "unreachable", "error":
-				conds = append(conds, "latest_scan.status = '"+st+"'")
-			}
-		}
-		if len(conds) > 0 {
-			where += " AND (" + strings.Join(conds, " OR ") + ")"
-		}
+	where = appendAuditSiteScanFilter(where, filter.ScanStatus)
+	if len(filter.RecordTypes) > 0 {
+		where += ` AND EXISTS (
+			SELECT 1 FROM dns_records dr
+			WHERE dr.subdomain_id = s.id AND dr.type IN ?
+		)`
+		args = append(args, filter.RecordTypes)
 	}
 
 	countSQL := "SELECT COUNT(*) " + base + where
@@ -186,10 +192,10 @@ LEFT JOIN LATERAL (
 		return nil, 0, err
 	}
 
-	orderBy := "s.suspended_at DESC NULLS LAST"
+	orderBy := "latest_scan.created_at DESC NULLS LAST"
 	switch filter.Sort {
-	case "latest_scan_desc":
-		orderBy = "latest_scan.created_at DESC NULLS LAST"
+	case "suspended_at_desc":
+		orderBy = "s.suspended_at DESC NULLS LAST"
 	case "fqdn_asc":
 		orderBy = "s.fqdn ASC"
 	}
@@ -317,126 +323,19 @@ SELECT
 	return items, total, nil
 }
 
-// AuditSiteItem 全站风险列表行。
-type AuditSiteItem struct {
-	SubdomainID       uint                     `json:"subdomain_id"`
-	FQDN              string                   `json:"fqdn"`
-	DomainID          uint                     `json:"domain_id"`
-	DomainName        string                   `json:"domain_name"`
-	UserID            uint                     `json:"user_id"`
-	UserEmail         string                   `json:"user_email"`
-	NeverScanned      bool                     `json:"never_scanned"`
-	HoursSinceScan    *float64                 `json:"hours_since_scan"`
-	LatestScanStatus  string                   `json:"latest_scan_status,omitempty"`
-	LatestScan        *AuditWorkbenchScanBrief `json:"latest_scan"`
-}
-
-func (r *Repository) ListAuditSites(page, perPage int, search string) ([]AuditSiteItem, int64, error) {
-	where := `
-WHERE s.status = ?
-  AND EXISTS (
-	SELECT 1 FROM dns_records dr
-	WHERE dr.subdomain_id = s.id AND dr.status = ? AND dr.type IN ('A', 'AAAA', 'CNAME')
-  )`
-	args := []interface{}{model.SubdomainStatusActive, model.DNSRecordStatusActive}
-	if search != "" {
-		where += " AND (s.fqdn ILIKE ? OR u.email ILIKE ?)"
-		like := "%" + escapeLike(search) + "%"
-		args = append(args, like, like)
+func appendAuditSiteScanFilter(where string, scanStatus string) string {
+	switch scanStatus {
+	case "never":
+		return where + " AND latest_scan.id IS NULL"
+	case "scanned":
+		return where + " AND latest_scan.id IS NOT NULL"
+	case "violation":
+		return where + " AND latest_scan.status = 'violation'"
+	case "compliant":
+		return where + " AND latest_scan.status = 'clean'"
+	default:
+		return where
 	}
-
-	countSQL := `
-SELECT COUNT(*)
-FROM subdomains s
-JOIN domains d ON d.id = s.domain_id
-JOIN users u ON u.id = s.user_id
-` + where
-
-	var total int64
-	if err := r.DB.Raw(countSQL, args...).Scan(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if page <= 0 {
-		page = 1
-	}
-	if perPage <= 0 {
-		perPage = 20
-	}
-	offset := (page - 1) * perPage
-
-	selectSQL := `
-SELECT
-	s.id AS subdomain_id,
-	s.fqdn,
-	s.domain_id,
-	d.name AS domain_name,
-	s.user_id,
-	u.email AS user_email,
-	NOT EXISTS (SELECT 1 FROM subdomain_scans ss WHERE ss.subdomain_id = s.id) AS never_scanned,
-	latest_scan.id AS latest_scan_id,
-	latest_scan.status AS latest_scan_status,
-	latest_scan.http_status_code AS latest_scan_http_status_code,
-	latest_scan.created_at AS latest_scan_created_at,
-	CASE WHEN latest_scan.created_at IS NOT NULL
-		THEN EXTRACT(EPOCH FROM (NOW() - latest_scan.created_at)) / 3600.0
-		ELSE NULL END AS hours_since_scan
-FROM subdomains s
-JOIN domains d ON d.id = s.domain_id
-JOIN users u ON u.id = s.user_id
-LEFT JOIN LATERAL (
-	SELECT ss.id, ss.status, ss.http_status_code, ss.created_at
-	FROM subdomain_scans ss WHERE ss.subdomain_id = s.id
-	ORDER BY ss.created_at DESC LIMIT 1
-) latest_scan ON true
-` + where + ` ORDER BY never_scanned DESC, latest_scan.created_at ASC NULLS FIRST OFFSET ? LIMIT ?`
-
-	queryArgs := append(args, offset, perPage)
-
-	type row struct {
-		SubdomainID              uint
-		FQDN                     string
-		DomainID                 uint
-		DomainName               string
-		UserID                   uint
-		UserEmail                string
-		NeverScanned             bool
-		LatestScanID             *uint
-		LatestScanStatus         *string
-		LatestScanHTTPStatusCode *int
-		LatestScanCreatedAt      *time.Time
-		HoursSinceScan           *float64
-	}
-
-	var rows []row
-	if err := r.DB.Raw(selectSQL, queryArgs...).Scan(&rows).Error; err != nil {
-		return nil, 0, err
-	}
-
-	items := make([]AuditSiteItem, 0, len(rows))
-	for _, rw := range rows {
-		item := AuditSiteItem{
-			SubdomainID:      rw.SubdomainID,
-			FQDN:             rw.FQDN,
-			DomainID:         rw.DomainID,
-			DomainName:       rw.DomainName,
-			UserID:           rw.UserID,
-			UserEmail:        rw.UserEmail,
-			NeverScanned:     rw.NeverScanned,
-			HoursSinceScan:   rw.HoursSinceScan,
-			LatestScanStatus: derefString(rw.LatestScanStatus),
-		}
-		if rw.LatestScanID != nil {
-			item.LatestScan = &AuditWorkbenchScanBrief{
-				ID:             *rw.LatestScanID,
-				Status:         derefString(rw.LatestScanStatus),
-				HTTPStatusCode: derefInt(rw.LatestScanHTTPStatusCode),
-				CreatedAt:      derefTime(rw.LatestScanCreatedAt),
-			}
-		}
-		items = append(items, item)
-	}
-	return items, total, nil
 }
 
 // AuditSubdomainSibling 同用户其他子域名摘要。

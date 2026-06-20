@@ -16,7 +16,7 @@ export function AuditSummaryBar() {
     return (
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="h-20" />
+          <Skeleton key={i} className="h-14 rounded-xl" />
         ))}
       </div>
     );
@@ -33,10 +33,10 @@ export function AuditSummaryBar() {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
       {items.map((item) => (
-        <Card key={item.label}>
-          <CardContent className="p-4">
+        <Card key={item.label} className="gap-0 py-0 shadow-none">
+          <CardContent className="px-3 py-2.5">
             <p className="text-xs text-muted-foreground">{item.label}</p>
-            <p className="text-2xl font-semibold tabular-nums">{item.value}</p>
+            <p className="text-2xl font-semibold leading-tight tabular-nums">{item.value}</p>
           </CardContent>
         </Card>
       ))}
