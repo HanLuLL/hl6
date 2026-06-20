@@ -889,7 +889,7 @@
       "all": "Match all keywords"
     },
     "actions": {
-      "observe": "Observe only",
+      "observe": "Notify only",
       "delete_dns": "Удалить DNS-записи",
       "site": "Suspend site",
       "user": "Suspend user",
@@ -951,6 +951,11 @@
         "placeholder": "напр. Поддомен {{fqdn}} заблокирован за нарушение {{rule_name}}.",
         "vars": "Переменные: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}"
       },
+      "notifyOnly": {
+        "title": "Уведомление о нарушении",
+        "hint": "Оставьте пустым, чтобы не уведомлять. Отправляется при совпадении без блокировки и удаления DNS.",
+        "placeholder": "напр. Поддомен {{fqdn}} совпал с правилом {{rule_name}}. Проверьте."
+      },
       "exempt": {
         "title": "Исключение",
         "hint": "Без применения при первом срабатывании; авто-перескан. Обычное действие при повторном совпадении.",
@@ -989,8 +994,10 @@
       "wouldSuspend": "Будет приостановка",
       "wouldDeleteDns": "Будет удаление DNS-записей",
       "wouldNotSuspend": "Не будет приостановки или удаления DNS",
+      "wouldNotifyOnly": "Только уведомление (без блокировки и удаления DNS)",
       "wouldExempt": "Будет применено исключение (без действия до перескана)",
       "wouldSendBanNotify": "Будет отправлено уведомление о блокировке",
+      "wouldSendNotify": "Будет отправлено уведомление о нарушении",
       "wouldSendExemptNotify": "Будет отправлено уведомление об исключении"
     },
     "detail": {

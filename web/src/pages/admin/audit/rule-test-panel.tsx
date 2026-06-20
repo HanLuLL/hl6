@@ -119,10 +119,14 @@ export function RuleTestPanel({ draft, embedded }: { draft: DraftRule; embedded?
                 ? t("audit.ruleTest.wouldDeleteDns")
                 : result.would_suspend
                   ? t("audit.ruleTest.wouldSuspend")
-                  : t("audit.ruleTest.wouldNotSuspend")}
+                  : result.primary_action === "observe"
+                    ? t("audit.ruleTest.wouldNotifyOnly")
+                    : t("audit.ruleTest.wouldNotSuspend")}
           </p>
           {result.would_send_ban_notify && (
-            <p className="text-xs text-muted-foreground">{t("audit.ruleTest.wouldSendBanNotify")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t(result.primary_action === "observe" ? "audit.ruleTest.wouldSendNotify" : "audit.ruleTest.wouldSendBanNotify")}
+            </p>
           )}
           {result.would_send_exempt_notify && (
             <p className="text-xs text-muted-foreground">{t("audit.ruleTest.wouldSendExemptNotify")}</p>

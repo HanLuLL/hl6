@@ -889,7 +889,7 @@
       "all": "Match all keywords"
     },
     "actions": {
-      "observe": "Observe only",
+      "observe": "Notify only",
       "delete_dns": "Eliminar registros DNS",
       "site": "Suspend site",
       "user": "Suspend user",
@@ -951,6 +951,11 @@
         "placeholder": "p. ej. Su subdominio {{fqdn}} fue suspendido por {{rule_name}}.",
         "vars": "Variables: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}"
       },
+      "notifyOnly": {
+        "title": "Notificación de infracción",
+        "hint": "Dejar vacío para no notificar. Se envía al coincidir, sin bloqueo ni eliminación de DNS.",
+        "placeholder": "p. ej. Su subdominio {{fqdn}} coincidió con {{rule_name}}. Revíselo."
+      },
       "exempt": {
         "title": "Exención",
         "hint": "Sin aplicar en el primer hit; reescaneo automático. Acción normal si sigue coincidiendo.",
@@ -989,8 +994,10 @@
       "wouldSuspend": "Provocaría suspensión",
       "wouldDeleteDns": "Provocaría eliminación de DNS",
       "wouldNotSuspend": "No provocaría suspensión ni eliminación de DNS",
+      "wouldNotifyOnly": "Solo notificaría (sin bloqueo ni eliminación de DNS)",
       "wouldExempt": "Aplicaría exención (sin aplicar hasta el reescaneo)",
       "wouldSendBanNotify": "Enviaría notificación de bloqueo",
+      "wouldSendNotify": "Enviaría notificación de infracción",
       "wouldSendExemptNotify": "Enviaría notificación de exención"
     },
     "detail": {

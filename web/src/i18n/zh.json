@@ -889,7 +889,7 @@
       "all": "全部关键词命中"
     },
     "actions": {
-      "observe": "仅记录",
+      "observe": "仅通知",
       "delete_dns": "删除解析",
       "site": "封禁站点",
       "user": "封禁用户",
@@ -951,6 +951,11 @@
         "placeholder": "例如：您的子域 {{fqdn}} 因违反 {{rule_name}} 已被封禁。",
         "vars": "可用变量：{{fqdn}}、{{rule_name}}、{{matched_snippet}}、{{action}}"
       },
+      "notifyOnly": {
+        "title": "违规通知",
+        "hint": "留空则不通知用户。命中后自动发送，不封禁或删除解析。",
+        "placeholder": "例如：您的子域 {{fqdn}} 触发了 {{rule_name}} 审查，请及时处理。"
+      },
       "exempt": {
         "title": "豁免",
         "hint": "命中后暂不封禁，到期后自动重扫；重扫仍命中则正常处置。",
@@ -989,8 +994,10 @@
       "wouldSuspend": "将触发封禁处置",
       "wouldDeleteDns": "将触发删除解析",
       "wouldNotSuspend": "不会触发封禁或删除解析",
+      "wouldNotifyOnly": "将仅通知用户（不封禁或删除解析）",
       "wouldExempt": "将触发豁免（暂不封禁，到期后重扫）",
       "wouldSendBanNotify": "将发送封禁通知",
+      "wouldSendNotify": "将发送违规通知",
       "wouldSendExemptNotify": "将发送豁免通知"
     },
     "detail": {

@@ -578,7 +578,7 @@ func (h *AuditHandler) TestRule(c *gin.Context) {
 			wouldSuspend = primaryAction == model.AuditActionSite || primaryAction == model.AuditActionUser
 			wouldDeleteDNS = primaryAction == model.AuditActionDeleteDNS
 			if strings.TrimSpace(primary.Rule.BanNotifyContent) != "" &&
-				(wouldSuspend || wouldDeleteDNS) {
+				(wouldSuspend || wouldDeleteDNS || primaryAction == model.AuditActionObserve) {
 				wouldSendBanNotify = true
 			}
 		}

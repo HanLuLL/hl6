@@ -143,9 +143,6 @@ func ValidateAuditRule(rule *model.AuditRule) error {
 		rule.Targets = model.StringSlice{}
 	}
 
-	if rule.Action == model.AuditActionObserve {
-		rule.BanNotifyContent = ""
-	}
 	if err := validateAuditRuleNotifyAndExempt(rule); err != nil {
 		return err
 	}

@@ -119,12 +119,7 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 				case model.AuditActionDeleteDNS:
 					s.deleteScannableRecords(ctx, sub, primary.Rule, primary.Snippet)
 				case model.AuditActionObserve:
-					_ = s.auditLog.RecordUser(sub.UserID, "audit_observe_violation", "subdomain", sub.ID, map[string]interface{}{
-						"fqdn":            sub.FQDN,
-						"rule":            primary.Rule.Name,
-						"rule_id":         primary.Rule.ID,
-						"matched_snippet": helpers.TruncateRunes(primary.Snippet, 100),
-					})
+					s.notifyBanIfConfigured(sub.UserID, sub.FQDN, primary.Rule, primary.Snippet)
 				}
 				return
 			}

@@ -263,7 +263,7 @@ export function RuleDialog({
   const isEdit = !!rule;
   const isUnreachable = draft.match_type === "unreachable";
   const hasStatusCode = draft.targets.includes("status_code");
-  const showBanNotify = draft.action !== "observe";
+  const isNotifyOnly = draft.action === "observe";
   const showCaseSensitive = !isUnreachable && draft.match_type !== "status_eq";
   const banNotifyChars = draft.ban_notify_content.length;
   const exemptNotifyChars = draft.exempt_notify_content.length;
@@ -517,30 +517,30 @@ export function RuleDialog({
           <Separator />
 
           <div className="space-y-3">
-            {showBanNotify && (
-              <OptionalBlock
-                title={t("audit.rules.banNotify.title")}
-                summary={t("audit.rules.banNotify.hint")}
-                configured={!!draft.ban_notify_content.trim()}
-                open={banNotifyOpen}
-                onOpenChange={setBanNotifyOpen}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs text-muted-foreground">{t("audit.rules.banNotify.hint")}</p>
-                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {banNotifyChars}/{NOTIFY_MAX}
-                  </span>
-                </div>
-                <Textarea
-                  value={draft.ban_notify_content}
-                  rows={3}
-                  maxLength={NOTIFY_MAX}
-                  placeholder={t("audit.rules.banNotify.placeholder")}
-                  onChange={(e) => setDraft((d) => ({ ...d, ban_notify_content: e.target.value }))}
-                />
-                <TemplateVars vars={t("audit.rules.banNotify.vars")} />
-              </OptionalBlock>
-            )}
+            <OptionalBlock
+              title={t(isNotifyOnly ? "audit.rules.notifyOnly.title" : "audit.rules.banNotify.title")}
+              summary={t(isNotifyOnly ? "audit.rules.notifyOnly.hint" : "audit.rules.banNotify.hint")}
+              configured={!!draft.ban_notify_content.trim()}
+              open={banNotifyOpen}
+              onOpenChange={setBanNotifyOpen}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {t(isNotifyOnly ? "audit.rules.notifyOnly.hint" : "audit.rules.banNotify.hint")}
+                </p>
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {banNotifyChars}/{NOTIFY_MAX}
+                </span>
+              </div>
+              <Textarea
+                value={draft.ban_notify_content}
+                rows={3}
+                maxLength={NOTIFY_MAX}
+                placeholder={t(isNotifyOnly ? "audit.rules.notifyOnly.placeholder" : "audit.rules.banNotify.placeholder")}
+                onChange={(e) => setDraft((d) => ({ ...d, ban_notify_content: e.target.value }))}
+              />
+              <TemplateVars vars={t("audit.rules.banNotify.vars")} />
+            </OptionalBlock>
 
             <div className="rounded-lg border border-border/60 px-3.5 py-3">
               <div className="flex items-start justify-between gap-4">

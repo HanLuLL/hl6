@@ -889,7 +889,7 @@
       "all": "Match all keywords"
     },
     "actions": {
-      "observe": "Observe only",
+      "observe": "Notify only",
       "delete_dns": "DNS レコード削除",
       "site": "Suspend site",
       "user": "Suspend user",
@@ -951,6 +951,11 @@
         "placeholder": "例：サブドメイン {{fqdn}} は {{rule_name}} 違反のため停止されました。",
         "vars": "変数: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}"
       },
+      "notifyOnly": {
+        "title": "違反通知",
+        "hint": "空欄の場合は通知しません。一致時に送信され、停止やDNS削除は行いません。",
+        "placeholder": "例：サブドメイン {{fqdn}} が {{rule_name}} に一致しました。ご確認ください。"
+      },
       "exempt": {
         "title": "免除",
         "hint": "初回ヒット時は処置せず、期限後に自動再スキャン。再ヒット時は通常処置。",
@@ -989,8 +994,10 @@
       "wouldSuspend": "停止が実行されます",
       "wouldDeleteDns": "DNS レコード削除が実行されます",
       "wouldNotSuspend": "停止または DNS 削除は実行されません",
+      "wouldNotifyOnly": "通知のみ（停止やDNS削除は行いません）",
       "wouldExempt": "免除が適用されます（再スキャンまで処置なし）",
       "wouldSendBanNotify": "停止通知を送信します",
+      "wouldSendNotify": "違反通知を送信します",
       "wouldSendExemptNotify": "免除通知を送信します"
     },
     "detail": {
