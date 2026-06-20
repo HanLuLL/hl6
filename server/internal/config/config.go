@@ -6,25 +6,30 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
-	Port              string
-	DatabaseURL       string
-	OIDCIssuer        string
-	OIDCClientID      string
-	OIDCClientSecret  string
-	SessionSecret     string
-	AppURL            string
-	BackendURLs       []string
-	FrontendURLs      []string
-	BackendURL        string
-	FrontendURL       string
-	BackendURLEnvSet  bool
-	FrontendURLEnvSet bool
-	AllowedOrigins    []string
-	EncryptionKey     []byte
-	DNSBatchThreshold int
+	Port                  string
+	DatabaseURL           string
+	OIDCIssuer            string
+	OIDCClientID          string
+	OIDCClientSecret      string
+	SessionSecret         string
+	AppURL                string
+	BackendURLs           []string
+	FrontendURLs          []string
+	BackendURL            string
+	FrontendURL           string
+	BackendURLEnvSet      bool
+	FrontendURLEnvSet     bool
+	AllowedOrigins        []string
+	EncryptionKey         []byte
+	DNSBatchThreshold     int
+	RedisAddr             string
+	AuditScanInterval     time.Duration
+	AuditScanWorkerCount  int
+	AuditScanTimeout      time.Duration
 }
 
 func Load() *Config {
@@ -48,10 +53,10 @@ func Load() *Config {
 	}
 	effectiveFrontendURL := firstOrEmpty(frontendURLs)
 	effectiveBackendURL := firstOrEmpty(backendURLs)
-	databaseURL := expandEnvRefs(getEnv("DATABASE_URL", "postgres://hl6:hl6dev@localhost:5432/hl6?sslmode=disable"))
+	databaseURL := expandEnvRefs(getEnv("DATABASE_URL", "postgres://hl6:hl6dev@localhost:5433/hl6?sslmode=disable"))
 
 	cfg := &Config{
-		Port:              getEnv("SERVER_PORT", "8080"),
+		Port:              getEnv("SERVER_PORT", "8081"),
 		DatabaseURL:       databaseURL,
 		OIDCIssuer:        getEnv("OIDC_ISSUER", ""),
 		OIDCClientID:      getEnv("OIDC_CLIENT_ID", ""),
@@ -64,8 +69,12 @@ func Load() *Config {
 		FrontendURL:       effectiveFrontendURL,
 		BackendURLEnvSet:  len(backendURLs) > 0,
 		FrontendURLEnvSet: len(frontendURLs) > 0,
-		AllowedOrigins:    parseList(getEnv("ALLOWED_ORIGINS", "")),
-		DNSBatchThreshold: getEnvInt("DNS_BATCH_ASYNC_THRESHOLD", getEnvInt("DNS_BATCH_THRESHOLD", 200)),
+		AllowedOrigins:       parseList(getEnv("ALLOWED_ORIGINS", "")),
+		DNSBatchThreshold:    getEnvInt("DNS_BATCH_ASYNC_THRESHOLD", getEnvInt("DNS_BATCH_THRESHOLD", 200)),
+		RedisAddr:            strings.TrimSpace(getEnv("REDIS_ADDR", "")),
+		AuditScanInterval:    getEnvDuration("AUDIT_SCAN_INTERVAL", 30*time.Minute),
+		AuditScanWorkerCount: getEnvInt("AUDIT_SCAN_WORKER_COUNT", 2),
+		AuditScanTimeout:     getEnvDuration("AUDIT_SCAN_TIMEOUT", 15*time.Second),
 	}
 
 	if keyHex := getEnv("ENCRYPTION_KEY", ""); keyHex != "" {
@@ -128,4 +137,17 @@ func getEnvInt(key string, fallback int) int {
 		return fallback
 	}
 	return v
+}
+
+func getEnvDuration(key string, fallback time.Duration) time.Duration {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		log.Printf("invalid %s=%q, fallback to %s", key, raw, fallback)
+		return fallback
+	}
+	return d
 }

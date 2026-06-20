@@ -1,6 +1,8 @@
 package response
 
 import (
+	"errors"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -53,6 +55,19 @@ func ErrorWithKeyData(c *gin.Context, status int, message, messageKey string, da
 	c.JSON(status, Response{Code: -1, Message: message, MessageKey: messageKey, Data: data})
 }
 
+func failKey(c *gin.Context, status int, messageKey string) {
+	c.JSON(status, Response{Code: -1, Message: messageKey, MessageKey: messageKey})
+}
+
+func BadRequest(c *gin.Context, key string)          { failKey(c, http.StatusBadRequest, key) }
+func Unauthorized(c *gin.Context, key string)        { failKey(c, http.StatusUnauthorized, key) }
+func NotFound(c *gin.Context, key string)            { failKey(c, http.StatusNotFound, key) }
+func InternalError(c *gin.Context, key string)       { failKey(c, http.StatusInternalServerError, key) }
+
+func ErrorWithKeyOnly(c *gin.Context, status int, messageKey string) {
+	failKey(c, status, messageKey)
+}
+
 func Paginated(c *gin.Context, data interface{}, total int64, page, perPage int) {
 	c.JSON(http.StatusOK, PaginatedResponse{
 		Code:    0,
@@ -73,4 +88,30 @@ func OffsetPaginated(c *gin.Context, data interface{}, total int64, offset, limi
 		Offset:  offset,
 		Limit:   limit,
 	})
+}
+
+// Conflict 返回 409 与 i18n key。
+func Conflict(c *gin.Context, key string) { failKey(c, http.StatusConflict, key) }
+
+// BindJSON 将请求体解析到 T；失败时返回 400。
+func BindJSON[T any](c *gin.Context) (*T, bool) {
+	body := new(T)
+	if err := c.ShouldBindJSON(body); err != nil {
+		BadRequest(c, "error.invalidRequestBody")
+		return nil, false
+	}
+	return body, true
+}
+
+// BindJSONOrEmpty 类似 BindJSON，但将空请求体视为成功。
+func BindJSONOrEmpty[T any](c *gin.Context) (*T, bool) {
+	body := new(T)
+	if err := c.ShouldBindJSON(body); err != nil {
+		if errors.Is(err, io.EOF) {
+			return body, true
+		}
+		BadRequest(c, "error.invalidRequestBody")
+		return nil, false
+	}
+	return body, true
 }

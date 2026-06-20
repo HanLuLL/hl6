@@ -70,6 +70,8 @@ func registerAdminRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, 
 	admin.DELETE("/notifications/:id", h.NotificationAdmin.Delete)
 	admin.POST("/notifications/images", h.NotificationAdmin.UploadImage)
 
+	registerAdminAuditRoutes(admin, h)
+
 	// Branding
 	admin.PUT("/branding", h.Branding.AdminUpdateBranding)
 	admin.POST("/branding/logo", h.Branding.AdminUploadLogo)

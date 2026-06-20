@@ -1,7 +1,7 @@
 .PHONY: dev dev-server dev-web db-up db-down
 
 db-up:
-	docker compose up -d
+	docker compose up -d --wait
 
 db-down:
 	docker compose down

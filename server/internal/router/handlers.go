@@ -22,17 +22,17 @@ type Handlers struct {
 	Migration         *handler.DomainMigrationHandler
 	Notification      *handler.NotificationHandler
 	NotificationAdmin *handler.NotificationAdminHandler
+	Audit             *handler.AuditHandler
 	SSEBroker         *handler.SSEBroker
 }
 
-func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *service.DNSOperationService, migSvc *service.DomainMigrationService) *Handlers {
-	sseBroker := handler.NewSSEBroker()
+func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *service.DNSOperationService, migSvc *service.DomainMigrationService, sseBroker *handler.SSEBroker, audit auditStack) *Handlers {
 	return &Handlers{
 		Auth:              handler.NewAuthHandler(repo),
 		OIDC:              handler.NewOIDCHandler(repo, cfg),
 		Domain:            handler.NewDomainHandler(repo, dnsOps),
-		Subdomain:         handler.NewSubdomainHandler(repo, sseBroker, dnsOps),
-		DNS:               handler.NewDNSHandler(repo, sseBroker, dnsOps),
+		Subdomain:         handler.NewSubdomainHandler(repo, sseBroker, dnsOps, audit.enqueue, audit.notif, audit.subSvc, audit.auditLog),
+		DNS:               handler.NewDNSHandler(repo, sseBroker, dnsOps, audit.enqueue),
 		Credit:            handler.NewCreditHandler(repo),
 		Admin:             handler.NewAdminHandler(repo, cfg, dnsOps),
 		Branding:          handler.NewBrandingHandler(repo, cfg),
@@ -41,6 +41,7 @@ func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *servic
 		Migration:         handler.NewDomainMigrationHandler(migSvc),
 		Notification:      handler.NewNotificationHandler(repo, sseBroker),
 		NotificationAdmin: handler.NewNotificationAdminHandler(repo, sseBroker, cfg),
+		Audit:             handler.NewAuditHandler(repo, audit.auditSvc, audit.subSvc, dnsOps, audit.enqueue, audit.notif, audit.auditLog),
 		SSEBroker:         sseBroker,
 	}
 }

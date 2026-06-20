@@ -58,7 +58,8 @@
     "adminDomains": "ドメイン管理",
     "auditLogs": "監査ログ",
     "adminSettings": "設定",
-    "adminNotifications": "通知管理"
+    "adminNotifications": "通知管理",
+    "audit": "コンテンツ監査"
   },
   "dashboard": {
     "title": "ダッシュボード",
@@ -102,7 +103,9 @@
     "backToList": "一覧に戻る",
     "addRecord": "レコードを追加",
     "dnsRecords": "DNSレコード",
-    "total": "合計 {{count}} 件"
+    "total": "合計 {{count}} 件",
+    "suspendedBanner": "コンテンツポリシー違反のため停止されています。DNS の変更は無効です。理由：{{reason}}",
+    "statusSuspended": "停止中"
   },
   "credits": {
     "title": "クレジット",
@@ -670,7 +673,21 @@
     "failedToOpenFile": "ファイルを開けませんでした",
     "notificationContentTooLarge": "コンテンツが大きすぎます（最大100KB）",
     "imageDimensionsTooLarge": "画像の寸法が大きすぎます",
-    "imageTooLargeAfterCompression": "圧縮後も画像が大きすぎます"
+    "imageTooLargeAfterCompression": "圧縮後も画像が大きすぎます",
+    "subdomainSuspended": "コンテンツポリシー違反のため、このサブドメインは停止されています",
+    "subdomainNotSuspended": "サブドメインは停止されていません",
+    "auditRuleNotFound": "監査ルールが見つかりません",
+    "failedToCreateAuditRule": "監査ルールの作成に失敗しました",
+    "failedToUpdateAuditRule": "監査ルールの更新に失敗しました",
+    "failedToDeleteAuditRule": "監査ルールの削除に失敗しました",
+    "failedToListAuditRules": "監査ルール一覧の取得に失敗しました",
+    "failedToListAuditScans": "スキャン記録の取得に失敗しました",
+    "failedToRestoreSubdomain": "サブドメインの復元に失敗しました",
+    "auditScanNotFound": "スキャン記録が見つかりません",
+    "invalidAuditRuleTarget": "無効なマッチ対象です",
+    "invalidAuditRuleMatchType": "無効なマッチタイプです",
+    "invalidAuditRulePattern": "無効なルール内容です",
+    "invalidAuditRuleCombination": "対象とマッチタイプの組み合わせが無効です"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -746,5 +763,177 @@
     "invalid_request": "無効なリクエスト",
     "domain_migration_read_only": "移行中は読み取り専用",
     "unknown": "不明なエラー"
+  },
+  "audit": {
+    "title": "Content Audit",
+    "description": "Violations, fleet scans, rules, and scan history in one place",
+    "tabs": {
+      "violations": "Violations",
+      "sites": "Sites",
+      "rules": "Rules",
+      "history": "History"
+    },
+    "summary": {
+      "suspended": "Suspended",
+      "violation24h": "24h violations",
+      "unreachable24h": "24h unreachable",
+      "neverScanned": "Never scanned",
+      "enabledRules": "Enabled rules"
+    },
+    "filters": {
+      "fqdn": "Search FQDN…",
+      "search": "Search FQDN or email…"
+    },
+    "columns": {
+      "fqdn": "FQDN",
+      "user": "User",
+      "status": "Status",
+      "latestViolation": "Latest violation",
+      "violations7d": "7d violations",
+      "actions": "Actions",
+      "scanStatus": "Scan status",
+      "lastScan": "Last scan",
+      "scanTime": "Scanned at",
+      "httpStatus": "HTTP",
+      "evidence": "Evidence"
+    },
+    "status": {
+      "active": "Active",
+      "suspended": "Suspended"
+    },
+    "scanStatus": {
+      "never": "Never scanned",
+      "clean": "Clean",
+      "violation": "Violation",
+      "unreachable": "Unreachable",
+      "error": "Error"
+    },
+    "targets": {
+      "body": "Body",
+      "title": "Title",
+      "final_url": "Final URL",
+      "status_code": "Status code"
+    },
+    "matchType": {
+      "keyword": "Keyword",
+      "regex": "Regex",
+      "status_eq": "Status equals"
+    },
+    "keywordLogic": {
+      "any": "Match any keyword",
+      "all": "Match all keywords"
+    },
+    "actions": {
+      "observe": "Observe only",
+      "site": "Suspend site",
+      "user": "Suspend user",
+      "detail": "Details",
+      "restore": "Restore",
+      "release": "Release claim",
+      "rescan": "Rescan now",
+      "bulkRescan": "Bulk rescan ({{count}})",
+      "bulkRescanQueued": "Queued {{count}} scans",
+      "openSite": "Open site"
+    },
+    "hoursSinceScan": "{{hours}}h ago",
+    "empty": {
+      "cases": "No records",
+      "sites": "No scannable sites",
+      "history": "No scan history"
+    },
+    "rules": {
+      "create": "New rule",
+      "edit": "Edit rule",
+      "dialogDesc": "Configure detection and enforcement tier",
+      "fromScenario": "From scenario",
+      "custom": "Custom rule",
+      "created": "Rule created",
+      "updated": "Rule updated",
+      "deleted": "Rule deleted",
+      "empty": "No rules",
+      "keywordPlaceholder": "Type keyword and press Enter",
+      "scopeHint": "Empty = all root domains",
+      "fields": {
+        "name": "Name",
+        "targets": "Targets",
+        "matchType": "Match type",
+        "action": "Enforcement",
+        "keywords": "Keywords",
+        "pattern": "Regex",
+        "statusCode": "HTTP status",
+        "caseSensitive": "Case sensitive",
+        "scope": "Scope"
+      },
+      "columns": {
+        "name": "Name",
+        "targets": "Targets",
+        "match": "Match",
+        "action": "Action",
+        "hits7d": "7d hits",
+        "lastHit": "Last hit",
+        "enabled": "Enabled"
+      }
+    },
+    "scenarios": {
+      "gambling": {
+        "name": "Gambling",
+        "desc": "Casino and betting keywords"
+      },
+      "adult": {
+        "name": "Adult content",
+        "desc": "Adult content patterns"
+      },
+      "phishing": {
+        "name": "Phishing",
+        "desc": "Phishing page signals"
+      },
+      "malicious_redirect": {
+        "name": "Malicious redirect",
+        "desc": "Suspicious redirects"
+      },
+      "placeholder": {
+        "name": "Placeholder page",
+        "desc": "Default or under-construction pages"
+      },
+      "http_error": {
+        "name": "HTTP error",
+        "desc": "Specific HTTP error codes"
+      }
+    },
+    "ruleTest": {
+      "title": "Test rule",
+      "fqdnPlaceholder": "FQDN to test",
+      "run": "Run",
+      "running": "Fetching…",
+      "noMatch": "No match",
+      "wouldSuspend": "Would suspend",
+      "wouldNotSuspend": "Would not suspend"
+    },
+    "detail": {
+      "title": "Subdomain detail",
+      "subtitle": "Evidence, timeline, and related info",
+      "evidence": "Evidence",
+      "scanTimeline": "Scan timeline",
+      "siblings": "Other subdomains (same user)",
+      "dns": "DNS records",
+      "suspendedReason": "Reason: {{reason}}",
+      "restored": "Subdomain restored",
+      "released": "Claim released",
+      "rescanQueued": "Rescan queued",
+      "releaseConfirm": "Release this claim and delete DNS records?",
+      "releaseQueued": "Release queued",
+      "sendNotify": "Notify user",
+      "reasonPlaceholder": "Optional reason"
+    }
+  },
+  "notification": {
+    "subdomainSuspended": {
+      "intro": "サブドメイン {{fqdn}} はコンテンツポリシー違反のため停止されました。",
+      "rule": "一致ルール：{{rule}}"
+    },
+    "subdomainReleasedByAdmin": {
+      "intro": "サブドメイン {{fqdn}} が管理者により解放されました。",
+      "reason": "理由：{{reason}}"
+    }
   }
 }

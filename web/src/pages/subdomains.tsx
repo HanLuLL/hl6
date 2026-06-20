@@ -77,7 +77,12 @@ export default function SubdomainsPage() {
                       {sub.fqdn}
                     </Link>
                   </div>
-                  <Badge variant="outline">{t("subdomains.records", { count: sub.dns_records?.length ?? 0 })}</Badge>
+                  <div className="flex items-center gap-2">
+                    {sub.status === "suspended" && (
+                      <Badge variant="destructive">{t("subdomains.statusSuspended")}</Badge>
+                    )}
+                    <Badge variant="outline">{t("subdomains.records", { count: sub.dns_records?.length ?? 0 })}</Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

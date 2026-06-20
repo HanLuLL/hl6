@@ -20,6 +20,10 @@ const routeQueries: Record<string, { queryKey: unknown[]; queryFn: () => Promise
         api.listTransactions(1, 20).then((r) => ({ data: r.data, total: r.total, page: r.page, perPage: r.per_page })),
     },
   ],
+  "/admin/audit": [
+    { queryKey: ["audit-summary"], queryFn: () => api.adminGetAuditSummary().then((r) => r.data) },
+    { queryKey: ["audit-cases", 1, 20, "violations"], queryFn: () => api.adminListAuditCases(1, 20, { status: "suspended" }).then((r) => r.data) },
+  ],
 };
 
 export function prefetchRouteData(queryClient: QueryClient, href: string) {

@@ -39,7 +39,7 @@ cd web && npm run lint     # ESLint
 - `i18n/` — i18nextt 配置及语言文件（en, zh, zh-Hant, es, ru, ja）
 - `types/` — TypeScript 接口定义
 
-路径别名: `@/*` 映射到 `web/src/*`。Vite 开发服务器代理 `/api` 到 `localhost:8080`。
+路径别名: `@/*` 映射到 `web/src/*`。Vite 开发服务器代理 `/api` 到 `localhost:8081`（由 `SERVER_PORT` 控制）。
 
 ### Backend (`server/`)
 
@@ -62,6 +62,22 @@ cd web && npm run lint     # ESLint
 - **Toast 通知**: 使用 Sonner，mutation 成功/失败时通过 i18n 展示国际化消息
 - **DNS 记录类型**: 支持 A, AAAA, CNAME, TXT，有重复记录拦截和 CNAME 共存规则
 - **角色控制**: 用户 vs 管理员，后端 admin middleware 保护管理路由
+
+### 内容审核（Content Audit）
+
+与 **操作审计日志**（`/admin/audit-logs`）独立：
+
+| 功能 | 路由 | 说明 |
+|------|------|------|
+| 内容审核 | `/admin/audit` | 规则、扫描、封禁、恢复 |
+| 操作审计日志 | `/admin/audit-logs` | 管理员操作留痕 |
+
+- **触发**: 定时调度、子域认领、创建 A/AAAA/CNAME、管理员重扫
+- **队列**: `REDIS_ADDR` 配置时用 Redis Stream；未配置时进程内 channel 降级（单实例开发可用）
+- **封禁**: 删除供应商 DNS + 本地 `suspended` 状态；用户侧 DNS 只读
+- **通知**: 封禁等审核通知使用 `message_key` i18n（`notification.subdomainSuspended`）
+
+环境变量：`REDIS_ADDR`（可选）、`AUDIT_SCAN_INTERVAL`（默认 30m）、`AUDIT_SCAN_WORKER_COUNT`（默认 2）、`AUDIT_SCAN_TIMEOUT`（默认 15s）
 
 ## 开发要求
 

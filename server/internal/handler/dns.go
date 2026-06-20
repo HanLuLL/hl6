@@ -24,9 +24,10 @@ import (
 )
 
 type DNSHandler struct {
-	repo   *repository.Repository
-	broker *SSEBroker
-	ops    *service.DNSOperationService
+	repo    *repository.Repository
+	broker  *SSEBroker
+	ops     *service.DNSOperationService
+	enqueue *service.AuditEnqueueService
 }
 
 var (
@@ -37,8 +38,19 @@ var (
 	errDNSRecordLimitExceeded    = errors.New("dns record limit exceeded")
 )
 
-func NewDNSHandler(repo *repository.Repository, broker *SSEBroker, ops *service.DNSOperationService) *DNSHandler {
-	return &DNSHandler{repo: repo, broker: broker, ops: ops}
+func NewDNSHandler(repo *repository.Repository, broker *SSEBroker, ops *service.DNSOperationService, enqueue *service.AuditEnqueueService) *DNSHandler {
+	return &DNSHandler{repo: repo, broker: broker, ops: ops, enqueue: enqueue}
+}
+
+func (h *DNSHandler) checkSubdomainSuspended(c *gin.Context, sub *model.Subdomain) bool {
+	if sub == nil {
+		return false
+	}
+	if sub.Status == model.SubdomainStatusSuspended {
+		response.ErrorWithKey(c, http.StatusForbidden, "subdomain suspended", "error.subdomainSuspended")
+		return true
+	}
+	return false
 }
 
 func (h *DNSHandler) ListRecords(c *gin.Context) {
@@ -80,6 +92,9 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 		return
 	}
 	if h.checkMigrationReadOnly(c, sub) {
+		return
+	}
+	if h.checkSubdomainSuspended(c, sub) {
 		return
 	}
 	var body struct {
@@ -248,6 +263,12 @@ func (h *DNSHandler) CreateRecord(c *gin.Context) {
 			Retryable:  true,
 		}, nil
 	})
+	if result.HTTPStatus == http.StatusCreated && h.enqueue != nil {
+		switch body.Type {
+		case "A", "AAAA", "CNAME":
+			_ = h.enqueue.EnqueueScan(c.Request.Context(), sub.ID, sub.FQDN, "dns_create", service.EnqueueOpts{})
+		}
+	}
 	writeOperationResult(c, result)
 }
 
@@ -257,6 +278,9 @@ func (h *DNSHandler) UpdateRecord(c *gin.Context) {
 		return
 	}
 	if h.checkMigrationReadOnly(c, sub) {
+		return
+	}
+	if h.checkSubdomainSuspended(c, sub) {
 		return
 	}
 	recordID, ok := helpers.ParseUintParam(c, "recordId")
@@ -350,6 +374,9 @@ func (h *DNSHandler) DeleteRecord(c *gin.Context) {
 		return
 	}
 	if h.checkMigrationReadOnly(c, sub) {
+		return
+	}
+	if h.checkSubdomainSuspended(c, sub) {
 		return
 	}
 	recordID, ok := helpers.ParseUintParam(c, "recordId")

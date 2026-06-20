@@ -58,7 +58,8 @@
     "adminDomains": "域名管理",
     "auditLogs": "审计日志",
     "adminSettings": "系统设置",
-    "adminNotifications": "通知管理"
+    "adminNotifications": "通知管理",
+    "audit": "内容审查"
   },
   "dashboard": {
     "title": "控制台",
@@ -103,7 +104,9 @@
     "backToList": "返回列表",
     "addRecord": "添加记录",
     "dnsRecords": "DNS 记录",
-    "total": "共 {{count}} 条"
+    "total": "共 {{count}} 条",
+    "suspendedBanner": "该子域名因内容违规已被封禁，DNS 写操作已禁用。原因：{{reason}}",
+    "statusSuspended": "已封禁"
   },
   "credits": {
     "title": "积分",
@@ -671,7 +674,21 @@
     "failedToOpenFile": "文件打开失败",
     "notificationContentTooLarge": "内容过大（最大 100KB）",
     "imageDimensionsTooLarge": "图片尺寸过大",
-    "imageTooLargeAfterCompression": "图片压缩后仍然过大"
+    "imageTooLargeAfterCompression": "图片压缩后仍然过大",
+    "subdomainSuspended": "该子域名因内容违规已被封禁",
+    "subdomainNotSuspended": "子域名未处于封禁状态",
+    "auditRuleNotFound": "审核规则不存在",
+    "failedToCreateAuditRule": "创建审核规则失败",
+    "failedToUpdateAuditRule": "更新审核规则失败",
+    "failedToDeleteAuditRule": "删除审核规则失败",
+    "failedToListAuditRules": "获取审核规则列表失败",
+    "failedToListAuditScans": "获取扫描记录失败",
+    "failedToRestoreSubdomain": "恢复子域名失败",
+    "auditScanNotFound": "扫描记录不存在",
+    "invalidAuditRuleTarget": "无效的匹配目标",
+    "invalidAuditRuleMatchType": "无效的匹配类型",
+    "invalidAuditRulePattern": "无效的规则内容",
+    "invalidAuditRuleCombination": "匹配目标与匹配类型组合无效"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -747,5 +764,177 @@
     "invalid_request": "无效请求",
     "domain_migration_read_only": "迁移中，暂不可写",
     "unknown": "未知错误"
+  },
+  "audit": {
+    "title": "内容审查",
+    "description": "统一管理违规处置、全站巡检、规则配置与扫描历史",
+    "tabs": {
+      "violations": "违规",
+      "sites": "全站",
+      "rules": "规则",
+      "history": "历史"
+    },
+    "summary": {
+      "suspended": "已封禁",
+      "violation24h": "24h 违规",
+      "unreachable24h": "24h 不可达",
+      "neverScanned": "从未扫描",
+      "enabledRules": "启用规则"
+    },
+    "filters": {
+      "fqdn": "按 FQDN 搜索…",
+      "search": "搜索 FQDN 或邮箱…"
+    },
+    "columns": {
+      "fqdn": "FQDN",
+      "user": "用户",
+      "status": "状态",
+      "latestViolation": "最近违规",
+      "violations7d": "7日违规",
+      "actions": "操作",
+      "scanStatus": "扫描状态",
+      "lastScan": "上次扫描",
+      "scanTime": "扫描时间",
+      "httpStatus": "HTTP",
+      "evidence": "证据"
+    },
+    "status": {
+      "active": "正常",
+      "suspended": "已封禁"
+    },
+    "scanStatus": {
+      "never": "从未扫描",
+      "clean": "正常",
+      "violation": "违规",
+      "unreachable": "不可达",
+      "error": "错误"
+    },
+    "targets": {
+      "body": "页面正文",
+      "title": "页面标题",
+      "final_url": "最终 URL",
+      "status_code": "HTTP 状态码"
+    },
+    "matchType": {
+      "keyword": "关键词",
+      "regex": "正则",
+      "status_eq": "状态码等于"
+    },
+    "keywordLogic": {
+      "any": "命中任一关键词",
+      "all": "全部关键词命中"
+    },
+    "actions": {
+      "observe": "仅记录",
+      "site": "封禁站点",
+      "user": "封禁用户",
+      "detail": "详情",
+      "restore": "恢复",
+      "release": "释放认领",
+      "rescan": "立即重扫",
+      "bulkRescan": "批量重扫 ({{count}})",
+      "bulkRescanQueued": "已入队 {{count}} 个扫描任务",
+      "openSite": "打开网站"
+    },
+    "hoursSinceScan": "{{hours}} 小时前",
+    "empty": {
+      "cases": "暂无记录",
+      "sites": "暂无可扫描站点",
+      "history": "暂无扫描历史"
+    },
+    "rules": {
+      "create": "新建规则",
+      "edit": "编辑规则",
+      "dialogDesc": "配置检测条件并选择处置档位",
+      "fromScenario": "从场景创建",
+      "custom": "自定义规则",
+      "created": "规则已创建",
+      "updated": "规则已更新",
+      "deleted": "规则已删除",
+      "empty": "暂无规则",
+      "keywordPlaceholder": "输入关键词后回车",
+      "scopeHint": "不选则对所有根域名生效",
+      "fields": {
+        "name": "规则名称",
+        "targets": "匹配目标",
+        "matchType": "匹配类型",
+        "action": "处置档位",
+        "keywords": "关键词",
+        "pattern": "正则表达式",
+        "statusCode": "HTTP 状态码",
+        "caseSensitive": "区分大小写",
+        "scope": "适用范围"
+      },
+      "columns": {
+        "name": "名称",
+        "targets": "目标",
+        "match": "匹配",
+        "action": "处置",
+        "hits7d": "7日命中",
+        "lastHit": "最近命中",
+        "enabled": "启用"
+      }
+    },
+    "scenarios": {
+      "gambling": {
+        "name": "赌博博彩",
+        "desc": "检测博彩、赌场相关关键词"
+      },
+      "adult": {
+        "name": "色情内容",
+        "desc": "检测成人内容相关特征"
+      },
+      "phishing": {
+        "name": "钓鱼诈骗",
+        "desc": "检测钓鱼页面常见文案"
+      },
+      "malicious_redirect": {
+        "name": "恶意跳转",
+        "desc": "检测异常外链跳转"
+      },
+      "placeholder": {
+        "name": "空壳占位页",
+        "desc": "检测默认页、建设中页面"
+      },
+      "http_error": {
+        "name": "HTTP 异常",
+        "desc": "检测特定 HTTP 错误状态"
+      }
+    },
+    "ruleTest": {
+      "title": "规则试跑",
+      "fqdnPlaceholder": "输入要测试的 FQDN",
+      "run": "试跑",
+      "running": "抓取中…",
+      "noMatch": "未命中任何规则",
+      "wouldSuspend": "将触发封禁处置",
+      "wouldNotSuspend": "不会触发封禁（observe 或 clean）"
+    },
+    "detail": {
+      "title": "子域名详情",
+      "subtitle": "命中证据、扫描时间线与关联信息",
+      "evidence": "命中证据",
+      "scanTimeline": "扫描时间线",
+      "siblings": "同用户其他子域名",
+      "dns": "DNS 记录",
+      "suspendedReason": "封禁原因：{{reason}}",
+      "restored": "子域名已恢复",
+      "released": "认领已释放",
+      "rescanQueued": "重扫任务已入队",
+      "releaseConfirm": "确定释放该子域名的认领？将删除其 DNS 记录。",
+      "releaseQueued": "释放任务已入队",
+      "sendNotify": "通知用户",
+      "reasonPlaceholder": "可选：说明释放原因"
+    }
+  },
+  "notification": {
+    "subdomainSuspended": {
+      "intro": "您的子域名 {{fqdn}} 因内容违规已被封禁。",
+      "rule": "命中规则：{{rule}}"
+    },
+    "subdomainReleasedByAdmin": {
+      "intro": "您的子域名 {{fqdn}} 已被管理员释放。",
+      "reason": "原因：{{reason}}"
+    }
   }
 }

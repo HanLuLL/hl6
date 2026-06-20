@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { TypeBadge } from "./type-badge";
 import { ImageLightbox } from "./image-lightbox";
+import { NotificationContent } from "./notification-content";
 import { useMarkRead } from "@/hooks/use-notifications";
 import type { Notification } from "@/types";
 
@@ -73,11 +74,15 @@ export function NotificationDetailDialog({ notification, open, onOpenChange, sho
             {new Date(notification.created_at).toLocaleString()}
           </p>
         </DialogHeader>
+        {notification.message_key ? (
+          <NotificationContent notification={notification} onImageClick={setLightboxSrc} />
+        ) : (
         <div
           className="flex-1 overflow-y-auto prose prose-sm dark:prose-invert max-w-none [&_img]:cursor-zoom-in"
           dangerouslySetInnerHTML={{ __html: sanitize(notification.content) }}
           onClick={handleContentClick}
         />
+        )}
         {showMarkRead && !notification.is_read && (
           <div className="flex justify-end pt-2 border-t">
             <Button

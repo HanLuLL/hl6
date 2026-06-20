@@ -1,0 +1,31 @@
+package apperr
+
+// 内容审核相关 i18n error keys。
+const (
+	KeyAuditRuleNotFound           = "error.auditRuleNotFound"
+	KeyFailedToCreateAuditRule     = "error.failedToCreateAuditRule"
+	KeyFailedToUpdateAuditRule     = "error.failedToUpdateAuditRule"
+	KeyFailedToDeleteAuditRule     = "error.failedToDeleteAuditRule"
+	KeyFailedToListAuditRules      = "error.failedToListAuditRules"
+	KeyFailedToListAuditScans      = "error.failedToListAuditScans"
+	KeyFailedToRestoreSubdomain    = "error.failedToRestoreSubdomain"
+	KeySubdomainNotSuspended       = "error.subdomainNotSuspended"
+	KeySubdomainSuspended          = "error.subdomainSuspended"
+	KeyAuditScanNotFound           = "error.auditScanNotFound"
+	KeyInvalidAuditRuleTarget      = "error.invalidAuditRuleTarget"
+	KeyInvalidAuditRuleMatchType   = "error.invalidAuditRuleMatchType"
+	KeyInvalidAuditRulePattern     = "error.invalidAuditRulePattern"
+	KeyInvalidAuditRuleCombination = "error.invalidAuditRuleCombination"
+	KeyInvalidAuditRuleTargets     = "error.invalidAuditRuleTargets"
+	KeyInvalidAuditRuleAction      = "error.invalidAuditRuleAction"
+	KeyInvalidAuditRuleKeywords    = "error.invalidAuditRuleKeywords"
+	KeyAuditRescanQueued           = "error.auditRescanQueued"
+	KeySubdomainNotFound           = "error.subdomainNotFound"
+	KeyDomainNotFoundOrInactive    = "error.domainNotFoundOrInactive"
+	KeyInvalidID                   = "error.invalidID"
+	KeyInvalidRequestBody          = "error.invalidRequestBody"
+	KeyDatabaseError               = "error.databaseError"
+	KeyCloudflareOperationInProgress = "error.cloudflareOperationInProgress"
+	KeyCloudflareDeleteFailed      = "error.cloudflareDeleteFailed"
+	KeyUnauthorized                = "error.unauthorized"
+)

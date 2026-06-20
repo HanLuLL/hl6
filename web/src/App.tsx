@@ -13,6 +13,7 @@ import CreditsPage from "@/pages/credits";
 import AdminDomainsPage from "@/pages/admin/domains";
 import AdminUsersPage from "@/pages/admin/users";
 import AdminAuditLogsPage from "@/pages/admin/audit-logs";
+import AdminAuditPage from "@/pages/admin/audit";
 
 import AdminSettingsPage from "@/pages/admin/settings";
 import NotFoundPage from "@/pages/not-found";
@@ -83,6 +84,9 @@ export default function App() {
             <Route path="/admin/domains" element={<AdminDomainsPage />} />
             <Route path="/admin/cloudflare" element={<Navigate to="/admin/domains?tab=dns-providers" replace />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/audit" element={<AdminAuditPage />} />
+            <Route path="/admin/audit-rules" element={<Navigate to="/admin/audit?tab=rules" replace />} />
+            <Route path="/admin/audit-scans" element={<Navigate to="/admin/audit?tab=history" replace />} />
             <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
             <Route path="/admin/groups" element={<Navigate to="/admin/users?tab=groups" replace />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />

@@ -48,6 +48,28 @@ func (r *Repository) FindSubdomainByName(domainID uint, name string) (*model.Sub
 	return &sub, err
 }
 
+func (r *Repository) FindSubdomainByFQDN(fqdn string) (*model.Subdomain, error) {
+	var sub model.Subdomain
+	err := r.DB.Where("fqdn = ?", fqdn).First(&sub).Error
+	return &sub, err
+}
+
+func (r *Repository) DeleteDNSRecordsBySubdomainID(tx *gorm.DB, subdomainID uint) error {
+	db := r.DB
+	if tx != nil {
+		db = tx
+	}
+	return db.Where("subdomain_id = ?", subdomainID).Delete(&model.DNSRecord{}).Error
+}
+
+func (r *Repository) DeleteSubdomainByID(tx *gorm.DB, id uint) error {
+	db := r.DB
+	if tx != nil {
+		db = tx
+	}
+	return db.Delete(&model.Subdomain{}, id).Error
+}
+
 func (r *Repository) CreateSubdomain(sub *model.Subdomain) error {
 	return r.DB.Create(sub).Error
 }

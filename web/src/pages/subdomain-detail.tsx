@@ -23,6 +23,8 @@ export default function SubdomainDetailPage() {
   const release = useReleaseSubdomain();
   const [showAddRecord, setShowAddRecord] = useState(false);
   const [showRelease, setShowRelease] = useState(false);
+  const isSuspended = subdomain?.status === "suspended";
+  const readOnly = Boolean(subdomain?.domain.migration_read_only) || isSuspended;
 
   const handleRelease = () => {
     if (!subdomain) return;
@@ -111,6 +113,13 @@ export default function SubdomainDetailPage() {
           {t("dnsMigration.readOnlyWarning", "该域名正在迁移中，DNS 写操作暂时不可用")}
         </div>
       )}
+      {isSuspended && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {t("subdomains.suspendedBanner", {
+            reason: subdomain.suspended_reason || "—",
+          })}
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -126,7 +135,7 @@ export default function SubdomainDetailPage() {
         <div className="flex gap-2">
           <Button
             onClick={() => setShowAddRecord(true)}
-            disabled={subdomain.domain.migration_read_only}
+            disabled={readOnly}
           >
             {t("subdomains.addRecord")}
           </Button>
@@ -143,13 +152,13 @@ export default function SubdomainDetailPage() {
           <Badge variant="secondary">{t("subdomains.total", { count: records?.length ?? 0 })}</Badge>
         </CardHeader>
         <CardContent>
-          <RecordTable subdomainId={subdomainId} records={records || []} readOnly={subdomain.domain.migration_read_only} />
+          <RecordTable subdomainId={subdomainId} records={records || []} readOnly={readOnly} />
         </CardContent>
       </Card>
 
       <RecordForm
         subdomainId={subdomainId}
-        open={showAddRecord}
+        open={showAddRecord && !readOnly}
         onOpenChange={setShowAddRecord}
       />
 

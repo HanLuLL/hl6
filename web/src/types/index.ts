@@ -47,6 +47,9 @@ export interface Subdomain {
   user_id: number;
   name: string;
   fqdn: string;
+  status?: "active" | "suspended";
+  suspended_reason?: string;
+  suspended_at?: string;
   domain: Domain;
   dns_records?: DNSRecord[];
   created_at: string;
@@ -62,8 +65,146 @@ export interface DNSRecord {
   ttl: number;
   proxied: boolean;
   provider_record_id: string;
+  status?: "active" | "suspended";
   created_at: string;
   updated_at: string;
+}
+
+export interface AuditRule {
+  id: number;
+  name: string;
+  enabled: boolean;
+  scenario_id?: string;
+  description?: string;
+  targets: ("body" | "title" | "final_url" | "status_code")[];
+  match_type: "keyword" | "regex" | "status_eq";
+  keywords: string[];
+  keyword_logic: "any" | "all";
+  pattern: string;
+  case_sensitive: boolean;
+  action: "observe" | "site" | "user";
+  scope_domain_ids: number[];
+  created_by: number;
+  updated_by: number;
+  created_at: string;
+  updated_at: string;
+  hit_count_7d?: number;
+  last_hit_at?: string | null;
+  last_hit_fqdn?: string;
+}
+
+export interface MatchedRuleHit {
+  rule_id: number;
+  rule_name: string;
+  action: "observe" | "site" | "user";
+  snippet: string;
+}
+
+export interface SubdomainScan {
+  id: number;
+  subdomain_id: number;
+  fqdn: string;
+  url: string;
+  status: "clean" | "violation" | "unreachable" | "error";
+  http_status_code: number;
+  final_url: string;
+  matched_rules?: MatchedRuleHit[];
+  matched_rule_id?: number | null;
+  matched_snippet: string;
+  content_hash: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuditSummary {
+  suspended_count: number;
+  violation_24h: number;
+  unreachable_24h: number;
+  never_scanned_count: number;
+  enabled_rules_count: number;
+}
+
+export interface AuditWorkbenchScanBrief {
+  id: number;
+  status: string;
+  http_status_code: number;
+  created_at: string;
+}
+
+export interface AuditWorkbenchViolationBrief {
+  id: number;
+  matched_rule_id?: number | null;
+  matched_rule_name: string;
+  matched_snippet: string;
+  created_at: string;
+  matched_rules?: MatchedRuleHit[];
+}
+
+export interface AuditWorkbenchItem {
+  subdomain_id: number;
+  fqdn: string;
+  domain_id: number;
+  domain_name: string;
+  user_id: number;
+  user_email: string;
+  status: "active" | "suspended";
+  suspended_reason?: string;
+  suspended_at?: string;
+  dns_record_count: number;
+  latest_scan?: AuditWorkbenchScanBrief | null;
+  latest_violation?: AuditWorkbenchViolationBrief | null;
+  violation_count_7d: number;
+  content_changed: boolean;
+}
+
+export interface AuditSiteItem {
+  subdomain_id: number;
+  fqdn: string;
+  domain_id: number;
+  domain_name: string;
+  user_id: number;
+  user_email: string;
+  never_scanned: boolean;
+  hours_since_scan?: number | null;
+  latest_scan_status?: string;
+  latest_scan?: AuditWorkbenchScanBrief | null;
+}
+
+export interface AuditSubdomainDetail {
+  subdomain: Subdomain;
+  user_email: string;
+  latest_violation?: AuditWorkbenchViolationBrief | null;
+  sibling_subdomains: {
+    id: number;
+    fqdn: string;
+    status: string;
+    suspended_reason?: string;
+    suspended_at?: string;
+  }[];
+  dns_records: DNSRecord[];
+}
+
+export interface AuditScenario {
+  id: string;
+  name_key: string;
+  desc_key: string;
+  targets: string[];
+  match_type: string;
+  keywords?: string[];
+  pattern?: string;
+  keyword_logic?: string;
+}
+
+export interface AuditRuleTestResult {
+  fetch: {
+    status: string;
+    http_status_code: number;
+    final_url: string;
+    title_preview: string;
+  };
+  matched_rules: MatchedRuleHit[];
+  primary_action: string;
+  would_suspend: boolean;
 }
 
 export interface CreditBalance {
@@ -313,6 +454,8 @@ export interface Notification {
   id: number;
   title: string;
   content: string;
+  message_key?: string;
+  message_args?: Record<string, unknown> | string;
   type: "normal" | "urgent" | "pinned";
   target_type: "users" | "groups" | "all";
   target_ids?: number[];

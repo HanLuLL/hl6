@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -46,11 +49,12 @@ func main() {
 	seedDefaults(db)
 	bootstrapSessionSecret(db, cfg)
 
-	r := router.Setup(cfg, db)
-	addr := fmt.Sprintf(":%s", cfg.Port)
-	log.Printf("Server starting on %s", addr)
-	if err := r.Run(addr); err != nil {
-		log.Fatal("failed to start server:", err)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	r := router.Setup(cfg, db, ctx)
+	if err := router.RunServer(cfg, r); err != nil {
+		log.Fatal("server shutdown error:", err)
 	}
 }
 
@@ -165,6 +169,8 @@ func runSchemaMigrations(db *gorm.DB) error {
 			&model.DomainGroupAccess{},
 			&model.Subdomain{},
 			&model.DNSRecord{},
+			&model.AuditRule{},
+			&model.SubdomainScan{},
 			&model.DNSOperationRequest{},
 			&model.DNSOperationEvent{},
 			&model.DNSBulkJob{},
@@ -199,6 +205,12 @@ func runSchemaMigrations(db *gorm.DB) error {
 		if err := migrateDNSProviderAccountStatus(tx); err != nil {
 			return err
 		}
+		if err := backfillAuditStatusFields(tx); err != nil {
+			return err
+		}
+		if err := ensureAuditIndexes(tx); err != nil {
+			return err
+		}
 
 		if err := verifyRequiredTables(tx, []interface{}{
 			&model.User{},
@@ -229,6 +241,31 @@ func ensureMigrationConstraints(db *gorm.DB) error {
 func migrateDNSProviderAccountStatus(db *gorm.DB) error {
 	// Set default status for existing accounts that have no status
 	return db.Exec(`UPDATE dns_provider_accounts SET status = 'active' WHERE status IS NULL OR status = ''`).Error
+}
+
+func backfillAuditStatusFields(db *gorm.DB) error {
+	statements := []string{
+		`UPDATE subdomains SET status = 'active' WHERE status IS NULL OR status = ''`,
+		`UPDATE dns_records SET status = 'active' WHERE status IS NULL OR status = ''`,
+	}
+	for _, stmt := range statements {
+		if err := db.Exec(stmt).Error; err != nil {
+			return fmt.Errorf("backfill audit status (%s): %w", stmt, err)
+		}
+	}
+	return nil
+}
+
+func ensureAuditIndexes(db *gorm.DB) error {
+	statements := []string{
+		`CREATE INDEX IF NOT EXISTS idx_subdomain_scans_subdomain_created ON subdomain_scans (subdomain_id, created_at DESC)`,
+	}
+	for _, stmt := range statements {
+		if err := db.Exec(stmt).Error; err != nil {
+			return fmt.Errorf("ensure audit index (%s): %w", stmt, err)
+		}
+	}
+	return nil
 }
 
 func ensureDNSRecordConstraints(db *gorm.DB) error {

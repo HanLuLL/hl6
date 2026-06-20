@@ -66,19 +66,34 @@ type Domain struct {
 	UpdatedAt             time.Time `json:"updated_at"`
 }
 
+// Subdomain 状态常量
+const (
+	SubdomainStatusActive    = "active"
+	SubdomainStatusSuspended = "suspended"
+)
+
 type Subdomain struct {
-	ID         uint        `json:"id" gorm:"primaryKey"`
-	DomainID   uint        `json:"domain_id" gorm:"uniqueIndex:idx_domain_name;not null"`
-	UserID     uint        `json:"user_id" gorm:"index;not null"`
-	Name       string      `json:"name" gorm:"uniqueIndex:idx_domain_name;not null"`
-	FQDN       string      `json:"fqdn" gorm:"uniqueIndex;not null"`
-	ClaimCost  Credit      `json:"claim_cost" gorm:"type:bigint;default:0"`
-	Domain     Domain      `json:"domain" gorm:"foreignKey:DomainID"`
-	User       User        `json:"-" gorm:"foreignKey:UserID"`
-	DNSRecords []DNSRecord `json:"dns_records,omitempty" gorm:"foreignKey:SubdomainID"`
-	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  time.Time   `json:"updated_at"`
+	ID              uint        `json:"id" gorm:"primaryKey"`
+	DomainID        uint        `json:"domain_id" gorm:"uniqueIndex:idx_domain_name;not null"`
+	UserID          uint        `json:"user_id" gorm:"index;not null"`
+	Name            string      `json:"name" gorm:"uniqueIndex:idx_domain_name;not null"`
+	FQDN            string      `json:"fqdn" gorm:"uniqueIndex;not null"`
+	ClaimCost       Credit      `json:"claim_cost" gorm:"type:bigint;default:0"`
+	Status          string      `json:"status" gorm:"type:varchar(16);not null;default:active;index"`
+	SuspendedReason string      `json:"suspended_reason,omitempty"`
+	SuspendedAt     *time.Time  `json:"suspended_at,omitempty"`
+	Domain          Domain      `json:"domain" gorm:"foreignKey:DomainID"`
+	User            User        `json:"-" gorm:"foreignKey:UserID"`
+	DNSRecords      []DNSRecord `json:"dns_records,omitempty" gorm:"foreignKey:SubdomainID"`
+	CreatedAt       time.Time   `json:"created_at"`
+	UpdatedAt       time.Time   `json:"updated_at"`
 }
+
+// DNSRecord 状态常量
+const (
+	DNSRecordStatusActive    = "active"
+	DNSRecordStatusSuspended = "suspended"
+)
 
 type DNSRecord struct {
 	ID               uint      `json:"id" gorm:"primaryKey"`
@@ -89,9 +104,93 @@ type DNSRecord struct {
 	TTL              int       `json:"ttl" gorm:"default:1"`
 	Proxied          bool      `json:"proxied" gorm:"default:false"`
 	ProviderRecordID string    `json:"provider_record_id"`
+	Status           string    `json:"status" gorm:"type:varchar(16);not null;default:active"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }
+
+// AuditRule 管理员可配置的内容合规审核规则。
+type AuditRule struct {
+	ID             uint        `json:"id" gorm:"primaryKey"`
+	Name           string      `json:"name" gorm:"not null"`
+	Enabled        bool        `json:"enabled" gorm:"default:true;index"`
+	ScenarioID     string      `json:"scenario_id" gorm:"type:varchar(32);not null;default:''"`
+	Description    string      `json:"description" gorm:"type:text"`
+	Targets        StringSlice `json:"targets" gorm:"type:jsonb;not null;default:'[]'"`
+	MatchType      string      `json:"match_type" gorm:"type:varchar(16);not null"`
+	Keywords       StringSlice `json:"keywords" gorm:"type:jsonb;not null;default:'[]'"`
+	KeywordLogic   string      `json:"keyword_logic" gorm:"type:varchar(8);not null;default:any"`
+	Pattern        string      `json:"pattern" gorm:"type:text"`
+	CaseSensitive  bool        `json:"case_sensitive" gorm:"default:false"`
+	Action         string      `json:"action" gorm:"type:varchar(8);not null;default:site"`
+	ScopeDomainIDs UintSlice   `json:"scope_domain_ids" gorm:"type:jsonb;not null;default:'[]'"`
+	CreatedBy      uint        `json:"created_by" gorm:"not null"`
+	UpdatedBy      uint        `json:"updated_by"`
+	CreatedAt      time.Time   `json:"created_at"`
+	UpdatedAt      time.Time   `json:"updated_at"`
+}
+
+// AuditRule 目标常量
+const (
+	AuditTargetBody       = "body"
+	AuditTargetTitle      = "title"
+	AuditTargetFinalURL   = "final_url"
+	AuditTargetStatusCode = "status_code"
+)
+
+// AuditRule 匹配类型常量
+const (
+	AuditMatchKeyword  = "keyword"
+	AuditMatchRegex    = "regex"
+	AuditMatchStatusEq = "status_eq"
+)
+
+// AuditRule 处置档位常量
+const (
+	AuditActionObserve = "observe"
+	AuditActionSite    = "site"
+	AuditActionUser    = "user"
+)
+
+// AuditRule 关键词逻辑常量
+const (
+	AuditKeywordLogicAny = "any"
+	AuditKeywordLogicAll = "all"
+)
+
+// AuditActionAuditRestoreSubdomain 管理员恢复被封禁子域名的审计动作。
+const AuditActionAuditRestoreSubdomain = "audit_restore_subdomain"
+
+// AuditScanTarget 待巡检的子域名（调度/worker 传递用）。
+type AuditScanTarget struct {
+	ID   uint   `json:"id"`
+	FQDN string `json:"fqdn"`
+}
+
+// SubdomainScan 每次巡检的扫描记录与违规证据。
+type SubdomainScan struct {
+	ID             uint              `json:"id" gorm:"primaryKey"`
+	SubdomainID    uint              `json:"subdomain_id" gorm:"index;not null"`
+	FQDN           string            `json:"fqdn" gorm:"not null"`
+	URL            string            `json:"url"`
+	Status         string            `json:"status" gorm:"type:varchar(16);not null;index"`
+	HTTPStatusCode int               `json:"http_status_code"`
+	FinalURL       string            `json:"final_url"`
+	MatchedRules   MatchedRulesSlice `json:"matched_rules" gorm:"type:jsonb;not null;default:'[]'"`
+	MatchedRuleID  *uint             `json:"matched_rule_id"`
+	MatchedSnippet string            `json:"matched_snippet" gorm:"type:text"`
+	ContentHash    string            `json:"content_hash"`
+	CreatedAt      time.Time         `json:"created_at"`
+	UpdatedAt      time.Time         `json:"updated_at"`
+}
+
+// SubdomainScan 状态常量
+const (
+	ScanStatusClean       = "clean"
+	ScanStatusViolation   = "violation"
+	ScanStatusUnreachable = "unreachable"
+	ScanStatusError       = "error"
+)
 
 type CreditBalance struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`

@@ -35,7 +35,16 @@ import type {
   CleanupSourceResult,
   DNSProviderStatusEntry,
   OIDCStatusPayload,
+  AuditSummary,
+  AuditWorkbenchItem,
+  AuditSiteItem,
+  AuditSubdomainDetail,
+  AuditRule,
+  AuditScenario,
+  AuditRuleTestResult,
+  SubdomainScan,
 } from "@/types";
+import { buildPaginatedQuery } from "@/lib/api-query";
 
 function normalizeApiBaseUrl(rawValue: string | undefined): string {
   const value = rawValue?.trim() ?? "";
@@ -523,4 +532,59 @@ export const api = {
     }
     return res.json() as Promise<ApiResponse<{ id: number; url: string }>>;
   },
+
+  // Admin: Content audit workbench
+  adminGetAuditSummary: () => request<ApiResponse<AuditSummary>>("/admin/audit/summary"),
+  adminListAuditCases: (page = 1, perPage = 20, filters: Record<string, string | undefined> = {}) => {
+    const path = buildPaginatedQuery("/admin/audit/cases", page, perPage, filters);
+    return request<PaginatedResponse<AuditWorkbenchItem[]>>(path);
+  },
+  adminListAuditSites: (page = 1, perPage = 20, search = "") => {
+    const path = buildPaginatedQuery("/admin/audit/sites", page, perPage, { search: search || undefined });
+    return request<PaginatedResponse<AuditSiteItem[]>>(path);
+  },
+  adminGetAuditSubdomainDetail: (id: number) =>
+    request<ApiResponse<AuditSubdomainDetail>>(`/admin/audit/subdomains/${id}`),
+  adminListAuditSubdomainScans: (id: number, page = 1, perPage = 20) =>
+    request<PaginatedResponse<SubdomainScan[]>>(buildPaginatedQuery(`/admin/audit/subdomains/${id}/scans`, page, perPage)),
+  adminRestoreAuditSubdomain: (id: number) =>
+    request<ApiResponse<{ restored: boolean; fqdn: string }>>(`/admin/audit/subdomains/${id}/restore`, { method: "POST" }),
+  adminReleaseAuditSubdomain: (
+    id: number,
+    data: { notify: boolean; reason?: string },
+    opts?: { idempotencyKey?: string; timeoutMs?: number }
+  ) =>
+    request<ApiResponse<{ message: string }>>(`/admin/audit/subdomains/${id}/release`, {
+      method: "DELETE",
+      body: JSON.stringify(data),
+      idempotencyKey: opts?.idempotencyKey,
+      timeoutMs: opts?.timeoutMs,
+    }),
+  adminRescanAuditSubdomain: (id: number) =>
+    request<ApiResponse<{ queued: boolean; fqdn: string }>>(`/admin/audit/subdomains/${id}/rescan`, { method: "POST" }),
+  adminBulkRescanAudit: (subdomainIds: number[]) =>
+    request<ApiResponse<{ queued: number }>>("/admin/audit/subdomains/bulk-rescan", {
+      method: "POST",
+      body: JSON.stringify({ subdomain_ids: subdomainIds }),
+    }),
+  adminListAuditRules: () => request<ApiResponse<AuditRule[]>>("/admin/audit/rules"),
+  adminListAuditScenarios: () => request<ApiResponse<AuditScenario[]>>("/admin/audit/rules/scenarios"),
+  adminCreateAuditRule: (data: Record<string, unknown>) =>
+    request<ApiResponse<AuditRule>>("/admin/audit/rules", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdateAuditRule: (id: number, data: Record<string, unknown>) =>
+    request<ApiResponse<AuditRule>>(`/admin/audit/rules/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminDeleteAuditRule: (id: number) =>
+    request<ApiResponse<{ deleted: boolean }>>(`/admin/audit/rules/${id}`, { method: "DELETE" }),
+  adminToggleAuditRule: (id: number) =>
+    request<ApiResponse<AuditRule>>(`/admin/audit/rules/${id}/toggle`, { method: "PUT" }),
+  adminTestAuditRule: (data: { fqdn: string; rule?: Record<string, unknown>; rule_id?: number }) =>
+    request<ApiResponse<AuditRuleTestResult>>("/admin/audit/rules/test", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  adminListAuditScans: (page = 1, perPage = 20, filters: Record<string, string | undefined> = {}) => {
+    const path = buildPaginatedQuery("/admin/audit/scans", page, perPage, filters);
+    return request<PaginatedResponse<SubdomainScan[]>>(path);
+  },
+  adminGetAuditScan: (id: number) => request<ApiResponse<SubdomainScan>>(`/admin/audit/scans/${id}`),
 };

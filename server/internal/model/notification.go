@@ -9,6 +9,8 @@ type Notification struct {
 	ID           uint            `json:"id" gorm:"primaryKey"`
 	Title        string          `json:"title" gorm:"type:varchar(50);not null"`
 	Content      string          `json:"content" gorm:"type:text;not null"`
+	MessageKey   string          `json:"message_key,omitempty" gorm:"type:varchar(64)"`
+	MessageArgs  json.RawMessage `json:"message_args,omitempty" gorm:"type:jsonb"`
 	Type         string          `json:"type" gorm:"type:varchar(10);not null"`
 	TargetType   string          `json:"target_type" gorm:"type:varchar(10);not null;index"`
 	TargetIDs    json.RawMessage `json:"target_ids,omitempty" gorm:"type:jsonb"`
