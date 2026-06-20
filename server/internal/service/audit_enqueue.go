@@ -15,6 +15,7 @@ import (
 // EnqueueOpts 扫描入队选项。
 type EnqueueOpts struct {
 	BypassDedup bool
+	RuleID      uint
 }
 
 // AuditDedup 入队去重接口。
@@ -98,12 +99,16 @@ func (s *AuditEnqueueService) EnqueueScan(ctx context.Context, subdomainID uint,
 	}
 
 	taskID := uuid.NewString()
-	_, err := s.queue.AddTask(ctx, map[string]interface{}{
+	payload := map[string]interface{}{
 		"task_id":      taskID,
 		"subdomain_id": subdomainID,
 		"fqdn":         fqdn,
 		"source":       source,
-	})
+	}
+	if opts.RuleID > 0 {
+		payload["rule_id"] = opts.RuleID
+	}
+	_, err := s.queue.AddTask(ctx, payload)
 	return err
 }
 

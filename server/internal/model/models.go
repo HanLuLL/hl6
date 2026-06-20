@@ -179,14 +179,17 @@ type AuditExemptionPending struct {
 }
 
 const (
-	AuditExemptionStatusPending   = "pending"
-	AuditExemptionStatusCompleted = "completed"
+	AuditExemptionStatusPending    = "pending"
+	AuditExemptionStatusRechecking = "rechecking"
+	AuditExemptionStatusCompleted  = "completed"
 )
 
 // AuditScanTarget 待巡检的子域名（调度/worker 传递用）。
 type AuditScanTarget struct {
-	ID   uint   `json:"id"`
-	FQDN string `json:"fqdn"`
+	ID     uint   `json:"id"`
+	FQDN   string `json:"fqdn"`
+	Source string `json:"source,omitempty"`
+	RuleID uint   `json:"rule_id,omitempty"`
 }
 
 // SubdomainScan 每次巡检的扫描记录与违规证据。

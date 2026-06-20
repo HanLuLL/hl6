@@ -59,6 +59,7 @@ export function AuditDetailSheet({
 
   const sub = detail?.subdomain;
   const violation = detail?.latest_violation;
+  const canRescan = detail?.scannable === true && sub?.status === "active";
 
   return (
     <>
@@ -153,7 +154,13 @@ export function AuditDetailSheet({
                     {t("audit.actions.release")}
                   </Button>
                 )}
-                <Button size="sm" variant="outline" onClick={() => rescanMutation.mutate()} disabled={rescanMutation.isPending}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => rescanMutation.mutate()}
+                  disabled={rescanMutation.isPending || !canRescan}
+                  title={!canRescan ? t("audit.detail.notScannableHint") : undefined}
+                >
                   {t("audit.actions.rescan")}
                 </Button>
                 <Button size="sm" variant="outline" asChild>

@@ -6,6 +6,7 @@ import (
 
 	"gorm.io/gorm"
 	"hl6-server/internal/model"
+	"hl6-server/pkg/audit"
 )
 
 func (r *Repository) CreateAuditLog(log *model.AuditLog) error {
@@ -126,10 +127,10 @@ func (r *Repository) ListActiveScanTargets(offset, limit int) ([]model.AuditScan
 		JOIN dns_records dr ON dr.subdomain_id = s.id
 		WHERE s.status = ?
 		  AND dr.status = ?
-		  AND dr.type IN ('A', 'AAAA', 'CNAME')
+		  AND dr.type IN ?
 		ORDER BY s.id ASC
 		OFFSET ? LIMIT ?
-	`, model.SubdomainStatusActive, model.DNSRecordStatusActive, offset, limit).Scan(&targets).Error
+	`, model.SubdomainStatusActive, model.DNSRecordStatusActive, audit.ScannableRecordTypes, offset, limit).Scan(&targets).Error
 	return targets, err
 }
 
@@ -141,8 +142,8 @@ func (r *Repository) CountActiveScanTargets() (int64, error) {
 		JOIN dns_records dr ON dr.subdomain_id = s.id
 		WHERE s.status = ?
 		  AND dr.status = ?
-		  AND dr.type IN ('A', 'AAAA', 'CNAME')
-	`, model.SubdomainStatusActive, model.DNSRecordStatusActive).Scan(&count).Error
+		  AND dr.type IN ?
+	`, model.SubdomainStatusActive, model.DNSRecordStatusActive, audit.ScannableRecordTypes).Scan(&count).Error
 	return count, err
 }
 
@@ -339,7 +340,7 @@ func (r *Repository) ListSubdomainsByIDs(ids []uint) ([]model.Subdomain, error) 
 		return []model.Subdomain{}, nil
 	}
 	var subs []model.Subdomain
-	err := r.DB.Where("id IN ?", ids).Find(&subs).Error
+	err := r.DB.Where("id IN ?", ids).Preload("DNSRecords").Find(&subs).Error
 	return subs, err
 }
 
@@ -348,8 +349,9 @@ func (r *Repository) ListSubdomainsByIDs(ids []uint) ([]model.Subdomain, error) 
 func (r *Repository) FindActiveExemptionPending(subdomainID, ruleID uint) (*model.AuditExemptionPending, error) {
 	var item model.AuditExemptionPending
 	err := r.DB.Where(
-		"subdomain_id = ? AND rule_id = ? AND status = ? AND recheck_at > ?",
-		subdomainID, ruleID, model.AuditExemptionStatusPending, time.Now(),
+		"subdomain_id = ? AND rule_id = ? AND status IN ?",
+		subdomainID, ruleID,
+		[]string{model.AuditExemptionStatusPending, model.AuditExemptionStatusRechecking},
 	).First(&item).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -360,12 +362,22 @@ func (r *Repository) FindActiveExemptionPending(subdomainID, ruleID uint) (*mode
 	return &item, nil
 }
 
+func (r *Repository) hasBlockingExemption(subdomainID, ruleID uint) (bool, error) {
+	var count int64
+	err := r.DB.Model(&model.AuditExemptionPending{}).
+		Where("subdomain_id = ? AND rule_id = ? AND status IN ?",
+			subdomainID, ruleID,
+			[]string{model.AuditExemptionStatusPending, model.AuditExemptionStatusRechecking},
+		).Count(&count).Error
+	return count > 0, err
+}
+
 func (r *Repository) CreateExemptionPending(subdomainID, ruleID uint, recheckAt time.Time) error {
-	existing, err := r.FindActiveExemptionPending(subdomainID, ruleID)
+	exists, err := r.hasBlockingExemption(subdomainID, ruleID)
 	if err != nil {
 		return err
 	}
-	if existing != nil {
+	if exists {
 		return nil
 	}
 	return r.DB.Create(&model.AuditExemptionPending{
@@ -392,7 +404,7 @@ func (r *Repository) ClaimDueExemptions(limit int) ([]model.AuditExemptionPendin
 		for _, item := range due {
 			res := tx.Model(&model.AuditExemptionPending{}).
 				Where("id = ? AND status = ?", item.ID, model.AuditExemptionStatusPending).
-				Update("status", model.AuditExemptionStatusCompleted)
+				Update("status", model.AuditExemptionStatusRechecking)
 			if res.Error != nil {
 				return res.Error
 			}
@@ -404,6 +416,14 @@ func (r *Repository) ClaimDueExemptions(limit int) ([]model.AuditExemptionPendin
 		return nil
 	})
 	return claimed, err
+}
+
+func (r *Repository) CompleteExemptionPending(subdomainID, ruleID uint) error {
+	res := r.DB.Model(&model.AuditExemptionPending{}).
+		Where("subdomain_id = ? AND rule_id = ? AND status = ?",
+			subdomainID, ruleID, model.AuditExemptionStatusRechecking).
+		Update("status", model.AuditExemptionStatusCompleted)
+	return res.Error
 }
 
 func (r *Repository) FindSubdomainFQDNByID(id uint) (string, error) {

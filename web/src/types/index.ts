@@ -163,11 +163,13 @@ export interface AuditWorkbenchItem {
   latest_violation?: AuditWorkbenchViolationBrief | null;
   violation_count_7d: number;
   content_changed: boolean;
+  scannable: boolean;
 }
 
 export interface AuditSubdomainDetail {
   subdomain: Subdomain;
   user_email: string;
+  scannable: boolean;
   latest_violation?: AuditWorkbenchViolationBrief | null;
   sibling_subdomains: {
     id: number;

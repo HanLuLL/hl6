@@ -133,7 +133,7 @@ func (h *AuditHandler) applyRuleBody(rule *model.AuditRule, body auditRuleBody, 
 	if body.Enabled != nil {
 		rule.Enabled = *body.Enabled
 	}
-	if !partial || body.ScenarioID != "" || body.ScenarioID == "" {
+	if !partial {
 		rule.ScenarioID = strings.TrimSpace(body.ScenarioID)
 	}
 	if !partial {
@@ -163,10 +163,12 @@ func (h *AuditHandler) applyRuleBody(rule *model.AuditRule, body auditRuleBody, 
 	if body.ScopeDomainIDs != nil || !partial {
 		rule.ScopeDomainIDs = model.UintSlice(body.ScopeDomainIDs)
 	}
-	rule.BanNotifyContent = strings.TrimSpace(body.BanNotifyContent)
-	rule.ExemptEnabled = body.ExemptEnabled
-	rule.ExemptRecheckMinutes = body.ExemptRecheckMinutes
-	rule.ExemptNotifyContent = strings.TrimSpace(body.ExemptNotifyContent)
+	if !partial {
+		rule.BanNotifyContent = strings.TrimSpace(body.BanNotifyContent)
+		rule.ExemptEnabled = body.ExemptEnabled
+		rule.ExemptRecheckMinutes = body.ExemptRecheckMinutes
+		rule.ExemptNotifyContent = strings.TrimSpace(body.ExemptNotifyContent)
+	}
 }
 
 // --- Workbench ---
@@ -308,6 +310,8 @@ func (h *AuditHandler) notifySubdomainReleased(sub *model.Subdomain, adminID uin
 	_, _ = h.notif.NotifyUsers([]uint{sub.UserID}, adminID, "urgent", title, " ", "notification.subdomainReleasedByAdmin", args)
 }
 
+const auditBulkRescanMax = 100
+
 func (h *AuditHandler) RescanSubdomain(c *gin.Context) {
 	id, ok := helpers.RequireUintPathUint(c, "id")
 	if !ok {
@@ -318,11 +322,24 @@ func (h *AuditHandler) RescanSubdomain(c *gin.Context) {
 		response.NotFound(c, apperr.KeySubdomainNotFound)
 		return
 	}
+	if sub.Status != model.SubdomainStatusActive {
+		response.Conflict(c, apperr.KeySubdomainSuspended)
+		return
+	}
+	if !audit.SubdomainHasScannableActiveDNS(sub.DNSRecords) {
+		response.Conflict(c, apperr.KeyAuditSubdomainNotScannable)
+		return
+	}
 	if err := h.enqueue.EnqueueScan(c.Request.Context(), sub.ID, sub.FQDN, "manual", service.EnqueueOpts{BypassDedup: true}); err != nil {
 		response.InternalError(c, apperr.KeyFailedToListAuditScans)
 		return
 	}
 	response.OK(c, gin.H{"queued": true, "fqdn": sub.FQDN})
+}
+
+type bulkRescanSkipDetail struct {
+	ID     uint   `json:"id"`
+	Reason string `json:"reason"`
 }
 
 func (h *AuditHandler) BulkRescan(c *gin.Context) {
@@ -332,20 +349,61 @@ func (h *AuditHandler) BulkRescan(c *gin.Context) {
 	if !ok {
 		return
 	}
+	if len(body.SubdomainIDs) == 0 {
+		response.BadRequest(c, apperr.KeyInvalidRequestBody)
+		return
+	}
+	if len(body.SubdomainIDs) > auditBulkRescanMax {
+		response.BadRequest(c, apperr.KeyAuditBulkRescanTooMany)
+		return
+	}
+
 	subs, err := h.repo.ListSubdomainsByIDs(body.SubdomainIDs)
 	if err != nil {
 		response.InternalError(c, apperr.KeyFailedToListAuditScans)
 		return
 	}
-	queued := 0
+
+	found := make(map[uint]model.Subdomain, len(subs))
 	for _, sub := range subs {
-		if err := h.enqueue.EnqueueScan(c.Request.Context(), sub.ID, sub.FQDN, "bulk", service.EnqueueOpts{BypassDedup: true}); err != nil {
+		found[sub.ID] = sub
+	}
+
+	var skipped []bulkRescanSkipDetail
+	queued := 0
+	ctx := c.Request.Context()
+
+	for _, id := range body.SubdomainIDs {
+		sub, ok := found[id]
+		if !ok {
+			skipped = append(skipped, bulkRescanSkipDetail{ID: id, Reason: "not_found"})
+			continue
+		}
+		if sub.Status != model.SubdomainStatusActive {
+			skipped = append(skipped, bulkRescanSkipDetail{ID: id, Reason: "suspended"})
+			continue
+		}
+		if !audit.SubdomainHasScannableActiveDNS(sub.DNSRecords) {
+			skipped = append(skipped, bulkRescanSkipDetail{ID: id, Reason: "not_scannable"})
+			continue
+		}
+		if err := h.enqueue.EnqueueScan(ctx, sub.ID, sub.FQDN, "bulk", service.EnqueueOpts{BypassDedup: true}); err != nil {
 			response.InternalError(c, apperr.KeyFailedToListAuditScans)
 			return
 		}
 		queued++
 	}
-	response.OK(c, gin.H{"queued": queued})
+
+	payload := gin.H{
+		"queued":          queued,
+		"skipped":         len(skipped),
+		"skipped_details": skipped,
+	}
+	if queued == 0 && len(skipped) > 0 {
+		response.ErrorWithKeyData(c, http.StatusConflict, "no subdomains queued for rescan", apperr.KeyAuditBulkRescanNoneQueued, payload)
+		return
+	}
+	response.OK(c, payload)
 }
 
 // --- Rules ---
@@ -439,7 +497,7 @@ func (h *AuditHandler) UpdateRule(c *gin.Context) {
 	if !ok {
 		return
 	}
-	h.applyRuleBody(rule, *bi, true)
+	h.applyRuleBody(rule, *bi, false)
 	rule.UpdatedBy = admin.ID
 
 	if err := service.ValidateAuditRuleScope(rule, h.repo.DomainExists); err != nil {

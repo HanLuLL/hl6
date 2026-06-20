@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"hl6-server/internal/model"
+	"hl6-server/pkg/audit"
 )
 
 // AuditSummary 工作台顶部统计。
@@ -44,10 +45,10 @@ func (r *Repository) GetAuditSummary() (*AuditSummary, error) {
 		SELECT COUNT(DISTINCT s.id)
 		FROM subdomains s
 		JOIN dns_records dr ON dr.subdomain_id = s.id
-			AND dr.status = ? AND dr.type IN ('A', 'AAAA', 'CNAME')
+			AND dr.status = ? AND dr.type IN ?
 		WHERE s.status = ?
 		  AND NOT EXISTS (SELECT 1 FROM subdomain_scans ss WHERE ss.subdomain_id = s.id)
-	`, model.DNSRecordStatusActive, model.SubdomainStatusActive).Scan(&summary.NeverScannedCount).Error
+	`, model.DNSRecordStatusActive, audit.ScannableRecordTypes, model.SubdomainStatusActive).Scan(&summary.NeverScannedCount).Error
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +90,7 @@ type AuditWorkbenchItem struct {
 	LatestViolation  *AuditWorkbenchViolationBrief `json:"latest_violation"`
 	ViolationCount7d int64                         `json:"violation_count_7d"`
 	ContentChanged   bool                          `json:"content_changed"`
+	Scannable        bool                          `json:"scannable"`
 }
 
 // AuditCasesFilter 子域名列表筛选。
@@ -181,9 +183,9 @@ LEFT JOIN LATERAL (
 	if len(filter.RecordTypes) > 0 {
 		where += ` AND EXISTS (
 			SELECT 1 FROM dns_records dr
-			WHERE dr.subdomain_id = s.id AND dr.type IN ?
+			WHERE dr.subdomain_id = s.id AND dr.status = ? AND dr.type IN ?
 		)`
-		args = append(args, filter.RecordTypes)
+		args = append(args, model.DNSRecordStatusActive, filter.RecordTypes)
 	}
 
 	countSQL := "SELECT COUNT(*) " + base + where
@@ -233,6 +235,12 @@ SELECT
 	(SELECT COUNT(*) FROM subdomain_scans ss
 	 WHERE ss.subdomain_id = s.id AND ss.status = ? AND ss.created_at >= ?) AS violation_count_7d,
 	EXISTS (
+		SELECT 1 FROM dns_records dr
+		WHERE dr.subdomain_id = s.id
+		  AND dr.status = ?
+		  AND dr.type IN ?
+	) AS scannable,
+	EXISTS (
 		SELECT 1 FROM (
 			SELECT content_hash FROM subdomain_scans
 			WHERE subdomain_id = s.id AND status = ?
@@ -249,6 +257,7 @@ SELECT
 	// SELECT 子句中的 ? 在 base/where 之前，参数须先于 lateral join 与筛选条件。
 	queryArgs := []interface{}{
 		model.ScanStatusViolation, since7d,
+		model.DNSRecordStatusActive, audit.ScannableRecordTypes,
 		model.ScanStatusClean, model.ScanStatusClean, model.ScanStatusClean, model.ScanStatusClean,
 	}
 	queryArgs = append(queryArgs, args...)
@@ -276,6 +285,7 @@ SELECT
 		LatestViolationCreatedAt *time.Time
 		MatchedRules             model.MatchedRulesSlice
 		ViolationCount7d         int64
+		Scannable                bool
 		ContentChanged           bool
 	}
 
@@ -299,6 +309,7 @@ SELECT
 			DNSRecordCount:   rw.DNSRecordCount,
 			ViolationCount7d: rw.ViolationCount7d,
 			ContentChanged:   rw.ContentChanged,
+			Scannable:        rw.Scannable,
 		}
 		if rw.LatestScanID != nil {
 			item.LatestScan = &AuditWorkbenchScanBrief{
@@ -351,6 +362,7 @@ type AuditSubdomainSibling struct {
 type AuditSubdomainDetailBundle struct {
 	Subdomain         model.Subdomain               `json:"subdomain"`
 	UserEmail         string                        `json:"user_email"`
+	Scannable         bool                          `json:"scannable"`
 	LatestViolation   *AuditWorkbenchViolationBrief `json:"latest_violation"`
 	SiblingSubdomains []AuditSubdomainSibling       `json:"sibling_subdomains"`
 	DNSRecords        []model.DNSRecord             `json:"dns_records"`
@@ -394,6 +406,7 @@ func (r *Repository) GetAuditSubdomainDetail(id uint) (*AuditSubdomainDetailBund
 	bundle := &AuditSubdomainDetailBundle{
 		Subdomain:         *sub,
 		UserEmail:         user.Email,
+		Scannable:         audit.SubdomainHasScannableActiveDNS(records),
 		SiblingSubdomains: siblings,
 		DNSRecords:        records,
 	}

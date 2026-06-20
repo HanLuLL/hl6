@@ -15,10 +15,6 @@ import (
 	"hl6-server/pkg/audit"
 )
 
-var auditScannableRecordTypes = map[string]bool{
-	"A": true, "AAAA": true, "CNAME": true,
-}
-
 // AuditService 封装内容合规巡检与处置（Suspend/Restore/Scan）。
 type AuditService struct {
 	repo     *repository.Repository
@@ -51,6 +47,16 @@ func (s *AuditService) Engine() *AuditRuleEngine    { return s.engine }
 
 func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScanTarget) {
 	fqdn := target.FQDN
+	isRecheck := target.Source == "exemption_recheck"
+
+	if isRecheck && target.RuleID > 0 {
+		defer func() {
+			if err := s.repo.CompleteExemptionPending(target.ID, target.RuleID); err != nil {
+				slog.Warn("audit scan: complete exemption failed",
+					"subdomain_id", target.ID, "rule_id", target.RuleID, "err", err)
+			}
+		}()
+	}
 
 	sub, err := s.repo.FindSubdomain(target.ID)
 	if err != nil {
@@ -60,7 +66,7 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 	if sub.Status != model.SubdomainStatusActive {
 		return
 	}
-	if !hasScannableActiveDNS(sub) {
+	if !audit.SubdomainHasScannableActiveDNS(sub.DNSRecords) {
 		return
 	}
 
@@ -110,7 +116,7 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 					return
 				}
 
-				if s.tryHandleViolationExemption(ctx, sub, primary.Rule, primary.Snippet) {
+				if !isRecheck && s.tryHandleViolationExemption(ctx, sub, primary.Rule, primary.Snippet) {
 					return
 				}
 
@@ -134,19 +140,10 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 	}
 }
 
-func hasScannableActiveDNS(sub *model.Subdomain) bool {
-	for _, rec := range sub.DNSRecords {
-		if rec.Status == model.DNSRecordStatusActive && auditScannableRecordTypes[rec.Type] {
-			return true
-		}
-	}
-	return false
-}
-
 func (s *AuditService) deleteScannableRecords(ctx context.Context, sub *model.Subdomain, rule *model.AuditRule, snippet string) bool {
 	var records []model.DNSRecord
 	for _, rec := range sub.DNSRecords {
-		if rec.Status == model.DNSRecordStatusActive && auditScannableRecordTypes[rec.Type] {
+		if rec.Status == model.DNSRecordStatusActive && audit.IsScannableRecordType(rec.Type) {
 			records = append(records, rec)
 		}
 	}
@@ -307,19 +304,20 @@ func (s *AuditService) suspendUserSubdomains(ctx context.Context, userID uint, r
 		return
 	}
 
-	var failed []string
-	success := 0
+	var succeeded []*model.Subdomain
 	for i := range subs {
-		if s.suspendSubdomain(ctx, &subs[i], rule, snippet) {
-			success++
-		} else {
-			failed = append(failed, subs[i].FQDN)
+		if !s.suspendSubdomain(ctx, &subs[i], rule, snippet) {
+			for _, sub := range succeeded {
+				if restoreErr := s.RestoreSubdomain(ctx, sub); restoreErr != nil {
+					slog.Error("audit: user suspend rollback failed",
+						"user_id", userID, "fqdn", sub.FQDN, "err", restoreErr)
+				}
+			}
+			slog.Error("audit: user-level suspend aborted",
+				"user_id", userID, "failed_fqdn", subs[i].FQDN, "rolled_back", len(succeeded))
+			return
 		}
-	}
-	if len(failed) > 0 {
-		slog.Warn("audit: user-level suspend incomplete",
-			"user_id", userID, "success", success, "failed_fqdns", failed,
-		)
+		succeeded = append(succeeded, &subs[i])
 	}
 }
 

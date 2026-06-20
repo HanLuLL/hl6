@@ -96,7 +96,12 @@ func (w *AuditScanWorker) handleMessage(ctx context.Context, id string, values m
 		return
 	}
 
-	w.svc.ScanSubdomain(ctx, model.AuditScanTarget{ID: subID, FQDN: fqdn})
+	w.svc.ScanSubdomain(ctx, model.AuditScanTarget{
+		ID:     subID,
+		FQDN:   fqdn,
+		Source: stringField(values["source"]),
+		RuleID: uintField(values["rule_id"]),
+	})
 
 	if err := w.queue.Ack(ctx, id); err != nil {
 		slog.Warn("audit scan ack failed", "id", id, "err", err)

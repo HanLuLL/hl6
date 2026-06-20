@@ -558,7 +558,7 @@ export const api = {
   adminRescanAuditSubdomain: (id: number) =>
     request<ApiResponse<{ queued: boolean; fqdn: string }>>(`/admin/audit/subdomains/${id}/rescan`, { method: "POST" }),
   adminBulkRescanAudit: (subdomainIds: number[]) =>
-    request<ApiResponse<{ queued: number }>>("/admin/audit/subdomains/bulk-rescan", {
+    request<ApiResponse<{ queued: number; skipped: number; skipped_details: { id: number; reason: string }[] }>>("/admin/audit/subdomains/bulk-rescan", {
       method: "POST",
       body: JSON.stringify({ subdomain_ids: subdomainIds }),
     }),
