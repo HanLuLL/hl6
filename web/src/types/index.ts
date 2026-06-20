@@ -125,9 +125,8 @@ export interface SubdomainScan {
 }
 
 export interface AuditSummary {
-  suspended_count: number;
-  violation_24h: number;
-  unreachable_24h: number;
+  deleted_count: number;
+  current_violation: number;
   never_scanned_count: number;
   enabled_rules_count: number;
 }

@@ -9,30 +9,33 @@ import (
 
 // AuditSummary 工作台顶部统计。
 type AuditSummary struct {
-	SuspendedCount    int64 `json:"suspended_count"`
-	Violation24h      int64 `json:"violation_24h"`
-	Unreachable24h    int64 `json:"unreachable_24h"`
+	DeletedCount      int64 `json:"deleted_count"`
+	CurrentViolation  int64 `json:"current_violation"`
 	NeverScannedCount int64 `json:"never_scanned_count"`
 	EnabledRulesCount int64 `json:"enabled_rules_count"`
 }
 
 func (r *Repository) GetAuditSummary() (*AuditSummary, error) {
-	since := time.Now().Add(-24 * time.Hour)
 	var summary AuditSummary
 
-	if err := r.DB.Model(&model.Subdomain{}).
-		Where("status = ?", model.SubdomainStatusSuspended).
-		Count(&summary.SuspendedCount).Error; err != nil {
+	if err := r.DB.Model(&model.AuditLog{}).
+		Where("action = ?", "audit_release_subdomain").
+		Count(&summary.DeletedCount).Error; err != nil {
 		return nil, err
 	}
-	if err := r.DB.Model(&model.SubdomainScan{}).
-		Where("status = ? AND created_at >= ?", model.ScanStatusViolation, since).
-		Count(&summary.Violation24h).Error; err != nil {
-		return nil, err
-	}
-	if err := r.DB.Model(&model.SubdomainScan{}).
-		Where("status = ? AND created_at >= ?", model.ScanStatusUnreachable, since).
-		Count(&summary.Unreachable24h).Error; err != nil {
+	if err := r.DB.Raw(`
+		SELECT COUNT(*)
+		FROM subdomains s
+		JOIN LATERAL (
+			SELECT ss.status
+			FROM subdomain_scans ss
+			WHERE ss.subdomain_id = s.id
+			ORDER BY ss.created_at DESC
+			LIMIT 1
+		) latest_scan ON true
+		WHERE s.status = ?
+		  AND latest_scan.status = ?
+	`, model.SubdomainStatusActive, model.ScanStatusViolation).Scan(&summary.CurrentViolation).Error; err != nil {
 		return nil, err
 	}
 	if err := r.DB.Model(&model.AuditRule{}).

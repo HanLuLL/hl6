@@ -840,9 +840,8 @@
       "history": "History"
     },
     "summary": {
-      "suspended": "Suspended",
-      "violation24h": "24h violations",
-      "unreachable24h": "24h unreachable",
+      "deleted": "Deleted",
+      "currentViolation": "Current violations",
       "neverScanned": "Never scanned",
       "enabledRules": "Enabled rules"
     },
@@ -958,7 +957,7 @@
         "targets": "Targets",
         "match": "Match",
         "action": "Action",
-        "hits7d": "7d hits",
+        "hits7d": "Hit domains (7d)",
         "lastHit": "Last hit",
         "enabled": "Enabled"
       },

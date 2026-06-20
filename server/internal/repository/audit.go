@@ -264,7 +264,7 @@ func (r *Repository) ListAuditRuleHitStats(ruleIDs []uint) (map[uint]AuditRuleHi
 	}
 	var counts []row
 	if err := r.DB.Model(&model.SubdomainScan{}).
-		Select("matched_rule_id, COUNT(*) AS hit_count7d").
+		Select("matched_rule_id, COUNT(DISTINCT subdomain_id) AS hit_count7d").
 		Where("status = ? AND matched_rule_id IN ? AND created_at >= ?", model.ScanStatusViolation, ruleIDs, since).
 		Group("matched_rule_id").
 		Scan(&counts).Error; err != nil {

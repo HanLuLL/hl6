@@ -840,9 +840,8 @@
       "history": "历史"
     },
     "summary": {
-      "suspended": "已封禁",
-      "violation24h": "24h 违规",
-      "unreachable24h": "24h 不可达",
+      "deleted": "已删除",
+      "currentViolation": "当前违规",
       "neverScanned": "从未扫描",
       "enabledRules": "启用规则"
     },
@@ -958,7 +957,7 @@
         "targets": "目标",
         "match": "匹配",
         "action": "处置",
-        "hits7d": "7日命中",
+        "hits7d": "命中域名数量",
         "lastHit": "最近命中",
         "enabled": "启用"
       },
