@@ -32,17 +32,25 @@ func NewAuditRuleEngine(repo *repository.Repository) *AuditRuleEngine {
 	return &AuditRuleEngine{repo: repo}
 }
 
-// MatchAll 加载所有已启用规则，返回全部命中（已按 scope 过滤）。
-func (e *AuditRuleEngine) MatchAll(ctx context.Context, domainID uint, fr audit.FetchResult) ([]MatchedRule, error) {
+// MatchAll 加载所有已启用规则，对双通道结果返回全部命中。
+func (e *AuditRuleEngine) MatchAll(ctx context.Context, domainID uint, dual audit.DualFetchResult) ([]MatchedRule, error) {
 	rules, err := e.repo.ListEnabledAuditRules()
 	if err != nil {
 		return nil, err
 	}
-	return e.MatchAllWithRules(domainID, fr, rules), nil
+	return e.MatchAllDualWithRules(domainID, dual, rules), nil
 }
 
-// MatchAllWithRules 对给定规则列表执行匹配（试跑草稿规则用）。
+// MatchAllWithRules 对给定规则列表执行单通道匹配（兼容旧调用）。
 func (e *AuditRuleEngine) MatchAllWithRules(domainID uint, fr audit.FetchResult, rules []model.AuditRule) []MatchedRule {
+	dual := audit.DualFetchResult{
+		HTTPS: audit.ChannelResult{Scheme: "https", FetchResult: fr},
+	}
+	return e.MatchAllDualWithRules(domainID, dual, rules)
+}
+
+// MatchAllDualWithRules 双通道规则匹配（试跑草稿规则用）。
+func (e *AuditRuleEngine) MatchAllDualWithRules(domainID uint, dual audit.DualFetchResult, rules []model.AuditRule) []MatchedRule {
 	var matches []MatchedRule
 	for i := range rules {
 		rule := &rules[i]
@@ -52,14 +60,29 @@ func (e *AuditRuleEngine) MatchAllWithRules(domainID uint, fr audit.FetchResult,
 		if !ruleInScope(rule, domainID) {
 			continue
 		}
-		snippet, matched := e.matchRule(rule, fr)
-		if !matched {
+		if rule.MatchType == model.AuditMatchUnreachable {
+			if audit.IsSiteUnreachable(dual) {
+				matches = append(matches, MatchedRule{
+					Rule:    rule,
+					Snippet: helpers.TruncateRunes(audit.UnreachableChannelSummary(dual), 200),
+				})
+			}
 			continue
 		}
-		matches = append(matches, MatchedRule{
-			Rule:    rule,
-			Snippet: helpers.TruncateRunes(snippet, 200),
-		})
+		for _, ch := range []audit.ChannelResult{dual.HTTPS, dual.HTTP} {
+			if ch.Scheme == "" {
+				continue
+			}
+			snippet, matched := e.matchRule(rule, ch.FetchResult)
+			if !matched {
+				continue
+			}
+			prefixed := fmt.Sprintf("[%s] %s", ch.Scheme, snippet)
+			matches = append(matches, MatchedRule{
+				Rule:    rule,
+				Snippet: helpers.TruncateRunes(prefixed, 200),
+			})
+		}
 	}
 	return matches
 }
@@ -94,8 +117,10 @@ func ruleInScope(rule *model.AuditRule, domainID uint) bool {
 func auditRuleActionRank(action string) int {
 	switch action {
 	case model.AuditActionUser:
-		return 3
+		return 4
 	case model.AuditActionSite:
+		return 3
+	case model.AuditActionDeleteDNS:
 		return 2
 	case model.AuditActionObserve:
 		return 1
@@ -116,6 +141,9 @@ func betterAuditMatch(candidate, current *MatchedRule) bool {
 func (e *AuditRuleEngine) matchRule(rule *model.AuditRule, fr audit.FetchResult) (string, bool) {
 	switch rule.MatchType {
 	case model.AuditMatchStatusEq:
+		if fr.Status != audit.FetchStatusClean {
+			return "", false
+		}
 		return e.matchStatusEq(rule, fr.StatusCode)
 	case model.AuditMatchKeyword:
 		return e.matchKeywordMultiTarget(rule, fr)

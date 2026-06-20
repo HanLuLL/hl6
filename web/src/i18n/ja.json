@@ -717,6 +717,8 @@
     "invalidAuditRuleMatchType": "無効なマッチタイプです",
     "invalidAuditRulePattern": "無効なルール内容です",
     "invalidAuditRuleCombination": "対象とマッチタイプの組み合わせが無効です",
+    "invalidAuditRuleExemptRecheck": "免除の再チェックは5分から7日の範囲で指定してください",
+    "invalidAuditRuleNotifyContent": "通知内容が長すぎます（最大1024文字）",
     "dnsBulkJobQueuedBan": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に BAN を再試行してください。",
     "dnsBulkJobQueuedDelete": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に削除を再試行してください。",
     "dnsBulkJobQueuedRelease": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に解放を再試行してください。",
@@ -878,7 +880,9 @@
     "matchType": {
       "keyword": "Keyword",
       "regex": "Regex",
-      "status_eq": "Status equals"
+      "status_eq": "Status equals",
+      "unreachable": "サイト到達不可",
+      "unreachableHint": "HTTPS と HTTP の両方が到達不可のときに一致。マッチ対象の設定は不要です。単一チャネルが到達不可とみなされる場合：(1) 接続失敗・タイムアウト（DNS 解決失敗、接続拒否、TLS ハンドシェイク失敗など）；(2) 接続は成功したが取得に失敗（レスポンス本文の読み取り失敗など。プライベート IP への SSRF ブロックは除く）；(3) HTTP ステータスが 403・500・502・503・504（404 は対象外）。"
     },
     "keywordLogic": {
       "any": "Match any keyword",
@@ -886,6 +890,7 @@
     },
     "actions": {
       "observe": "Observe only",
+      "delete_dns": "DNS レコード削除",
       "site": "Suspend site",
       "user": "Suspend user",
       "detail": "Details",
@@ -933,42 +938,54 @@
         "hits7d": "7d hits",
         "lastHit": "Last hit",
         "enabled": "Enabled"
+      },
+      "banNotify": {
+        "title": "停止通知",
+        "hint": "空欄の場合は通知しません。停止またはDNS削除成功後に送信されます。",
+        "placeholder": "例：サブドメイン {{fqdn}} は {{rule_name}} 違反のため停止されました。",
+        "vars": "変数: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}"
+      },
+      "exempt": {
+        "title": "免除",
+        "hint": "初回ヒット時は処置せず、期限後に自動再スキャン。再ヒット時は通常処置。",
+        "recheckMinutes": "再チェックまで（分）",
+        "recheckRange": "範囲: {{min}}–{{max}} 分",
+        "notifyTitle": "免除通知",
+        "notifyHint": "空欄の場合は通知しません。",
+        "notifyPlaceholder": "例：{{fqdn}} は一時的にアクセスできません。{{recheck_at}} までに対応してください。",
+        "vars": "変数: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}, {{recheck_minutes}}, {{recheck_at}}"
       }
     },
     "scenarios": {
-      "gambling": {
-        "name": "Gambling",
-        "desc": "Casino and betting keywords"
+      "keyword": {
+        "name": "キーワード一致",
+        "desc": "ページタイトルまたは本文でいずれかのキーワードに一致"
       },
-      "adult": {
-        "name": "Adult content",
-        "desc": "Adult content patterns"
+      "regex": {
+        "name": "正規表現一致",
+        "desc": "正規表現でページタイトルまたは本文に一致"
       },
-      "phishing": {
-        "name": "Phishing",
-        "desc": "Phishing page signals"
+      "status_eq": {
+        "name": "HTTP ステータスコード",
+        "desc": "レスポンスのステータスコードが指定値と一致したときにヒット"
       },
-      "malicious_redirect": {
-        "name": "Malicious redirect",
-        "desc": "Suspicious redirects"
-      },
-      "placeholder": {
-        "name": "Placeholder page",
-        "desc": "Default or under-construction pages"
-      },
-      "http_error": {
-        "name": "HTTP error",
-        "desc": "Specific HTTP error codes"
+      "unreachable": {
+        "name": "サイト到達不可",
+        "desc": "HTTPS と HTTP の両方が到達不可のときに一致"
       }
     },
     "ruleTest": {
-      "title": "Test rule",
-      "fqdnPlaceholder": "FQDN to test",
-      "run": "Run",
-      "running": "Fetching…",
-      "noMatch": "No match",
-      "wouldSuspend": "Would suspend",
-      "wouldNotSuspend": "Would not suspend"
+      "title": "ルール試行",
+      "fqdnPlaceholder": "テストする FQDN",
+      "run": "実行",
+      "running": "取得中…",
+      "noMatch": "一致なし",
+      "wouldSuspend": "停止が実行されます",
+      "wouldDeleteDns": "DNS レコード削除が実行されます",
+      "wouldNotSuspend": "停止または DNS 削除は実行されません",
+      "wouldExempt": "免除が適用されます（再スキャンまで処置なし）",
+      "wouldSendBanNotify": "停止通知を送信します",
+      "wouldSendExemptNotify": "免除通知を送信します"
     },
     "detail": {
       "title": "Subdomain detail",
@@ -990,6 +1007,10 @@
   "notification": {
     "subdomainSuspended": {
       "intro": "サブドメイン {{fqdn}} はコンテンツポリシー違反のため停止されました。",
+      "rule": "一致ルール：{{rule}}"
+    },
+    "subdomainDNSDeleted": {
+      "intro": "サブドメイン {{fqdn}} の DNS レコードはルール {{rule}} により削除されました。",
       "rule": "一致ルール：{{rule}}"
     },
     "subdomainReleasedByAdmin": {

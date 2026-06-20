@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -52,6 +53,19 @@ type FetchResult struct {
 	Error        error
 	ErrorMessage string
 	Status       string // FetchStatusClean / FetchStatusUnreachable / FetchStatusError
+}
+
+// ChannelResult 单协议抓取结果。
+type ChannelResult struct {
+	Scheme     string // "https" | "http"
+	RequestURL string
+	FetchResult
+}
+
+// DualFetchResult 双通道并行抓取结果。
+type DualFetchResult struct {
+	HTTPS ChannelResult
+	HTTP  ChannelResult
 }
 
 // SafeFetcher 通过 SSRF 防护的 HTTP 客户端安全抓取网站内容。
@@ -206,6 +220,53 @@ func (f *SafeFetcher) Fetch(ctx context.Context, fqdn string) FetchResult {
 		}
 	}
 	return httpsResult
+}
+
+// FetchDual 并行抓取 HTTP 与 HTTPS，两通道独立检测。
+func (f *SafeFetcher) FetchDual(ctx context.Context, fqdn string) DualFetchResult {
+	var result DualFetchResult
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		fr := f.fetchURL(ctx, "https://"+fqdn+"/")
+		result.HTTPS = ChannelResult{
+			Scheme:      "https",
+			RequestURL:  "https://" + fqdn + "/",
+			FetchResult: fr,
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		fr := f.fetchURL(ctx, "http://"+fqdn+"/")
+		result.HTTP = ChannelResult{
+			Scheme:      "http",
+			RequestURL:  "http://" + fqdn + "/",
+			FetchResult: fr,
+		}
+	}()
+	wg.Wait()
+	return result
+}
+
+// CombinedContentHash 双通道组合哈希，用于增量跳过判断。
+func CombinedContentHash(dual DualFetchResult) string {
+	h := sha256.New()
+	_, _ = fmt.Fprintf(h, "%s|%s|%s|%s",
+		dual.HTTPS.ContentHash,
+		dual.HTTP.ContentHash,
+		dual.HTTPS.Status,
+		dual.HTTP.Status,
+	)
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+// PrimaryChannel 返回优先用于兼容字段的通道（HTTPS 优先，完全失败时用 HTTP）。
+func (d DualFetchResult) PrimaryChannel() ChannelResult {
+	if d.HTTPS.Status == FetchStatusClean || d.HTTPS.StatusCode > 0 || d.HTTPS.FinalURL != "" {
+		return d.HTTPS
+	}
+	return d.HTTP
 }
 
 func (f *SafeFetcher) fetchURL(ctx context.Context, rawURL string) FetchResult {

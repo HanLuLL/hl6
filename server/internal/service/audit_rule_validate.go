@@ -4,15 +4,19 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"hl6-server/internal/apperr"
 	"hl6-server/internal/model"
+	"hl6-server/pkg/audit"
 )
 
 const (
 	auditKeywordMaxCount      = 50
 	auditKeywordMaxLen        = 128
 	auditRegexPatternMaxLen   = 512
+	auditExemptRecheckMin     = 5
+	auditExemptRecheckMax     = 10080
 )
 
 // AuditRuleValidationError 携带可下发给客户端的 i18n message key。
@@ -43,20 +47,30 @@ func ValidateAuditRule(rule *model.AuditRule) error {
 		return &AuditRuleValidationError{Key: apperr.KeyInvalidRequestBody}
 	}
 
-	if len(rule.Targets) == 0 {
-		return &AuditRuleValidationError{Key: apperr.KeyInvalidAuditRuleTargets}
-	}
-	for _, t := range rule.Targets {
-		if !auditAllowedTargets[t] {
+	if rule.MatchType == model.AuditMatchUnreachable {
+		rule.Targets = model.StringSlice{}
+		rule.Keywords = model.StringSlice{}
+		rule.Pattern = ""
+	} else {
+		if len(rule.Targets) == 0 {
 			return &AuditRuleValidationError{Key: apperr.KeyInvalidAuditRuleTargets}
+		}
+		for _, t := range rule.Targets {
+			if !auditAllowedTargets[t] {
+				return &AuditRuleValidationError{Key: apperr.KeyInvalidAuditRuleTargets}
+			}
 		}
 	}
 
 	switch rule.MatchType {
-	case model.AuditMatchKeyword, model.AuditMatchRegex, model.AuditMatchStatusEq:
+	case model.AuditMatchKeyword, model.AuditMatchRegex, model.AuditMatchStatusEq, model.AuditMatchUnreachable:
 	default:
 		return &AuditRuleValidationError{Key: apperr.KeyInvalidAuditRuleMatchType}
 	}
+
+	if rule.MatchType == model.AuditMatchUnreachable {
+		// unreachable 不依赖 targets/keywords/pattern
+	} else {
 
 	hasStatusCode := false
 	for _, t := range rule.Targets {
@@ -111,9 +125,10 @@ func ValidateAuditRule(rule *model.AuditRule) error {
 			return &AuditRuleValidationError{Key: apperr.KeyInvalidAuditRulePattern}
 		}
 	}
+	}
 
 	switch rule.Action {
-	case model.AuditActionObserve, model.AuditActionSite, model.AuditActionUser:
+	case model.AuditActionObserve, model.AuditActionDeleteDNS, model.AuditActionSite, model.AuditActionUser:
 	default:
 		return &AuditRuleValidationError{Key: apperr.KeyInvalidAuditRuleAction}
 	}
@@ -128,6 +143,34 @@ func ValidateAuditRule(rule *model.AuditRule) error {
 		rule.Targets = model.StringSlice{}
 	}
 
+	if rule.Action == model.AuditActionObserve {
+		rule.BanNotifyContent = ""
+	}
+	if err := validateAuditRuleNotifyAndExempt(rule); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateAuditRuleNotifyAndExempt(rule *model.AuditRule) error {
+	if content := strings.TrimSpace(rule.BanNotifyContent); content != "" {
+		if utf8.RuneCountInString(content) > audit.NotifyTemplateMaxRunes {
+			return &AuditRuleValidationError{Key: apperr.KeyInvalidAuditRuleNotifyContent}
+		}
+	}
+	if content := strings.TrimSpace(rule.ExemptNotifyContent); content != "" {
+		if utf8.RuneCountInString(content) > audit.NotifyTemplateMaxRunes {
+			return &AuditRuleValidationError{Key: apperr.KeyInvalidAuditRuleNotifyContent}
+		}
+	}
+	if !rule.ExemptEnabled {
+		rule.ExemptRecheckMinutes = 0
+		return nil
+	}
+	if rule.ExemptRecheckMinutes < auditExemptRecheckMin || rule.ExemptRecheckMinutes > auditExemptRecheckMax {
+		return &AuditRuleValidationError{Key: apperr.KeyInvalidAuditRuleExemptRecheck}
+	}
 	return nil
 }
 

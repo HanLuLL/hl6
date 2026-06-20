@@ -70,7 +70,7 @@ func bootstrapAudit(ctx context.Context, cfg *config.Config, db *gorm.DB, repo *
 	auditSvc := service.NewAuditService(repo, dnsOps, notifSvc, cfg.AuditScanTimeout, auditLogSvc)
 	auditEnqueue := service.NewAuditEnqueueService(taskQueue, enqueueDedup)
 
-	startAuditWorkers(ctx, cfg, db, taskQueue, schedDedup, auditSvc)
+	startAuditWorkers(ctx, cfg, db, repo, taskQueue, schedDedup, auditSvc, auditEnqueue)
 
 	return auditStack{
 		enqueue:  auditEnqueue,
@@ -103,7 +103,7 @@ func initAuditQueue(ctx context.Context, cfg *config.Config) (queue.TaskQueue, s
 	return queue.NewInProcQueue(0), service.NewInprocAuditDedup(), worker.NewInprocScheduleDedup()
 }
 
-func startAuditWorkers(ctx context.Context, cfg *config.Config, db *gorm.DB, taskQueue queue.TaskQueue, schedDedup worker.ScheduleDedup, auditSvc *service.AuditService) {
+func startAuditWorkers(ctx context.Context, cfg *config.Config, db *gorm.DB, repo *repository.Repository, taskQueue queue.TaskQueue, schedDedup worker.ScheduleDedup, auditSvc *service.AuditService, auditEnqueue *service.AuditEnqueueService) {
 	if err := taskQueue.EnsureReady(ctx); err != nil {
 		log.Printf("WARN: audit queue ensure ready: %v", err)
 	}
@@ -121,6 +121,13 @@ func startAuditWorkers(ctx context.Context, cfg *config.Config, db *gorm.DB, tas
 	go func() {
 		if err := sched.Run(ctx); err != nil {
 			log.Printf("audit scheduler stopped: %v", err)
+		}
+	}()
+
+	exemptW := worker.NewAuditExemptionWorker(repo, auditEnqueue)
+	go func() {
+		if err := exemptW.Run(ctx); err != nil {
+			log.Printf("audit exemption worker stopped: %v", err)
 		}
 	}()
 }

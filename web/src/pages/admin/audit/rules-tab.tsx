@@ -18,10 +18,16 @@ import { formatDate } from "@/lib/format-date";
 import { RuleDialog } from "./rule-dialog";
 
 function summarizeTargets(rule: AuditRule, t: (k: string) => string) {
+  if (rule.match_type === "unreachable") {
+    return "—";
+  }
   return rule.targets.map((tg) => t(`audit.targets.${tg}`)).join(", ");
 }
 
-function summarizeMatch(rule: AuditRule) {
+function summarizeMatch(rule: AuditRule, t: (k: string) => string) {
+  if (rule.match_type === "unreachable") {
+    return t("audit.matchType.unreachable");
+  }
   if (rule.match_type === "keyword") {
     return `${rule.keyword_logic}: ${rule.keywords.slice(0, 3).join(", ")}${rule.keywords.length > 3 ? "…" : ""}`;
   }
@@ -98,9 +104,20 @@ export function RulesTab() {
                   <TableRow key={rule.id}>
                     <TableCell className="font-medium">{rule.name}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{summarizeTargets(rule, t)}</TableCell>
-                    <TableCell className="text-xs font-mono max-w-[200px] truncate">{summarizeMatch(rule)}</TableCell>
+                    <TableCell className="text-xs font-mono max-w-[200px] truncate">{summarizeMatch(rule, t)}</TableCell>
                     <TableCell>
-                      <Badge variant={rule.action === "user" ? "destructive" : rule.action === "site" ? "default" : "secondary"}>
+                      <Badge
+                        variant={
+                          rule.action === "user"
+                            ? "destructive"
+                            : rule.action === "site"
+                              ? "default"
+                              : rule.action === "delete_dns"
+                                ? "outline"
+                                : "secondary"
+                        }
+                        className={rule.action === "delete_dns" ? "border-amber-500 text-amber-700 dark:text-amber-400" : undefined}
+                      >
                         {t(`audit.actions.${rule.action}`)}
                       </Badge>
                     </TableCell>

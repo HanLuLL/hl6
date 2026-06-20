@@ -77,13 +77,17 @@ export interface AuditRule {
   scenario_id?: string;
   description?: string;
   targets: ("body" | "title" | "final_url" | "status_code")[];
-  match_type: "keyword" | "regex" | "status_eq";
+  match_type: "keyword" | "regex" | "status_eq" | "unreachable";
   keywords: string[];
   keyword_logic: "any" | "all";
   pattern: string;
   case_sensitive: boolean;
-  action: "observe" | "site" | "user";
+  action: "observe" | "delete_dns" | "site" | "user";
   scope_domain_ids: number[];
+  ban_notify_content?: string;
+  exempt_enabled?: boolean;
+  exempt_recheck_minutes?: number;
+  exempt_notify_content?: string;
   created_by: number;
   updated_by: number;
   created_at: string;
@@ -96,7 +100,7 @@ export interface AuditRule {
 export interface MatchedRuleHit {
   rule_id: number;
   rule_name: string;
-  action: "observe" | "site" | "user";
+  action: "observe" | "delete_dns" | "site" | "user";
   snippet: string;
 }
 
@@ -112,6 +116,10 @@ export interface SubdomainScan {
   matched_rule_id?: number | null;
   matched_snippet: string;
   content_hash: string;
+  fetch_details?: {
+    https: AuditFetchChannelDetail;
+    http: AuditFetchChannelDetail;
+  };
   created_at: string;
   updated_at: string;
 }
@@ -195,16 +203,28 @@ export interface AuditScenario {
   keyword_logic?: string;
 }
 
+export interface AuditFetchChannelDetail {
+  scheme: string;
+  request_url: string;
+  status: string;
+  http_status_code: number;
+  final_url: string;
+  error_message?: string;
+  title_preview?: string;
+}
+
 export interface AuditRuleTestResult {
   fetch: {
-    status: string;
-    http_status_code: number;
-    final_url: string;
-    title_preview: string;
+    https: AuditFetchChannelDetail;
+    http: AuditFetchChannelDetail;
   };
   matched_rules: MatchedRuleHit[];
   primary_action: string;
   would_suspend: boolean;
+  would_delete_dns: boolean;
+  would_exempt?: boolean;
+  would_send_ban_notify?: boolean;
+  would_send_exempt_notify?: boolean;
 }
 
 export interface CreditBalance {

@@ -717,6 +717,8 @@
     "invalidAuditRuleMatchType": "无效的匹配类型",
     "invalidAuditRulePattern": "无效的规则内容",
     "invalidAuditRuleCombination": "匹配目标与匹配类型组合无效",
+    "invalidAuditRuleExemptRecheck": "豁免重检时间须在 5 分钟至 7 天之间",
+    "invalidAuditRuleNotifyContent": "通知内容过长（最多 1024 字符）",
     "dnsBulkJobQueuedBan": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试封禁",
     "dnsBulkJobQueuedDelete": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试删除",
     "dnsBulkJobQueuedRelease": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试释放",
@@ -878,7 +880,9 @@
     "matchType": {
       "keyword": "关键词",
       "regex": "正则",
-      "status_eq": "状态码等于"
+      "status_eq": "状态码等于",
+      "unreachable": "网站无法访问",
+      "unreachableHint": "HTTPS 与 HTTP 均不可访问时命中，无需配置匹配目标。单通道视为不可访问的情况：① 连接失败或超时（如 DNS 解析失败、连接被拒、TLS 握手失败）；② 已成功建立连接但读取响应体失败等抓取过程异常（指向内网 IP 的安全拦截除外）；③ 返回 HTTP 403、500、502、503、504（404 不计）。"
     },
     "keywordLogic": {
       "any": "命中任一关键词",
@@ -886,6 +890,7 @@
     },
     "actions": {
       "observe": "仅记录",
+      "delete_dns": "删除解析",
       "site": "封禁站点",
       "user": "封禁用户",
       "detail": "详情",
@@ -933,32 +938,40 @@
         "hits7d": "7日命中",
         "lastHit": "最近命中",
         "enabled": "启用"
+      },
+      "banNotify": {
+        "title": "封禁通知",
+        "hint": "留空则不通知用户。封禁/删除解析成功后自动发送。",
+        "placeholder": "例如：您的子域 {{fqdn}} 因违反 {{rule_name}} 已被封禁。",
+        "vars": "可用变量：{{fqdn}}、{{rule_name}}、{{matched_snippet}}、{{action}}"
+      },
+      "exempt": {
+        "title": "豁免",
+        "hint": "命中后暂不封禁，到期后自动重扫；重扫仍命中则正常处置。",
+        "recheckMinutes": "再次检查时间（分钟）",
+        "recheckRange": "范围：{{min}}–{{max}} 分钟",
+        "notifyTitle": "豁免通知",
+        "notifyHint": "留空则不通知用户。",
+        "notifyPlaceholder": "例如：子域 {{fqdn}} 暂时无法访问，请于 {{recheck_at}} 前处理。",
+        "vars": "可用变量：{{fqdn}}、{{rule_name}}、{{matched_snippet}}、{{action}}、{{recheck_minutes}}、{{recheck_at}}"
       }
     },
     "scenarios": {
-      "gambling": {
-        "name": "赌博博彩",
-        "desc": "检测博彩、赌场相关关键词"
+      "keyword": {
+        "name": "关键词匹配",
+        "desc": "在页面标题或正文中匹配任一关键词"
       },
-      "adult": {
-        "name": "色情内容",
-        "desc": "检测成人内容相关特征"
+      "regex": {
+        "name": "正则匹配",
+        "desc": "用正则表达式匹配页面标题或正文"
       },
-      "phishing": {
-        "name": "钓鱼诈骗",
-        "desc": "检测钓鱼页面常见文案"
+      "status_eq": {
+        "name": "HTTP 状态码",
+        "desc": "当响应状态码等于指定值时命中"
       },
-      "malicious_redirect": {
-        "name": "恶意跳转",
-        "desc": "检测异常外链跳转"
-      },
-      "placeholder": {
-        "name": "空壳占位页",
-        "desc": "检测默认页、建设中页面"
-      },
-      "http_error": {
-        "name": "HTTP 异常",
-        "desc": "检测特定 HTTP 错误状态"
+      "unreachable": {
+        "name": "站点不可达",
+        "desc": "HTTPS 与 HTTP 均不可访问时命中"
       }
     },
     "ruleTest": {
@@ -968,7 +981,11 @@
       "running": "抓取中…",
       "noMatch": "未命中任何规则",
       "wouldSuspend": "将触发封禁处置",
-      "wouldNotSuspend": "不会触发封禁（observe 或 clean）"
+      "wouldDeleteDns": "将触发删除解析",
+      "wouldNotSuspend": "不会触发封禁或删除解析",
+      "wouldExempt": "将触发豁免（暂不封禁，到期后重扫）",
+      "wouldSendBanNotify": "将发送封禁通知",
+      "wouldSendExemptNotify": "将发送豁免通知"
     },
     "detail": {
       "title": "子域名详情",
@@ -990,6 +1007,10 @@
   "notification": {
     "subdomainSuspended": {
       "intro": "您的子域名 {{fqdn}} 因内容违规已被封禁。",
+      "rule": "命中规则：{{rule}}"
+    },
+    "subdomainDNSDeleted": {
+      "intro": "您的子域名 {{fqdn}} 因 {{rule}} 相关解析已被删除。",
       "rule": "命中规则：{{rule}}"
     },
     "subdomainReleasedByAdmin": {

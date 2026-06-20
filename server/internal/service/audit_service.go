@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -61,23 +61,26 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 		return
 	}
 
-	fetchResult := s.fetcher.Fetch(ctx, fqdn)
+	dual := s.fetcher.FetchDual(ctx, fqdn)
+	primaryCh := dual.PrimaryChannel()
+	combinedHash := audit.CombinedContentHash(dual)
 
 	scan := &model.SubdomainScan{
 		SubdomainID:    target.ID,
 		FQDN:           fqdn,
-		URL:            "https://" + fqdn,
-		HTTPStatusCode: fetchResult.StatusCode,
-		FinalURL:       fetchResult.FinalURL,
-		ContentHash:    fetchResult.ContentHash,
+		URL:            primaryCh.RequestURL,
+		HTTPStatusCode: primaryCh.StatusCode,
+		FinalURL:       primaryCh.FinalURL,
+		ContentHash:    combinedHash,
+		FetchDetails:   buildFetchDetails(dual),
 		MatchedRules:   model.MatchedRulesSlice{},
 	}
-	scan.Status = s.scanStatusFromFetch(fetchResult)
+	scan.Status = s.scanStatusFromDual(dual)
 
 	skipRuleMatch := false
-	if fetchResult.Status == audit.FetchStatusClean && fetchResult.ContentHash != "" {
+	if combinedHash != "" {
 		prevHash, prevAt, hashErr := s.repo.FindLatestCleanScanHash(target.ID)
-		if hashErr == nil && prevHash == fetchResult.ContentHash {
+		if hashErr == nil && prevHash == combinedHash {
 			updated, ruleErr := s.repo.HasEnabledAuditRuleUpdatedSince(prevAt)
 			if ruleErr == nil && !updated {
 				skipRuleMatch = true
@@ -85,8 +88,8 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 		}
 	}
 
-	if fetchResult.Status == audit.FetchStatusClean && !skipRuleMatch {
-		matches, matchErr := s.engine.MatchAll(ctx, sub.DomainID, fetchResult)
+	if !skipRuleMatch && !audit.HasPrivateIPError(dual) {
+		matches, matchErr := s.engine.MatchAll(ctx, sub.DomainID, dual)
 		if matchErr != nil {
 			slog.Warn("audit scan: rule matching error", "fqdn", fqdn, "err", matchErr)
 		}
@@ -103,11 +106,17 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 					return
 				}
 
+				if s.tryHandleViolationExemption(ctx, sub, primary.Rule, primary.Snippet) {
+					return
+				}
+
 				switch primary.Rule.Action {
 				case model.AuditActionUser:
 					s.suspendUserSubdomains(ctx, sub.UserID, primary.Rule, primary.Snippet)
 				case model.AuditActionSite:
 					s.suspendSubdomain(ctx, sub, primary.Rule, primary.Snippet)
+				case model.AuditActionDeleteDNS:
+					s.deleteScannableRecords(ctx, sub, primary.Rule, primary.Snippet)
 				case model.AuditActionObserve:
 					_ = s.auditLog.RecordUser(sub.UserID, "audit_observe_violation", "subdomain", sub.ID, map[string]interface{}{
 						"fqdn":            sub.FQDN,
@@ -133,6 +142,43 @@ func hasScannableActiveDNS(sub *model.Subdomain) bool {
 		}
 	}
 	return false
+}
+
+func (s *AuditService) deleteScannableRecords(ctx context.Context, sub *model.Subdomain, rule *model.AuditRule, snippet string) bool {
+	var records []model.DNSRecord
+	for _, rec := range sub.DNSRecords {
+		if rec.Status == model.DNSRecordStatusActive && auditScannableRecordTypes[rec.Type] {
+			records = append(records, rec)
+		}
+	}
+	if len(records) == 0 {
+		return true
+	}
+
+	slog.Warn("audit: deleting scannable DNS records", "fqdn", sub.FQDN, "rule", rule.Name, "count", len(records))
+
+	for i := range records {
+		rec := records[i]
+		if err := s.ops.DeleteRecordAtomic(ctx, DeleteRecordInput{
+			Subdomain: sub,
+			Record:    &rec,
+		}); err != nil {
+			slog.Error("audit: delete scannable record failed, aborting",
+				"fqdn", sub.FQDN, "record_type", rec.Type, "record_name", rec.Name, "err", err,
+			)
+			return false
+		}
+	}
+
+	_ = s.auditLog.RecordUser(sub.UserID, "audit_delete_dns", "subdomain", sub.ID, map[string]interface{}{
+		"fqdn":            sub.FQDN,
+		"rule":            rule.Name,
+		"rule_id":         rule.ID,
+		"matched_snippet": helpers.TruncateRunes(snippet, 100),
+		"deleted_count":   len(records),
+	})
+	s.notifyBanIfConfigured(sub.UserID, sub.FQDN, rule, snippet)
+	return true
 }
 
 func (s *AuditService) suspendSubdomain(ctx context.Context, sub *model.Subdomain, rule *model.AuditRule, snippet string) bool {
@@ -193,7 +239,36 @@ func (s *AuditService) suspendSubdomain(ctx context.Context, sub *model.Subdomai
 		return false
 	}
 
-	s.notifySuspension(sub.UserID, sub.FQDN, rule.Name)
+	s.notifyBanIfConfigured(sub.UserID, sub.FQDN, rule, snippet)
+	return true
+}
+
+func (s *AuditService) tryHandleViolationExemption(ctx context.Context, sub *model.Subdomain, rule *model.AuditRule, snippet string) bool {
+	if !rule.ExemptEnabled {
+		return false
+	}
+	_ = ctx
+
+	pending, err := s.repo.FindActiveExemptionPending(sub.ID, rule.ID)
+	if err != nil {
+		slog.Error("audit: find exemption pending failed", "fqdn", sub.FQDN, "rule_id", rule.ID, "err", err)
+		return false
+	}
+	if pending != nil {
+		slog.Info("audit: exemption pending, skipping enforcement", "fqdn", sub.FQDN, "rule", rule.Name)
+		return true
+	}
+
+	recheckAt := time.Now().Add(time.Duration(rule.ExemptRecheckMinutes) * time.Minute)
+	if err := s.repo.CreateExemptionPending(sub.ID, rule.ID, recheckAt); err != nil {
+		slog.Error("audit: create exemption pending failed", "fqdn", sub.FQDN, "rule_id", rule.ID, "err", err)
+		return false
+	}
+	slog.Info("audit: exemption created", "fqdn", sub.FQDN, "rule", rule.Name, "recheck_at", recheckAt)
+
+	if content := strings.TrimSpace(rule.ExemptNotifyContent); content != "" {
+		s.sendAuditCustomNotification(sub.UserID, sub.FQDN, rule, snippet, content, recheckAt)
+	}
 	return true
 }
 
@@ -323,35 +398,78 @@ func (s *AuditService) RestoreSubdomain(ctx context.Context, sub *model.Subdomai
 	return nil
 }
 
-func (s *AuditService) scanStatusFromFetch(fr audit.FetchResult) string {
-	switch fr.Status {
-	case audit.FetchStatusClean:
-		return model.ScanStatusClean
-	case audit.FetchStatusUnreachable:
-		return model.ScanStatusUnreachable
-	default:
+func (s *AuditService) scanStatusFromDual(dual audit.DualFetchResult) string {
+	if audit.HasPrivateIPError(dual) {
 		return model.ScanStatusError
+	}
+	if audit.IsSiteUnreachable(dual) {
+		return model.ScanStatusUnreachable
+	}
+	return model.ScanStatusClean
+}
+
+func buildFetchDetails(dual audit.DualFetchResult) *model.DualFetchDetailsJSON {
+	details := model.DualFetchDetails{
+		HTTPS: channelDetail(dual.HTTPS),
+		HTTP:  channelDetail(dual.HTTP),
+	}
+	out := model.DualFetchDetailsJSON(details)
+	return &out
+}
+
+func channelDetail(ch audit.ChannelResult) model.FetchChannelDetail {
+	title := ch.Title
+	if len(title) > 120 {
+		title = title[:120]
+	}
+	return model.FetchChannelDetail{
+		Scheme:         ch.Scheme,
+		RequestURL:     ch.RequestURL,
+		Status:         ch.Status,
+		HTTPStatusCode: ch.StatusCode,
+		FinalURL:       ch.FinalURL,
+		ErrorMessage:   ch.ErrorMessage,
+		TitlePreview:   title,
 	}
 }
 
-func (s *AuditService) notifySuspension(userID uint, fqdn, ruleName string) {
-	args, _ := json.Marshal(map[string]any{"fqdn": fqdn, "rule": ruleName})
+func (s *AuditService) notifyBanIfConfigured(userID uint, fqdn string, rule *model.AuditRule, snippet string) {
+	content := strings.TrimSpace(rule.BanNotifyContent)
+	if content == "" {
+		return
+	}
+	s.sendAuditCustomNotification(userID, fqdn, rule, snippet, content, time.Time{})
+}
+
+func (s *AuditService) sendAuditCustomNotification(userID uint, fqdn string, rule *model.AuditRule, snippet, tmpl string, recheckAt time.Time) {
+	rendered := audit.RenderNotifyTemplate(tmpl, audit.NotifyTemplateVars{
+		FQDN:           fqdn,
+		RuleName:       rule.Name,
+		MatchedSnippet: helpers.TruncateRunes(snippet, 200),
+		Action:         rule.Action,
+		RecheckMinutes: rule.ExemptRecheckMinutes,
+		RecheckAt:      recheckAt,
+	})
+	if !audit.ValidateNotifyTemplateContent(rendered) {
+		slog.Warn("audit: notification content too long after render", "fqdn", fqdn, "rule", rule.Name)
+		return
+	}
 	_, err := s.notif.NotifyUsers(
 		[]uint{userID},
 		0,
 		"urgent",
 		fqdn,
-		" ",
-		"notification.subdomainSuspended",
-		args,
+		rendered,
+		"",
+		nil,
 	)
 	if err != nil {
-		slog.Error("audit: notification failed", "fqdn", fqdn, "err", err)
+		slog.Error("audit: custom notification failed", "fqdn", fqdn, "err", err)
 	}
 }
 
-func (s *AuditService) TestRuleMatch(ctx context.Context, fqdn string, domainID uint, rules []model.AuditRule) (audit.FetchResult, []MatchedRule, *MatchedRule) {
-	fr := s.fetcher.Fetch(ctx, fqdn)
-	matches := s.engine.MatchAllWithRules(domainID, fr, rules)
-	return fr, matches, PickPrimaryMatch(matches)
+func (s *AuditService) TestRuleMatch(ctx context.Context, fqdn string, domainID uint, rules []model.AuditRule) (audit.DualFetchResult, []MatchedRule, *MatchedRule) {
+	dual := s.fetcher.FetchDual(ctx, fqdn)
+	matches := s.engine.MatchAllDualWithRules(domainID, dual, rules)
+	return dual, matches, PickPrimaryMatch(matches)
 }

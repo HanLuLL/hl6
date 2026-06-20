@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -340,4 +341,73 @@ func (r *Repository) ListSubdomainsByIDs(ids []uint) ([]model.Subdomain, error) 
 	var subs []model.Subdomain
 	err := r.DB.Where("id IN ?", ids).Find(&subs).Error
 	return subs, err
+}
+
+// --- Audit exemption pending ---
+
+func (r *Repository) FindActiveExemptionPending(subdomainID, ruleID uint) (*model.AuditExemptionPending, error) {
+	var item model.AuditExemptionPending
+	err := r.DB.Where(
+		"subdomain_id = ? AND rule_id = ? AND status = ? AND recheck_at > ?",
+		subdomainID, ruleID, model.AuditExemptionStatusPending, time.Now(),
+	).First(&item).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+func (r *Repository) CreateExemptionPending(subdomainID, ruleID uint, recheckAt time.Time) error {
+	existing, err := r.FindActiveExemptionPending(subdomainID, ruleID)
+	if err != nil {
+		return err
+	}
+	if existing != nil {
+		return nil
+	}
+	return r.DB.Create(&model.AuditExemptionPending{
+		SubdomainID: subdomainID,
+		RuleID:      ruleID,
+		RecheckAt:   recheckAt,
+		Status:      model.AuditExemptionStatusPending,
+	}).Error
+}
+
+func (r *Repository) ClaimDueExemptions(limit int) ([]model.AuditExemptionPending, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	var claimed []model.AuditExemptionPending
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		var due []model.AuditExemptionPending
+		if err := tx.Where("status = ? AND recheck_at <= ?", model.AuditExemptionStatusPending, time.Now()).
+			Order("recheck_at ASC").
+			Limit(limit).
+			Find(&due).Error; err != nil {
+			return err
+		}
+		for _, item := range due {
+			res := tx.Model(&model.AuditExemptionPending{}).
+				Where("id = ? AND status = ?", item.ID, model.AuditExemptionStatusPending).
+				Update("status", model.AuditExemptionStatusCompleted)
+			if res.Error != nil {
+				return res.Error
+			}
+			if res.RowsAffected == 0 {
+				continue
+			}
+			claimed = append(claimed, item)
+		}
+		return nil
+	})
+	return claimed, err
+}
+
+func (r *Repository) FindSubdomainFQDNByID(id uint) (string, error) {
+	var fqdn string
+	err := r.DB.Model(&model.Subdomain{}).Where("id = ?", id).Pluck("fqdn", &fqdn).Error
+	return fqdn, err
 }

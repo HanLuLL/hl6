@@ -122,9 +122,13 @@ type AuditRule struct {
 	KeywordLogic   string      `json:"keyword_logic" gorm:"type:varchar(8);not null;default:any"`
 	Pattern        string      `json:"pattern" gorm:"type:text"`
 	CaseSensitive  bool        `json:"case_sensitive" gorm:"default:false"`
-	Action         string      `json:"action" gorm:"type:varchar(8);not null;default:site"`
-	ScopeDomainIDs UintSlice   `json:"scope_domain_ids" gorm:"type:jsonb;not null;default:'[]'"`
-	CreatedBy      uint        `json:"created_by" gorm:"not null"`
+	Action               string `json:"action" gorm:"type:varchar(16);not null;default:site"`
+	ScopeDomainIDs       UintSlice `json:"scope_domain_ids" gorm:"type:jsonb;not null;default:'[]'"`
+	BanNotifyContent     string `json:"ban_notify_content" gorm:"type:text;not null;default:''"`
+	ExemptEnabled        bool   `json:"exempt_enabled" gorm:"not null;default:false"`
+	ExemptRecheckMinutes int    `json:"exempt_recheck_minutes" gorm:"not null;default:0"`
+	ExemptNotifyContent  string `json:"exempt_notify_content" gorm:"type:text;not null;default:''"`
+	CreatedBy            uint   `json:"created_by" gorm:"not null"`
 	UpdatedBy      uint        `json:"updated_by"`
 	CreatedAt      time.Time   `json:"created_at"`
 	UpdatedAt      time.Time   `json:"updated_at"`
@@ -142,14 +146,16 @@ const (
 const (
 	AuditMatchKeyword  = "keyword"
 	AuditMatchRegex    = "regex"
-	AuditMatchStatusEq = "status_eq"
+	AuditMatchStatusEq    = "status_eq"
+	AuditMatchUnreachable = "unreachable"
 )
 
 // AuditRule 处置档位常量
 const (
-	AuditActionObserve = "observe"
-	AuditActionSite    = "site"
-	AuditActionUser    = "user"
+	AuditActionObserve   = "observe"
+	AuditActionDeleteDNS = "delete_dns"
+	AuditActionSite      = "site"
+	AuditActionUser      = "user"
 )
 
 // AuditRule 关键词逻辑常量
@@ -160,6 +166,22 @@ const (
 
 // AuditActionAuditRestoreSubdomain 管理员恢复被封禁子域名的审计动作。
 const AuditActionAuditRestoreSubdomain = "audit_restore_subdomain"
+
+// AuditExemptionPending 子域+规则维度的豁免等待记录。
+type AuditExemptionPending struct {
+	ID          uint      `json:"id" gorm:"primaryKey"`
+	SubdomainID uint      `json:"subdomain_id" gorm:"index:idx_audit_exempt_sub_rule,priority:1;not null"`
+	RuleID      uint      `json:"rule_id" gorm:"index:idx_audit_exempt_sub_rule,priority:2;not null"`
+	RecheckAt   time.Time `json:"recheck_at" gorm:"index;not null"`
+	Status      string    `json:"status" gorm:"type:varchar(16);not null;default:pending;index"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+const (
+	AuditExemptionStatusPending   = "pending"
+	AuditExemptionStatusCompleted = "completed"
+)
 
 // AuditScanTarget 待巡检的子域名（调度/worker 传递用）。
 type AuditScanTarget struct {
@@ -178,9 +200,10 @@ type SubdomainScan struct {
 	FinalURL       string            `json:"final_url"`
 	MatchedRules   MatchedRulesSlice `json:"matched_rules" gorm:"type:jsonb;not null;default:'[]'"`
 	MatchedRuleID  *uint             `json:"matched_rule_id"`
-	MatchedSnippet string            `json:"matched_snippet" gorm:"type:text"`
-	ContentHash    string            `json:"content_hash"`
-	CreatedAt      time.Time         `json:"created_at"`
+	MatchedSnippet string                `json:"matched_snippet" gorm:"type:text"`
+	ContentHash    string                `json:"content_hash"`
+	FetchDetails   *DualFetchDetailsJSON `json:"fetch_details,omitempty" gorm:"type:jsonb"`
+	CreatedAt      time.Time             `json:"created_at"`
 	UpdatedAt      time.Time         `json:"updated_at"`
 }
 

@@ -16,6 +16,7 @@ import (
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
 	"hl6-server/internal/service"
+	"hl6-server/pkg/audit"
 	"hl6-server/pkg/response"
 )
 
@@ -97,8 +98,12 @@ type auditRuleBody struct {
 	KeywordLogic   string   `json:"keyword_logic"`
 	Pattern        string   `json:"pattern"`
 	CaseSensitive  bool     `json:"case_sensitive"`
-	Action         string   `json:"action"`
-	ScopeDomainIDs []uint   `json:"scope_domain_ids"`
+	Action               string `json:"action"`
+	ScopeDomainIDs       []uint `json:"scope_domain_ids"`
+	BanNotifyContent     string `json:"ban_notify_content"`
+	ExemptEnabled        bool   `json:"exempt_enabled"`
+	ExemptRecheckMinutes int    `json:"exempt_recheck_minutes"`
+	ExemptNotifyContent  string `json:"exempt_notify_content"`
 }
 
 func (b auditRuleBody) toModel() *model.AuditRule {
@@ -112,8 +117,12 @@ func (b auditRuleBody) toModel() *model.AuditRule {
 		KeywordLogic:   b.KeywordLogic,
 		Pattern:        strings.TrimSpace(b.Pattern),
 		CaseSensitive:  b.CaseSensitive,
-		Action:         b.Action,
-		ScopeDomainIDs: model.UintSlice(b.ScopeDomainIDs),
+		Action:               b.Action,
+		ScopeDomainIDs:       model.UintSlice(b.ScopeDomainIDs),
+		BanNotifyContent:     strings.TrimSpace(b.BanNotifyContent),
+		ExemptEnabled:        b.ExemptEnabled,
+		ExemptRecheckMinutes: b.ExemptRecheckMinutes,
+		ExemptNotifyContent:  strings.TrimSpace(b.ExemptNotifyContent),
 	}
 }
 
@@ -154,6 +163,10 @@ func (h *AuditHandler) applyRuleBody(rule *model.AuditRule, body auditRuleBody, 
 	if body.ScopeDomainIDs != nil || !partial {
 		rule.ScopeDomainIDs = model.UintSlice(body.ScopeDomainIDs)
 	}
+	rule.BanNotifyContent = strings.TrimSpace(body.BanNotifyContent)
+	rule.ExemptEnabled = body.ExemptEnabled
+	rule.ExemptRecheckMinutes = body.ExemptRecheckMinutes
+	rule.ExemptNotifyContent = strings.TrimSpace(body.ExemptNotifyContent)
 }
 
 // --- Workbench ---
@@ -547,29 +560,56 @@ func (h *AuditHandler) TestRule(c *gin.Context) {
 		}
 	}
 
-	fr, matches, primary := h.auditSvc.TestRuleMatch(c.Request.Context(), fqdn, domainID, rules)
+	dual, matches, primary := h.auditSvc.TestRuleMatch(c.Request.Context(), fqdn, domainID, rules)
 	primaryAction := ""
 	wouldSuspend := false
+	wouldDeleteDNS := false
+	wouldExempt := false
+	wouldSendBanNotify := false
+	wouldSendExemptNotify := false
 	if primary != nil {
 		primaryAction = primary.Rule.Action
-		wouldSuspend = primaryAction == model.AuditActionSite || primaryAction == model.AuditActionUser
+		if primary.Rule.ExemptEnabled {
+			wouldExempt = true
+			if strings.TrimSpace(primary.Rule.ExemptNotifyContent) != "" {
+				wouldSendExemptNotify = true
+			}
+		} else {
+			wouldSuspend = primaryAction == model.AuditActionSite || primaryAction == model.AuditActionUser
+			wouldDeleteDNS = primaryAction == model.AuditActionDeleteDNS
+			if strings.TrimSpace(primary.Rule.BanNotifyContent) != "" &&
+				(wouldSuspend || wouldDeleteDNS) {
+				wouldSendBanNotify = true
+			}
+		}
 	}
 
-	titlePreview := fr.Title
-	if len(titlePreview) > 120 {
-		titlePreview = titlePreview[:120]
+	channelPayload := func(ch audit.ChannelResult) gin.H {
+		title := ch.Title
+		if len(title) > 120 {
+			title = title[:120]
+		}
+		return gin.H{
+			"status":           ch.Status,
+			"http_status_code": ch.StatusCode,
+			"final_url":        ch.FinalURL,
+			"title_preview":    title,
+			"error_message":    ch.ErrorMessage,
+		}
 	}
 
 	response.OK(c, gin.H{
 		"fetch": gin.H{
-			"status":           fr.Status,
-			"http_status_code": fr.StatusCode,
-			"final_url":        fr.FinalURL,
-			"title_preview":    titlePreview,
+			"https": channelPayload(dual.HTTPS),
+			"http":  channelPayload(dual.HTTP),
 		},
-		"matched_rules":  service.ToMatchedRuleHits(matches),
-		"primary_action": primaryAction,
-		"would_suspend":  wouldSuspend,
+		"matched_rules":    service.ToMatchedRuleHits(matches),
+		"primary_action":        primaryAction,
+		"would_suspend":         wouldSuspend,
+		"would_delete_dns":      wouldDeleteDNS,
+		"would_exempt":          wouldExempt,
+		"would_send_ban_notify": wouldSendBanNotify,
+		"would_send_exempt_notify": wouldSendExemptNotify,
 	})
 }
 

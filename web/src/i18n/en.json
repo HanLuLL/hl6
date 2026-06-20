@@ -717,6 +717,8 @@
     "invalidAuditRuleMatchType": "Invalid audit rule match type",
     "invalidAuditRulePattern": "Invalid audit rule pattern",
     "invalidAuditRuleCombination": "Invalid target and match type combination",
+    "invalidAuditRuleExemptRecheck": "Exemption recheck must be between 5 minutes and 7 days",
+    "invalidAuditRuleNotifyContent": "Notification content is too long (max 1024 characters)",
     "dnsBulkJobQueuedBan": "DNS bulk job queued (Job #{{jobID}}). Please retry the ban after it completes.",
     "dnsBulkJobQueuedDelete": "DNS bulk job queued (Job #{{jobID}}). Please retry the delete after it completes.",
     "dnsBulkJobQueuedRelease": "DNS bulk job queued (Job #{{jobID}}). Please retry the release after it completes.",
@@ -878,7 +880,9 @@
     "matchType": {
       "keyword": "Keyword",
       "regex": "Regex",
-      "status_eq": "Status equals"
+      "status_eq": "Status equals",
+      "unreachable": "Site unreachable",
+      "unreachableHint": "Matches when both HTTPS and HTTP are inaccessible; no match targets required. A channel is inaccessible if: (1) the connection fails or times out (e.g. DNS failure, connection refused, TLS handshake failure); (2) the connection succeeded but fetching fails, such as while reading the response body (private-IP SSRF blocks are excluded); (3) the HTTP status is 403, 500, 502, 503, or 504 (404 does not count)."
     },
     "keywordLogic": {
       "any": "Match any keyword",
@@ -886,6 +890,7 @@
     },
     "actions": {
       "observe": "Observe only",
+      "delete_dns": "Delete DNS records",
       "site": "Suspend site",
       "user": "Suspend user",
       "detail": "Details",
@@ -933,32 +938,40 @@
         "hits7d": "7d hits",
         "lastHit": "Last hit",
         "enabled": "Enabled"
+      },
+      "banNotify": {
+        "title": "Ban notification",
+        "hint": "Leave empty to skip notification. Sent after ban or DNS deletion succeeds.",
+        "placeholder": "e.g. Your subdomain {{fqdn}} was suspended for violating {{rule_name}}.",
+        "vars": "Variables: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}"
+      },
+      "exempt": {
+        "title": "Exemption",
+        "hint": "Skip enforcement on first hit; auto rescan after delay. Normal action applies if still matched.",
+        "recheckMinutes": "Recheck after (minutes)",
+        "recheckRange": "Range: {{min}}–{{max}} minutes",
+        "notifyTitle": "Exemption notification",
+        "notifyHint": "Leave empty to skip notification.",
+        "notifyPlaceholder": "e.g. {{fqdn}} is temporarily unreachable. Please fix before {{recheck_at}}.",
+        "vars": "Variables: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}, {{recheck_minutes}}, {{recheck_at}}"
       }
     },
     "scenarios": {
-      "gambling": {
-        "name": "Gambling",
-        "desc": "Casino and betting keywords"
+      "keyword": {
+        "name": "Keyword match",
+        "desc": "Match any keyword in page title or body"
       },
-      "adult": {
-        "name": "Adult content",
-        "desc": "Adult content patterns"
+      "regex": {
+        "name": "Regex match",
+        "desc": "Match page title or body with a regular expression"
       },
-      "phishing": {
-        "name": "Phishing",
-        "desc": "Phishing page signals"
+      "status_eq": {
+        "name": "HTTP status code",
+        "desc": "Match when the response status code equals the configured value"
       },
-      "malicious_redirect": {
-        "name": "Malicious redirect",
-        "desc": "Suspicious redirects"
-      },
-      "placeholder": {
-        "name": "Placeholder page",
-        "desc": "Default or under-construction pages"
-      },
-      "http_error": {
-        "name": "HTTP error",
-        "desc": "Specific HTTP error codes"
+      "unreachable": {
+        "name": "Site unreachable",
+        "desc": "Matches when both HTTPS and HTTP are inaccessible"
       }
     },
     "ruleTest": {
@@ -968,7 +981,11 @@
       "running": "Fetching…",
       "noMatch": "No match",
       "wouldSuspend": "Would suspend",
-      "wouldNotSuspend": "Would not suspend"
+      "wouldDeleteDns": "Would delete DNS records",
+      "wouldNotSuspend": "Would not suspend or delete DNS",
+      "wouldExempt": "Would apply exemption (no enforcement until recheck)",
+      "wouldSendBanNotify": "Would send ban notification",
+      "wouldSendExemptNotify": "Would send exemption notification"
     },
     "detail": {
       "title": "Subdomain detail",
@@ -990,6 +1007,10 @@
   "notification": {
     "subdomainSuspended": {
       "intro": "Your subdomain {{fqdn}} has been suspended due to a content policy violation.",
+      "rule": "Matched rule: {{rule}}"
+    },
+    "subdomainDNSDeleted": {
+      "intro": "DNS records for {{fqdn}} were deleted due to rule {{rule}}.",
       "rule": "Matched rule: {{rule}}"
     },
     "subdomainReleasedByAdmin": {

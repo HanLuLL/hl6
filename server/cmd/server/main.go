@@ -170,6 +170,7 @@ func runSchemaMigrations(db *gorm.DB) error {
 			&model.Subdomain{},
 			&model.DNSRecord{},
 			&model.AuditRule{},
+			&model.AuditExemptionPending{},
 			&model.SubdomainScan{},
 			&model.DNSOperationRequest{},
 			&model.DNSOperationEvent{},
@@ -209,6 +210,9 @@ func runSchemaMigrations(db *gorm.DB) error {
 			return err
 		}
 		if err := ensureAuditIndexes(tx); err != nil {
+			return err
+		}
+		if err := ensureAuditSchema(tx); err != nil {
 			return err
 		}
 
@@ -251,6 +255,18 @@ func backfillAuditStatusFields(db *gorm.DB) error {
 	for _, stmt := range statements {
 		if err := db.Exec(stmt).Error; err != nil {
 			return fmt.Errorf("backfill audit status (%s): %w", stmt, err)
+		}
+	}
+	return nil
+}
+
+func ensureAuditSchema(db *gorm.DB) error {
+	statements := []string{
+		`ALTER TABLE audit_rules ALTER COLUMN action TYPE varchar(16)`,
+	}
+	for _, stmt := range statements {
+		if err := db.Exec(stmt).Error; err != nil {
+			return fmt.Errorf("ensure audit schema (%s): %w", stmt, err)
 		}
 	}
 	return nil

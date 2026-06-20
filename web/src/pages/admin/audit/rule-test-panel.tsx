@@ -6,7 +6,7 @@ import { useErrorToast } from "@/hooks/use-error-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import type { AuditRuleTestResult } from "@/types";
+import type { AuditFetchChannelDetail, AuditRuleTestResult } from "@/types";
 
 type DraftRule = {
   name: string;
@@ -21,7 +21,27 @@ type DraftRule = {
   case_sensitive: boolean;
   action: string;
   scope_domain_ids: number[];
+  ban_notify_content: string;
+  exempt_enabled: boolean;
+  exempt_recheck_minutes: number;
+  exempt_notify_content: string;
 };
+
+function ChannelSummary({ label, ch }: { label: string; ch: AuditFetchChannelDetail }) {
+  const statusLabel = ch.http_status_code > 0 ? `HTTP ${ch.http_status_code}` : ch.status;
+  return (
+    <div className="text-xs text-muted-foreground">
+      <span className="font-medium text-foreground">{label}</span>
+      {" · "}
+      {statusLabel}
+      {ch.final_url ? ` · ${ch.final_url}` : ""}
+      {ch.error_message ? ` · ${ch.error_message}` : ""}
+      {ch.title_preview && (
+        <p className="truncate mt-0.5">{ch.title_preview}</p>
+      )}
+    </div>
+  );
+}
 
 export function RuleTestPanel({ draft }: { draft: DraftRule }) {
   const { t } = useTranslation();
@@ -46,6 +66,10 @@ export function RuleTestPanel({ draft }: { draft: DraftRule }) {
           case_sensitive: draft.case_sensitive,
           action: draft.action,
           scope_domain_ids: draft.scope_domain_ids,
+          ban_notify_content: draft.ban_notify_content,
+          exempt_enabled: draft.exempt_enabled,
+          exempt_recheck_minutes: draft.exempt_recheck_minutes,
+          exempt_notify_content: draft.exempt_notify_content,
         },
       }),
     onSuccess: (res) => setResult(res.data),
@@ -73,12 +97,8 @@ export function RuleTestPanel({ draft }: { draft: DraftRule }) {
 
       {result && (
         <div className="text-sm space-y-2">
-          <div className="text-xs text-muted-foreground">
-            HTTP {result.fetch.http_status_code} · {result.fetch.final_url || "—"}
-          </div>
-          {result.fetch.title_preview && (
-            <p className="text-xs truncate">{result.fetch.title_preview}</p>
-          )}
+          <ChannelSummary label="HTTPS" ch={result.fetch.https} />
+          <ChannelSummary label="HTTP" ch={result.fetch.http} />
           {result.matched_rules.length === 0 ? (
             <p className="text-muted-foreground">{t("audit.ruleTest.noMatch")}</p>
           ) : (
@@ -92,10 +112,20 @@ export function RuleTestPanel({ draft }: { draft: DraftRule }) {
             </ul>
           )}
           <p className="text-xs">
-            {result.would_suspend
-              ? t("audit.ruleTest.wouldSuspend")
-              : t("audit.ruleTest.wouldNotSuspend")}
+            {result.would_exempt
+              ? t("audit.ruleTest.wouldExempt")
+              : result.would_delete_dns
+                ? t("audit.ruleTest.wouldDeleteDns")
+                : result.would_suspend
+                  ? t("audit.ruleTest.wouldSuspend")
+                  : t("audit.ruleTest.wouldNotSuspend")}
           </p>
+          {result.would_send_ban_notify && (
+            <p className="text-xs text-muted-foreground">{t("audit.ruleTest.wouldSendBanNotify")}</p>
+          )}
+          {result.would_send_exempt_notify && (
+            <p className="text-xs text-muted-foreground">{t("audit.ruleTest.wouldSendExemptNotify")}</p>
+          )}
         </div>
       )}
     </div>

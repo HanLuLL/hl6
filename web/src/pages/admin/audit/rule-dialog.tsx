@@ -16,12 +16,13 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import type { AuditRule, AuditScenario } from "@/types";
 import { RuleTestPanel } from "./rule-test-panel";
 import { X } from "lucide-react";
 
 const TARGETS = ["body", "title", "final_url", "status_code"] as const;
-const ACTIONS = ["observe", "site", "user"] as const;
+const ACTIONS = ["observe", "delete_dns", "site", "user"] as const;
 
 type DraftRule = {
   name: string;
@@ -36,7 +37,15 @@ type DraftRule = {
   case_sensitive: boolean;
   action: string;
   scope_domain_ids: number[];
+  ban_notify_content: string;
+  exempt_enabled: boolean;
+  exempt_recheck_minutes: number;
+  exempt_notify_content: string;
 };
+
+const NOTIFY_MAX = 1024;
+const EXEMPT_RECHECK_MIN = 5;
+const EXEMPT_RECHECK_MAX = 10080;
 
 const emptyDraft = (): DraftRule => ({
   name: "",
@@ -51,6 +60,10 @@ const emptyDraft = (): DraftRule => ({
   case_sensitive: false,
   action: "site",
   scope_domain_ids: [],
+  ban_notify_content: "",
+  exempt_enabled: false,
+  exempt_recheck_minutes: 60,
+  exempt_notify_content: "",
 });
 
 export function RuleDialog({
@@ -98,6 +111,10 @@ export function RuleDialog({
         case_sensitive: rule.case_sensitive,
         action: rule.action,
         scope_domain_ids: [...rule.scope_domain_ids],
+        ban_notify_content: rule.ban_notify_content ?? "",
+        exempt_enabled: rule.exempt_enabled ?? false,
+        exempt_recheck_minutes: rule.exempt_recheck_minutes ?? 60,
+        exempt_notify_content: rule.exempt_notify_content ?? "",
       });
     } else {
       setMode("scenario");
@@ -110,11 +127,12 @@ export function RuleDialog({
     setDraft((d) => ({
       ...d,
       scenario_id: scenario.id,
-      targets: [...scenario.targets],
+      targets: scenario.match_type === "unreachable" ? [] : [...scenario.targets],
       match_type: scenario.match_type,
       keywords: scenario.keywords ? [...scenario.keywords] : [],
       pattern: scenario.pattern ?? "",
       keyword_logic: scenario.keyword_logic ?? "any",
+      action: scenario.id === "unreachable" ? "delete_dns" : d.action,
     }));
   };
 
@@ -140,7 +158,11 @@ export function RuleDialog({
 
   const isPending = createMutation.isPending || updateMutation.isPending;
   const isEdit = !!rule;
+  const isUnreachable = draft.match_type === "unreachable";
   const hasStatusCode = draft.targets.includes("status_code");
+  const showBanNotify = draft.action !== "observe";
+  const banNotifyChars = draft.ban_notify_content.length;
+  const exemptNotifyChars = draft.exempt_notify_content.length;
 
   const toggleTarget = (target: string, checked: boolean) => {
     if (target === "status_code" && checked) {
@@ -208,6 +230,9 @@ export function RuleDialog({
 
           <div className="space-y-2">
             <Label>{t("audit.rules.fields.targets")}</Label>
+            {isUnreachable ? (
+              <p className="text-xs text-muted-foreground">{t("audit.matchType.unreachableHint")}</p>
+            ) : (
             <div className="flex flex-wrap gap-3">
               {TARGETS.map((tg) => (
                 <label key={tg} className="flex items-center gap-2 text-sm">
@@ -220,6 +245,7 @@ export function RuleDialog({
                 </label>
               ))}
             </div>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -228,13 +254,20 @@ export function RuleDialog({
               <Select
                 value={draft.match_type}
                 disabled={hasStatusCode}
-                onValueChange={(v) => setDraft((d) => ({ ...d, match_type: v }))}
+                onValueChange={(v) => {
+                  if (v === "unreachable") {
+                    setDraft((d) => ({ ...d, match_type: v, targets: [], keywords: [], pattern: "" }));
+                  } else {
+                    setDraft((d) => ({ ...d, match_type: v, targets: d.targets.length ? d.targets : ["body"] }));
+                  }
+                }}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="keyword">{t("audit.matchType.keyword")}</SelectItem>
                   <SelectItem value="regex">{t("audit.matchType.regex")}</SelectItem>
                   <SelectItem value="status_eq">{t("audit.matchType.status_eq")}</SelectItem>
+                  <SelectItem value="unreachable">{t("audit.matchType.unreachable")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -251,7 +284,7 @@ export function RuleDialog({
             </div>
           </div>
 
-          {draft.match_type === "keyword" && (
+          {draft.match_type === "keyword" && !isUnreachable && (
             <div className="space-y-2">
               <Label>{t("audit.rules.fields.keywords")}</Label>
               <div className="flex gap-2">
@@ -283,7 +316,7 @@ export function RuleDialog({
             </div>
           )}
 
-          {(draft.match_type === "regex" || draft.match_type === "status_eq") && (
+          {(draft.match_type === "regex" || draft.match_type === "status_eq") && !isUnreachable && (
             <div className="space-y-2">
               <Label>{draft.match_type === "status_eq" ? t("audit.rules.fields.statusCode") : t("audit.rules.fields.pattern")}</Label>
               <Input value={draft.pattern} onChange={(e) => setDraft((d) => ({ ...d, pattern: e.target.value }))} />
@@ -321,12 +354,85 @@ export function RuleDialog({
             <p className="text-xs text-muted-foreground">{t("audit.rules.scopeHint")}</p>
           </div>
 
+          {showBanNotify && (
+            <div className="space-y-2 rounded-md border p-4">
+              <Label>{t("audit.rules.banNotify.title")}</Label>
+              <p className="text-xs text-muted-foreground">{t("audit.rules.banNotify.hint")}</p>
+              <Textarea
+                value={draft.ban_notify_content}
+                rows={4}
+                maxLength={NOTIFY_MAX}
+                placeholder={t("audit.rules.banNotify.placeholder")}
+                onChange={(e) => setDraft((d) => ({ ...d, ban_notify_content: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("audit.rules.banNotify.vars")}
+              </p>
+              <p className="text-xs text-muted-foreground text-right">
+                {banNotifyChars}/{NOTIFY_MAX}
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-3 rounded-md border p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <Label>{t("audit.rules.exempt.title")}</Label>
+                <p className="text-xs text-muted-foreground mt-1">{t("audit.rules.exempt.hint")}</p>
+              </div>
+              <Switch
+                checked={draft.exempt_enabled}
+                onCheckedChange={(v) => setDraft((d) => ({ ...d, exempt_enabled: v }))}
+              />
+            </div>
+            {draft.exempt_enabled && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>{t("audit.rules.exempt.recheckMinutes")}</Label>
+                  <Input
+                    type="number"
+                    min={EXEMPT_RECHECK_MIN}
+                    max={EXEMPT_RECHECK_MAX}
+                    value={draft.exempt_recheck_minutes}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setDraft((d) => ({
+                        ...d,
+                        exempt_recheck_minutes: Number.isFinite(n) ? n : EXEMPT_RECHECK_MIN,
+                      }));
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("audit.rules.exempt.recheckRange", { min: EXEMPT_RECHECK_MIN, max: EXEMPT_RECHECK_MAX })}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("audit.rules.exempt.notifyTitle")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("audit.rules.exempt.notifyHint")}</p>
+                  <Textarea
+                    value={draft.exempt_notify_content}
+                    rows={4}
+                    maxLength={NOTIFY_MAX}
+                    placeholder={t("audit.rules.exempt.notifyPlaceholder")}
+                    onChange={(e) => setDraft((d) => ({ ...d, exempt_notify_content: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("audit.rules.exempt.vars")}
+                  </p>
+                  <p className="text-xs text-muted-foreground text-right">
+                    {exemptNotifyChars}/{NOTIFY_MAX}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
           <RuleTestPanel draft={draft} />
         </div>
 
         <DialogFooter className="gap-2 border-t px-6 py-4 sm:gap-2">
           <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>{t("common.cancel")}</Button>
-          <Button onClick={save} disabled={isPending || !draft.name.trim()}>
+          <Button onClick={save} disabled={isPending || !draft.name.trim() || (draft.exempt_enabled && (draft.exempt_recheck_minutes < EXEMPT_RECHECK_MIN || draft.exempt_recheck_minutes > EXEMPT_RECHECK_MAX))}>
             {isPending ? t("common.saving") : t("common.save")}
           </Button>
         </DialogFooter>

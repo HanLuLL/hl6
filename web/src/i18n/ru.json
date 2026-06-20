@@ -717,6 +717,8 @@
     "invalidAuditRuleMatchType": "Недопустимый тип сопоставления",
     "invalidAuditRulePattern": "Недопустимый шаблон правила",
     "invalidAuditRuleCombination": "Недопустимая комбинация цели и типа",
+    "invalidAuditRuleExemptRecheck": "Повторная проверка должна быть от 5 минут до 7 дней",
+    "invalidAuditRuleNotifyContent": "Слишком длинный текст уведомления (макс. 1024 символа)",
     "dnsBulkJobQueuedBan": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите блокировку после завершения.",
     "dnsBulkJobQueuedDelete": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите удаление после завершения.",
     "dnsBulkJobQueuedRelease": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите освобождение после завершения.",
@@ -878,7 +880,9 @@
     "matchType": {
       "keyword": "Keyword",
       "regex": "Regex",
-      "status_eq": "Status equals"
+      "status_eq": "Status equals",
+      "unreachable": "Сайт недоступен",
+      "unreachableHint": "Срабатывает, когда HTTPS и HTTP недоступны; цели сопоставления не требуются. Канал недоступен, если: (1) сбой соединения или таймаут (напр. ошибка DNS, отказ в соединении, сбой TLS handshake); (2) соединение установлено, но сбой при получении, например при чтении тела ответа (блокировки SSRF по приватному IP не учитываются); (3) HTTP-код 403, 500, 502, 503, 504 (404 не учитывается)."
     },
     "keywordLogic": {
       "any": "Match any keyword",
@@ -886,6 +890,7 @@
     },
     "actions": {
       "observe": "Observe only",
+      "delete_dns": "Удалить DNS-записи",
       "site": "Suspend site",
       "user": "Suspend user",
       "detail": "Details",
@@ -933,42 +938,54 @@
         "hits7d": "7d hits",
         "lastHit": "Last hit",
         "enabled": "Enabled"
+      },
+      "banNotify": {
+        "title": "Уведомление о блокировке",
+        "hint": "Оставьте пустым, чтобы не уведомлять. Отправляется после блокировки или удаления DNS.",
+        "placeholder": "напр. Поддомен {{fqdn}} заблокирован за нарушение {{rule_name}}.",
+        "vars": "Переменные: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}"
+      },
+      "exempt": {
+        "title": "Исключение",
+        "hint": "Без применения при первом срабатывании; авто-перескан. Обычное действие при повторном совпадении.",
+        "recheckMinutes": "Повторная проверка (минуты)",
+        "recheckRange": "Диапазон: {{min}}–{{max}} минут",
+        "notifyTitle": "Уведомление об исключении",
+        "notifyHint": "Оставьте пустым, чтобы не уведомлять.",
+        "notifyPlaceholder": "напр. {{fqdn}} временно недоступен. Исправьте до {{recheck_at}}.",
+        "vars": "Переменные: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}, {{recheck_minutes}}, {{recheck_at}}"
       }
     },
     "scenarios": {
-      "gambling": {
-        "name": "Gambling",
-        "desc": "Casino and betting keywords"
+      "keyword": {
+        "name": "Совпадение по ключевым словам",
+        "desc": "Совпадение любого ключевого слова в заголовке или теле страницы"
       },
-      "adult": {
-        "name": "Adult content",
-        "desc": "Adult content patterns"
+      "regex": {
+        "name": "Совпадение по регулярному выражению",
+        "desc": "Совпадение заголовка или тела страницы по регулярному выражению"
       },
-      "phishing": {
-        "name": "Phishing",
-        "desc": "Phishing page signals"
+      "status_eq": {
+        "name": "HTTP-код состояния",
+        "desc": "Совпадение, когда код ответа равен заданному значению"
       },
-      "malicious_redirect": {
-        "name": "Malicious redirect",
-        "desc": "Suspicious redirects"
-      },
-      "placeholder": {
-        "name": "Placeholder page",
-        "desc": "Default or under-construction pages"
-      },
-      "http_error": {
-        "name": "HTTP error",
-        "desc": "Specific HTTP error codes"
+      "unreachable": {
+        "name": "Сайт недоступен",
+        "desc": "Срабатывает, когда HTTPS и HTTP недоступны"
       }
     },
     "ruleTest": {
-      "title": "Test rule",
-      "fqdnPlaceholder": "FQDN to test",
-      "run": "Run",
-      "running": "Fetching…",
-      "noMatch": "No match",
-      "wouldSuspend": "Would suspend",
-      "wouldNotSuspend": "Would not suspend"
+      "title": "Проверить правило",
+      "fqdnPlaceholder": "FQDN для проверки",
+      "run": "Запуск",
+      "running": "Загрузка…",
+      "noMatch": "Нет совпадений",
+      "wouldSuspend": "Будет приостановка",
+      "wouldDeleteDns": "Будет удаление DNS-записей",
+      "wouldNotSuspend": "Не будет приостановки или удаления DNS",
+      "wouldExempt": "Будет применено исключение (без действия до перескана)",
+      "wouldSendBanNotify": "Будет отправлено уведомление о блокировке",
+      "wouldSendExemptNotify": "Будет отправлено уведомление об исключении"
     },
     "detail": {
       "title": "Subdomain detail",
@@ -990,6 +1007,10 @@
   "notification": {
     "subdomainSuspended": {
       "intro": "Ваш поддомен {{fqdn}} заблокирован из‑за нарушения политики контента.",
+      "rule": "Сработавшее правило: {{rule}}"
+    },
+    "subdomainDNSDeleted": {
+      "intro": "DNS-записи для {{fqdn}} удалены по правилу {{rule}}.",
       "rule": "Сработавшее правило: {{rule}}"
     },
     "subdomainReleasedByAdmin": {

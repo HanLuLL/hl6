@@ -717,6 +717,8 @@
     "invalidAuditRuleMatchType": "Tipo de coincidencia no válido",
     "invalidAuditRulePattern": "Patrón de regla no válido",
     "invalidAuditRuleCombination": "Combinación de objetivo y tipo no válida",
+    "invalidAuditRuleExemptRecheck": "El reescaneo de exención debe estar entre 5 minutos y 7 días",
+    "invalidAuditRuleNotifyContent": "El contenido de la notificación es demasiado largo (máx. 1024 caracteres)",
     "dnsBulkJobQueuedBan": "Tarea DNS en cola (Job #{{jobID}}). Reintente el bloqueo cuando finalice.",
     "dnsBulkJobQueuedDelete": "Tarea DNS en cola (Job #{{jobID}}). Reintente la eliminación cuando finalice.",
     "dnsBulkJobQueuedRelease": "Tarea DNS en cola (Job #{{jobID}}). Reintente la liberación cuando finalice.",
@@ -878,7 +880,9 @@
     "matchType": {
       "keyword": "Keyword",
       "regex": "Regex",
-      "status_eq": "Status equals"
+      "status_eq": "Status equals",
+      "unreachable": "Sitio inaccesible",
+      "unreachableHint": "Coincide cuando HTTPS y HTTP son inaccesibles; no requiere objetivos de coincidencia. Un canal es inaccesible si: (1) la conexión falla o hay timeout (p. ej. fallo DNS, conexión rechazada, fallo en el handshake TLS); (2) la conexión se estableció pero falla la obtención, como al leer el cuerpo de la respuesta (se excluyen bloqueos SSRF por IP privada); (3) el estado HTTP es 403, 500, 502, 503 o 504 (404 no cuenta)."
     },
     "keywordLogic": {
       "any": "Match any keyword",
@@ -886,6 +890,7 @@
     },
     "actions": {
       "observe": "Observe only",
+      "delete_dns": "Eliminar registros DNS",
       "site": "Suspend site",
       "user": "Suspend user",
       "detail": "Details",
@@ -933,42 +938,54 @@
         "hits7d": "7d hits",
         "lastHit": "Last hit",
         "enabled": "Enabled"
+      },
+      "banNotify": {
+        "title": "Notificación de bloqueo",
+        "hint": "Dejar vacío para no notificar. Se envía tras bloquear o eliminar DNS.",
+        "placeholder": "p. ej. Su subdominio {{fqdn}} fue suspendido por {{rule_name}}.",
+        "vars": "Variables: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}"
+      },
+      "exempt": {
+        "title": "Exención",
+        "hint": "Sin aplicar en el primer hit; reescaneo automático. Acción normal si sigue coincidiendo.",
+        "recheckMinutes": "Revisar de nuevo (minutos)",
+        "recheckRange": "Rango: {{min}}–{{max}} minutos",
+        "notifyTitle": "Notificación de exención",
+        "notifyHint": "Dejar vacío para no notificar.",
+        "notifyPlaceholder": "p. ej. {{fqdn}} no es accesible temporalmente. Corrija antes de {{recheck_at}}.",
+        "vars": "Variables: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}, {{recheck_minutes}}, {{recheck_at}}"
       }
     },
     "scenarios": {
-      "gambling": {
-        "name": "Gambling",
-        "desc": "Casino and betting keywords"
+      "keyword": {
+        "name": "Coincidencia por palabra clave",
+        "desc": "Coincidir cualquier palabra clave en el título o cuerpo de la página"
       },
-      "adult": {
-        "name": "Adult content",
-        "desc": "Adult content patterns"
+      "regex": {
+        "name": "Coincidencia por expresión regular",
+        "desc": "Coincidir el título o cuerpo con una expresión regular"
       },
-      "phishing": {
-        "name": "Phishing",
-        "desc": "Phishing page signals"
+      "status_eq": {
+        "name": "Código de estado HTTP",
+        "desc": "Coincidir cuando el código de estado de respuesta sea igual al valor configurado"
       },
-      "malicious_redirect": {
-        "name": "Malicious redirect",
-        "desc": "Suspicious redirects"
-      },
-      "placeholder": {
-        "name": "Placeholder page",
-        "desc": "Default or under-construction pages"
-      },
-      "http_error": {
-        "name": "HTTP error",
-        "desc": "Specific HTTP error codes"
+      "unreachable": {
+        "name": "Sitio inaccesible",
+        "desc": "Coincide cuando HTTPS y HTTP son inaccesibles"
       }
     },
     "ruleTest": {
-      "title": "Test rule",
-      "fqdnPlaceholder": "FQDN to test",
-      "run": "Run",
-      "running": "Fetching…",
-      "noMatch": "No match",
-      "wouldSuspend": "Would suspend",
-      "wouldNotSuspend": "Would not suspend"
+      "title": "Probar regla",
+      "fqdnPlaceholder": "FQDN a probar",
+      "run": "Ejecutar",
+      "running": "Obteniendo…",
+      "noMatch": "Sin coincidencias",
+      "wouldSuspend": "Provocaría suspensión",
+      "wouldDeleteDns": "Provocaría eliminación de DNS",
+      "wouldNotSuspend": "No provocaría suspensión ni eliminación de DNS",
+      "wouldExempt": "Aplicaría exención (sin aplicar hasta el reescaneo)",
+      "wouldSendBanNotify": "Enviaría notificación de bloqueo",
+      "wouldSendExemptNotify": "Enviaría notificación de exención"
     },
     "detail": {
       "title": "Subdomain detail",
@@ -990,6 +1007,10 @@
   "notification": {
     "subdomainSuspended": {
       "intro": "Tu subdominio {{fqdn}} ha sido suspendido por una violación de contenido.",
+      "rule": "Regla coincidente: {{rule}}"
+    },
+    "subdomainDNSDeleted": {
+      "intro": "Los registros DNS de {{fqdn}} fueron eliminados por la regla {{rule}}.",
       "rule": "Regla coincidente: {{rule}}"
     },
     "subdomainReleasedByAdmin": {

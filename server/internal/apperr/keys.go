@@ -19,6 +19,8 @@ const (
 	KeyInvalidAuditRuleTargets     = "error.invalidAuditRuleTargets"
 	KeyInvalidAuditRuleAction      = "error.invalidAuditRuleAction"
 	KeyInvalidAuditRuleKeywords    = "error.invalidAuditRuleKeywords"
+	KeyInvalidAuditRuleExemptRecheck = "error.invalidAuditRuleExemptRecheck"
+	KeyInvalidAuditRuleNotifyContent = "error.invalidAuditRuleNotifyContent"
 	KeyAuditRescanQueued           = "error.auditRescanQueued"
 	KeySubdomainNotFound           = "error.subdomainNotFound"
 	KeyDomainNotFoundOrInactive    = "error.domainNotFoundOrInactive"
