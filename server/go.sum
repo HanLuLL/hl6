@@ -430,6 +430,8 @@ github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.78 h1:Wr/AV
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.78/go.mod h1:cLF8HFXXVj5VmAL/yRn/TEnN14fyRDi1elg1hx4f7Es=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.122 h1:3k7w3prM1ffBWr8GOxZpeW/5SNi50u/CQUbcp6MSfZE=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.122/go.mod h1:i6gc1EjWKmgVS/7qt8ymUMWec3BQ0crxgkHVBzFBHuU=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.123 h1:3LSfYCO+ULdsd7IEx+E1MxkNGDJuVRBOn5lta7YprHw=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.123/go.mod h1:HPModeW8De6aDtae2nQkVp21XPCPU8iJiQHJFG21tO0=
 github.com/tidwall/gjson v1.14.2/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/gjson v1.14.4 h1:uo0p8EbA09J7RQaflQ1aBRffTR7xedD2bcIVSYxLnkM=
 github.com/tidwall/gjson v1.14.4/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
