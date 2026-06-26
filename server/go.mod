@@ -19,7 +19,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/lestrrat-go/jwx/v2 v2.1.6
 	github.com/redis/go-redis/v9 v9.21.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.122
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.123
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.122
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.286.0
