@@ -14,7 +14,7 @@ import (
 	"hl6-server/pkg/audit"
 )
 
-const auditMatchTargetMaxBytes = 2 * 1024 * 1024
+const auditMatchTargetMaxBytes = 10 * 1024 * 1024
 
 // MatchedRule 记录单条规则命中结果。
 type MatchedRule struct {
@@ -161,6 +161,10 @@ func (e *AuditRuleEngine) matchRule(rule *model.AuditRule, fr audit.FetchResult)
 	case model.AuditMatchKeyword:
 		return e.matchKeywordMultiTarget(rule, fr)
 	case model.AuditMatchRegex:
+		// regex 依赖完整 body；截断后跳过匹配避免结果不完整
+		if fr.Truncated {
+			return "", false
+		}
 		return e.matchRegexMultiTarget(rule, fr)
 	}
 	return "", false

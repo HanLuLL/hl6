@@ -161,6 +161,9 @@ func runSchemaMigrations(db *gorm.DB) error {
 			log.Println("Renamed column users.logto_id → external_id")
 		}
 
+		if err := dedupeAuditExemptionPendings(tx); err != nil {
+			return err
+		}
 		if err := tx.AutoMigrate(
 			&model.User{},
 			&model.UserGroup{},
@@ -260,6 +263,18 @@ func backfillAuditStatusFields(db *gorm.DB) error {
 	return nil
 }
 
+// dedupeAuditExemptionPendings 清理 audit_exemption_pendings 表中 (subdomain_id, rule_id) 的重复行，
+// 只保留每个组合中 id 最大的记录。此迁移必须在 unique index 创建前执行。
+func dedupeAuditExemptionPendings(db *gorm.DB) error {
+	return db.Exec(`
+		DELETE FROM audit_exemption_pendings a
+		USING audit_exemption_pendings b
+		WHERE a.subdomain_id = b.subdomain_id
+		  AND a.rule_id = b.rule_id
+		  AND a.id < b.id
+	`).Error
+}
+
 func ensureAuditSchema(db *gorm.DB) error {
 	statements := []string{
 		`ALTER TABLE audit_rules ALTER COLUMN action TYPE varchar(16)`,
@@ -275,6 +290,8 @@ func ensureAuditSchema(db *gorm.DB) error {
 func ensureAuditIndexes(db *gorm.DB) error {
 	statements := []string{
 		`CREATE INDEX IF NOT EXISTS idx_subdomain_scans_subdomain_created ON subdomain_scans (subdomain_id, created_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_subdomain_scans_lookup ON subdomain_scans (subdomain_id, status, created_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_exemption_claim ON audit_exemption_pendings (status, recheck_at)`,
 	}
 	for _, stmt := range statements {
 		if err := db.Exec(stmt).Error; err != nil {

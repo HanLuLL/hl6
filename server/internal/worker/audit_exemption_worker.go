@@ -48,14 +48,18 @@ func (w *AuditExemptionWorker) processDue(ctx context.Context) {
 	for _, item := range claimed {
 		fqdn, fqdnErr := w.repo.FindSubdomainFQDNByID(item.SubdomainID)
 		if fqdnErr != nil || fqdn == "" {
-			slog.Warn("audit exemption worker: subdomain not found", "subdomain_id", item.SubdomainID, "err", fqdnErr)
+			slog.Warn("audit exemption worker: subdomain not found, completing exemption",
+				"subdomain_id", item.SubdomainID, "err", fqdnErr)
+			_ = w.repo.CompleteExemptionPending(item.SubdomainID, item.RuleID)
 			continue
 		}
 		if err := w.enqueue.EnqueueScan(ctx, item.SubdomainID, fqdn, "exemption_recheck", service.EnqueueOpts{
 			BypassDedup: true,
 			RuleID:      item.RuleID,
 		}); err != nil {
-			slog.Error("audit exemption worker: enqueue failed", "fqdn", fqdn, "err", err)
+			slog.Error("audit exemption worker: enqueue failed, resetting to pending",
+				"fqdn", fqdn, "err", err)
+			_ = w.repo.ResetExemptionToPending(item.SubdomainID, item.RuleID)
 		}
 	}
 }

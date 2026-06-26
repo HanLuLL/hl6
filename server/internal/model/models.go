@@ -170,8 +170,8 @@ const AuditActionAuditRestoreSubdomain = "audit_restore_subdomain"
 // AuditExemptionPending 子域+规则维度的豁免等待记录。
 type AuditExemptionPending struct {
 	ID          uint      `json:"id" gorm:"primaryKey"`
-	SubdomainID uint      `json:"subdomain_id" gorm:"index:idx_audit_exempt_sub_rule,priority:1;not null"`
-	RuleID      uint      `json:"rule_id" gorm:"index:idx_audit_exempt_sub_rule,priority:2;not null"`
+	SubdomainID uint      `json:"subdomain_id" gorm:"uniqueIndex:idx_audit_exempt_sub_rule,priority:1;not null"`
+	RuleID      uint      `json:"rule_id" gorm:"uniqueIndex:idx_audit_exempt_sub_rule,priority:2;not null"`
 	RecheckAt   time.Time `json:"recheck_at" gorm:"index;not null"`
 	Status      string    `json:"status" gorm:"type:varchar(16);not null;default:pending;index"`
 	CreatedAt   time.Time `json:"created_at"`

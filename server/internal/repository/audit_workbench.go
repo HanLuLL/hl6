@@ -19,7 +19,7 @@ func (r *Repository) GetAuditSummary() (*AuditSummary, error) {
 	var summary AuditSummary
 
 	if err := r.DB.Model(&model.AuditLog{}).
-		Where("action = ?", "audit_release_subdomain").
+		Where("action IN ?", []string{"audit_release_subdomain", "audit_delete_dns"}).
 		Count(&summary.DeletedCount).Error; err != nil {
 		return nil, err
 	}
@@ -244,13 +244,6 @@ SELECT
 		  AND dr.status = ?
 		  AND dr.type IN ?
 	) AS scannable,
-	EXISTS (
-		SELECT 1 FROM (
-			SELECT content_hash FROM subdomain_scans
-			WHERE subdomain_id = s.id AND status = ?
-			ORDER BY created_at DESC LIMIT 2
-		) t GROUP BY 1 HAVING COUNT(DISTINCT content_hash) > 1
-	) OR (
 		(SELECT COUNT(*) FROM subdomain_scans WHERE subdomain_id = s.id AND status = ?) >= 2
 		AND (SELECT content_hash FROM subdomain_scans WHERE subdomain_id = s.id AND status = ? ORDER BY created_at DESC LIMIT 1)
 		<> (SELECT content_hash FROM subdomain_scans WHERE subdomain_id = s.id AND status = ? ORDER BY created_at DESC OFFSET 1 LIMIT 1)
@@ -262,7 +255,7 @@ SELECT
 	queryArgs := []interface{}{
 		model.ScanStatusViolation, since7d,
 		model.DNSRecordStatusActive, audit.ScannableRecordTypes,
-		model.ScanStatusClean, model.ScanStatusClean, model.ScanStatusClean, model.ScanStatusClean,
+		model.ScanStatusClean, model.ScanStatusClean, model.ScanStatusClean,
 	}
 	queryArgs = append(queryArgs, args...)
 	queryArgs = append(queryArgs, offset, perPage)

@@ -381,6 +381,39 @@ func (s *AuditService) compensateProviderRecords(ctx context.Context, sub *model
 	return nil
 }
 
+// restoredRecord 记录恢复操作中已恢复的 DNS 记录及其 provider 侧 ID。
+type restoredRecord struct {
+	recordID         uint
+	providerRecordID string
+}
+
+func (s *AuditService) compensateRestoredProviderRecords(ctx context.Context, sub *model.Subdomain, restoredRecords []restoredRecord) {
+	if len(restoredRecords) == 0 {
+		return
+	}
+	client, _, err := s.ops.providerClientForAccount(sub.Domain.ProviderAccountID, sub.Domain.Provider)
+	if err != nil {
+		slog.Error("audit: compensate restored provider records: get provider client failed",
+			"fqdn", sub.FQDN, "err", err,
+		)
+		return
+	}
+	var failed int
+	for _, r := range restoredRecords {
+		if err := client.DeleteRecord(ctx, sub.Domain.ProviderZoneID, r.providerRecordID); err != nil {
+			failed++
+			slog.Error("audit: compensate restored provider records: delete failed",
+				"fqdn", sub.FQDN, "providerRecordID", r.providerRecordID, "err", err,
+			)
+		}
+	}
+	if failed > 0 {
+		slog.Error("audit: compensate restored provider records partial failure",
+			"fqdn", sub.FQDN, "failed", failed, "total", len(restoredRecords),
+		)
+	}
+}
+
 func (s *AuditService) RestoreSubdomain(ctx context.Context, sub *model.Subdomain) error {
 	if sub.Status != model.SubdomainStatusSuspended {
 		return fmt.Errorf("subdomain %s is not suspended", sub.FQDN)
@@ -393,18 +426,14 @@ func (s *AuditService) RestoreSubdomain(ctx context.Context, sub *model.Subdomai
 		return fmt.Errorf("list suspended records: %w", err)
 	}
 
-	type restored struct {
-		recordID         uint
-		providerRecordID string
-	}
-
-	restoredRecords := make([]restored, 0, len(records))
+	restoredRecords := make([]restoredRecord, 0, len(records))
 	for _, rec := range records {
 		newProviderRecordID, createErr := s.recreateProviderRecord(ctx, sub, &rec)
 		if createErr != nil {
+			s.compensateRestoredProviderRecords(ctx, sub, restoredRecords)
 			return createErr
 		}
-		restoredRecords = append(restoredRecords, restored{recordID: rec.ID, providerRecordID: newProviderRecordID})
+		restoredRecords = append(restoredRecords, restoredRecord{recordID: rec.ID, providerRecordID: newProviderRecordID})
 	}
 
 	if err := s.repo.Transaction(func(tx *gorm.DB) error {
@@ -415,6 +444,7 @@ func (s *AuditService) RestoreSubdomain(ctx context.Context, sub *model.Subdomai
 		}
 		return s.repo.RestoreSubdomainStatus(tx, sub.ID)
 	}); err != nil {
+		s.compensateRestoredProviderRecords(ctx, sub, restoredRecords)
 		return fmt.Errorf("restore transaction: %w", err)
 	}
 
@@ -428,6 +458,10 @@ func (s *AuditService) scanStatusFromProbe(probe audit.DualFetchProbeResult) str
 	}
 	if probe.ConfirmedUnreachable() {
 		return model.ScanStatusUnreachable
+	}
+	// 任一通道 body 被截断（超上限），标记为 error 以触发告警
+	if probe.Primary.HTTPS.Truncated || probe.Primary.HTTP.Truncated {
+		return model.ScanStatusError
 	}
 	return model.ScanStatusClean
 }

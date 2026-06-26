@@ -1,6 +1,7 @@
 package audit
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
@@ -38,10 +39,12 @@ var (
 )
 
 const (
-	FetchStatusClean       = "clean"
+	FetchStatusClean      = "clean"
 	FetchStatusUnreachable = "unreachable"
 	FetchStatusError       = "error"
 )
+
+const defaultMaxBodySize = 10 * 1024 * 1024 // 10MB，覆盖绝大多数正常网页
 
 // FetchResult 抓取结果，供规则引擎匹配。
 type FetchResult struct {
@@ -50,6 +53,8 @@ type FetchResult struct {
 	Title        string
 	Body         string
 	ContentHash  string
+	Truncated    bool  // body 因超过 maxBodySize 上限被截断
+	BodyBytes    int64 // 实际读入 Body 的字节数（截断后等于 maxBodySize）
 	Error        error
 	ErrorMessage string
 	Status       string // FetchStatusClean / FetchStatusUnreachable / FetchStatusError
@@ -82,9 +87,12 @@ type SafeFetcher struct {
 type SafeFetcherOption func(*SafeFetcher)
 
 // WithTimeout 设置请求超时（默认 15s）。
+// 传入 <=0 时无效，保留默认值；如需禁用超时请用非常大的正值（如 24h）。
 func WithTimeout(d time.Duration) SafeFetcherOption {
 	return func(f *SafeFetcher) {
-		f.timeout = d
+		if d > 0 {
+			f.timeout = d
+		}
 	}
 }
 
@@ -101,10 +109,20 @@ func WithResolver(addr string) SafeFetcherOption {
 	}
 }
 
-// NewSafeFetcher 构造安全的 HTTP 客户端，默认 15s 超时、2MB 限制、5 跳重定向、公共 DNS。
+// WithMaxBodySize 设置响应体最大读取上限（默认 10MB）。
+// 传入 <=0 时无效，保留默认值。超过上限的 body 被截断，Truncated 标记为 true。
+func WithMaxBodySize(size int64) SafeFetcherOption {
+	return func(f *SafeFetcher) {
+		if size > 0 {
+			f.maxBodySize = size
+		}
+	}
+}
+
+// NewSafeFetcher 构造安全的 HTTP 客户端，默认 15s 超时、10MB 限制、5 跳重定向、公共 DNS。
 func NewSafeFetcher(opts ...SafeFetcherOption) *SafeFetcher {
 	f := &SafeFetcher{
-		maxBodySize:  2 * 1024 * 1024,
+		maxBodySize:  defaultMaxBodySize,
 		maxRedirects: 5,
 		resolver: &net.Resolver{
 			PreferGo: true,
@@ -120,8 +138,7 @@ func NewSafeFetcher(opts ...SafeFetcherOption) *SafeFetcher {
 	}
 
 	f.dialer = &net.Dialer{
-		Timeout:  10 * time.Second,
-		Resolver: f.resolver,
+		Timeout: 10 * time.Second,
 	}
 
 	transport := &http.Transport{
@@ -144,7 +161,8 @@ func NewSafeFetcher(opts ...SafeFetcherOption) *SafeFetcher {
 	return f
 }
 
-// safeDialContext 在建立连接前校验目标 IP 是否为私有/保留地址。
+// safeDialContext 在建立连接前校验目标 IP 是否为私有/保留地址，
+// 并使用 validateHost 返回的已验证 IP 直接连接，避免二次 DNS 解析的 TOCTOU 漏洞。
 func (f *SafeFetcher) safeDialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {
@@ -155,32 +173,48 @@ func (f *SafeFetcher) safeDialContext(ctx context.Context, network, address stri
 		return nil, fmt.Errorf("port %s not allowed (only 80/443)", port)
 	}
 
-	if err := f.validateHost(ctx, host); err != nil {
+	ips, err := f.validateHost(ctx, host)
+	if err != nil {
 		return nil, err
 	}
 
-	return f.dialer.DialContext(ctx, network, address)
+	// 直接用已验证的 IP 连接，不经过 dialer 的二次 DNS 解析
+	var firstErr error
+	for _, ip := range ips {
+		addr := net.JoinHostPort(ip.String(), port)
+		conn, dialErr := f.dialer.DialContext(ctx, network, addr)
+		if dialErr == nil {
+			return conn, nil
+		}
+		if firstErr == nil {
+			firstErr = dialErr
+		}
+	}
+	return nil, firstErr
 }
 
-// validateHost 解析主机名并检查所有 IP 是否在禁止范围内。
-func (f *SafeFetcher) validateHost(ctx context.Context, host string) error {
+// validateHost 解析主机名、检查所有 IP 是否在禁止范围内，返回通过检查的 IP 列表。
+// 调用方应使用返回的 IP 列表发起连接，避免二次 DNS 解析造成的 TOCTOU 漏洞。
+func (f *SafeFetcher) validateHost(ctx context.Context, host string) ([]net.IP, error) {
 	ips, err := f.resolver.LookupIPAddr(ctx, host)
 	if err != nil {
-		return fmt.Errorf("dns resolve %s: %w", host, err)
+		return nil, fmt.Errorf("dns resolve %s: %w", host, err)
 	}
 	if len(ips) == 0 {
-		return fmt.Errorf("no IPs resolved for %s", host)
+		return nil, fmt.Errorf("no IPs resolved for %s", host)
 	}
 
+	validated := make([]net.IP, 0, len(ips))
 	for _, ipAddr := range ips {
 		ip := ipAddr.IP
 		for _, cidr := range forbiddenCIDRs {
 			if cidr.Contains(ip) {
-				return fmt.Errorf("%w: %s", ErrPrivateIP, ip.String())
+				return nil, fmt.Errorf("%w: %s", ErrPrivateIP, ip.String())
 			}
 		}
+		validated = append(validated, ip)
 	}
-	return nil
+	return validated, nil
 }
 
 // checkRedirect 拦截重定向：限跳数、校验目标 IP。
@@ -202,7 +236,8 @@ func (f *SafeFetcher) checkRedirect(req *http.Request, via []*http.Request) erro
 		return fmt.Errorf("redirect port %s not allowed", port)
 	}
 
-	return f.validateHost(req.Context(), host)
+	_, err := f.validateHost(req.Context(), host)
+	return err
 }
 
 var titleRegex = regexp.MustCompile(`(?is)<title[^>]*>(.*?)</title>`)
@@ -263,7 +298,8 @@ func CombinedContentHash(dual DualFetchResult) string {
 
 // PrimaryChannel 返回优先用于兼容字段的通道（HTTPS 优先，完全失败时用 HTTP）。
 func (d DualFetchResult) PrimaryChannel() ChannelResult {
-	if d.HTTPS.Status == FetchStatusClean || d.HTTPS.StatusCode > 0 || d.HTTPS.FinalURL != "" {
+	httpsOK := d.HTTPS.Status == FetchStatusClean && !IsHTTPStatusInaccessible(d.HTTPS.StatusCode)
+	if httpsOK || (d.HTTPS.FinalURL != "" && !IsHTTPStatusInaccessible(d.HTTPS.StatusCode)) {
 		return d.HTTPS
 	}
 	return d.HTTP
@@ -308,28 +344,64 @@ func (f *SafeFetcher) fetchURL(ctx context.Context, rawURL string) FetchResult {
 		result.FinalURL = resp.Request.URL.String()
 	}
 
-	limitedReader := io.LimitReader(resp.Body, f.maxBodySize)
-	bodyBytes, err := io.ReadAll(limitedReader)
-	if err != nil {
-		result.Error = err
-		result.ErrorMessage = err.Error()
+	// 分块流式读取 body：增量计算 ContentHash，按需提取 Title，
+	// 达到 maxBodySize 上限后截断并标记 Truncated。
+	hash := sha256.New()
+	var buf bytes.Buffer
+	var titleFound bool
+	chunk := make([]byte, 64*1024)
+	scanStart := 0 // buf 中已搜索过 title 的末尾偏移，避免对大 body 重复全量 regex
+
+	for {
+		n, readErr := resp.Body.Read(chunk)
+		if n > 0 {
+			hash.Write(chunk[:n])
+			buf.Write(chunk[:n])
+			// title 提取：仅在前 ~128KB 内未找到时搜索；找到后不再搜
+			if !titleFound && buf.Len() <= 128*1024 {
+				if m := titleRegex.FindStringSubmatch(buf.String()[scanStart:]); len(m) >= 2 {
+					result.Title = strings.TrimSpace(m[1])
+					titleFound = true
+				}
+				scanStart = buf.Len() - 100 // 保留重叠防止 <title> 跨 chunk 边界
+				if scanStart < 0 {
+					scanStart = 0
+				}
+			}
+		}
+		if int64(buf.Len()) > f.maxBodySize {
+			result.Truncated = true
+			buf.Truncate(int(f.maxBodySize))
+			_, _ = io.Copy(io.Discard, resp.Body) // 排空剩余 body，释放连接
+			break
+		}
+		if readErr != nil {
+			if readErr != io.EOF {
+				result.Error = readErr
+				result.ErrorMessage = readErr.Error()
+				result.Status = FetchStatusError
+			}
+			break
+		}
+	}
+
+	result.BodyBytes = int64(buf.Len())
+	result.Body = buf.String()
+	result.ContentHash = fmt.Sprintf("%x", hash.Sum(nil))
+
+	if result.Truncated {
+		result.Error = ErrResponseTooLarge
+		result.ErrorMessage = ErrResponseTooLarge.Error()
 		result.Status = FetchStatusError
 		return result
 	}
-	if len(bodyBytes) >= int(f.maxBodySize) {
-		result.Error = ErrResponseTooLarge
-		result.ErrorMessage = ErrResponseTooLarge.Error()
+
+	// body 完整读取，再用 titleRegex 兜底搜索一次（超过 128KB 的场景）
+	if !titleFound {
+		if m := titleRegex.FindStringSubmatch(result.Body); len(m) >= 2 {
+			result.Title = strings.TrimSpace(m[1])
+		}
 	}
-
-	bodyStr := string(bodyBytes)
-	result.Body = bodyStr
-
-	if m := titleRegex.FindStringSubmatch(bodyStr); len(m) >= 2 {
-		result.Title = strings.TrimSpace(m[1])
-	}
-
-	hash := sha256.Sum256(bodyBytes)
-	result.ContentHash = fmt.Sprintf("%x", hash)
 
 	result.Status = FetchStatusClean
 	return result

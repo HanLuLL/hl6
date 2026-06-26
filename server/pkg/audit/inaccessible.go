@@ -12,15 +12,15 @@ func IsHTTPStatusInaccessible(code int) bool {
 	if code >= 500 {
 		return true
 	}
-	if code < 400 || code >= 500 {
-		return false
+	if code >= 400 {
+		switch code {
+		case 401, 404, 429:
+			return false
+		default:
+			return true
+		}
 	}
-	switch code {
-	case 401, 404, 429:
-		return false
-	default:
-		return true
-	}
+	return false
 }
 
 // IsChannelInaccessible 判定单协议通道是否不可访问。
@@ -88,7 +88,7 @@ func channelFailureLabel(scheme string, ch ChannelResult) string {
 			msg = fr.Status
 		}
 		if len(msg) > 80 {
-			msg = msg[:80] + "…"
+			msg = string([]rune(msg)[:80]) + "…"
 		}
 		return scheme + ": " + msg
 	default:

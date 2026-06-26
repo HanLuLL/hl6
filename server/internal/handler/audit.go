@@ -237,6 +237,9 @@ func (h *AuditHandler) ListSubdomainScans(c *gin.Context) {
 }
 
 func (h *AuditHandler) RestoreSubdomain(c *gin.Context) {
+	if _, ok := requireUser(c); !ok {
+		return
+	}
 	id, ok := helpers.RequireUintPathUint(c, "id")
 	if !ok {
 		return
@@ -313,6 +316,9 @@ func (h *AuditHandler) notifySubdomainReleased(sub *model.Subdomain, adminID uin
 const auditBulkRescanMax = 100
 
 func (h *AuditHandler) RescanSubdomain(c *gin.Context) {
+	if _, ok := requireUser(c); !ok {
+		return
+	}
 	id, ok := helpers.RequireUintPathUint(c, "id")
 	if !ok {
 		return
@@ -370,6 +376,7 @@ func (h *AuditHandler) BulkRescan(c *gin.Context) {
 	}
 
 	var skipped []bulkRescanSkipDetail
+	var enqueueErrors []bulkRescanSkipDetail
 	queued := 0
 	ctx := c.Request.Context()
 
@@ -388,8 +395,8 @@ func (h *AuditHandler) BulkRescan(c *gin.Context) {
 			continue
 		}
 		if err := h.enqueue.EnqueueScan(ctx, sub.ID, sub.FQDN, "bulk", service.EnqueueOpts{BypassDedup: true}); err != nil {
-			response.InternalError(c, apperr.KeyFailedToListAuditScans)
-			return
+			enqueueErrors = append(enqueueErrors, bulkRescanSkipDetail{ID: id, Reason: err.Error()})
+			continue
 		}
 		queued++
 	}
@@ -399,7 +406,10 @@ func (h *AuditHandler) BulkRescan(c *gin.Context) {
 		"skipped":         len(skipped),
 		"skipped_details": skipped,
 	}
-	if queued == 0 && len(skipped) > 0 {
+	if len(enqueueErrors) > 0 {
+		payload["errors"] = enqueueErrors
+	}
+	if queued == 0 {
 		response.ErrorWithKeyData(c, http.StatusConflict, "no subdomains queued for rescan", apperr.KeyAuditBulkRescanNoneQueued, payload)
 		return
 	}
@@ -497,6 +507,7 @@ func (h *AuditHandler) UpdateRule(c *gin.Context) {
 	if !ok {
 		return
 	}
+	// partial=false 全量覆盖；前端始终发完整对象，暂无局部更新需求
 	h.applyRuleBody(rule, *bi, false)
 	rule.UpdatedBy = admin.ID
 
@@ -579,6 +590,14 @@ func (h *AuditHandler) TestRule(c *gin.Context) {
 		draft := body.Rule.toModel()
 		draft.Enabled = true
 		if err := service.ValidateAuditRule(draft); err != nil {
+			if key, ok := auditValidationKey(err); ok {
+				response.BadRequest(c, key)
+				return
+			}
+			response.BadRequest(c, apperr.KeyInvalidRequestBody)
+			return
+		}
+		if err := service.ValidateAuditRuleScope(draft, h.repo.DomainExists); err != nil {
 			if key, ok := auditValidationKey(err); ok {
 				response.BadRequest(c, key)
 				return

@@ -4,7 +4,9 @@ import (
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"hl6-server/internal/model"
 	"hl6-server/pkg/audit"
 )
@@ -128,6 +130,11 @@ func (r *Repository) ListActiveScanTargets(offset, limit int) ([]model.AuditScan
 		WHERE s.status = ?
 		  AND dr.status = ?
 		  AND dr.type IN ?
+		  AND NOT EXISTS (
+		    SELECT 1 FROM audit_exemption_pendings aep
+		    WHERE aep.subdomain_id = s.id
+		      AND aep.status IN ('pending', 'rechecking')
+		  )
 		ORDER BY s.id ASC
 		OFFSET ? LIMIT ?
 	`, model.SubdomainStatusActive, model.DNSRecordStatusActive, audit.ScannableRecordTypes, offset, limit).Scan(&targets).Error
@@ -143,6 +150,11 @@ func (r *Repository) CountActiveScanTargets() (int64, error) {
 		WHERE s.status = ?
 		  AND dr.status = ?
 		  AND dr.type IN ?
+		  AND NOT EXISTS (
+		    SELECT 1 FROM audit_exemption_pendings aep
+		    WHERE aep.subdomain_id = s.id
+		      AND aep.status IN ('pending', 'rechecking')
+		  )
 	`, model.SubdomainStatusActive, model.DNSRecordStatusActive, audit.ScannableRecordTypes).Scan(&count).Error
 	return count, err
 }
@@ -410,12 +422,20 @@ func (r *Repository) CreateExemptionPending(subdomainID, ruleID uint, recheckAt 
 	if exists {
 		return nil
 	}
-	return r.DB.Create(&model.AuditExemptionPending{
+	err = r.DB.Create(&model.AuditExemptionPending{
 		SubdomainID: subdomainID,
 		RuleID:      ruleID,
 		RecheckAt:   recheckAt,
 		Status:      model.AuditExemptionStatusPending,
 	}).Error
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *Repository) ClaimDueExemptions(limit int) ([]model.AuditExemptionPending, error) {
@@ -425,7 +445,7 @@ func (r *Repository) ClaimDueExemptions(limit int) ([]model.AuditExemptionPendin
 	var claimed []model.AuditExemptionPending
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		var due []model.AuditExemptionPending
-		if err := tx.Where("status = ? AND recheck_at <= ?", model.AuditExemptionStatusPending, time.Now()).
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).Where("status = ? AND recheck_at <= ?", model.AuditExemptionStatusPending, time.Now()).
 			Order("recheck_at ASC").
 			Limit(limit).
 			Find(&due).Error; err != nil {
@@ -454,6 +474,13 @@ func (r *Repository) CompleteExemptionPending(subdomainID, ruleID uint) error {
 			subdomainID, ruleID, model.AuditExemptionStatusRechecking).
 		Update("status", model.AuditExemptionStatusCompleted)
 	return res.Error
+}
+
+func (r *Repository) ResetExemptionToPending(subdomainID, ruleID uint) error {
+	return r.DB.Model(&model.AuditExemptionPending{}).
+		Where("subdomain_id = ? AND rule_id = ? AND status = ?",
+			subdomainID, ruleID, model.AuditExemptionStatusRechecking).
+		Update("status", model.AuditExemptionStatusPending).Error
 }
 
 func (r *Repository) FindSubdomainFQDNByID(id uint) (string, error) {
