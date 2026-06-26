@@ -247,7 +247,7 @@ SELECT
 		(SELECT COUNT(*) FROM subdomain_scans WHERE subdomain_id = s.id AND status = ?) >= 2
 		AND (SELECT content_hash FROM subdomain_scans WHERE subdomain_id = s.id AND status = ? ORDER BY created_at DESC LIMIT 1)
 		<> (SELECT content_hash FROM subdomain_scans WHERE subdomain_id = s.id AND status = ? ORDER BY created_at DESC OFFSET 1 LIMIT 1)
-	) AS content_changed
+	AS content_changed
 ` + base + where + " ORDER BY " + orderBy + " OFFSET ? LIMIT ?"
 
 	since7d := time.Now().Add(-7 * 24 * time.Hour)
