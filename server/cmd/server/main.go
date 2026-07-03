@@ -266,6 +266,10 @@ func backfillAuditStatusFields(db *gorm.DB) error {
 // dedupeAuditExemptionPendings 清理 audit_exemption_pendings 表中 (subdomain_id, rule_id) 的重复行，
 // 只保留每个组合中 id 最大的记录。此迁移必须在 unique index 创建前执行。
 func dedupeAuditExemptionPendings(db *gorm.DB) error {
+	// 全新数据库上此表尚未由 AutoMigrate 创建，无需去重（否则 DELETE 会因表不存在而中断整个迁移）。
+	if !db.Migrator().HasTable("audit_exemption_pendings") {
+		return nil
+	}
 	return db.Exec(`
 		DELETE FROM audit_exemption_pendings a
 		USING audit_exemption_pendings b
