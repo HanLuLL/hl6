@@ -21,7 +21,7 @@ import {
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import type { OIDCStatusPayload } from "@/types";
-import { Zap, Globe, Settings2, ArrowRight } from "lucide-react";
+import { Zap, Globe, Settings2 } from "lucide-react";
 import { DomainSearchBar } from "@/components/domain/search-bar";
 
 // 懒加载：把 three.js / vanta（~600KB）拆成异步 chunk，不拖累首屏。
@@ -146,8 +146,8 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero — Vanta fog backdrop with content on top */}
-      <section className="relative flex-1 overflow-hidden">
+      {/* Hero — full first viewport below nav */}
+      <section className="relative flex min-h-[calc(100dvh-3.5rem)] items-center overflow-hidden">
         {/* Fog background (lazy-loaded three.js) */}
         <Suspense fallback={null}>
           <DomainFog className="absolute inset-0" />
@@ -157,14 +157,14 @@ export default function LandingPage() {
         {/* Bottom fade into the page */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
 
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 py-20 md:py-28">
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 py-10 md:py-14">
           {/* Left column */}
           <div className="max-w-3xl p-4">
-            <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.1] text-foreground">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] text-foreground">
               {t("landing.heroTitle")}
 
             </h1>
-            <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.1] text-foreground mt-2">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] text-foreground mt-2">
 
               <span className="relative inline-block text-brand">
                 {t("landing.heroHighlight")}
@@ -173,28 +173,10 @@ export default function LandingPage() {
             </h1>
             <p className="mt-5 text-base text-muted-foreground leading-relaxed">
               {t("landing.heroDesc")}
-            </p>          <p className=" text-base text-muted-foreground leading-relaxed">
-              {t("landing.heroDescCF")}
             </p>
             {/* Domain availability check */}
             <div className="mt-6">
               <DomainSearchBar />
-            </div>
-            <div className="mt-4 flex items-center gap-3">
-              {isAuthenticated ? (
-                <Button size="lg" asChild className="bg-brand hover:bg-brand/90 text-brand-foreground">
-                  <Link to="/domains">
-                    {t("landing.browseDomains")}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              ) : (
-                <Button size="lg" onClick={handleLoginClick} className="bg-brand hover:bg-brand/90 text-brand-foreground">
-                  {t("landing.getStarted")}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              )}
-              <span className="text-xs text-muted-foreground">{t("landing.noCardRequired")}</span>
             </div>
 
           </div>

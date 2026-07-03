@@ -5,14 +5,17 @@ import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { ChevronDown, Check, X, ArrowRight } from "lucide-react";
 
 type CheckState = "idle" | "checking" | "available" | "taken" | "error";
 
 const TYPE_CLASS = "text-2xl sm:text-3xl font-semibold tracking-tight";
+const DEFAULT_DOMAIN_NAME = "hlcloud";
+const FALLBACK_SUFFIX = "houlang.cloud";
 
 function sanitize(v: string): string {
-  return v.toLowerCase().replace(/[^a-z0-9-]/g, "");
+  return v.replace(/[^\p{Script=Han}\p{N}a-zA-Z-]/gu, "").toLowerCase();
 }
 
 export function DomainSearchBar() {
@@ -40,6 +43,7 @@ export function DomainSearchBar() {
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close dropdown with fade-out animation
@@ -83,9 +87,17 @@ export function DomainSearchBar() {
 
   const activeDomains = domains ?? [];
 
-  // Auto-switch with simple opacity fade transition
+  const preferredDomainIndex = activeDomains.findIndex((d) => d.name === DEFAULT_DOMAIN_NAME);
+
+  // Default suffix to .hlcloud when available
   useEffect(() => {
-    if (manualSelect || prefix || activeDomains.length <= 1) return;
+    if (manualSelect || prefix || activeDomains.length === 0 || preferredDomainIndex < 0) return;
+    setDisplayIndex(preferredDomainIndex);
+  }, [activeDomains.length, manualSelect, prefix, preferredDomainIndex]);
+
+  // Auto-switch with simple opacity fade transition (skip when hlcloud is the default)
+  useEffect(() => {
+    if (manualSelect || prefix || activeDomains.length <= 1 || preferredDomainIndex >= 0) return;
 
     intervalRef.current = setInterval(() => {
       // Fade out
@@ -103,7 +115,7 @@ export function DomainSearchBar() {
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
       setIsTransitioning(false);
     };
-  }, [activeDomains.length, manualSelect, prefix]);
+  }, [activeDomains.length, manualSelect, prefix, preferredDomainIndex]);
 
   // Cleanup close timer on unmount
   useEffect(() => {
@@ -143,7 +155,67 @@ export function DomainSearchBar() {
       document.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [dropdownOpen]);
+  }, [dropdownOpen, closeDropdown]);
+
+  const scrollDropdownList = useCallback((deltaY: number, deltaMode: number) => {
+    const el = listRef.current;
+    if (!el || deltaY === 0) return;
+    const delta =
+      deltaMode === WheelEvent.DOM_DELTA_LINE
+        ? deltaY * 16
+        : deltaMode === WheelEvent.DOM_DELTA_PAGE
+          ? deltaY * el.clientHeight
+          : deltaY;
+    el.scrollTop += delta;
+  }, []);
+
+  // Lock page scroll while open; route all wheel/touch to the domain list
+  useEffect(() => {
+    if (!dropdownOpen) return;
+
+    const scrollY = window.scrollY;
+    const { style } = document.body;
+    const prev = {
+      position: style.position,
+      top: style.top,
+      width: style.width,
+      overflow: style.overflow,
+    };
+    style.position = "fixed";
+    style.top = `-${scrollY}px`;
+    style.width = "100%";
+    style.overflow = "hidden";
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      scrollDropdownList(e.deltaY, e.deltaMode);
+    };
+    let touchStartY = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0]?.clientY ?? 0;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      const touchY = e.touches[0]?.clientY ?? touchStartY;
+      e.preventDefault();
+      scrollDropdownList(touchStartY - touchY, WheelEvent.DOM_DELTA_PIXEL);
+      touchStartY = touchY;
+    };
+
+    window.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true, capture: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: false, capture: true });
+
+    return () => {
+      style.position = prev.position;
+      style.top = prev.top;
+      style.width = prev.width;
+      style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+      window.removeEventListener("wheel", onWheel, { capture: true });
+      window.removeEventListener("touchstart", onTouchStart, { capture: true });
+      window.removeEventListener("touchmove", onTouchMove, { capture: true });
+    };
+  }, [dropdownOpen, scrollDropdownList]);
 
   const currentDomain = manualSelect
     ? activeDomains.find((d) => d.id === selectedDomainId)
@@ -213,22 +285,20 @@ export function DomainSearchBar() {
   );
 
   const handleDropdownWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    const el = e.currentTarget;
-    if (el.scrollHeight <= el.clientHeight || e.deltaY === 0) return;
-
+    if (e.deltaY === 0) return;
     e.preventDefault();
     e.stopPropagation();
-    const delta =
-      e.deltaMode === WheelEvent.DOM_DELTA_LINE
-        ? e.deltaY * 16
-        : e.deltaMode === WheelEvent.DOM_DELTA_PAGE
-          ? e.deltaY * el.clientHeight
-          : e.deltaY;
-    el.scrollTop += delta;
-  }, []);
+    scrollDropdownList(e.deltaY, e.deltaMode);
+  }, [scrollDropdownList]);
 
-  const displaySuffix = currentDomain?.name ?? "—";
-  const measure = prefix || t("landing.searchPlaceholder");
+  const displaySuffix = currentDomain?.name ?? FALLBACK_SUFFIX;
+  const placeholderText = t("landing.searchPlaceholder");
+
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.scrollLeft = el.scrollWidth;
+  }, [prefix]);
 
   const underlineColor =
     checkState === "available"
@@ -253,160 +323,191 @@ export function DomainSearchBar() {
       )}
 
       {/* Input row */}
-      <div
-        className={cn(
-          "flex items-baseline gap-1 border-b-2 pb-2.5 transition-colors duration-300 relative",
-          underlineColor,
-          dropdownVisible && "z-50",
-        )}
-        onClick={() => inputRef.current?.focus()}
-      >
-        {/* Prefix input */}
-        <span className="relative inline-flex min-w-[1ch] max-w-[62%] items-baseline">
-          <span aria-hidden className={cn(TYPE_CLASS, "invisible whitespace-pre")}>
-            {measure}
-          </span>
-          <input
-            ref={inputRef}
-            value={prefix}
-            onChange={(e) => {
-              setPrefix(sanitize(e.target.value));
-              setCheckState("idle");
-              if (dropdownVisible) closeDropdown();
-            }}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            placeholder={t("landing.searchPlaceholder")}
-            spellCheck={false}
-            autoComplete="off"
-            aria-label={t("landing.searchKicker")}
-            className={cn(
-              TYPE_CLASS,
-              "absolute inset-0 w-full border-0 bg-transparent p-0 text-foreground caret-brand outline-none placeholder:text-muted-foreground/40",
-            )}
-          />
-        </span>
-
-        {/* Domain suffix selector */}
-        <div className="ml-auto flex items-center relative" ref={dropdownRef}>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleDropdown();
-            }}
-            className={cn(
-              TYPE_CLASS,
-              "group inline-flex shrink-0 items-baseline gap-1 text-muted-foreground transition-colors hover:text-foreground",
-            )}
-            aria-expanded={dropdownVisible}
-            aria-haspopup="listbox"
+      <div className={cn("flex items-baseline gap-3", dropdownVisible && "relative z-50")}>
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 items-baseline gap-2 border-b-2 pb-2.5 transition-colors duration-300",
+            underlineColor,
+          )}
+        >
+          {/* Prefix — fills remaining space, scrolls when long */}
+          <div
+            className="min-w-0 flex-1 overflow-hidden"
+            onClick={() => inputRef.current?.focus()}
           >
-            {/* Simple opacity fade transition */}
-            <span
+            <input
+              ref={inputRef}
+              value={prefix}
+              onChange={(e) => {
+                setPrefix(sanitize(e.target.value));
+                setCheckState("idle");
+                if (dropdownVisible) closeDropdown();
+              }}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder={placeholderText}
+              spellCheck={false}
+              autoComplete="off"
+              aria-label={t("landing.searchKicker")}
               className={cn(
                 TYPE_CLASS,
-                "transition-opacity duration-500",
-                isTransitioning ? "opacity-0" : "opacity-100",
+                "w-full min-w-0 border-0 bg-transparent p-0 text-foreground caret-brand outline-none overflow-x-auto overflow-y-hidden whitespace-nowrap placeholder:text-muted-foreground/40 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
               )}
-            >
-              .{displaySuffix}
-            </span>
+            />
+          </div>
 
-            {activeDomains.length > 1 && (
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 shrink-0 translate-y-[-0.15em] text-muted-foreground/50 transition-transform duration-300",
-                  dropdownVisible && "rotate-180",
-                  "group-hover:text-muted-foreground",
-                )}
-              />
-            )}
-          </button>
-
-          {/* Custom dropdown — pure floating text */}
-          {dropdownVisible && (
-            <div
-              role="listbox"
-              aria-label={t("landing.searchKicker")}
-              onWheel={handleDropdownWheel}
-              style={
-                dropdownPosition
-                  ? {
-                      top: dropdownPosition.top,
-                      right: dropdownPosition.right,
-                      maxHeight: dropdownPosition.maxHeight,
-                    }
-                  : undefined
-              }
+          {/* Domain suffix selector */}
+          <div className="relative shrink-0" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleDropdown();
+              }}
               className={cn(
-                "fixed z-50",
-                "origin-top-right overflow-y-auto overscroll-contain touch-pan-y [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-                dropdownOpen
-                  ? "animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-300"
-                  : "animate-out fade-out-0 zoom-out-95 slide-out-to-top-2 duration-300",
+                TYPE_CLASS,
+                "group inline-flex shrink-0 items-baseline gap-1 text-muted-foreground transition-colors hover:text-foreground",
               )}
+              aria-expanded={dropdownVisible}
+              aria-haspopup="listbox"
             >
-              {/* All domains in original order, current one highlighted in-place */}
-              {activeDomains.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  role="option"
-                  aria-selected={currentDomain?.id === d.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (currentDomain?.id === d.id) {
-                      closeDropdown();
-                    } else {
-                      handleSelectDomain(d.id);
-                    }
-                  }}
-                  className={cn(
-                    TYPE_CLASS,
-                    "block w-full px-1 py-1.5 text-right transition-colors duration-150 relative whitespace-nowrap",
-                    currentDomain?.id === d.id
-                      ? "text-foreground"
-                      : "text-muted-foreground/50 hover:text-muted-foreground/90",
-                  )}
-                >
+              {/* Simple opacity fade transition */}
+              <span
+                className={cn(
+                  TYPE_CLASS,
+                  "transition-opacity duration-500",
+                  isTransitioning ? "opacity-0" : "opacity-100",
+                )}
+              >
+                .{displaySuffix}
+              </span>
 
-                  .{d.name}
-                </button>
-              ))}
-            </div>
-          )}
+              {activeDomains.length > 1 && (
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 shrink-0 translate-y-[-0.15em] text-muted-foreground/50 transition-transform duration-300",
+                    dropdownVisible && "rotate-180",
+                    "group-hover:text-muted-foreground",
+                  )}
+                />
+              )}
+            </button>
+
+            {/* Custom dropdown — pure floating text */}
+            {dropdownVisible && (
+              <div
+                ref={listRef}
+                role="listbox"
+                aria-label={t("landing.searchKicker")}
+                onWheel={handleDropdownWheel}
+                style={
+                  dropdownPosition
+                    ? {
+                        top: dropdownPosition.top,
+                        right: dropdownPosition.right,
+                        maxHeight: dropdownPosition.maxHeight,
+                      }
+                    : undefined
+                }
+                className={cn(
+                  "fixed z-50",
+                  "origin-top-right overflow-y-auto overscroll-contain touch-pan-y [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+                  dropdownOpen
+                    ? "animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-300"
+                    : "animate-out fade-out-0 zoom-out-95 slide-out-to-top-2 duration-300",
+                )}
+              >
+                {/* All domains in original order, current one highlighted in-place */}
+                {activeDomains.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    role="option"
+                    aria-selected={currentDomain?.id === d.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (currentDomain?.id === d.id) {
+                        closeDropdown();
+                      } else {
+                        handleSelectDomain(d.id);
+                      }
+                    }}
+                    className={cn(
+                      TYPE_CLASS,
+                      "block w-full px-1 py-1.5 text-right transition-colors duration-150 relative whitespace-nowrap",
+                      currentDomain?.id === d.id
+                        ? "text-foreground"
+                        : "text-muted-foreground/50 hover:text-muted-foreground/90",
+                    )}
+                  >
+
+                    .{d.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
+        {checkState === "available" ? (
+          isAuthenticated ? (
+            <Button
+              size="lg"
+              asChild
+              className="shrink-0 bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+            >
+              <Link to="/domains" onClick={(e) => e.stopPropagation()}>
+                {t("landing.searchClaim")}
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                signIn();
+              }}
+              className="shrink-0 bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+            >
+              {t("landing.searchClaim")}
+            </Button>
+          )
+        ) : isAuthenticated ? (
+          <Button
+            size="lg"
+            asChild
+            className="shrink-0 bg-brand hover:bg-brand/90 text-brand-foreground"
+          >
+            <Link to="/domains" onClick={(e) => e.stopPropagation()}>
+              {t("landing.browseDomains")}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        ) : (
+          <Button
+            size="lg"
+            type="button"
+            className="shrink-0 bg-brand hover:bg-brand/90 text-brand-foreground"
+            onClick={(e) => {
+              e.stopPropagation();
+              signIn();
+            }}
+          >
+            {t("landing.browseDomains")}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Status line */}
       <div className="mt-3 min-h-[1.5rem] text-sm">
         {checkState === "available" && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-              <Check className="h-4 w-4" />
-              <span className="font-medium">{t("landing.searchAvailable")}</span>
-            </span>
-            {isAuthenticated ? (
-              <Link
-                to="/domains"
-                className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline"
-              >
-                {t("landing.searchClaim")}
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => signIn()}
-                className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline"
-              >
-                {t("landing.searchLogin")}
-                <ArrowRight className="h-3 w-3" />
-              </button>
-            )}
-          </div>
+          <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+            <Check className="h-4 w-4" />
+            <span className="font-medium">{t("landing.searchAvailable")}</span>
+          </span>
         )}
 
         {checkState === "taken" && (
