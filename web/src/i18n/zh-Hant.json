@@ -49,6 +49,7 @@
     "heroTitle": "你的子網域，",
     "heroHighlight": "即刻部署",
     "heroDesc": "申請子網域、設定 DNS 記錄，讓你的專案在幾秒內上線。簡單、快速，由 Cloudflare 驅動。",
+    "heroDescCF": "簡單、快速，由 Cloudflare 驅動。",
     "browseDomains": "瀏覽網域",
     "getStarted": "開始使用",
     "featureInstantTitle": "即時設定",

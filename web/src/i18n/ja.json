@@ -49,6 +49,7 @@
     "heroTitle": "あなたのサブドメインを、",
     "heroHighlight": "即座にデプロイ",
     "heroDesc": "サブドメインを取得し、DNSレコードを設定して、数秒でプロジェクトを公開。シンプル、高速、Cloudflare 基盤。",
+    "heroDescCF": "シンプル、高速、Cloudflare 基盤。",
     "browseDomains": "ドメイン一覧",
     "getStarted": "始める",
     "featureInstantTitle": "即時セットアップ",

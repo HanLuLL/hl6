@@ -49,6 +49,7 @@
     "heroTitle": "Your subdomain, ",
     "heroHighlight": "instantly deployed",
     "heroDesc": "Claim a subdomain, configure DNS records, and get your project online in seconds. Simple, fast, and powered by Cloudflare.",
+    "heroDescCF": "Simple, fast, and powered by Cloudflare.",
     "browseDomains": "Browse Domains",
     "getStarted": "Get Started",
     "featureInstantTitle": "Instant Setup",
