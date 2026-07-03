@@ -5,12 +5,7 @@ import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { ChevronDown, Check, X, ArrowRight, Loader2 } from "lucide-react";
+import { ChevronDown, Check, X, ArrowRight } from "lucide-react";
 
 type CheckState = "idle" | "checking" | "available" | "taken" | "error";
 
@@ -26,14 +21,30 @@ export function DomainSearchBar() {
 
   const [prefix, setPrefix] = useState("");
   const [selectedDomainId, setSelectedDomainId] = useState<number | null>(null);
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownVisible, setDropdownVisible] = useState(false); // stays true during close animation
   const [checkState, setCheckState] = useState<CheckState>("idle");
   const [displayIndex, setDisplayIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [manualSelect, setManualSelect] = useState(false);
   const [focused, setFocused] = useState(false);
+
+  // Simple fade transition for auto-switch
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Close dropdown with fade-out animation
+  const closeDropdown = useCallback(() => {
+    setDropdownOpen(false);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setDropdownVisible(false);
+    }, 300);
+  }, []);
 
   const { data: domains } = useQuery({
     queryKey: ["public-domains"],
@@ -46,38 +57,63 @@ export function DomainSearchBar() {
 
   const activeDomains = domains ?? [];
 
-  // 后缀自动轮播 —— 一旦用户开始输入或手动选择，即锁定当前后缀
+  // Auto-switch with simple opacity fade transition
   useEffect(() => {
     if (manualSelect || prefix || activeDomains.length <= 1) return;
+
     intervalRef.current = setInterval(() => {
+      // Fade out
       setIsTransitioning(true);
-      setTimeout(() => {
+
+      // At midpoint, swap text then fade in
+      transitionTimerRef.current = setTimeout(() => {
         setDisplayIndex((prev) => (prev + 1) % activeDomains.length);
         setIsTransitioning(false);
-      }, 250);
+      }, 400);
     }, 2800);
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+      setIsTransitioning(false);
     };
   }, [activeDomains.length, manualSelect, prefix]);
+
+  // Cleanup close timer on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
+  // Close dropdown on outside click / Escape
+  useEffect(() => {
+    if (!dropdownOpen) return;
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        closeDropdown();
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeDropdown();
+    };
+
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [dropdownOpen]);
 
   const currentDomain = manualSelect
     ? activeDomains.find((d) => d.id === selectedDomainId)
     : activeDomains[displayIndex];
 
-  const runCheck = useCallback(async (name: string, domainId: number) => {
-    setCheckState("checking");
-    try {
-      const res = await api.checkSubdomainAvailable(name, domainId);
-      setCheckState(res.data.available ? "available" : "taken");
-    } catch {
-      setCheckState("error");
-    }
-  }, []);
-
-  // 边打字边校验（debounce），实时感。清空/切换后的即时“idle”态由事件处理器负责，
-  // 这里只在异步回调里 setState，避免 effect 内同步 setState 触发级联渲染。
   const currentDomainId = currentDomain?.id;
+
+  // Debounced domain check
   useEffect(() => {
     const name = sanitize(prefix).trim();
     if (!name || !currentDomainId) return;
@@ -100,14 +136,36 @@ export function DomainSearchBar() {
   const handleSelectDomain = useCallback((domainId: number) => {
     setSelectedDomainId(domainId);
     setManualSelect(true);
-    setPopoverOpen(false);
     setCheckState("idle");
-  }, []);
+    closeDropdown();
+  }, [closeDropdown]);
 
-  const handleImmediateCheck = useCallback(() => {
+  const handleToggleDropdown = useCallback(() => {
+    if (activeDomains.length <= 1) return;
+    if (dropdownVisible) {
+      closeDropdown();
+    } else {
+      // Opening dropdown → stop auto-switch permanently
+      setManualSelect(true);
+      if (!manualSelect && currentDomain) {
+        setSelectedDomainId(currentDomain.id);
+      }
+      setDropdownVisible(true);
+      setDropdownOpen(true);
+    }
+  }, [activeDomains.length, dropdownVisible, manualSelect, currentDomain, closeDropdown]);
+
+  const handleImmediateCheck = useCallback(async () => {
     const name = sanitize(prefix).trim();
-    if (name && currentDomainId) runCheck(name, currentDomainId);
-  }, [prefix, currentDomainId, runCheck]);
+    if (!name || !currentDomainId) return;
+    setCheckState("checking");
+    try {
+      const res = await api.checkSubdomainAvailable(name, currentDomainId);
+      setCheckState(res.data.available ? "available" : "taken");
+    } catch {
+      setCheckState("error");
+    }
+  }, [prefix, currentDomainId]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -130,17 +188,27 @@ export function DomainSearchBar() {
 
   return (
     <div className="w-full max-w-xl">
+      {/* Global blur overlay when dropdown is open */}
+      {dropdownVisible && (
+        <div
+          className={cn(
+            "fixed inset-0 z-40 bg-background/30 backdrop-blur-md transition-opacity duration-300",
+            dropdownOpen ? "opacity-100" : "opacity-0",
+          )}
+          aria-hidden
+        />
+      )}
 
-
-      {/* 内容化大标题：整行无框，唯一的“控件”是底部随状态变色的下划线 */}
+      {/* Input row */}
       <div
         className={cn(
-          "flex items-baseline gap-1 border-b-2 pb-2.5 transition-colors duration-300",
+          "flex items-baseline gap-1 border-b-2 pb-2.5 transition-colors duration-300 relative",
           underlineColor,
+          dropdownVisible && "z-50",
         )}
         onClick={() => inputRef.current?.focus()}
       >
-        {/* 前缀输入 —— 透明背景、宽度随内容 */}
+        {/* Prefix input */}
         <span className="relative inline-flex min-w-[1ch] max-w-[62%] items-baseline">
           <span aria-hidden className={cn(TYPE_CLASS, "invisible whitespace-pre")}>
             {measure}
@@ -151,6 +219,7 @@ export function DomainSearchBar() {
             onChange={(e) => {
               setPrefix(sanitize(e.target.value));
               setCheckState("idle");
+              if (dropdownVisible) closeDropdown();
             }}
             onKeyDown={handleKeyDown}
             onFocus={() => setFocused(true)}
@@ -166,58 +235,91 @@ export function DomainSearchBar() {
           />
         </span>
 
-        <div className="ml-auto flex items-center gap-1">
-          {/* 后缀 —— inline 可点切换 */}
-          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                onClick={(e) => e.stopPropagation()}
-                className={cn(
-                  TYPE_CLASS,
-                  "group inline-flex shrink-0 items-baseline gap-1 text-muted-foreground transition-colors hover:text-foreground",
-                )}
-              >
-                <span
-                  className={cn(
-                    "transition-opacity duration-200",
-                    isTransitioning ? "opacity-0" : "opacity-100",
-                  )}
-                >
-                  .{displaySuffix}
-                </span>
-                <ChevronDown className="h-4 w-4 shrink-0 translate-y-[-0.15em] text-muted-foreground/50 transition-transform group-hover:text-muted-foreground" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="start"
-              className="w-56 p-1"
-              onOpenAutoFocus={(e) => e.preventDefault()}
+        {/* Domain suffix selector */}
+        <div className="ml-auto flex items-center relative" ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleDropdown();
+            }}
+            className={cn(
+              TYPE_CLASS,
+              "group inline-flex shrink-0 items-baseline gap-1 text-muted-foreground transition-colors hover:text-foreground",
+            )}
+            aria-expanded={dropdownVisible}
+            aria-haspopup="listbox"
+          >
+            {/* Simple opacity fade transition */}
+            <span
+              className={cn(
+                TYPE_CLASS,
+                "transition-opacity duration-500",
+                isTransitioning ? "opacity-0" : "opacity-100",
+              )}
             >
+              .{displaySuffix}
+            </span>
 
+            {activeDomains.length > 1 && (
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 shrink-0 translate-y-[-0.15em] text-muted-foreground/50 transition-transform duration-300",
+                  dropdownVisible && "rotate-180",
+                  "group-hover:text-muted-foreground",
+                )}
+              />
+            )}
+          </button>
+
+          {/* Custom dropdown — pure floating text */}
+          {dropdownVisible && (
+            <div
+              role="listbox"
+              aria-label={t("landing.searchKicker")}
+              className={cn(
+                "absolute right-0 top-full mt-3 z-50",
+                "origin-top-right",
+                dropdownOpen
+                  ? "animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-300"
+                  : "animate-out fade-out-0 zoom-out-95 slide-out-to-top-2 duration-300",
+              )}
+            >
+              {/* All domains in original order, current one highlighted in-place */}
               {activeDomains.map((d) => (
                 <button
                   key={d.id}
                   type="button"
-                  onClick={() => handleSelectDomain(d.id)}
+                  role="option"
+                  aria-selected={currentDomain?.id === d.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (currentDomain?.id === d.id) {
+                      closeDropdown();
+                    } else {
+                      handleSelectDomain(d.id);
+                    }
+                  }}
                   className={cn(
-                    "w-full rounded-md px-2 py-1.5 text-left text-sm transition-colors",
+                    TYPE_CLASS,
+                    "block w-full px-5 py-1.5 text-right transition-colors duration-150 relative whitespace-nowrap",
                     currentDomain?.id === d.id
-                      ? "bg-brand-muted font-medium text-brand"
-                      : "hover:bg-muted",
+                      ? "text-foreground"
+                      : "text-muted-foreground/50 hover:text-muted-foreground/90",
                   )}
                 >
-                  {d.name}
+                  {currentDomain?.id === d.id && (
+                    <span className="absolute inset-y-1.5 right-0 w-0.5 rounded-l-full bg-brand/60" />
+                  )}
+                  .{d.name}
                 </button>
               ))}
-            </PopoverContent>
-          </Popover>
-
-
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 结果 / 提示 —— 内联无卡片 */}
+      {/* Status line */}
       <div className="mt-3 min-h-[1.5rem] text-sm">
         {checkState === "available" && (
           <div className="flex flex-wrap items-center gap-2">
@@ -225,9 +327,6 @@ export function DomainSearchBar() {
               <Check className="h-4 w-4" />
               <span className="font-medium">{t("landing.searchAvailable")}</span>
             </span>
-           {/**  <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-              {prefix.trim()}.{displaySuffix}
-            </code>*/}
             {isAuthenticated ? (
               <Link
                 to="/domains"
@@ -253,13 +352,8 @@ export function DomainSearchBar() {
           <div className="flex items-center gap-1.5 text-destructive">
             <X className="h-4 w-4" />
             <span>{t("landing.searchTaken")}</span>
-           {/** <code className="ml-1 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-              {prefix.trim()}.{displaySuffix}
-            </code> */}
           </div>
         )}
-
-
       </div>
     </div>
   );
