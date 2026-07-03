@@ -247,6 +247,12 @@ export const api = {
   // Domains
   listDomains: () => request<ApiResponse<Domain[]>>("/domains"),
 
+  // Public (no auth)
+  listPublicDomains: () =>
+    request<ApiResponse<{ id: number; name: string; description: string }[]>>("/public/domains"),
+  checkSubdomainAvailable: (name: string, domainId: number) =>
+    request<ApiResponse<{ available: boolean }>>(`/public/subdomains/check?name=${encodeURIComponent(name)}&domain_id=${domainId}`),
+
   // Subdomains
   listSubdomains: () => request<ApiResponse<Subdomain[]>>("/subdomains"),
   getSubdomainSettings: () => request<ApiResponse<SubdomainLengthSettings>>("/subdomains/settings"),

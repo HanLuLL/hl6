@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -54,6 +55,47 @@ func (h *DomainHandler) List(c *gin.Context) {
 		return
 	}
 	response.OK(c, domains)
+}
+
+// PublicList returns active domains without authentication (name + id only).
+func (h *DomainHandler) PublicList(c *gin.Context) {
+	domains, err := h.repo.ListDomains(true)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to list domains", "error.failedToListDomains")
+		return
+	}
+	type publicDomain struct {
+		ID          uint   `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+	result := make([]publicDomain, len(domains))
+	for i, d := range domains {
+		result[i] = publicDomain{ID: d.ID, Name: d.Name, Description: d.Description}
+	}
+	response.OK(c, result)
+}
+
+// PublicCheckSubdomain checks whether a subdomain name is already taken under a given domain.
+func (h *DomainHandler) PublicCheckSubdomain(c *gin.Context) {
+	name := strings.TrimSpace(c.Query("name"))
+	domainIDStr := c.Query("domain_id")
+	if name == "" || domainIDStr == "" {
+		response.BadRequest(c, "error.invalidRequestBody")
+		return
+	}
+	domainID, err := strconv.ParseUint(domainIDStr, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "error.invalidRequestBody")
+		return
+	}
+	sub, err := h.repo.FindSubdomainByName(uint(domainID), name)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		response.InternalError(c, "error.databaseError")
+		return
+	}
+	available := sub == nil || errors.Is(err, gorm.ErrRecordNotFound)
+	response.OK(c, gin.H{"available": available})
 }
 
 type groupAccessInput struct {

@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,7 +21,13 @@ import {
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import type { OIDCStatusPayload } from "@/types";
-import { Zap, Globe, Settings2, ArrowRight, Terminal } from "lucide-react";
+import { Zap, Globe, Settings2, ArrowRight } from "lucide-react";
+import { DomainSearchBar } from "@/components/domain/search-bar";
+
+// 懒加载：把 three.js / vanta（~600KB）拆成异步 chunk，不拖累首屏。
+const DomainFog = lazy(() =>
+  import("@/components/domain/domain-fog").then((m) => ({ default: m.DomainFog })),
+);
 
 export default function LandingPage() {
   const { isAuthenticated, signIn } = useAuth();
@@ -140,13 +146,26 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero — asymmetric split */}
-      <section className="flex-1 max-w-7xl mx-auto w-full px-6 py-20 md:py-28">
-        <div className="grid md:grid-cols-[1fr_auto] gap-12 lg:gap-20 items-start">
+      {/* Hero — Vanta fog backdrop with content on top */}
+      <section className="relative flex-1 overflow-hidden">
+        {/* Fog background (lazy-loaded three.js) */}
+        <Suspense fallback={null}>
+          <DomainFog className="absolute inset-0" />
+        </Suspense>
+        {/* Readability scrim: solid toward the content, fog bleeds through on the right */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background from-30% via-background/85 to-background/30" />
+        {/* Bottom fade into the page */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
+
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 py-20 md:py-28">
           {/* Left column */}
-          <div className="max-w-3xl">
+          <div className="max-w-3xl p-4">
             <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.1] text-foreground">
               {t("landing.heroTitle")}
+
+            </h1>
+            <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.1] text-foreground mt-2">
+
               <span className="relative inline-block text-brand">
                 {t("landing.heroHighlight")}
                 <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-brand/30 rounded-full" />
@@ -154,8 +173,14 @@ export default function LandingPage() {
             </h1>
             <p className="mt-5 text-base text-muted-foreground leading-relaxed">
               {t("landing.heroDesc")}
+            </p>          <p className=" text-base text-muted-foreground leading-relaxed">
+              {t("landing.heroDescCF")}
             </p>
-            <div className="mt-8 flex items-center gap-3">
+            {/* Domain availability check */}
+            <div className="mt-6">
+              <DomainSearchBar />
+            </div>
+            <div className="mt-4 flex items-center gap-3">
               {isAuthenticated ? (
                 <Button size="lg" asChild className="bg-brand hover:bg-brand/90 text-brand-foreground">
                   <Link to="/domains">
@@ -171,60 +196,13 @@ export default function LandingPage() {
               )}
               <span className="text-xs text-muted-foreground">{t("landing.noCardRequired")}</span>
             </div>
-          </div>
 
-          {/* Right column — terminal code block */}
-          <div className="hidden md:block w-[380px] lg:w-[440px] xl:w-[500px] shrink-0">
-            <div className="relative rounded-xl border border-brand/20 bg-brand-muted/55 backdrop-blur-xl shadow-xl shadow-brand/12 ring-1 ring-white/80 overflow-hidden dark:border-white/10 dark:bg-[oklch(0.10_0_0)] dark:shadow-xl dark:ring-0">
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand/12 via-brand-muted/30 to-white/50 dark:hidden" />
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_85%_0%,color-mix(in_oklch,var(--brand)_22%,transparent),transparent_55%)] dark:hidden" />
-              <div className="relative flex items-center gap-1.5 px-4 py-3 border-b border-brand/15 dark:border-white/10">
-                <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
-                <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
-                <span className="h-3 w-3 rounded-full bg-[#28c840]" />
-                <div className="ml-2 flex items-center gap-1.5 text-[11px] text-brand/55 dark:text-white/40">
-                  <Terminal className="h-3 w-3" />
-                  <span>dns records</span>
-                </div>
-              </div>
-              <pre className="relative px-5 py-4 text-[13px] leading-6 font-mono overflow-x-auto">
-                <code>
-                  <span className="text-muted-foreground/70 dark:text-white/40"># subdomain DNS records</span>{"\n"}
-                  <span className="text-muted-foreground/70 dark:text-white/40"># {branding.name || "hl6"} · {new Date().getFullYear()}</span>{"\n\n"}
-                  <span className="text-brand dark:text-[#7dd3fc]">A</span>
-                  <span className="text-foreground/40 dark:text-white/60">{"     "}</span>
-                  <span className="text-emerald-600 dark:text-[#86efac]">blog</span>
-                  <span className="text-muted-foreground/55 dark:text-white/40">.example.dev</span>
-                  <span className="text-foreground/40 dark:text-white/60">{"  →  "}</span>
-                  <span className="text-amber-600 dark:text-[#fde68a]">203.0.113.42</span>{"\n"}
-                  <span className="text-brand dark:text-[#7dd3fc]">AAAA</span>
-                  <span className="text-foreground/40 dark:text-white/60">{"  "}</span>
-                  <span className="text-emerald-600 dark:text-[#86efac]">api</span>
-                  <span className="text-muted-foreground/55 dark:text-white/40">.example.dev</span>
-                  <span className="text-foreground/40 dark:text-white/60">{"   →  "}</span>
-                  <span className="text-amber-600 dark:text-[#fde68a]">2001:db8::1</span>{"\n"}
-                  <span className="text-brand dark:text-[#7dd3fc]">CNAME</span>
-                  <span className="text-foreground/40 dark:text-white/60">{"  "}</span>
-                  <span className="text-emerald-600 dark:text-[#86efac]">www</span>
-                  <span className="text-muted-foreground/55 dark:text-white/40">.example.dev</span>
-                  <span className="text-foreground/40 dark:text-white/60">{"   →  "}</span>
-                  <span className="text-amber-600 dark:text-[#fde68a]">cdn.host.io</span>{"\n"}
-                  <span className="text-brand dark:text-[#7dd3fc]">TXT</span>
-                  <span className="text-foreground/40 dark:text-white/60">{"    "}</span>
-                  <span className="text-emerald-600 dark:text-[#86efac]">_verify</span>
-                  <span className="text-muted-foreground/55 dark:text-white/40">.example.dev</span>
-                  <span className="text-foreground/40 dark:text-white/60">{"  →  "}</span>
-                  <span className="text-amber-600 dark:text-[#fde68a]">"v=spf1 ..."</span>{"\n\n"}
-                  <span className="text-muted-foreground/55 dark:text-white/30">{"# ✓ propagated in ~30s"}</span>
-                </code>
-              </pre>
-            </div>
           </div>
         </div>
       </section>
 
       {/* Features — Bento 2+1 */}
-      <section className="py-20 border-t border-border/50">
+      <section className="py-20 ">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-10">
             <h2 className="text-2xl font-bold tracking-tight">{t("landing.featuresTitle")}</h2>

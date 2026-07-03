@@ -6,6 +6,11 @@ import (
 )
 
 func registerDNSRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, h *Handlers) {
+	// Public endpoints (no auth required)
+	api.GET("/public/domains", h.Domain.PublicList)
+	api.GET("/public/subdomains/check", h.Domain.PublicCheckSubdomain)
+
+	// Authenticated endpoints
 	authed := api.Group("", auth.Required())
 
 	authed.GET("/domains", h.Domain.List)
