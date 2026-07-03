@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -27,6 +27,11 @@ export function DomainSearchBar() {
   const [displayIndex, setDisplayIndex] = useState(0);
   const [manualSelect, setManualSelect] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number;
+    right: number;
+    maxHeight: number;
+  } | null>(null);
 
   // Simple fade transition for auto-switch
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -44,6 +49,27 @@ export function DomainSearchBar() {
     closeTimerRef.current = setTimeout(() => {
       setDropdownVisible(false);
     }, 300);
+  }, []);
+
+  const updateDropdownPosition = useCallback(() => {
+    if (!dropdownRef.current) return;
+
+    const rect = dropdownRef.current.getBoundingClientRect();
+    const gap = 12;
+    const viewportPadding = 16;
+    const preferredMaxHeight = 448;
+    const minHeight = 160;
+    const availableBelow = window.innerHeight - rect.bottom - gap - viewportPadding;
+    const availableAbove = rect.top - gap - viewportPadding;
+    const openAbove = availableBelow < minHeight && availableAbove > availableBelow;
+    const availableHeight = openAbove ? availableAbove : availableBelow;
+    const maxHeight = Math.max(minHeight, Math.min(preferredMaxHeight, availableHeight));
+
+    setDropdownPosition({
+      top: openAbove ? Math.max(viewportPadding, rect.top - gap - maxHeight) : rect.bottom + gap,
+      right: Math.max(viewportPadding, window.innerWidth - rect.right),
+      maxHeight,
+    });
   }, []);
 
   const { data: domains } = useQuery({
@@ -85,6 +111,18 @@ export function DomainSearchBar() {
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (!dropdownVisible) return;
+
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
+    };
+  }, [dropdownVisible, updateDropdownPosition]);
 
   // Close dropdown on outside click / Escape
   useEffect(() => {
@@ -173,6 +211,21 @@ export function DomainSearchBar() {
     },
     [handleImmediateCheck],
   );
+
+  const handleDropdownWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollHeight <= el.clientHeight || e.deltaY === 0) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    const delta =
+      e.deltaMode === WheelEvent.DOM_DELTA_LINE
+        ? e.deltaY * 16
+        : e.deltaMode === WheelEvent.DOM_DELTA_PAGE
+          ? e.deltaY * el.clientHeight
+          : e.deltaY;
+    el.scrollTop += delta;
+  }, []);
 
   const displaySuffix = currentDomain?.name ?? "—";
   const measure = prefix || t("landing.searchPlaceholder");
@@ -277,9 +330,19 @@ export function DomainSearchBar() {
             <div
               role="listbox"
               aria-label={t("landing.searchKicker")}
+              onWheel={handleDropdownWheel}
+              style={
+                dropdownPosition
+                  ? {
+                      top: dropdownPosition.top,
+                      right: dropdownPosition.right,
+                      maxHeight: dropdownPosition.maxHeight,
+                    }
+                  : undefined
+              }
               className={cn(
-                "absolute right-0 top-full mt-3 z-50",
-                "origin-top-right",
+                "fixed z-50",
+                "origin-top-right overflow-y-auto overscroll-contain touch-pan-y [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
                 dropdownOpen
                   ? "animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-300"
                   : "animate-out fade-out-0 zoom-out-95 slide-out-to-top-2 duration-300",
@@ -302,15 +365,13 @@ export function DomainSearchBar() {
                   }}
                   className={cn(
                     TYPE_CLASS,
-                    "block w-full px-5 py-1.5 text-right transition-colors duration-150 relative whitespace-nowrap",
+                    "block w-full px-1 py-1.5 text-right transition-colors duration-150 relative whitespace-nowrap",
                     currentDomain?.id === d.id
                       ? "text-foreground"
                       : "text-muted-foreground/50 hover:text-muted-foreground/90",
                   )}
                 >
-                  {currentDomain?.id === d.id && (
-                    <span className="absolute inset-y-1.5 right-0 w-0.5 rounded-l-full bg-brand/60" />
-                  )}
+
                   .{d.name}
                 </button>
               ))}
