@@ -153,7 +153,7 @@ export default function LandingPage() {
           <DomainFog className="absolute inset-0" />
         </Suspense>
         {/* Readability scrim: solid toward the content, fog bleeds through on the right */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background from-30% via-background/85 to-background/30" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background  via-background/85 " />
         {/* Bottom fade into the page */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
 
