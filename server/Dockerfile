@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25.8-alpine AS builder
 
 WORKDIR /src
 
@@ -21,8 +21,5 @@ WORKDIR /app
 COPY --from=builder /out/hl6-server /app/server
 
 EXPOSE 8080
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -q -O- http://localhost:8080/health || exit 1
 
 ENTRYPOINT ["/app/server"]

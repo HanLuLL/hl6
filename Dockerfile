@@ -14,7 +14,8 @@ ENV APP_GIT_COMMIT=$APP_GIT_COMMIT
 
 RUN npm run build
 
-FROM golang:1.25-alpine AS server-builder
+
+FROM golang:1.25.8-alpine AS server-builder
 
 WORKDIR /src
 
@@ -27,7 +28,9 @@ COPY server/go.mod server/go.sum ./
 RUN go mod download
 
 COPY server/ ./
+
 RUN CGO_ENABLED=1 GOOS=linux go build -o /out/hl6-server ./cmd/server
+
 
 FROM alpine:3.22
 
@@ -39,8 +42,5 @@ COPY --from=server-builder /out/hl6-server /app/server
 COPY --from=web-builder /src/web/dist /app/web/dist
 
 EXPOSE 8080
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -q -O- http://localhost:8080/health || exit 1
 
 ENTRYPOINT ["/app/server"]
