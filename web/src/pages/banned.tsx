@@ -37,7 +37,7 @@ export default function BannedPage() {
   };
 
   const handleLogout = async () => {
-    await signOut(); // ✅ 修改：logout → signOut
+    await signOut();
     navigate("/", { replace: true });
   };
 
