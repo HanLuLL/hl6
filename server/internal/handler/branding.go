@@ -16,13 +16,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chai2010/webp"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	"hl6-server/internal/config"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
+
+	"github.com/chai2010/webp"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 const (
@@ -41,10 +42,15 @@ type BrandingHandler struct {
 }
 
 type brandingResponse struct {
-	Name       string  `json:"name"`
-	LogoURL    *string `json:"logo_url"`
-	FaviconURL *string `json:"favicon_url"`
-	Version    string  `json:"version"`
+	Name                string  `json:"name"`
+	LogoURL             *string `json:"logo_url"`
+	FaviconURL          *string `json:"favicon_url"`
+	Version             string  `json:"version"`
+	AnnouncementEnabled bool    `json:"announcement_enabled"`
+	AnnouncementContent string  `json:"announcement_content"`
+	FooterICP           string  `json:"footer_icp"`
+	FooterICPLink       string  `json:"footer_icp_link"`
+	FooterContent       string  `json:"footer_content"`
 }
 
 func NewBrandingHandler(repo *repository.Repository, cfg *config.Config) *BrandingHandler {
@@ -307,11 +313,20 @@ func (h *BrandingHandler) loadBranding(c *gin.Context) (*brandingResponse, error
 		faviconURL = &url
 	}
 
+	// Fetch public site configs (announcement & footer)
+	publicKeys := []string{"announcement_enabled", "announcement_content", "site_footer_icp", "site_footer_icp_link", "site_footer_content"}
+	publicConfigs, _ := h.repo.GetSystemConfigsByKeys(publicKeys)
+
 	return &brandingResponse{
-		Name:       name,
-		LogoURL:    logoURL,
-		FaviconURL: faviconURL,
-		Version:    version,
+		Name:                name,
+		LogoURL:             logoURL,
+		FaviconURL:          faviconURL,
+		Version:             version,
+		AnnouncementEnabled: publicConfigs["announcement_enabled"] == "true",
+		AnnouncementContent: publicConfigs["announcement_content"],
+		FooterICP:           publicConfigs["site_footer_icp"],
+		FooterICPLink:       publicConfigs["site_footer_icp_link"],
+		FooterContent:       publicConfigs["site_footer_content"],
 	}, nil
 }
 

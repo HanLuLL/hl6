@@ -5,9 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
 	"hl6-server/internal/config"
 	"hl6-server/internal/handler"
 	"hl6-server/internal/middleware"
@@ -15,6 +12,10 @@ import (
 	"hl6-server/internal/service"
 	"hl6-server/internal/worker"
 	"hl6-server/pkg/queue"
+
+	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 type auditStack struct {
@@ -29,7 +30,21 @@ func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		status := "ok"
+		dbOK := true
+		if sqlDB, err := db.DB(); err == nil {
+			if err := sqlDB.Ping(); err != nil {
+				dbOK = false
+				status = "degraded"
+			}
+		} else {
+			dbOK = false
+			status = "degraded"
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":   status,
+			"database": dbOK,
+		})
 	})
 
 	repo := repository.New(db)
@@ -49,11 +64,17 @@ func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context) *gin.Engine {
 	api.GET("/branding/logo.webp", h.Branding.GetLogo)
 	api.GET("/branding/favicon.ico", h.Branding.GetFavicon)
 
+	// SEO public endpoints
+	r.GET("/robots.txt", h.SEO.RobotsTXT)
+	r.GET("/sitemap.xml", h.SEO.SitemapXML)
+	api.GET("/seo/meta", h.SEO.GetSEOMeta)
+
 	registerAuthRoutes(api, auth, h)
 	registerDNSRoutes(api, auth, h)
 	registerCreditRoutes(api, auth, h)
 	registerNotificationRoutes(api, auth, h)
 	registerAdminRoutes(api, auth, h)
+	registerPaymentRoutes(api, auth, h)
 
 	setupFrontendRoutes(r)
 

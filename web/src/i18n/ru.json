@@ -96,7 +96,8 @@
     "auditLogs": "Журнал аудита",
     "adminSettings": "Настройки",
     "adminNotifications": "Уведомления",
-    "audit": "Модерация контента"
+    "audit": "Модерация контента",
+    "profile": "Профиль"
   },
   "dashboard": {
     "title": "Панель управления",
@@ -162,7 +163,29 @@
     "dailyCheckinNow": "Отметиться",
     "dailyCheckingIn": "Отмечаем...",
     "dailyCheckinClaimed": "Сегодня уже отмечено",
-    "dailyCheckinSuccess": "Чекин выполнен, получено {{amount}} кредитов"
+    "dailyCheckinSuccess": "Чекин выполнен, получено {{amount}} кредитов",
+    "rechargeTitle": "Пополнить кредиты",
+    "rechargeDesc": "Выберите пакет или введите сумму",
+    "customAmount": "Другая сумма",
+    "cnyUnit": "CNY",
+    "creditsUnit": "кредитов",
+    "payMethod": "Способ оплаты",
+    "alipay": "Alipay",
+    "wechat": "WeChat Pay",
+    "qq": "QQ Wallet",
+    "goPay": "Оплатить",
+    "creating": "Создание...",
+    "orderCreated": "Заказ создан, завершите оплату в новом окне",
+    "invalidAmount": "Введите корректную сумму",
+    "paymentOrders": "История платежей",
+    "rechargeOrder": "Пополнить {{credits}} кредитов",
+    "noPaymentOrders": "Нет записей о платежах",
+    "orderStatus": {
+      "pending": "Ожидает",
+      "paid": "Оплачено",
+      "failed": "Ошибка",
+      "expired": "Истёк"
+    }
   },
   "claimDialog": {
     "title": "Регистрация поддомена",
@@ -337,6 +360,7 @@
     "creditCost": "Стоимость в кредитах",
     "description": "Описание",
     "optionalDescription": "Необязательное описание",
+    "descriptionTemplate": "Номер регистрации ICP:\nРегистратор:\n\n⚠️ Внимание: Поддомены этого домена не должны использоваться в незаконных целях. Внедрена автоматическая система сканирования контента, нарушения приведут к блокировке, удалению и другим мерам.",
     "editDomain": "Редактирование домена: {{name}}",
     "domainCreated": "Домен создан",
     "domainUpdated": "Домен обновлён",
@@ -479,7 +503,38 @@
     "dailyCheckinGroups": "Разрешённые группы",
     "dailyCheckinGroupsHint": "Если группы не выбраны, никто не может отмечаться",
     "dailyCheckinZeroDisableHint": "Если кредиты равны 0, функция считается выключенной",
-    "noGroups": "Нет доступных групп"
+    "noGroups": "Нет доступных групп",
+    "announcementTitle": "Объявление сайта",
+    "announcementDesc": "Настройка объявления на главной и в панели управления, поддерживает HTML",
+    "announcementEnabled": "Включить объявление",
+    "announcementContent": "Содержание объявления",
+    "announcementContentHint": "Поддерживает HTML, отображается вверху главной страницы и панели управления",
+    "saveAnnouncement": "Сохранить объявление",
+    "footerTitle": "Информация в подвале",
+    "footerDesc": "Настройка регистрации ICP и пользовательского содержимого в подвале сайта",
+    "footerIcp": "Номер регистрации ICP",
+    "footerIcpLink": "Ссылка регистрации",
+    "footerIcpLinkHint": "URL перехода при нажатии на номер ICP",
+    "footerContent": "Пользовательское содержимое подвала",
+    "footerContentHint": "Поддерживает HTML, отображается внизу подвала",
+    "saveFooter": "Сохранить подвал",
+    "seoTitle": "SEO оптимизация",
+    "seoDesc": "Настройка метаданных для поисковых систем",
+    "seoDescription": "Описание сайта",
+    "seoDescriptionHint": "Отображается в результатах поиска (рекомендуется 120-160 символов)",
+    "seoKeywords": "Ключевые слова",
+    "seoKeywordsHint": "Список ключевых слов через запятую",
+    "seoAuthor": "Автор",
+    "seoOGImage": "URL изображения Open Graph",
+    "seoOGImageHint": "URL изображения для соцсетей (рекомендуется 1200x630px)",
+    "seoTwitterCard": "Тип карточки Twitter",
+    "seoTwitterSite": "Аккаунт Twitter",
+    "seoTwitterSiteHint": "напр. @youraccount",
+    "seoAnalyticsID": "Google Analytics ID",
+    "seoAnalyticsIDHint": "напр. G-XXXXXXXXXX",
+    "seoIndexingDisabled": "Отключить индексацию",
+    "seoIndexingDisabledHint": "При включении robots.txt запретит всех поисковых роботов",
+    "saveSEO": "Сохранить SEO"
   },
   "referral": {
     "title": "Реферальная программа",
@@ -533,7 +588,8 @@
     "subdomainDeletedDeduct": "Домен удалён администратором, списание бонусных кредитов за поддомен {{fqdn}}",
     "referralInviter": "Награда за приглашение {{name}}",
     "referralInvitee": "Награда за приглашение от {{name}}",
-    "dailyCheckin": "Награда за ежедневный чекин"
+    "dailyCheckin": "Награда за ежедневный чекин",
+    "recharge": "Пополнение кредитов (Заказ: {{order_no}})"
   },
   "notifications": {
     "title": "Уведомления",
@@ -1044,6 +1100,17 @@
       "sendNotify": "Notify user",
       "reasonPlaceholder": "Optional reason"
     }
+  },
+  "profile": {
+    "title": "Профиль",
+    "subtitle": "Управление личной информацией",
+    "name": "Имя",
+    "namePlaceholder": "Введите ваше имя",
+    "avatarUrl": "URL аватара",
+    "bio": "О себе",
+    "bioPlaceholder": "Расскажите о себе...",
+    "website": "Веб-сайт",
+    "saved": "Профиль сохранён"
   },
   "notification": {
     "subdomainSuspended": {

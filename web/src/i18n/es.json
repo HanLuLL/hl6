@@ -96,7 +96,8 @@
     "auditLogs": "Registros de auditoría",
     "adminSettings": "Configuración",
     "adminNotifications": "Notificaciones",
-    "audit": "Auditoría de contenido"
+    "audit": "Auditoría de contenido",
+    "profile": "Perfil"
   },
   "dashboard": {
     "title": "Panel de control",
@@ -162,7 +163,29 @@
     "dailyCheckinNow": "Registrar ahora",
     "dailyCheckingIn": "Registrando...",
     "dailyCheckinClaimed": "Ya registrado hoy",
-    "dailyCheckinSuccess": "Registro exitoso, ganaste {{amount}} créditos"
+    "dailyCheckinSuccess": "Registro exitoso, ganaste {{amount}} créditos",
+    "rechargeTitle": "Recargar Créditos",
+    "rechargeDesc": "Selecciona un paquete o ingresa una cantidad personalizada",
+    "customAmount": "Cantidad personalizada",
+    "cnyUnit": "CNY",
+    "creditsUnit": "créditos",
+    "payMethod": "Pagar con",
+    "alipay": "Alipay",
+    "wechat": "WeChat Pay",
+    "qq": "QQ Wallet",
+    "goPay": "Pagar Ahora",
+    "creating": "Creando...",
+    "orderCreated": "Pedido creado, completa el pago en la nueva ventana",
+    "invalidAmount": "Ingresa una cantidad válida",
+    "paymentOrders": "Historial de Pagos",
+    "rechargeOrder": "Recargar {{credits}} créditos",
+    "noPaymentOrders": "Sin registros de pago",
+    "orderStatus": {
+      "pending": "Pendiente",
+      "paid": "Pagado",
+      "failed": "Fallido",
+      "expired": "Expirado"
+    }
   },
   "claimDialog": {
     "title": "Solicitar subdominio",
@@ -337,6 +360,7 @@
     "creditCost": "Coste en créditos",
     "description": "Descripción",
     "optionalDescription": "Descripción opcional",
+    "descriptionTemplate": "Nº de registro ICP:\nProveedor de registro:\n\n⚠️ Aviso: Los subdominios bajo este dominio no deben utilizarse para fines ilegales. Se ha implementado un sistema automatizado de escaneo de contenido, y las violaciones resultarán en suspensión, eliminación u otras medidas.",
     "editDomain": "Editar dominio: {{name}}",
     "domainCreated": "Dominio creado",
     "domainUpdated": "Dominio actualizado",
@@ -479,7 +503,38 @@
     "dailyCheckinGroups": "Grupos permitidos",
     "dailyCheckinGroupsHint": "Si no se selecciona ningún grupo, nadie puede registrarse",
     "dailyCheckinZeroDisableHint": "Cuando los créditos son 0, la función se considera deshabilitada",
-    "noGroups": "No hay grupos disponibles"
+    "noGroups": "No hay grupos disponibles",
+    "announcementTitle": "Anuncio del sitio",
+    "announcementDesc": "Configurar anuncio de página principal y panel, soporta HTML",
+    "announcementEnabled": "Habilitar anuncio",
+    "announcementContent": "Contenido del anuncio",
+    "announcementContentHint": "Soporta formato HTML, se muestra en la parte superior de la página principal y del panel",
+    "saveAnnouncement": "Guardar anuncio",
+    "footerTitle": "Información del pie de página",
+    "footerDesc": "Configurar registro ICP y contenido personalizado del pie de página",
+    "footerIcp": "Número de registro ICP",
+    "footerIcpLink": "Enlace del registro",
+    "footerIcpLinkHint": "URL al navegar al hacer clic en el número ICP",
+    "footerContent": "Contenido personalizado del pie de página",
+    "footerContentHint": "Soporta formato HTML, se muestra en la parte inferior del pie de página",
+    "saveFooter": "Guardar pie de página",
+    "seoTitle": "Optimización SEO",
+    "seoDesc": "Configurar metadatos de optimización para motores de búsqueda",
+    "seoDescription": "Descripción del sitio",
+    "seoDescriptionHint": "Mostrada en resultados de búsqueda (recomendado 120-160 caracteres)",
+    "seoKeywords": "Palabras clave",
+    "seoKeywordsHint": "Lista de palabras clave separadas por comas",
+    "seoAuthor": "Autor",
+    "seoOGImage": "URL de imagen Open Graph",
+    "seoOGImageHint": "URL de imagen para compartir en redes sociales (recomendado 1200x630px)",
+    "seoTwitterCard": "Tipo de tarjeta de Twitter",
+    "seoTwitterSite": "Cuenta de Twitter",
+    "seoTwitterSiteHint": "ej. @youraccount",
+    "seoAnalyticsID": "ID de Google Analytics",
+    "seoAnalyticsIDHint": "ej. G-XXXXXXXXXX",
+    "seoIndexingDisabled": "Deshabilitar indexación",
+    "seoIndexingDisabledHint": "Cuando se activa, robots.txt rechazará todos los crawlers",
+    "saveSEO": "Guardar SEO"
   },
   "referral": {
     "title": "Programa de referidos",
@@ -533,7 +588,8 @@
     "subdomainDeletedDeduct": "Admin eliminó el dominio, créditos de bonificación reclamados por subdominio {{fqdn}}",
     "referralInviter": "Recompensa por invitar a {{name}}",
     "referralInvitee": "Recompensa por invitación de {{name}}",
-    "dailyCheckin": "Recompensa de registro diario"
+    "dailyCheckin": "Recompensa de registro diario",
+    "recharge": "Recarga de créditos (Pedido: {{order_no}})"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -1044,6 +1100,17 @@
       "sendNotify": "Notify user",
       "reasonPlaceholder": "Optional reason"
     }
+  },
+  "profile": {
+    "title": "Perfil",
+    "subtitle": "Gestiona tu información personal",
+    "name": "Nombre",
+    "namePlaceholder": "Introduce tu nombre",
+    "avatarUrl": "URL del avatar",
+    "bio": "Biografía",
+    "bioPlaceholder": "Cuéntanos sobre ti...",
+    "website": "Sitio web",
+    "saved": "Perfil guardado"
   },
   "notification": {
     "subdomainSuspended": {

@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"hl6-server/internal/config"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/model"
 	"hl6-server/internal/oidc"
 	"hl6-server/pkg/crypto"
 	"hl6-server/pkg/response"
+
+	"github.com/gin-gonic/gin"
 )
 
 var allowedConfigKeys = map[string]bool{
@@ -31,6 +32,19 @@ var allowedConfigKeys = map[string]bool{
 	"oidc_issuer":                true,
 	"oidc_client_id":             true,
 	"oidc_client_secret":         true,
+	"announcement_enabled":       true,
+	"announcement_content":       true,
+	"site_footer_icp":            true,
+	"site_footer_icp_link":       true,
+	"site_footer_content":        true,
+	"seo_description":            true,
+	"seo_keywords":               true,
+	"seo_author":                 true,
+	"seo_og_image":               true,
+	"seo_twitter_card":           true,
+	"seo_twitter_site":           true,
+	"seo_analytics_id":           true,
+	"seo_indexing_disabled":      true,
 }
 
 func (h *AdminHandler) GetConfig(c *gin.Context) {

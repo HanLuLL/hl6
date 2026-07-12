@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function AdminSettingsPage() {
@@ -29,6 +31,19 @@ export default function AdminSettingsPage() {
   const [oidcIssuer, setOidcIssuer] = useState("");
   const [oidcClientID, setOidcClientID] = useState("");
   const [oidcClientSecret, setOidcClientSecret] = useState("");
+  const [announcementEnabled, setAnnouncementEnabled] = useState(false);
+  const [announcementContent, setAnnouncementContent] = useState("");
+  const [footerIcp, setFooterIcp] = useState("");
+  const [footerIcpLink, setFooterIcpLink] = useState("");
+  const [footerContent, setFooterContent] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+  const [seoKeywords, setSeoKeywords] = useState("");
+  const [seoAuthor, setSeoAuthor] = useState("");
+  const [seoOGImage, setSeoOGImage] = useState("");
+  const [seoTwitterCard, setSeoTwitterCard] = useState("summary_large_image");
+  const [seoTwitterSite, setSeoTwitterSite] = useState("");
+  const [seoAnalyticsID, setSeoAnalyticsID] = useState("");
+  const [seoIndexingDisabled, setSeoIndexingDisabled] = useState(false);
 
   useEffect(() => {
     if (!config) {
@@ -52,6 +67,19 @@ export default function AdminSettingsPage() {
     setOidcIssuer(config.oidc_runtime?.issuer ?? values.oidc_issuer ?? "");
     setOidcClientID(config.oidc_runtime?.client_id ?? values.oidc_client_id ?? "");
     setOidcClientSecret("");
+    setAnnouncementEnabled(values.announcement_enabled === "true");
+    setAnnouncementContent(values.announcement_content ?? "");
+    setFooterIcp(values.site_footer_icp ?? "");
+    setFooterIcpLink(values.site_footer_icp_link ?? "");
+    setFooterContent(values.site_footer_content ?? "");
+    setSeoDescription(values.seo_description ?? "");
+    setSeoKeywords(values.seo_keywords ?? "");
+    setSeoAuthor(values.seo_author ?? "");
+    setSeoOGImage(values.seo_og_image ?? "");
+    setSeoTwitterCard(values.seo_twitter_card ?? "summary_large_image");
+    setSeoTwitterSite(values.seo_twitter_site ?? "");
+    setSeoAnalyticsID(values.seo_analytics_id ?? "");
+    setSeoIndexingDisabled(values.seo_indexing_disabled === "true");
   }, [config]);
 
   const updateMutation = useMutation({
@@ -122,6 +150,34 @@ export default function AdminSettingsPage() {
     if (Object.keys(payload).length === 0) return;
     updateMutation.mutate(payload);
     setOidcClientSecret("");
+  };
+
+  const saveAnnouncement = () => {
+    updateMutation.mutate({
+      announcement_enabled: String(announcementEnabled),
+      announcement_content: announcementContent,
+    });
+  };
+
+  const saveFooter = () => {
+    updateMutation.mutate({
+      site_footer_icp: footerIcp,
+      site_footer_icp_link: footerIcpLink,
+      site_footer_content: footerContent,
+    });
+  };
+
+  const saveSEO = () => {
+    updateMutation.mutate({
+      seo_description: seoDescription,
+      seo_keywords: seoKeywords,
+      seo_author: seoAuthor,
+      seo_og_image: seoOGImage,
+      seo_twitter_card: seoTwitterCard,
+      seo_twitter_site: seoTwitterSite,
+      seo_analytics_id: seoAnalyticsID,
+      seo_indexing_disabled: String(seoIndexingDisabled),
+    });
   };
 
   if (isLoading) {
@@ -307,6 +363,178 @@ export default function AdminSettingsPage() {
               {config?.url_runtime.confirmed ? t("adminSettings.confirmedState") : t("adminSettings.unconfirmedState")}
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("adminSettings.announcementTitle")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("adminSettings.announcementDesc")}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>{t("adminSettings.announcementEnabled")}</Label>
+            <Switch
+              checked={announcementEnabled}
+              onCheckedChange={setAnnouncementEnabled}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{t("adminSettings.announcementContent")}</Label>
+            <Textarea
+              value={announcementContent}
+              onChange={(e) => setAnnouncementContent(e.target.value)}
+              placeholder={t("adminSettings.announcementContentHint")}
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground">{t("adminSettings.announcementContentHint")}</p>
+          </div>
+          <Button
+            onClick={saveAnnouncement}
+            disabled={updateMutation.isPending}
+          >
+            {updateMutation.isPending ? t("common.saving") : t("adminSettings.saveAnnouncement")}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("adminSettings.footerTitle")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("adminSettings.footerDesc")}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>{t("adminSettings.footerIcp")}</Label>
+            <Input
+              value={footerIcp}
+              onChange={(e) => setFooterIcp(e.target.value)}
+              placeholder={t("adminSettings.footerIcp")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{t("adminSettings.footerIcpLink")}</Label>
+            <Input
+              value={footerIcpLink}
+              onChange={(e) => setFooterIcpLink(e.target.value)}
+              placeholder="https://beian.miit.gov.cn"
+            />
+            <p className="text-xs text-muted-foreground">{t("adminSettings.footerIcpLinkHint")}</p>
+          </div>
+          <div className="space-y-2">
+            <Label>{t("adminSettings.footerContent")}</Label>
+            <Textarea
+              value={footerContent}
+              onChange={(e) => setFooterContent(e.target.value)}
+              placeholder={t("adminSettings.footerContentHint")}
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground">{t("adminSettings.footerContentHint")}</p>
+          </div>
+          <Button
+            onClick={saveFooter}
+            disabled={updateMutation.isPending}
+          >
+            {updateMutation.isPending ? t("common.saving") : t("adminSettings.saveFooter")}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("adminSettings.seoTitle")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("adminSettings.seoDesc")}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>{t("adminSettings.seoDescription")}</Label>
+            <Textarea
+              value={seoDescription}
+              onChange={(e) => setSeoDescription(e.target.value)}
+              placeholder={t("adminSettings.seoDescriptionHint")}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">{t("adminSettings.seoDescriptionHint")}</p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t("adminSettings.seoKeywords")}</Label>
+              <Input
+                value={seoKeywords}
+                onChange={(e) => setSeoKeywords(e.target.value)}
+                placeholder={t("adminSettings.seoKeywordsHint")}
+              />
+              <p className="text-xs text-muted-foreground">{t("adminSettings.seoKeywordsHint")}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("adminSettings.seoAuthor")}</Label>
+              <Input
+                value={seoAuthor}
+                onChange={(e) => setSeoAuthor(e.target.value)}
+                placeholder={t("adminSettings.seoAuthor")}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>{t("adminSettings.seoOGImage")}</Label>
+            <Input
+              value={seoOGImage}
+              onChange={(e) => setSeoOGImage(e.target.value)}
+              placeholder="https://example.com/og-image.png"
+            />
+            <p className="text-xs text-muted-foreground">{t("adminSettings.seoOGImageHint")}</p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t("adminSettings.seoTwitterCard")}</Label>
+              <Select
+                value={seoTwitterCard}
+                onValueChange={setSeoTwitterCard}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t("adminSettings.seoTwitterCard")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="summary">summary</SelectItem>
+                  <SelectItem value="summary_large_image">summary_large_image</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("adminSettings.seoTwitterSite")}</Label>
+              <Input
+                value={seoTwitterSite}
+                onChange={(e) => setSeoTwitterSite(e.target.value)}
+                placeholder="@youraccount"
+              />
+              <p className="text-xs text-muted-foreground">{t("adminSettings.seoTwitterSiteHint")}</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>{t("adminSettings.seoAnalyticsID")}</Label>
+            <Input
+              value={seoAnalyticsID}
+              onChange={(e) => setSeoAnalyticsID(e.target.value)}
+              placeholder="G-XXXXXXXXXX"
+            />
+            <p className="text-xs text-muted-foreground">{t("adminSettings.seoAnalyticsIDHint")}</p>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label>{t("adminSettings.seoIndexingDisabled")}</Label>
+              <p className="text-xs text-muted-foreground">{t("adminSettings.seoIndexingDisabledHint")}</p>
+            </div>
+            <Switch
+              checked={seoIndexingDisabled}
+              onCheckedChange={setSeoIndexingDisabled}
+            />
+          </div>
+          <Button
+            onClick={saveSEO}
+            disabled={updateMutation.isPending}
+          >
+            {updateMutation.isPending ? t("common.saving") : t("adminSettings.saveSEO")}
+          </Button>
         </CardContent>
       </Card>
     </div>

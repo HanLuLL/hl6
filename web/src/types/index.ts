@@ -547,6 +547,11 @@ export interface BrandingResponse {
   logo_url: string | null;
   favicon_url: string | null;
   version: string;
+  announcement_enabled?: boolean;
+  announcement_content?: string;
+  footer_icp?: string;
+  footer_icp_link?: string;
+  footer_content?: string;
 }
 
 export interface AdminURLRuntime {
@@ -583,4 +588,52 @@ export interface AdminConfigPayload {
 
 export interface OIDCStatusPayload extends AdminOIDCRuntime {
   setup_allowed: boolean;
+}
+
+// ---- Payment Types ----
+
+export type PaymentGateway = "epay" | "codepay";
+export type PaymentMethod = "alipay" | "wechat" | "qq";
+export type PaymentOrderStatus = "pending" | "paid" | "failed" | "expired";
+
+export interface PaymentProduct {
+  id: number;
+  credits: number;
+  price: number;
+  name: string;
+}
+
+export interface PaymentOrder {
+  id: number;
+  user_id: number;
+  order_no: string;
+  gateway: PaymentGateway;
+  payment_method: PaymentMethod;
+  amount: number;
+  credits: number;
+  status: PaymentOrderStatus;
+  trade_no: string;
+  pay_url: string;
+  created_at: string;
+  paid_at?: string;
+}
+
+export interface CreateOrderResponse {
+  order_no: string;
+  pay_url: string;
+  credits: number;
+  amount: number;
+}
+
+// ---- SEO Types ----
+
+export interface SEOMeta {
+  site_name: string;
+  site_description: string;
+  site_keywords: string;
+  site_author: string;
+  site_og_image: string;
+  twitter_card: string;
+  twitter_site: string;
+  analytics_id: string;
 }

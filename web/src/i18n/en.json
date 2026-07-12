@@ -96,7 +96,8 @@
     "auditLogs": "Audit Logs",
     "adminSettings": "Settings",
     "adminNotifications": "Notifications",
-    "audit": "Content Audit"
+    "audit": "Content Audit",
+    "profile": "Profile"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -162,7 +163,29 @@
     "dailyCheckinNow": "Check in now",
     "dailyCheckingIn": "Checking in...",
     "dailyCheckinClaimed": "Checked in today",
-    "dailyCheckinSuccess": "Check-in successful, gained {{amount}} credits"
+    "dailyCheckinSuccess": "Check-in successful, gained {{amount}} credits",
+    "rechargeTitle": "Recharge Credits",
+    "rechargeDesc": "Select a package or enter a custom amount",
+    "customAmount": "Custom amount",
+    "cnyUnit": "CNY",
+    "creditsUnit": "credits",
+    "payMethod": "Pay with",
+    "alipay": "Alipay",
+    "wechat": "WeChat Pay",
+    "qq": "QQ Wallet",
+    "goPay": "Pay Now",
+    "creating": "Creating...",
+    "orderCreated": "Order created, please complete payment in the new window",
+    "invalidAmount": "Please enter a valid amount",
+    "paymentOrders": "Payment History",
+    "rechargeOrder": "Recharge {{credits}} credits",
+    "noPaymentOrders": "No payment records",
+    "orderStatus": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "failed": "Failed",
+      "expired": "Expired"
+    }
   },
   "claimDialog": {
     "title": "Claim Subdomain",
@@ -337,6 +360,7 @@
     "creditCost": "Credit Cost",
     "description": "Description",
     "optionalDescription": "Optional description",
+    "descriptionTemplate": "ICP Filing No.:\nFiling Provider:\n\n⚠️ Notice: Subdomains under this domain must not be used for any illegal purposes. An automated content scanning system is deployed, and violations will result in suspension, deletion, or other enforcement actions.",
     "editDomain": "Edit Domain: {{name}}",
     "domainCreated": "Domain created",
     "domainUpdated": "Domain updated",
@@ -479,7 +503,38 @@
     "dailyCheckinGroups": "Allowed user groups",
     "dailyCheckinGroupsHint": "If no group is selected, no user can check in",
     "dailyCheckinZeroDisableHint": "When credits are set to 0, the feature is treated as disabled at runtime",
-    "noGroups": "No groups available"
+    "noGroups": "No groups available",
+    "announcementTitle": "Site Announcement",
+    "announcementDesc": "Configure homepage and dashboard announcement, supports HTML",
+    "announcementEnabled": "Enable Announcement",
+    "announcementContent": "Announcement Content",
+    "announcementContentHint": "Supports HTML format, displayed at the top of homepage and dashboard",
+    "saveAnnouncement": "Save Announcement",
+    "footerTitle": "Footer Information",
+    "footerDesc": "Configure site footer ICP filing and custom content",
+    "footerIcp": "ICP Filing Number",
+    "footerIcpLink": "Filing Link",
+    "footerIcpLinkHint": "URL to navigate when clicking the ICP number",
+    "footerContent": "Custom Footer Content",
+    "footerContentHint": "Supports HTML format, displayed at the bottom of footer",
+    "saveFooter": "Save Footer",
+    "seoTitle": "SEO Optimization",
+    "seoDesc": "Configure search engine optimization metadata",
+    "seoDescription": "Site Description",
+    "seoDescriptionHint": "Displayed in search results (recommended 120-160 characters)",
+    "seoKeywords": "Keywords",
+    "seoKeywordsHint": "Comma-separated keyword list",
+    "seoAuthor": "Author",
+    "seoOGImage": "Open Graph Image URL",
+    "seoOGImageHint": "Image URL for social sharing (recommended 1200x630px)",
+    "seoTwitterCard": "Twitter Card Type",
+    "seoTwitterSite": "Twitter Account",
+    "seoTwitterSiteHint": "e.g. @youraccount",
+    "seoAnalyticsID": "Google Analytics ID",
+    "seoAnalyticsIDHint": "e.g. G-XXXXXXXXXX",
+    "seoIndexingDisabled": "Disable Search Engine Indexing",
+    "seoIndexingDisabledHint": "When enabled, robots.txt will disallow all crawlers",
+    "saveSEO": "Save SEO"
   },
   "referral": {
     "title": "Referral Program",
@@ -533,7 +588,8 @@
     "subdomainDeletedDeduct": "Admin deleted domain, bonus credits reclaimed for subdomain {{fqdn}}",
     "referralInviter": "Referral reward for inviting {{name}}",
     "referralInvitee": "Referral reward from {{name}}'s invitation",
-    "dailyCheckin": "Daily check-in reward"
+    "dailyCheckin": "Daily check-in reward",
+    "recharge": "Credit recharge (Order: {{order_no}})"
   },
   "notifications": {
     "title": "Notifications",
@@ -1044,6 +1100,17 @@
       "sendNotify": "Notify user",
       "reasonPlaceholder": "Optional reason"
     }
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Manage your personal information",
+    "name": "Name",
+    "namePlaceholder": "Enter your name",
+    "avatarUrl": "Avatar URL",
+    "bio": "Bio",
+    "bioPlaceholder": "Tell us about yourself...",
+    "website": "Website",
+    "saved": "Profile saved"
   },
   "notification": {
     "subdomainSuspended": {

@@ -42,6 +42,10 @@ import type {
   AuditScenario,
   AuditRuleTestResult,
   SubdomainScan,
+  PaymentProduct,
+  PaymentOrder,
+  CreateOrderResponse,
+  SEOMeta,
 } from "@/types";
 import { buildPaginatedQuery } from "@/lib/api-query";
 
@@ -232,6 +236,10 @@ export const api = {
   getBranding: (options?: { signal?: AbortSignal }) =>
     request<ApiResponse<BrandingResponse>>("/branding", { signal: options?.signal }),
 
+  // SEO (public)
+  getSEOMeta: () =>
+    request<ApiResponse<SEOMeta>>("/seo/meta"),
+
   // Auth
   getMe: async () => {
     const res = await request<ApiResponse<{ user: User; credits: number }>>("/auth/me");
@@ -243,6 +251,8 @@ export const api = {
   bootstrapOIDCConfig: (data: { oidc_issuer: string; oidc_client_id: string; oidc_client_secret: string }) =>
     request<ApiResponse<OIDCStatusPayload>>("/auth/oidc/bootstrap", { method: "POST", body: JSON.stringify(data) }),
   logout: () => request<ApiResponse<{ logout_url: string }>>("/auth/logout", { method: "POST" }),
+  updateProfile: (data: { name?: string; avatar_url?: string; bio?: string; website?: string }) =>
+    request<ApiResponse<{ user: User }>>("/auth/profile", { method: "PUT", body: JSON.stringify(data) }),
 
   // Domains
   listDomains: () => request<ApiResponse<Domain[]>>("/domains"),
@@ -307,6 +317,14 @@ export const api = {
   // Referrals
   getReferrals: (page = 1, perPage = 20) =>
     request<ApiResponse<ReferralInfo>>(`/referrals?page=${page}&per_page=${perPage}`),
+
+  // Payment
+  getPaymentProducts: () =>
+    request<ApiResponse<PaymentProduct[]>>("/payment/products"),
+  createPaymentOrder: (data: { gateway: string; payment_method: string; amount: number }) =>
+    request<ApiResponse<CreateOrderResponse>>("/payment/orders", { method: "POST", body: JSON.stringify(data) }),
+  getPaymentOrders: () =>
+    request<ApiResponse<PaymentOrder[]>>("/payment/orders"),
 
   // Admin
   adminCreateDomain: (data: { name: string; provider_zone_id: string; provider_account_id: number; description: string; group_access: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>

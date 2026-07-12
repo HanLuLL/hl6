@@ -10,6 +10,7 @@ import DomainsPage from "@/pages/domains";
 import SubdomainsPage from "@/pages/subdomains";
 import SubdomainDetailPage from "@/pages/subdomain-detail";
 import CreditsPage from "@/pages/credits";
+import ProfilePage from "@/pages/profile";
 import AdminDomainsPage from "@/pages/admin/domains";
 import AdminUsersPage from "@/pages/admin/users";
 import AdminAuditLogsPage from "@/pages/admin/audit-logs";
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="/subdomains" element={<SubdomainsPage />} />
           <Route path="/subdomains/:id" element={<SubdomainDetailPage />} />
           <Route path="/credits" element={<CreditsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin/domains" element={<AdminDomainsPage />} />
             <Route path="/admin/cloudflare" element={<Navigate to="/admin/domains?tab=dns-providers" replace />} />

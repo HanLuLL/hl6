@@ -6,14 +6,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubdomains } from "@/hooks/use-subdomains";
 import { useCredits } from "@/hooks/use-credits";
+import { useBranding } from "@/hooks/use-branding";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { Coins, Layers, Database } from "lucide-react";
+import { sanitizeHTML } from "@/lib/utils";
 
 export default function DashboardPage() {
   const { user, credits } = useAuth();
   const { data: subdomains, isLoading: subdomainsLoading } = useSubdomains();
   const { data: creditData, isLoading: creditsLoading } = useCredits();
   const { t } = useTranslation();
+  const branding = useBranding();
   useDocumentTitle(t("dashboard.title"));
 
   const isLoading = subdomainsLoading || creditsLoading;
@@ -49,6 +52,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {branding.announcement_enabled && (branding as any).announcement_content && (
+        <div className="rounded-lg border bg-brand/5 border-brand/20 p-4">
+          <div
+            className="text-sm prose prose-sm prose-neutral dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: sanitizeHTML((branding as any).announcement_content) }}
+          />
+        </div>
+      )}
       {/* Welcome */}
       <div className="flex items-center gap-4">
         <Avatar className="h-11 w-11 shrink-0">

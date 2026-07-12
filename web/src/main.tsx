@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SEOProvider } from "@/hooks/use-seo";
 import App from "./App";
 import "./i18n";
 import "./index.css";
@@ -21,7 +22,9 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <App />
+        <SEOProvider>
+          <App />
+        </SEOProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

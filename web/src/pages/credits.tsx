@@ -4,9 +4,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { api, getErrorMessage } from "@/lib/api";
 import { useCredits, useDailyCheckinStatus, useTransactions } from "@/hooks/use-credits";
 import { useReferrals } from "@/hooks/use-referrals";
+import { usePaymentProducts, usePaymentOrders } from "@/hooks/use-payment";
+import type { PaymentProduct } from "@/types";
 import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { Coins, CalendarCheck, CheckCircle2, Copy } from "lucide-react";
@@ -21,6 +24,35 @@ export default function CreditsPage() {
   const { data: refData, isLoading: refLoading } = useReferrals(refPage, 10);
   const { t } = useTranslation();
   useDocumentTitle(t("credits.title"));
+
+  const { data: products, isLoading: productsLoading } = usePaymentProducts();
+  const { data: paymentOrders } = usePaymentOrders();
+  const [selectedProduct, setSelectedProduct] = useState<PaymentProduct | null>(null);
+  const [customAmount, setCustomAmount] = useState("");
+  const [payMethod, setPayMethod] = useState<"alipay" | "wechat" | "qq">("alipay");
+
+  const rechargeMutation = useMutation({
+    mutationFn: api.createPaymentOrder,
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["payment-orders"] });
+      window.open(res.data.pay_url, "_blank");
+      toast.success(t("credits.orderCreated"));
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+
+  const handleRecharge = () => {
+    const amount = selectedProduct ? selectedProduct.price : parseFloat(customAmount);
+    if (!amount || amount < 1) {
+      toast.error(t("credits.invalidAmount"));
+      return;
+    }
+    rechargeMutation.mutate({
+      gateway: "epay",
+      payment_method: payMethod,
+      amount,
+    });
+  };
 
   const claimMutation = useMutation({
     mutationFn: api.claimDailyCheckin,
@@ -117,6 +149,87 @@ export default function CreditsPage() {
           </Card>
         )}
       </div>
+
+      {/* Recharge */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">{t("credits.rechargeTitle")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("credits.rechargeDesc")}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {productsLoading ? (
+            <Skeleton className="h-9 w-full" />
+          ) : (
+            <>
+              {/* Product selection */}
+              <div className="flex flex-wrap gap-2">
+                {products?.map((p) => (
+                  <Button
+                    key={p.id}
+                    variant={selectedProduct?.id === p.id ? "default" : "outline"}
+                    size="sm"
+                    className={selectedProduct?.id === p.id ? "bg-brand hover:bg-brand/90 text-brand-foreground" : ""}
+                    onClick={() => { setSelectedProduct(p); setCustomAmount(""); }}
+                  >
+                    {p.name} ¥{p.price}
+                  </Button>
+                ))}
+              </div>
+              {/* Custom amount */}
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder={t("credits.customAmount")}
+                  value={customAmount}
+                  onChange={(e) => { setCustomAmount(e.target.value); setSelectedProduct(null); }}
+                  className="w-32"
+                />
+                <span className="text-sm text-muted-foreground">{t("credits.cnyUnit")}</span>
+                {customAmount && (
+                  <span className="text-sm text-muted-foreground">
+                    = {Math.round(parseFloat(customAmount) * 10)} {t("credits.creditsUnit")}
+                  </span>
+                )}
+              </div>
+              {/* Payment method */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{t("credits.payMethod")}:</span>
+                <Button
+                  variant={payMethod === "alipay" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPayMethod("alipay")}
+                >
+                  {t("credits.alipay")}
+                </Button>
+                <Button
+                  variant={payMethod === "wechat" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPayMethod("wechat")}
+                >
+                  {t("credits.wechat")}
+                </Button>
+                <Button
+                  variant={payMethod === "qq" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPayMethod("qq")}
+                >
+                  {t("credits.qq")}
+                </Button>
+              </div>
+              {/* Pay button */}
+              <Button
+                className="bg-brand hover:bg-brand/90 text-brand-foreground"
+                onClick={handleRecharge}
+                disabled={rechargeMutation.isPending || (!selectedProduct && !customAmount)}
+              >
+                {rechargeMutation.isPending ? t("credits.creating") : t("credits.goPay")}
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Referral */}
       {referralEnabled && (
@@ -248,6 +361,41 @@ export default function CreditsPage() {
               )}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Payment Orders */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">{t("credits.paymentOrders")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="divide-y">
+            {paymentOrders && paymentOrders.length > 0 ? paymentOrders.map((order) => (
+              <div key={order.id} className="flex items-center justify-between py-3 text-sm">
+                <div className="flex items-center gap-3">
+                  <span className={`h-2 w-2 rounded-full shrink-0 ${
+                    order.status === "paid" ? "bg-green-500" : order.status === "pending" ? "bg-yellow-500" : "bg-red-500"
+                  }`} />
+                  <div>
+                    <p className="font-medium leading-none">{t("credits.rechargeOrder", { credits: order.credits })}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {order.gateway} · ¥{order.amount} · {new Date(order.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  order.status === "paid" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
+                  order.status === "pending" ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" :
+                  "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                }`}>
+                  {t(`credits.orderStatus.${order.status}`)}
+                </span>
+              </div>
+            )) : (
+              <p className="text-center text-muted-foreground py-8">{t("credits.noPaymentOrders")}</p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

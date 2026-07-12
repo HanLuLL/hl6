@@ -473,7 +473,7 @@ function DomainsContent() {
             </div>
             <div className="space-y-2">
               <Label>{t("adminDomains.description")}</Label>
-              <Textarea placeholder={t("adminDomains.optionalDescription")} value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Textarea placeholder={t("adminDomains.optionalDescription")} value={description || t("adminDomains.descriptionTemplate")} onChange={(e) => setDescription(e.target.value)} rows={6} />
             </div>
             <GroupAccessEditor
               groups={groups ?? []}

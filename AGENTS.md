@@ -2,6 +2,12 @@
 
 HL6 是一个域名/子域名管理平台，用户可以在已注册域名下认领和管理子域名，并管理 DNS 记录。包含基于积分的访问控制和管理员功能。
 
+> **原项目**：[https://git.houlang.cloud/houlangcloud/hl6](https://git.houlang.cloud/houlangcloud/hl6) by [厚浪开发组](https://houlang.cloud)
+>
+> **本项目**：[https://github.com/HanLuLL/hl6](https://github.com/HanLuLL/hl6)
+>
+> **容器镜像**：`ghcr.milu.moe/hanlull/hl6:latest`
+
 ## Tech Stack
 
 - **Frontend**: React 19 + TypeScript, Vite, Tailwind CSS 4, React Router DOM, TanStack React Query, i18nextt (6 语言), OIDC 兼容认证, Shadcn UI
