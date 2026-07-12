@@ -79,13 +79,13 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/callback" element={<CallbackPage />} />
-        <Route path="/friend-links" element={<FriendLinksPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/domains" element={<DomainsPage />} />
           <Route path="/subdomains" element={<SubdomainsPage />} />
           <Route path="/subdomains/:id" element={<SubdomainDetailPage />} />
           <Route path="/credits" element={<CreditsPage />} />
+          <Route path="/friend-links" element={<FriendLinksPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin/domains" element={<AdminDomainsPage />} />
