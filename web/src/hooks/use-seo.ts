@@ -141,5 +141,5 @@ export function useSEOInit(): void {
 
 export function SEOProvider({ children }: { children: ReactNode }) {
   useSEOInit();
-  return <>{children}</>;
+  return children;
 }
