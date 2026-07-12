@@ -6,7 +6,6 @@ on:
       - dev
   workflow_dispatch:
 
-# 允许 Action 写入 GHCR
 permissions:
   contents: read
   packages: write
