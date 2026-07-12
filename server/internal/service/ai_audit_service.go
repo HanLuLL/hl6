@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
@@ -68,10 +67,10 @@ URL：{{url}}
 
 // AIAuditService AI 审查服务，协调 LLM 调用、审查记录和自动处置。
 type AIAuditService struct {
-	repo         *repository.Repository
-	llm          *AILLMService
-	auditSvc     *AuditService
-	auditLog     *AuditLogService
+	repo          *repository.Repository
+	llm           *AILLMService
+	auditSvc      *AuditService
+	auditLog      *AuditLogService
 	encryptionKey []byte
 }
 
@@ -145,12 +144,12 @@ func (s *AIAuditService) ReviewSubdomain(ctx context.Context, input AIAuditInput
 	result := s.llm.SendChatRequest(ctx, modelConfig, systemPrompt, userPrompt)
 
 	review := &model.AuditAIReview{
-		SubdomainID:      input.SubdomainID,
-		ScanID:           input.ScanID,
-		FQDN:             input.FQDN,
-		ModelConfigID:    modelConfig.ID,
-		PromptTemplateID: promptTemplateID,
-		InputContent:     inputSummary,
+		SubdomainID:       input.SubdomainID,
+		ScanID:            input.ScanID,
+		FQDN:              input.FQDN,
+		ModelConfigID:     modelConfig.ID,
+		PromptTemplateID:  promptTemplateID,
+		InputContent:      inputSummary,
 		AdminReviewStatus: model.AdminReviewPending,
 	}
 
@@ -162,8 +161,7 @@ func (s *AIAuditService) ReviewSubdomain(ctx context.Context, input AIAuditInput
 		review.AIResponse = result.Response
 		review.TokensUsed = result.TokensUsed
 
-		// 解析 AI 返回
-		judgment, violationTypes, confidence, suggestedAction, reason := ParseAIJudgment(result.Response)
+		judgment, violationTypes, confidence, suggestedAction, _ := ParseAIJudgment(result.Response)
 		review.AIJudgment = judgment
 		review.ViolationTypes = model.StringSlice(violationTypes)
 		review.AIConfidence = confidence
@@ -249,11 +247,11 @@ func (s *AIAuditService) autoSuspendUser(ctx context.Context, input AIAuditInput
 	// 构造一个虚拟 AuditRule 用于调用已有的封禁逻辑
 	violationDesc := strings.Join(review.ViolationTypes, ", ")
 	rule := &model.AuditRule{
-		Name:  fmt.Sprintf("AI审查自动封禁: %s", violationDesc),
+		Name:   fmt.Sprintf("AI审查自动封禁: %s", violationDesc),
 		Action: model.AuditActionUser,
 	}
 
-	s.auditSvc.SuspendUserSubdomains(ctx, sub.UserID, rule, review.AIResponse)
+	s.auditSvc.suspendUserSubdomains(ctx, sub.UserID, rule, review.AIResponse)
 
 	// 记录审计日志
 	_ = s.auditLog.RecordUser(sub.UserID, "ai_audit_auto_suspend_user", "subdomain", sub.ID, map[string]interface{}{
@@ -276,11 +274,11 @@ func (s *AIAuditService) autoSuspendSubdomain(ctx context.Context, input AIAudit
 
 	violationDesc := strings.Join(review.ViolationTypes, ", ")
 	rule := &model.AuditRule{
-		Name:  fmt.Sprintf("AI审查自动封禁: %s", violationDesc),
+		Name:   fmt.Sprintf("AI审查自动封禁: %s", violationDesc),
 		Action: model.AuditActionSite,
 	}
 
-	s.auditSvc.ReleaseSubdomainViaRule(ctx, sub, rule, review.AIResponse)
+	s.auditSvc.releaseSubdomainViaRule(ctx, sub, rule, review.AIResponse)
 
 	_ = s.auditLog.RecordUser(sub.UserID, "ai_audit_auto_suspend_site", "subdomain", sub.ID, map[string]interface{}{
 		"fqdn":             input.FQDN,
@@ -316,20 +314,20 @@ func truncateContent(content string, maxChars int) string {
 	return string(runes[:maxChars]) + "\n...[内容已截断]"
 }
 
-// ---- 提示词模板种子数据 ----
+// 提示词模板种子数据
 
 // DefaultPromptTemplates 返回系统默认的提示词模板列表。
 func DefaultPromptTemplates(createdBy uint) []model.AuditPromptTemplate {
 	return []model.AuditPromptTemplate{
 		{
-			Name:          "通用内容安全审查",
-			IsDefault:     true,
-			IsEnabled:     true,
-			SortOrder:     0,
-			SystemPrompt:  DefaultAuditSystemPrompt,
-			UserPrompt:    DefaultAuditUserPrompt,
-			Description:   "默认审查模板，覆盖暴力、色情、仇恨言论、敏感政治、恶意代码等违规类型",
-			CreatedBy:     createdBy,
+			Name:         "通用内容安全审查",
+			IsDefault:    true,
+			IsEnabled:    true,
+			SortOrder:    0,
+			SystemPrompt: DefaultAuditSystemPrompt,
+			UserPrompt:   DefaultAuditUserPrompt,
+			Description:  "默认审查模板，覆盖暴力、色情、仇恨言论、敏感政治、恶意代码等违规类型",
+			CreatedBy:    createdBy,
 		},
 		{
 			Name:      "严格审查模式",
