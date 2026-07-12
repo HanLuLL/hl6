@@ -80,11 +80,10 @@ docker pull ghcr.milu.moe/hanlull/hl6:latest
 | `BACKEND_URL` | 否 | 后端对外地址 |
 | `ALLOWED_ORIGINS` | 否 | CORS 白名单 |
 | `ENCRYPTION_KEY` | 否 | AES-256-GCM 密钥（64 位十六进制） |
-| `EPAY_URL` / `EPAY_PID` / `EPAY_KEY` | 否 | 易支付网关配置 |
-| `CODEPAY_URL` / `CODEPAY_ID` / `CODEPAY_KEY` | 否 | 码支付网关配置 |
 
 > *OIDC 三项可留空，首次启动时通过 Web UI 初始化向导配置（仅限系统无用户时）。
 > 系统首个注册用户自动成为管理员。
+> 支付网关（易支付/码支付）配置已移至后台「系统设置 → 支付配置」面板，无需环境变量。
 
 完整环境变量说明见 `.env.example` 和 [docs/deployment.md](docs/deployment.md)。
 

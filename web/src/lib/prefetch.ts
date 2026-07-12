@@ -20,6 +20,12 @@ const routeQueries: Record<string, { queryKey: unknown[]; queryFn: () => Promise
         api.listTransactions(1, 20).then((r) => ({ data: r.data, total: r.total, page: r.page, perPage: r.per_page })),
     },
   ],
+  "/friend-links": [
+    { queryKey: ["friend-links"], queryFn: () => api.getFriendLinks().then((r) => r.data) },
+  ],
+  "/admin/friend-links": [
+    { queryKey: ["admin-friend-links"], queryFn: () => api.adminListFriendLinks().then((r) => r.data) },
+  ],
   "/admin/audit": [
     { queryKey: ["audit-summary"], queryFn: () => api.adminGetAuditSummary().then((r) => r.data) },
     { queryKey: ["admin-audit-cases", 1, "", "", "", "", "all"], queryFn: () => api.adminListAuditCases(1, 20, { status: "active,suspended" }).then((r) => r.data) },

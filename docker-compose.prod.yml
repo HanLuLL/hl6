@@ -20,12 +20,6 @@ services:
       OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:-}"
       OIDC_CLIENT_SECRET: "${OIDC_CLIENT_SECRET:-}"
       ENCRYPTION_KEY: "${ENCRYPTION_KEY:-}"
-      EPAY_URL: "${EPAY_URL:-}"
-      EPAY_PID: "${EPAY_PID:-}"
-      EPAY_KEY: "${EPAY_KEY:-}"
-      CODEPAY_URL: "${CODEPAY_URL:-}"
-      CODEPAY_ID: "${CODEPAY_ID:-}"
-      CODEPAY_KEY: "${CODEPAY_KEY:-}"
       REDIS_ADDR: "${REDIS_ADDR:-}"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O-", "http://localhost:8080/health"]

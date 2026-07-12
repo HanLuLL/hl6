@@ -43,6 +43,8 @@ import {
   SlidersHorizontal,
   ChevronDown,
   Menu,
+  Link2,
+  LinkIcon,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -78,6 +80,7 @@ const navItems: NavItem[] = [
   { labelKey: "nav.domains", href: "/domains", icon: Globe },
   { labelKey: "nav.mySubdomains", href: "/subdomains", icon: Layers },
   { labelKey: "nav.credits", href: "/credits", icon: Coins },
+  { labelKey: "nav.friendLinks", href: "/friend-links", icon: Link2 },
   { labelKey: "nav.profile", href: "/profile", icon: UserCircle },
 ];
 
@@ -86,6 +89,7 @@ const adminItems: NavItem[] = [
   { labelKey: "nav.adminDomains", href: "/admin/domains", icon: Settings2 },
   { labelKey: "nav.audit", href: "/admin/audit", icon: ShieldCheck },
   { labelKey: "nav.auditLogs", href: "/admin/audit-logs", icon: ClipboardList },
+  { labelKey: "nav.adminFriendLinks", href: "/admin/friend-links", icon: LinkIcon },
   { labelKey: "nav.adminSettings", href: "/admin/settings", icon: SlidersHorizontal },
 ];
 
@@ -179,7 +183,7 @@ function NavSection({
 
 function SidebarContent({ onNavigate, collapsed, branding }: { onNavigate?: () => void; collapsed?: boolean; branding: BrandingResponse }) {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || !!user?.group?.is_admin;
   const [sectionsCollapsed, setSectionsCollapsed] = useState(loadNavSectionsCollapsed);
 
   useEffect(() => {
@@ -232,7 +236,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
   });
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || !!user?.group?.is_admin;
 
   const { data: adminConfig } = useQuery({
     queryKey: ["admin-config"],

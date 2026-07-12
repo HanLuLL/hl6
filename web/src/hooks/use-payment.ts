@@ -12,6 +12,17 @@ export function usePaymentProducts() {
   });
 }
 
+export function usePaymentMethods() {
+  return useQuery({
+    queryKey: ["payment-methods"],
+    queryFn: async () => {
+      const res = await api.getPaymentMethods();
+      return res.data;
+    },
+    staleTime: 60_000,
+  });
+}
+
 export function usePaymentOrders() {
   return useQuery({
     queryKey: ["payment-orders"],

@@ -26,25 +26,10 @@ type Handlers struct {
 	SSEBroker         *handler.SSEBroker
 	Payment           *handler.PaymentHandler
 	SEO               *handler.SEOHandler
+	FriendLink        *handler.FriendLinkHandler
 }
 
 func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *service.DNSOperationService, migSvc *service.DomainMigrationService, sseBroker *handler.SSEBroker, audit auditStack) *Handlers {
-	// Initialize payment services
-	var epaySvc *service.EpayService
-	var codepaySvc *service.CodePayService
-
-	backendURL := cfg.BackendURL
-	if backendURL == "" {
-		backendURL = "http://localhost:8081"
-	}
-
-	if cfg.EpayURL != "" && cfg.EpayPID != "" && cfg.EpayKey != "" {
-		epaySvc = service.NewEpayService(cfg.EpayURL, cfg.EpayPID, cfg.EpayKey, backendURL+"/api/v1/payment/epay/notify", backendURL+"/api/v1/payment/return")
-	}
-	if cfg.CodePayURL != "" && cfg.CodePayID != "" && cfg.CodePayKey != "" {
-		codepaySvc = service.NewCodePayService(cfg.CodePayURL, cfg.CodePayID, cfg.CodePayKey, backendURL+"/api/v1/payment/codepay/notify", backendURL+"/api/v1/payment/return")
-	}
-
 	return &Handlers{
 		Auth:              handler.NewAuthHandler(repo),
 		OIDC:              handler.NewOIDCHandler(repo, cfg),
@@ -61,7 +46,8 @@ func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *servic
 		NotificationAdmin: handler.NewNotificationAdminHandler(repo, sseBroker, cfg),
 		Audit:             handler.NewAuditHandler(repo, audit.auditSvc, audit.subSvc, dnsOps, audit.enqueue, audit.notif, audit.auditLog),
 		SSEBroker:         sseBroker,
-		Payment:           handler.NewPaymentHandler(repo, epaySvc, codepaySvc),
+		Payment:           handler.NewPaymentHandler(repo, cfg),
 		SEO:               handler.NewSEOHandler(repo),
+		FriendLink:        handler.NewFriendLinkHandler(repo),
 	}
 }

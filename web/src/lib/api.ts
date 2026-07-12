@@ -45,7 +45,10 @@ import type {
   PaymentProduct,
   PaymentOrder,
   CreateOrderResponse,
+  PaymentMethodsResponse,
   SEOMeta,
+  FriendLink,
+  FriendLinkInput,
 } from "@/types";
 import { buildPaginatedQuery } from "@/lib/api-query";
 
@@ -321,6 +324,8 @@ export const api = {
   // Payment
   getPaymentProducts: () =>
     request<ApiResponse<PaymentProduct[]>>("/payment/products"),
+  getPaymentMethods: () =>
+    request<ApiResponse<PaymentMethodsResponse>>("/payment/methods"),
   createPaymentOrder: (data: { gateway: string; payment_method: string; amount: number }) =>
     request<ApiResponse<CreateOrderResponse>>("/payment/orders", { method: "POST", body: JSON.stringify(data) }),
   getPaymentOrders: () =>
@@ -375,9 +380,9 @@ export const api = {
   // Admin: User Groups
   adminListGroups: () =>
     request<ApiResponse<UserGroup[]>>("/admin/groups"),
-  adminCreateGroup: (data: { name: string; is_default?: boolean }) =>
+  adminCreateGroup: (data: { name: string; is_default?: boolean; is_admin?: boolean }) =>
     request<ApiResponse<UserGroup>>("/admin/groups", { method: "POST", body: JSON.stringify(data) }),
-  adminUpdateGroup: (id: number, data: { name?: string; is_default?: boolean }) =>
+  adminUpdateGroup: (id: number, data: { name?: string; is_default?: boolean; is_admin?: boolean }) =>
     request<ApiResponse<UserGroup>>(`/admin/groups/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   adminDeleteGroup: (id: number, migrateTo: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/groups/${id}?migrate_to=${migrateTo}`, { method: "DELETE" }),
@@ -606,4 +611,18 @@ export const api = {
     return request<PaginatedResponse<SubdomainScan[]>>(path);
   },
   adminGetAuditScan: (id: number) => request<ApiResponse<SubdomainScan>>(`/admin/audit/scans/${id}`),
+
+  // Friend Links - public
+  getFriendLinks: () =>
+    request<ApiResponse<FriendLink[]>>("/friend-links"),
+
+  // Friend Links - admin
+  adminListFriendLinks: () =>
+    request<ApiResponse<FriendLink[]>>("/admin/friend-links"),
+  adminCreateFriendLink: (data: FriendLinkInput) =>
+    request<ApiResponse<FriendLink>>("/admin/friend-links", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdateFriendLink: (id: number, data: Partial<FriendLinkInput>) =>
+    request<ApiResponse<FriendLink>>(`/admin/friend-links/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminDeleteFriendLink: (id: number) =>
+    request<ApiResponse<{ deleted: boolean }>>(`/admin/friend-links/${id}`, { method: "DELETE" }),
 };

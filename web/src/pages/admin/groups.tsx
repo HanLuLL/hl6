@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
@@ -48,10 +49,12 @@ export function GroupsContent() {
   const [showAdd, setShowAdd] = useState(false);
   const [addName, setAddName] = useState("");
   const [addIsDefault, setAddIsDefault] = useState(false);
+  const [addIsAdmin, setAddIsAdmin] = useState(false);
 
   const [editGroup, setEditGroup] = useState<UserGroup | null>(null);
   const [editName, setEditName] = useState("");
   const [editIsDefault, setEditIsDefault] = useState(false);
+  const [editIsAdmin, setEditIsAdmin] = useState(false);
 
   const [deleteGroup, setDeleteGroup] = useState<UserGroup | null>(null);
   const [migrateTo, setMigrateTo] = useState<string>("");
@@ -64,12 +67,13 @@ export function GroupsContent() {
       setShowAdd(false);
       setAddName("");
       setAddIsDefault(false);
+      setAddIsAdmin(false);
     },
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...data }: { id: number; name?: string; is_default?: boolean }) =>
+    mutationFn: ({ id, ...data }: { id: number; name?: string; is_default?: boolean; is_admin?: boolean }) =>
       api.adminUpdateGroup(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-groups"] });
@@ -148,14 +152,16 @@ export function GroupsContent() {
                 <TableRow key={group.id}>
                   <TableCell className="font-medium">{group.name}</TableCell>
                   <TableCell>{group.user_count ?? 0}</TableCell>
-                  <TableCell>
+                  <TableCell className="space-x-1">
                     {group.is_default && <Badge>{t("adminGroups.default")}</Badge>}
+                    {group.is_admin && <Badge variant="secondary">{t("adminGroups.adminGroup")}</Badge>}
                   </TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button variant="ghost" size="sm" onClick={() => {
                       setEditGroup(group);
                       setEditName(group.name);
                       setEditIsDefault(group.is_default);
+                      setEditIsAdmin(group.is_admin);
                     }}>{t("common.edit")}</Button>
                     {!group.is_default && (
                       <Button variant="ghost" size="sm" onClick={() => {
@@ -177,7 +183,7 @@ export function GroupsContent() {
       {/* Add Dialog */}
       <Dialog open={showAdd} onOpenChange={(open) => {
         setShowAdd(open);
-        if (!open) { setAddName(""); setAddIsDefault(false); }
+        if (!open) { setAddName(""); setAddIsDefault(false); setAddIsAdmin(false); }
       }}>
         <DialogContent aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{t("adminGroups.addGroup")}</DialogTitle></DialogHeader>
@@ -186,11 +192,18 @@ export function GroupsContent() {
               <Label>{t("adminGroups.groupName")}</Label>
               <Input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder={t("adminGroups.groupName")} required />
             </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>{t("adminGroups.adminGroup")}</Label>
+                <p className="text-xs text-muted-foreground">{t("adminGroups.adminGroupHint")}</p>
+              </div>
+              <Switch checked={addIsAdmin} onCheckedChange={setAddIsAdmin} />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAdd(false)}>{t("common.cancel")}</Button>
             <Button
-              onClick={() => createMutation.mutate({ name: addName, is_default: addIsDefault })}
+              onClick={() => createMutation.mutate({ name: addName, is_default: addIsDefault, is_admin: addIsAdmin })}
               disabled={!addName.trim() || createMutation.isPending}
               data-dialog-primary="true"
             >
@@ -209,6 +222,13 @@ export function GroupsContent() {
               <Label>{t("adminGroups.groupName")}</Label>
               <Input value={editName} onChange={(e) => setEditName(e.target.value)} required />
             </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>{t("adminGroups.adminGroup")}</Label>
+                <p className="text-xs text-muted-foreground">{t("adminGroups.adminGroupHint")}</p>
+              </div>
+              <Switch checked={editIsAdmin} onCheckedChange={setEditIsAdmin} />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditGroup(null)}>{t("common.cancel")}</Button>
@@ -217,6 +237,7 @@ export function GroupsContent() {
                 id: editGroup.id,
                 name: editName,
                 is_default: editIsDefault,
+                is_admin: editIsAdmin,
               })}
               disabled={!editName.trim() || updateMutation.isPending}
               data-dialog-primary="true"

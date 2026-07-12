@@ -24,11 +24,6 @@ type seoMetaResponse struct {
 	SiteName        string `json:"site_name"`
 	SiteDescription string `json:"site_description"`
 	SiteKeywords    string `json:"site_keywords"`
-	SiteAuthor      string `json:"site_author"`
-	SiteOGImage     string `json:"site_og_image"`
-	TwitterCard     string `json:"twitter_card"`
-	TwitterSite     string `json:"twitter_site"`
-	AnalyticsID     string `json:"analytics_id"`
 }
 
 // GetSEOMeta returns public SEO configuration
@@ -37,11 +32,6 @@ func (h *SEOHandler) GetSEOMeta(c *gin.Context) {
 		"brand_name",
 		"seo_description",
 		"seo_keywords",
-		"seo_author",
-		"seo_og_image",
-		"seo_twitter_card",
-		"seo_twitter_site",
-		"seo_analytics_id",
 	}
 	configs, _ := h.repo.GetSystemConfigsByKeys(keys)
 
@@ -54,11 +44,6 @@ func (h *SEOHandler) GetSEOMeta(c *gin.Context) {
 		SiteName:        siteName,
 		SiteDescription: configs["seo_description"],
 		SiteKeywords:    configs["seo_keywords"],
-		SiteAuthor:      configs["seo_author"],
-		SiteOGImage:     configs["seo_og_image"],
-		TwitterCard:     configs["seo_twitter_card"],
-		TwitterSite:     configs["seo_twitter_site"],
-		AnalyticsID:     configs["seo_analytics_id"],
 	})
 }
 

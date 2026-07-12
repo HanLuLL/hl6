@@ -30,6 +30,7 @@ type UserGroup struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	Name      string    `json:"name" gorm:"uniqueIndex;not null"`
 	IsDefault bool      `json:"is_default" gorm:"default:false"`
+	IsAdmin   bool      `json:"is_admin" gorm:"default:false"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -351,4 +352,17 @@ type UserReferral struct {
 	Inviter        User      `json:"-" gorm:"foreignKey:InviterID"`
 	Invitee        User      `json:"-" gorm:"foreignKey:InviteeID"`
 	CreatedAt      time.Time `json:"created_at"`
+}
+
+// FriendLink 友情链接，管理员可在后台维护，前台展示。
+type FriendLink struct {
+	ID          uint      `json:"id" gorm:"primaryKey"`
+	Name        string    `json:"name" gorm:"not null"`
+	URL         string    `json:"url" gorm:"not null"`
+	Description string    `json:"description" gorm:"type:text;default:''"`
+	LogoURL     string    `json:"logo_url" gorm:"type:varchar(512);default:''"`
+	SortOrder   int       `json:"sort_order" gorm:"default:0;index"`
+	IsActive    bool      `json:"is_active" gorm:"default:true;index"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }

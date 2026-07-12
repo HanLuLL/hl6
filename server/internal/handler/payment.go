@@ -6,10 +6,12 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"hl6-server/internal/config"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
@@ -18,13 +20,12 @@ import (
 )
 
 type PaymentHandler struct {
-	repo       *repository.Repository
-	epaySvc    *service.EpayService
-	codepaySvc *service.CodePayService
+	repo *repository.Repository
+	cfg  *config.Config
 }
 
-func NewPaymentHandler(repo *repository.Repository, epaySvc *service.EpayService, codepaySvc *service.CodePayService) *PaymentHandler {
-	return &PaymentHandler{repo: repo, epaySvc: epaySvc, codepaySvc: codepaySvc}
+func NewPaymentHandler(repo *repository.Repository, cfg *config.Config) *PaymentHandler {
+	return &PaymentHandler{repo: repo, cfg: cfg}
 }
 
 // Credit pricing: 1 CNY = 1 display credit = CreditScale internal units
@@ -33,10 +34,165 @@ const (
 	defaultMaxRechargeCNY = 10000.0
 )
 
+// 支付配置 key 常量
+const (
+	configKeyEpayURL            = "epay_url"
+	configKeyEpayPID            = "epay_pid"
+	configKeyEpayKey            = "epay_key"
+	configKeyCodePayURL         = "codepay_url"
+	configKeyCodePayID          = "codepay_id"
+	configKeyCodePayKey         = "codepay_key"
+	configKeyEpayAlipayEnabled  = "epay_alipay_enabled"
+	configKeyEpayWechatEnabled  = "epay_wechat_enabled"
+	configKeyEpayQQEnabled      = "epay_qq_enabled"
+	configKeyCodePayAlipayEnabled = "codepay_alipay_enabled"
+	configKeyCodePayWechatEnabled = "codepay_wechat_enabled"
+	configKeyCodePayQQEnabled     = "codepay_qq_enabled"
+)
+
+type paymentConfig struct {
+	EpayURL            string
+	EpayPID            string
+	EpayKey            string
+	CodePayURL         string
+	CodePayID          string
+	CodePayKey         string
+	EpayAlipayEnabled  bool
+	EpayWechatEnabled  bool
+	EpayQQEnabled      bool
+	CodePayAlipayEnabled bool
+	CodePayWechatEnabled bool
+	CodePayQQEnabled     bool
+}
+
+func (h *PaymentHandler) loadPaymentConfig() (*paymentConfig, error) {
+	keys := []string{
+		configKeyEpayURL, configKeyEpayPID, configKeyEpayKey,
+		configKeyCodePayURL, configKeyCodePayID, configKeyCodePayKey,
+		configKeyEpayAlipayEnabled, configKeyEpayWechatEnabled, configKeyEpayQQEnabled,
+		configKeyCodePayAlipayEnabled, configKeyCodePayWechatEnabled, configKeyCodePayQQEnabled,
+	}
+	values, err := h.repo.GetSystemConfigsByKeys(keys)
+	if err != nil {
+		return nil, err
+	}
+	return &paymentConfig{
+		EpayURL:              values[configKeyEpayURL],
+		EpayPID:              values[configKeyEpayPID],
+		EpayKey:              values[configKeyEpayKey],
+		CodePayURL:           values[configKeyCodePayURL],
+		CodePayID:            values[configKeyCodePayID],
+		CodePayKey:           values[configKeyCodePayKey],
+		EpayAlipayEnabled:    values[configKeyEpayAlipayEnabled] == "true",
+		EpayWechatEnabled:    values[configKeyEpayWechatEnabled] == "true",
+		EpayQQEnabled:        values[configKeyEpayQQEnabled] == "true",
+		CodePayAlipayEnabled: values[configKeyCodePayAlipayEnabled] == "true",
+		CodePayWechatEnabled: values[configKeyCodePayWechatEnabled] == "true",
+		CodePayQQEnabled:     values[configKeyCodePayQQEnabled] == "true",
+	}, nil
+}
+
+func (h *PaymentHandler) resolveBackendURL() string {
+	// 优先使用 DB 中的 backend_url，其次使用配置
+	if u, err := h.repo.GetSystemConfig("backend_url"); err == nil && strings.TrimSpace(u) != "" {
+		return strings.TrimRight(u, "/")
+	}
+	if h.cfg.BackendURL != "" {
+		return strings.TrimRight(h.cfg.BackendURL, "/")
+	}
+	return "http://localhost:8081"
+}
+
+func (h *PaymentHandler) buildEpayService(cfg *paymentConfig) *service.EpayService {
+	if cfg.EpayURL == "" || cfg.EpayPID == "" || cfg.EpayKey == "" {
+		return nil
+	}
+	backendURL := h.resolveBackendURL()
+	return service.NewEpayService(
+		cfg.EpayURL, cfg.EpayPID, cfg.EpayKey,
+		backendURL+"/api/v1/payment/epay/notify",
+		backendURL+"/api/v1/payment/return",
+	)
+}
+
+func (h *PaymentHandler) buildCodePayService(cfg *paymentConfig) *service.CodePayService {
+	if cfg.CodePayURL == "" || cfg.CodePayID == "" || cfg.CodePayKey == "" {
+		return nil
+	}
+	backendURL := h.resolveBackendURL()
+	return service.NewCodePayService(
+		cfg.CodePayURL, cfg.CodePayID, cfg.CodePayKey,
+		backendURL+"/api/v1/payment/codepay/notify",
+		backendURL+"/api/v1/payment/return",
+	)
+}
+
+// paymentMethodEnabled 判断指定网关+渠道是否启用
+func (cfg *paymentConfig) methodEnabled(gateway, method string) bool {
+	switch gateway {
+	case model.PaymentGatewayEpay:
+		switch method {
+		case model.PaymentMethodAlipay:
+			return cfg.EpayAlipayEnabled
+		case model.PaymentMethodWechat:
+			return cfg.EpayWechatEnabled
+		case model.PaymentMethodQQ:
+			return cfg.EpayQQEnabled
+		}
+	case model.PaymentGatewayCodePay:
+		switch method {
+		case model.PaymentMethodAlipay:
+			return cfg.CodePayAlipayEnabled
+		case model.PaymentMethodWechat:
+			return cfg.CodePayWechatEnabled
+		case model.PaymentMethodQQ:
+			return cfg.CodePayQQEnabled
+		}
+	}
+	return false
+}
+
 type CreatePaymentRequest struct {
 	Gateway       string  `json:"gateway" binding:"required"`        // epay or codepay
 	PaymentMethod string  `json:"payment_method" binding:"required"` // alipay, wechat, qq
 	Amount        float64 `json:"amount" binding:"required"`         // CNY amount
+}
+
+// PaymentMethodOption 描述一个可用的支付方式
+type PaymentMethodOption struct {
+	Gateway string `json:"gateway"`
+	Method  string `json:"method"`
+}
+
+// GetPaymentMethods 返回当前启用的支付方式列表（公开接口）
+func (h *PaymentHandler) GetPaymentMethods(c *gin.Context) {
+	cfg, err := h.loadPaymentConfig()
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load payment config", "error.databaseError")
+		return
+	}
+
+	methods := []PaymentMethodOption{}
+	if cfg.EpayAlipayEnabled {
+		methods = append(methods, PaymentMethodOption{Gateway: model.PaymentGatewayEpay, Method: model.PaymentMethodAlipay})
+	}
+	if cfg.EpayWechatEnabled {
+		methods = append(methods, PaymentMethodOption{Gateway: model.PaymentGatewayEpay, Method: model.PaymentMethodWechat})
+	}
+	if cfg.EpayQQEnabled {
+		methods = append(methods, PaymentMethodOption{Gateway: model.PaymentGatewayEpay, Method: model.PaymentMethodQQ})
+	}
+	if cfg.CodePayAlipayEnabled {
+		methods = append(methods, PaymentMethodOption{Gateway: model.PaymentGatewayCodePay, Method: model.PaymentMethodAlipay})
+	}
+	if cfg.CodePayWechatEnabled {
+		methods = append(methods, PaymentMethodOption{Gateway: model.PaymentGatewayCodePay, Method: model.PaymentMethodWechat})
+	}
+	if cfg.CodePayQQEnabled {
+		methods = append(methods, PaymentMethodOption{Gateway: model.PaymentGatewayCodePay, Method: model.PaymentMethodQQ})
+	}
+
+	response.OK(c, gin.H{"methods": methods})
 }
 
 func (h *PaymentHandler) CreateOrder(c *gin.Context) {
@@ -61,6 +217,17 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 	validMethods := map[string]bool{model.PaymentMethodAlipay: true, model.PaymentMethodWechat: true, model.PaymentMethodQQ: true}
 	if !validMethods[req.PaymentMethod] {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid payment method", "error.invalidPaymentMethod")
+		return
+	}
+
+	// Load config and validate the gateway+method is enabled
+	payCfg, err := h.loadPaymentConfig()
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load payment config", "error.databaseError")
+		return
+	}
+	if !payCfg.methodEnabled(req.Gateway, req.PaymentMethod) {
+		response.ErrorWithKey(c, http.StatusBadRequest, "payment method not enabled", "error.paymentMethodNotEnabled")
 		return
 	}
 
@@ -99,7 +266,8 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 
 	switch req.Gateway {
 	case model.PaymentGatewayEpay:
-		if h.epaySvc == nil {
+		epaySvc := h.buildEpayService(payCfg)
+		if epaySvc == nil {
 			response.ErrorWithKey(c, http.StatusBadRequest, "epay not configured", "error.paymentGatewayNotConfigured")
 			return
 		}
@@ -109,7 +277,7 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 		} else if method == model.PaymentMethodQQ {
 			method = "qqpay"
 		}
-		payURL = h.epaySvc.CreateOrder(service.CreateEpayOrderParams{
+		payURL = epaySvc.CreateOrder(service.CreateEpayOrderParams{
 			OutTradeNo: orderNo,
 			Amount:     req.Amount,
 			Method:     method,
@@ -117,7 +285,8 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 		})
 
 	case model.PaymentGatewayCodePay:
-		if h.codepaySvc == nil {
+		codepaySvc := h.buildCodePayService(payCfg)
+		if codepaySvc == nil {
 			response.ErrorWithKey(c, http.StatusBadRequest, "codepay not configured", "error.paymentGatewayNotConfigured")
 			return
 		}
@@ -128,7 +297,7 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 		case model.PaymentMethodQQ:
 			method = 3
 		}
-		payURL = h.codepaySvc.CreateOrder(service.CreateCodePayOrderParams{
+		payURL = codepaySvc.CreateOrder(service.CreateCodePayOrderParams{
 			OutTradeNo: orderNo,
 			Amount:     req.Amount,
 			Method:     method,
@@ -180,12 +349,18 @@ func (h *PaymentHandler) GetProducts(c *gin.Context) {
 
 // EpayCallback handles 易支付 payment notification
 func (h *PaymentHandler) EpayCallback(c *gin.Context) {
-	if h.epaySvc == nil {
+	payCfg, err := h.loadPaymentConfig()
+	if err != nil {
+		c.String(http.StatusOK, "config error")
+		return
+	}
+	epaySvc := h.buildEpayService(payCfg)
+	if epaySvc == nil {
 		c.String(http.StatusOK, "epay not configured")
 		return
 	}
 
-	if !h.epaySvc.VerifyCallback(c.Request.URL.Query()) {
+	if !epaySvc.VerifyCallback(c.Request.URL.Query()) {
 		c.String(http.StatusOK, "sign error")
 		return
 	}
@@ -206,12 +381,18 @@ func (h *PaymentHandler) EpayCallback(c *gin.Context) {
 
 // CodePayCallback handles 码支付 payment notification
 func (h *PaymentHandler) CodePayCallback(c *gin.Context) {
-	if h.codepaySvc == nil {
+	payCfg, err := h.loadPaymentConfig()
+	if err != nil {
+		c.String(http.StatusOK, "config error")
+		return
+	}
+	codepaySvc := h.buildCodePayService(payCfg)
+	if codepaySvc == nil {
 		c.String(http.StatusOK, "codepay not configured")
 		return
 	}
 
-	if !h.codepaySvc.VerifyCallback(c.Request.URL.Query()) {
+	if !codepaySvc.VerifyCallback(c.Request.URL.Query()) {
 		c.String(http.StatusOK, "sign error")
 		return
 	}

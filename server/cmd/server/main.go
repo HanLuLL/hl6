@@ -192,6 +192,7 @@ func runSchemaMigrations(db *gorm.DB) error {
 			&model.BrandingAsset{},
 			&model.UserReferral{},
 			&model.PaymentOrder{},
+			&model.FriendLink{},
 		); err != nil {
 			return err
 		}
@@ -433,6 +434,19 @@ func seedDefaults(db *gorm.DB) {
 		"daily_checkin_enabled":      "false",
 		"daily_checkin_credits":      "0",
 		"daily_checkin_group_ids":    "",
+		// 支付配置默认值（全部禁用，需在后台开启）
+		"epay_url":                  "",
+		"epay_pid":                  "",
+		"epay_key":                  "",
+		"codepay_url":               "",
+		"codepay_id":                "",
+		"codepay_key":               "",
+		"epay_alipay_enabled":       "false",
+		"epay_wechat_enabled":       "false",
+		"epay_qq_enabled":           "false",
+		"codepay_alipay_enabled":    "false",
+		"codepay_wechat_enabled":    "false",
+		"codepay_qq_enabled":        "false",
 	}
 	for key, defaultVal := range configDefaults {
 		var rc model.SystemConfig
