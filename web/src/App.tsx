@@ -17,6 +17,8 @@ import AdminUsersPage from "@/pages/admin/users";
 import AdminAuditLogsPage from "@/pages/admin/audit-logs";
 import AdminAuditPage from "@/pages/admin/audit";
 import AdminFriendLinksPage from "@/pages/admin/friend-links";
+import AdminAIAuditPage from "@/pages/admin/ai-audit";
+import BannedPage from "@/pages/banned";
 
 import AdminSettingsPage from "@/pages/admin/settings";
 import NotFoundPage from "@/pages/not-found";
@@ -86,6 +88,7 @@ export default function App() {
           <Route path="/subdomains/:id" element={<SubdomainDetailPage />} />
           <Route path="/credits" element={<CreditsPage />} />
           <Route path="/friend-links" element={<FriendLinksPage />} />
+          <Route path="/banned" element={<BannedPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin/domains" element={<AdminDomainsPage />} />
@@ -100,6 +103,7 @@ export default function App() {
             <Route path="/admin/groups" element={<Navigate to="/admin/users?tab=groups" replace />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
             <Route path="/admin/friend-links" element={<AdminFriendLinksPage />} />
+            <Route path="/admin/ai-audit" element={<AdminAIAuditPage />} />
             <Route path="/admin/notifications" element={<Navigate to="/admin/users?tab=notifications" replace />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

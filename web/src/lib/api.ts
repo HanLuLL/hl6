@@ -50,6 +50,7 @@ import type {
   FriendLink,
   FriendLinkInput,
 } from "@/types";
+import type { AIModelConfig, AIModelConfigInput, AuditPromptTemplate, PromptTemplateInput, AuditAIReview, AIAuditStats, UserAppeal, BanInfo } from "@/types/ai-audit";
 import { buildPaginatedQuery } from "@/lib/api-query";
 
 function normalizeApiBaseUrl(rawValue: string | undefined): string {
@@ -108,19 +109,6 @@ type RequestOptions = RequestInit & {
 
 let handlingBannedSession = false;
 
-async function forceLogoutForBannedUser(): Promise<void> {
-  try {
-    await fetch(buildApiUrl("/auth/logout"), {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  } catch {
-    // Best effort only.
-  }
-}
 
 export function getErrorMessage(err: unknown, t?: (key: string) => string): string {
   if (err instanceof ApiError && err.messageKey && t) {
@@ -220,11 +208,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
       if (!handlingBannedSession) {
         handlingBannedSession = true;
-        if (!path.includes("/auth/logout")) {
-          await forceLogoutForBannedUser();
-        }
-        if (window.location.pathname !== "/") {
-          window.location.href = "/";
+        // 不强制登出：被封禁用户需要保持会话访问 /banned 页面和提交申诉
+        if (window.location.pathname !== "/banned") {
+          window.location.href = "/banned";
         }
       }
     }
@@ -625,4 +611,48 @@ export const api = {
     request<ApiResponse<FriendLink>>(`/admin/friend-links/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   adminDeleteFriendLink: (id: number) =>
     request<ApiResponse<{ deleted: boolean }>>(`/admin/friend-links/${id}`, { method: "DELETE" }),
+
+  // AI Audit - public
+  getAIAuditStats: () =>
+    request<ApiResponse<AIAuditStats>>("/ai-audit/stats"),
+  getBanInfo: () =>
+    request<ApiResponse<BanInfo>>("/ban-info"),
+  createAppeal: (content: string) =>
+    request<ApiResponse<{ id: number }>>("/appeals", { method: "POST", body: JSON.stringify({ content }) }),
+  listMyAppeals: () =>
+    request<ApiResponse<UserAppeal[]>>("/appeals"),
+
+  // AI Audit - admin models
+  adminListAIModels: () =>
+    request<ApiResponse<AIModelConfig[]>>("/admin/ai-audit/models"),
+  adminCreateAIModel: (data: AIModelConfigInput) =>
+    request<ApiResponse<{ id: number }>>("/admin/ai-audit/models", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdateAIModel: (id: number, data: Partial<AIModelConfigInput>) =>
+    request<ApiResponse<{ updated: boolean }>>(`/admin/ai-audit/models/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminDeleteAIModel: (id: number) =>
+    request<ApiResponse<{ deleted: boolean }>>(`/admin/ai-audit/models/${id}`, { method: "DELETE" }),
+
+  // AI Audit - admin prompt templates
+  adminListPromptTemplates: () =>
+    request<ApiResponse<AuditPromptTemplate[]>>("/admin/ai-audit/prompt-templates"),
+  adminCreatePromptTemplate: (data: PromptTemplateInput) =>
+    request<ApiResponse<AuditPromptTemplate>>("/admin/ai-audit/prompt-templates", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdatePromptTemplate: (id: number, data: Partial<PromptTemplateInput>) =>
+    request<ApiResponse<AuditPromptTemplate>>(`/admin/ai-audit/prompt-templates/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminDeletePromptTemplate: (id: number) =>
+    request<ApiResponse<{ deleted: boolean }>>(`/admin/ai-audit/prompt-templates/${id}`, { method: "DELETE" }),
+
+  // AI Audit - admin reviews
+  adminListAIReviews: (params?: string) =>
+    request<PaginatedResponse<AuditAIReview>>(`/admin/ai-audit/reviews${params ? "?" + params : ""}`),
+  adminGetAIReview: (id: number) =>
+    request<ApiResponse<AuditAIReview>>(`/admin/ai-audit/reviews/${id}`),
+  adminReviewAIReview: (id: number, status: string, note?: string) =>
+    request<ApiResponse<{ updated: boolean }>>(`/admin/ai-audit/reviews/${id}`, { method: "PUT", body: JSON.stringify({ status, note }) }),
+
+  // AI Audit - admin appeals
+  adminListAppeals: (params?: string) =>
+    request<PaginatedResponse<UserAppeal>>(`/admin/ai-audit/appeals${params ? "?" + params : ""}`),
+  adminReviewAppeal: (id: number, status: string, reply?: string) =>
+    request<ApiResponse<{ updated: boolean }>>(`/admin/ai-audit/appeals/${id}`, { method: "PUT", body: JSON.stringify({ status, reply }) }),
 };

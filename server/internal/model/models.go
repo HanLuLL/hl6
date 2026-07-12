@@ -366,3 +366,106 @@ type FriendLink struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
+
+// ---- AI 审查系统 ----
+
+// AIModelConfig AI 模型配置，支持 OpenAI API 兼容格式。
+type AIModelConfig struct {
+	ID           uint      `json:"id" gorm:"primaryKey"`
+	Name         string    `json:"name" gorm:"not null"`                            // 配置名称（如 "GPT-4o"）
+	Provider     string    `json:"provider" gorm:"type:varchar(32);not null;default:openai"` // 提供商标识
+	APIBaseURL   string    `json:"api_base_url" gorm:"type:varchar(512);not null"`  // API 基础 URL
+	APIKey       string    `json:"api_key" gorm:"type:text;not null"`               // 加密存储的 API Key
+	ModelName    string    `json:"model_name" gorm:"type:varchar(128);not null"`    // 模型名称（如 "gpt-4o"）
+	IsDefault    bool      `json:"is_default" gorm:"default:false;index"`           // 是否为默认模型
+	IsEnabled    bool      `json:"is_enabled" gorm:"default:true;index"`            // 是否启用
+	MaxTokens    int       `json:"max_tokens" gorm:"default:4096"`                  // 最大输出 token
+	Temperature  float64   `json:"temperature" gorm:"type:decimal(3,2);default:0.1"`// 温度
+	RateLimitRPM int       `json:"rate_limit_rpm" gorm:"default:60"`                // 每分钟调用上限
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+func (AIModelConfig) TableName() string { return "ai_model_configs" }
+
+// AuditPromptTemplate 审查提示词模板。
+type AuditPromptTemplate struct {
+	ID          uint      `json:"id" gorm:"primaryKey"`
+	Name        string    `json:"name" gorm:"not null"`                   // 模板名称
+	IsDefault   bool      `json:"is_default" gorm:"default:false;index"`  // 是否为系统默认模板
+	IsEnabled   bool      `json:"is_enabled" gorm:"default:true;index"`   // 是否启用
+	SortOrder   int       `json:"sort_order" gorm:"default:0;index"`      // 排序优先级
+	SystemPrompt string   `json:"system_prompt" gorm:"type:text;not null"` // 系统提示词
+	UserPrompt  string    `json:"user_prompt" gorm:"type:text;not null"`  // 用户提示词模板（支持 {{fqdn}}、{{content}} 等变量）
+	Description string    `json:"description" gorm:"type:text;default:''"`// 模板说明
+	CreatedBy   uint      `json:"created_by" gorm:"not null"`
+	UpdatedBy   uint      `json:"updated_by"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+func (AuditPromptTemplate) TableName() string { return "audit_prompt_templates" }
+
+// AuditAIReview AI 审查记录，存储每次 AI 审查的完整数据。
+type AuditAIReview struct {
+	ID               uint            `json:"id" gorm:"primaryKey"`
+	SubdomainID      uint            `json:"subdomain_id" gorm:"index;not null"`
+	ScanID           *uint           `json:"scan_id" gorm:"index"`                          // 关联的 SubdomainScan ID
+	FQDN             string          `json:"fqdn" gorm:"not null"`
+	ModelConfigID    uint            `json:"model_config_id" gorm:"index;not null"`         // 使用的 AI 模型配置
+	PromptTemplateID *uint           `json:"prompt_template_id" gorm:"index"`               // 使用的提示词模板
+	InputContent     string          `json:"input_content" gorm:"type:text"`                // 送审原始内容（摘要）
+	AIResponse       string          `json:"ai_response" gorm:"type:text"`                  // AI 原始返回
+	AIJudgment       string          `json:"ai_judgment" gorm:"type:varchar(16);not null;index"` // clean / violation / error
+	ViolationTypes   StringSlice     `json:"violation_types" gorm:"type:jsonb;not null;default:'[]'"` // 违规类型标签
+	AIConfidence     float64         `json:"ai_confidence" gorm:"type:decimal(5,4);default:0"` // AI 置信度 0-1
+	AISuggestedAction string         `json:"ai_suggested_action" gorm:"type:varchar(32);default:''"` // AI 建议处置
+	AdminReviewStatus string         `json:"admin_review_status" gorm:"type:varchar(16);not null;default:pending;index"` // pending / confirmed / overturned / dismissed
+	AdminReviewedBy   *uint          `json:"admin_reviewed_by"`
+	AdminReviewedAt   *time.Time     `json:"admin_reviewed_at"`
+	AdminNote         string         `json:"admin_note" gorm:"type:text;default:''"`
+	FinalAction      string          `json:"final_action" gorm:"type:varchar(32);default:''"` // 最终处置
+	TokensUsed       int             `json:"tokens_used" gorm:"default:0"`
+	CreatedAt        time.Time       `json:"created_at"`
+	UpdatedAt        time.Time       `json:"updated_at"`
+}
+
+// AuditAIReview 判定常量
+const (
+	AIJudgmentClean     = "clean"
+	AIJudgmentViolation = "violation"
+	AIJudgmentError     = "error"
+)
+
+// AdminReviewStatus 常量
+const (
+	AdminReviewPending   = "pending"
+	AdminReviewConfirmed = "confirmed"
+	AdminReviewOverturned = "overturned"
+	AdminReviewDismissed  = "dismissed"
+)
+
+func (AuditAIReview) TableName() string { return "audit_ai_reviews" }
+
+// UserAppeal 用户申诉记录。
+type UserAppeal struct {
+	ID         uint      `json:"id" gorm:"primaryKey"`
+	UserID     uint      `json:"user_id" gorm:"index;not null"`
+	ReviewID   *uint     `json:"review_id" gorm:"index"`             // 关联的 AuditAIReview
+	Content    string    `json:"content" gorm:"type:text;not null"`  // 申诉内容
+	Status     string    `json:"status" gorm:"type:varchar(16);not null;default:pending;index"` // pending / approved / rejected
+	ReviewedBy *uint     `json:"reviewed_by"`
+	ReviewedAt *time.Time `json:"reviewed_at"`
+	Reply      string    `json:"reply" gorm:"type:text;default:''"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+// AppealStatus 常量
+const (
+	AppealStatusPending  = "pending"
+	AppealStatusApproved = "approved"
+	AppealStatusRejected = "rejected"
+)
+
+func (UserAppeal) TableName() string { return "user_appeals" }

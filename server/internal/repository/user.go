@@ -87,3 +87,13 @@ func (r *Repository) CountUnbannedAdmins() (int64, error) {
 		Count(&total).Error
 	return total, err
 }
+
+// UnbanUser 解除用户封禁。
+func (r *Repository) UnbanUser(userID uint) error {
+	return r.DB.Model(&model.User{}).Where("id = ?", userID).Updates(map[string]interface{}{
+		"is_banned":     false,
+		"banned_reason": "",
+		"banned_at":     nil,
+		"banned_by":     nil,
+	}).Error
+}
