@@ -40,7 +40,7 @@
     "toggleTheme": "Cambiar tema"
   },
   "footer": {
-    "openSource": "Houlang Open Source",
+    "openSource": "Open Source",
     "branch": "Rama",
     "commit": "Commit"
   },
@@ -97,6 +97,8 @@
     "adminSettings": "Configuración",
     "adminNotifications": "Notificaciones",
     "audit": "Auditoría de contenido",
+    "friendLinks": "Enlaces",
+    "adminFriendLinks": "Gestión de Enlaces",
     "profile": "Perfil"
   },
   "dashboard": {
@@ -173,6 +175,10 @@
     "alipay": "Alipay",
     "wechat": "WeChat Pay",
     "qq": "QQ Wallet",
+    "epay": "Epay",
+    "codepay": "CodePay",
+    "noMethodAvailable": "No hay método de pago disponible",
+    "noPaymentMethod": "Seleccione un método de pago",
     "goPay": "Pagar Ahora",
     "creating": "Creando...",
     "orderCreated": "Pedido creado, completa el pago en la nueva ventana",
@@ -186,6 +192,30 @@
       "failed": "Fallido",
       "expired": "Expirado"
     }
+  },
+  "friendLinks": {
+    "title": "Enlaces de Amigos",
+    "subtitle": "Nuestros socios y sitios recomendados",
+    "noLinks": "No hay enlaces aún",
+    "adminTitle": "Gestión de Enlaces",
+    "adminSubtitle": "Gestionar enlaces mostrados en la página pública",
+    "add": "Añadir Enlace",
+    "addTitle": "Crear Enlace",
+    "editTitle": "Editar Enlace",
+    "deleteTitle": "Eliminar Enlace",
+    "deleteConfirm": "¿Seguro que quieres eliminar el enlace \"{{name}}\"? Esta acción no se puede deshacer.",
+    "colName": "Nombre",
+    "colUrl": "URL",
+    "colDesc": "Descripción",
+    "colLogo": "Logo URL",
+    "colSort": "Orden",
+    "colStatus": "Estado",
+    "namePlaceholder": "Nombre del sitio",
+    "descPlaceholder": "Descripción del sitio (opcional)",
+    "nameUrlRequired": "Nombre y URL son obligatorios",
+    "created": "Enlace creado",
+    "updated": "Enlace actualizado",
+    "deleted": "Enlace eliminado"
   },
   "claimDialog": {
     "title": "Solicitar subdominio",
@@ -444,6 +474,8 @@
     "status": "Estado",
     "actions": "Acciones",
     "default": "Predeterminado",
+    "adminGroup": "Grupo Admin",
+    "adminGroupHint": "Los usuarios de este grupo tienen acceso de administrador",
     "setAsDefault": "Establecer como predeterminado",
     "deleteGroup": "Eliminar grupo",
     "deleteConfirm": "¿Eliminar el grupo \"{{name}}\"? Los {{count}} usuarios serán migrados al grupo destino.",
@@ -524,17 +556,20 @@
     "seoDescriptionHint": "Mostrada en resultados de búsqueda (recomendado 120-160 caracteres)",
     "seoKeywords": "Palabras clave",
     "seoKeywordsHint": "Lista de palabras clave separadas por comas",
-    "seoAuthor": "Autor",
-    "seoOGImage": "URL de imagen Open Graph",
-    "seoOGImageHint": "URL de imagen para compartir en redes sociales (recomendado 1200x630px)",
-    "seoTwitterCard": "Tipo de tarjeta de Twitter",
-    "seoTwitterSite": "Cuenta de Twitter",
-    "seoTwitterSiteHint": "ej. @youraccount",
-    "seoAnalyticsID": "ID de Google Analytics",
-    "seoAnalyticsIDHint": "ej. G-XXXXXXXXXX",
     "seoIndexingDisabled": "Deshabilitar indexación",
     "seoIndexingDisabledHint": "Cuando se activa, robots.txt rechazará todos los crawlers",
-    "saveSEO": "Guardar SEO"
+    "saveSEO": "Guardar SEO",
+    "paymentTitle": "Configuración de Pago",
+    "paymentDesc": "Configurar pasarelas Epay y CodePay, habilitar métodos de pago por canal",
+    "epayConfig": "Epay",
+    "codepayConfig": "CodePay",
+    "paymentURL": "URL de Pasarela",
+    "paymentPID": "ID de Comerciante",
+    "paymentID": "ID de Comerciante",
+    "paymentKey": "Clave de Comerciante",
+    "paymentKeyPlaceholder": "Dejar en blanco para mantener la clave actual",
+    "enabledChannels": "Canales Habilitados",
+    "savePayment": "Guardar Config. de Pago"
   },
   "referral": {
     "title": "Programa de referidos",

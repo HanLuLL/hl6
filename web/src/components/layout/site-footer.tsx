@@ -38,9 +38,9 @@ export function SiteFooter({ withBorder = true, centered = false, className }: S
   const commit = __APP_GIT_COMMIT__ || "unknown";
   const showBranch = branch.toLowerCase() !== "unknown";
   const showCommit = commit.toLowerCase() !== "unknown";
-  const icp = (branding as any)?.footer_icp;
-  const icpLink = (branding as any)?.footer_icp_link;
-  const footerContent = (branding as any)?.footer_content;
+  const icp = branding.footer_icp;
+  const icpLink = branding.footer_icp_link;
+  const footerContent = branding.footer_content;
 
   return (
     <footer

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { api, getErrorMessage } from "@/lib/api";
 import { useCredits, useDailyCheckinStatus, useTransactions } from "@/hooks/use-credits";
 import { useReferrals } from "@/hooks/use-referrals";
-import { usePaymentProducts, usePaymentOrders } from "@/hooks/use-payment";
-import type { PaymentProduct } from "@/types";
+import { usePaymentProducts, usePaymentMethods, usePaymentOrders } from "@/hooks/use-payment";
+import type { PaymentProduct, PaymentGateway, PaymentMethod } from "@/types";
 import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { Coins, CalendarCheck, CheckCircle2, Copy } from "lucide-react";
@@ -26,10 +26,24 @@ export default function CreditsPage() {
   useDocumentTitle(t("credits.title"));
 
   const { data: products, isLoading: productsLoading } = usePaymentProducts();
+  const { data: paymentMethodsData } = usePaymentMethods();
   const { data: paymentOrders } = usePaymentOrders();
   const [selectedProduct, setSelectedProduct] = useState<PaymentProduct | null>(null);
   const [customAmount, setCustomAmount] = useState("");
-  const [payMethod, setPayMethod] = useState<"alipay" | "wechat" | "qq">("alipay");
+  const [selectedMethod, setSelectedMethod] = useState<{ gateway: PaymentGateway; method: PaymentMethod } | null>(null);
+
+  const availableMethods = paymentMethodsData?.methods ?? [];
+
+  // 默认选中第一个可用支付方式
+  useEffect(() => {
+    if (availableMethods.length > 0 && !selectedMethod) {
+      setSelectedMethod(availableMethods[0]);
+    }
+    // 如果当前选中的方式已不在可用列表中，重置为第一个
+    if (selectedMethod && !availableMethods.some(m => m.gateway === selectedMethod.gateway && m.method === selectedMethod.method)) {
+      setSelectedMethod(availableMethods[0] ?? null);
+    }
+  }, [availableMethods, selectedMethod]);
 
   const rechargeMutation = useMutation({
     mutationFn: api.createPaymentOrder,
@@ -47,9 +61,13 @@ export default function CreditsPage() {
       toast.error(t("credits.invalidAmount"));
       return;
     }
+    if (!selectedMethod) {
+      toast.error(t("credits.noPaymentMethod"));
+      return;
+    }
     rechargeMutation.mutate({
-      gateway: "epay",
-      payment_method: payMethod,
+      gateway: selectedMethod.gateway,
+      payment_method: selectedMethod.method,
       amount,
     });
   };
@@ -194,35 +212,34 @@ export default function CreditsPage() {
                 )}
               </div>
               {/* Payment method */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm text-muted-foreground">{t("credits.payMethod")}:</span>
-                <Button
-                  variant={payMethod === "alipay" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setPayMethod("alipay")}
-                >
-                  {t("credits.alipay")}
-                </Button>
-                <Button
-                  variant={payMethod === "wechat" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setPayMethod("wechat")}
-                >
-                  {t("credits.wechat")}
-                </Button>
-                <Button
-                  variant={payMethod === "qq" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setPayMethod("qq")}
-                >
-                  {t("credits.qq")}
-                </Button>
+                {availableMethods.length === 0 ? (
+                  <span className="text-sm text-muted-foreground">{t("credits.noMethodAvailable")}</span>
+                ) : (
+                  availableMethods.map((m) => {
+                    const active = selectedMethod?.gateway === m.gateway && selectedMethod?.method === m.method;
+                    const gatewayLabel = m.gateway === "epay" ? t("credits.epay") : t("credits.codepay");
+                    const methodLabel = m.method === "alipay" ? t("credits.alipay") : m.method === "wechat" ? t("credits.wechat") : t("credits.qq");
+                    return (
+                      <Button
+                        key={`${m.gateway}-${m.method}`}
+                        variant={active ? "default" : "outline"}
+                        size="sm"
+                        className={active ? "bg-brand hover:bg-brand/90 text-brand-foreground" : ""}
+                        onClick={() => setSelectedMethod(m)}
+                      >
+                        {gatewayLabel} · {methodLabel}
+                      </Button>
+                    );
+                  })
+                )}
               </div>
               {/* Pay button */}
               <Button
                 className="bg-brand hover:bg-brand/90 text-brand-foreground"
                 onClick={handleRecharge}
-                disabled={rechargeMutation.isPending || (!selectedProduct && !customAmount)}
+                disabled={rechargeMutation.isPending || (!selectedProduct && !customAmount) || !selectedMethod}
               >
                 {rechargeMutation.isPending ? t("credits.creating") : t("credits.goPay")}
               </Button>

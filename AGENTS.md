@@ -35,11 +35,11 @@ cd web && npm run lint     # ESLint
 
 ### Frontend (`web/src/`)
 
-- `pages/` — 路由页面（dashboard、domains、subdomains、admin 等）
+- `pages/` — 路由页面（dashboard、domains、subdomains、credits、friend-links、admin 等）
 - `components/ui/` — Shadcn/Radix 基础组件
 - `components/domain/`, `components/dns/`, `components/credits/` — 业务组件
 - `components/layout/` — 布局组件（RootLayout, PageTransition）
-- `hooks/` — 自定义 hooks（use-auth, use-subdomains, use-dns-records, use-credits 等），封装 TanStack React Query 的数据获取和 mutation
+- `hooks/` — 自定义 hooks（use-auth, use-subdomains, use-dns-records, use-credits, use-branding, use-seo, use-payment, use-friend-links 等），封装 TanStack React Query 的数据获取和 mutation
 - `lib/api.ts` — REST API 客户端，使用 Bearer token 认证
 - `lib/prefetch.ts` — React Query 预取逻辑
 - `i18n/` — i18nextt 配置及语言文件（en, zh, zh-Hant, es, ru, ja）
@@ -50,13 +50,13 @@ cd web && npm run lint     # ESLint
 ### Backend (`server/`)
 
 - `cmd/server/` — 入口点（自动迁移、数据种子）
-- `internal/handler/` — HTTP handlers（auth, domain, subdomain, dns, credit, admin）
+- `internal/handler/` — HTTP handlers（auth, domain, subdomain, dns, credit, admin, branding, seo, payment, friendlink, audit 等）
 - `internal/middleware/` — 中间件（auth, CORS, admin 权限）
 - `internal/repository/` — GORM 数据访问层
 - `internal/service/` — Cloudflare DNS 操作服务
 - `internal/router/` — Gin 路由配置
 - `internal/config/` — 环境变量配置加载
-- `internal/model/` — GORM 模型（User, Domain, Subdomain, DNSRecord, CreditBalance 等）
+- `internal/model/` — GORM 模型（User, UserGroup, Domain, Subdomain, DNSRecord, CreditBalance, SystemConfig, FriendLink, PaymentOrder 等）
 - `pkg/response/` — 标准化 API 响应格式
 - `pkg/validator/` — DNS 记录验证
 
@@ -67,7 +67,11 @@ cd web && npm run lint     # ESLint
 - **数据获取**: 前端通过自定义 hooks 使用 React Query，mutation 后自动 invalidate 相关 query keys
 - **Toast 通知**: 使用 Sonner，mutation 成功/失败时通过 i18n 展示国际化消息
 - **DNS 记录类型**: 支持 A, AAAA, CNAME, TXT，有重复记录拦截和 CNAME 共存规则
-- **角色控制**: 用户 vs 管理员，后端 admin middleware 保护管理路由
+- **角色控制**: 用户 vs 管理员；管理员判定为 `user.Role == "admin"` **或** `user.Group.IsAdmin == true`（用户组管理员），后端 admin middleware 同时检查两者
+- **动态配置**: 站点公告、页脚信息、SEO（描述+关键词）、支付网关配置等均存储在 `SystemConfig` 表（键值对），通过后台「系统设置」面板管理，不再依赖环境变量
+- **支付配置**: 易支付/码支付的网关地址、商户 ID、商户密钥、各渠道（支付宝/微信/QQ）启用状态均存于数据库，按渠道独立控制；前台通过 `/payment/methods` 接口获取可用支付方式
+- **品牌信息**: 站点名称、Logo、公告、页脚等通过 `/branding` 接口返回，前端缓存于 localStorage
+- **友情链接**: 后台 `/admin/friend-links` 管理，前台 `/friend-links` 公开展示
 
 ## 开发要求
 

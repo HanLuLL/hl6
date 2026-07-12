@@ -11,10 +11,12 @@ import SubdomainsPage from "@/pages/subdomains";
 import SubdomainDetailPage from "@/pages/subdomain-detail";
 import CreditsPage from "@/pages/credits";
 import ProfilePage from "@/pages/profile";
+import FriendLinksPage from "@/pages/friend-links";
 import AdminDomainsPage from "@/pages/admin/domains";
 import AdminUsersPage from "@/pages/admin/users";
 import AdminAuditLogsPage from "@/pages/admin/audit-logs";
 import AdminAuditPage from "@/pages/admin/audit";
+import AdminFriendLinksPage from "@/pages/admin/friend-links";
 
 import AdminSettingsPage from "@/pages/admin/settings";
 import NotFoundPage from "@/pages/not-found";
@@ -63,7 +65,9 @@ function ProtectedRoute() {
 
 function AdminRoute() {
   const { user } = useAuth();
-  if (user && user.role !== "admin") {
+  // 管理员判定：role=admin 或 所属用户组为管理员组
+  const isAdmin = user?.role === "admin" || !!user?.group?.is_admin;
+  if (user && !isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
   return <Outlet />;
@@ -75,6 +79,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/callback" element={<CallbackPage />} />
+        <Route path="/friend-links" element={<FriendLinksPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/domains" element={<DomainsPage />} />
@@ -94,6 +99,7 @@ export default function App() {
             <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
             <Route path="/admin/groups" element={<Navigate to="/admin/users?tab=groups" replace />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
+            <Route path="/admin/friend-links" element={<AdminFriendLinksPage />} />
             <Route path="/admin/notifications" element={<Navigate to="/admin/users?tab=notifications" replace />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

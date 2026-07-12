@@ -40,7 +40,7 @@
     "toggleTheme": "切換主題"
   },
   "footer": {
-    "openSource": "厚浪開源",
+    "openSource": "開源地址",
     "branch": "分支",
     "commit": "提交"
   },
@@ -97,6 +97,8 @@
     "adminSettings": "系統設定",
     "adminNotifications": "通知管理",
     "audit": "內容審查",
+    "friendLinks": "友鏈",
+    "adminFriendLinks": "友鏈管理",
     "profile": "個人設定"
   },
   "dashboard": {
@@ -173,6 +175,10 @@
     "alipay": "支付寶",
     "wechat": "微信支付",
     "qq": "QQ錢包",
+    "epay": "易支付",
+    "codepay": "碼支付",
+    "noMethodAvailable": "暫無可用支付方式",
+    "noPaymentMethod": "請選擇支付方式",
     "goPay": "立即支付",
     "creating": "建立中...",
     "orderCreated": "訂單已建立，請在新視窗完成支付",
@@ -186,6 +192,30 @@
       "failed": "支付失敗",
       "expired": "已過期"
     }
+  },
+  "friendLinks": {
+    "title": "友情連結",
+    "subtitle": "我們的合作夥伴與推薦站點",
+    "noLinks": "暫無友鏈",
+    "adminTitle": "友鏈管理",
+    "adminSubtitle": "管理前台展示的友情連結",
+    "add": "新增友鏈",
+    "addTitle": "建立友鏈",
+    "editTitle": "編輯友鏈",
+    "deleteTitle": "刪除友鏈",
+    "deleteConfirm": "確定刪除友鏈「{{name}}」？此操作無法復原。",
+    "colName": "名稱",
+    "colUrl": "連結",
+    "colDesc": "描述",
+    "colLogo": "Logo URL",
+    "colSort": "排序",
+    "colStatus": "狀態",
+    "namePlaceholder": "站點名稱",
+    "descPlaceholder": "站點描述（可選）",
+    "nameUrlRequired": "名稱和連結不能為空",
+    "created": "友鏈已建立",
+    "updated": "友鏈已更新",
+    "deleted": "友鏈已刪除"
   },
   "claimDialog": {
     "title": "申請子網域",
@@ -444,6 +474,8 @@
     "status": "狀態",
     "actions": "操作",
     "default": "預設",
+    "adminGroup": "管理員群組",
+    "adminGroupHint": "此群組內使用者擁有後台管理權限",
     "setAsDefault": "設為預設",
     "deleteGroup": "刪除群組",
     "deleteConfirm": "刪除群組「{{name}}」？該群組下的 {{count}} 個使用者將遷移到目標群組。",
@@ -524,17 +556,20 @@
     "seoDescriptionHint": "顯示在搜尋結果中的站點描述（建議 120-160 字元）",
     "seoKeywords": "關鍵字",
     "seoKeywordsHint": "逗號分隔的關鍵字列表",
-    "seoAuthor": "作者",
-    "seoOGImage": "Open Graph 圖片 URL",
-    "seoOGImageHint": "社群分享時顯示的圖片 URL（建議 1200x630px）",
-    "seoTwitterCard": "Twitter 卡片類型",
-    "seoTwitterSite": "Twitter 帳號",
-    "seoTwitterSiteHint": "例如 @youraccount",
-    "seoAnalyticsID": "Google Analytics ID",
-    "seoAnalyticsIDHint": "例如 G-XXXXXXXXXX",
     "seoIndexingDisabled": "禁止搜尋引擎索引",
     "seoIndexingDisabledHint": "啟用後 robots.txt 將禁止所有爬蟲",
-    "saveSEO": "儲存 SEO"
+    "saveSEO": "儲存 SEO",
+    "paymentTitle": "支付設定",
+    "paymentDesc": "設定易支付與碼支付閘道，依渠道啟用支付方式",
+    "epayConfig": "易支付",
+    "codepayConfig": "碼支付",
+    "paymentURL": "閘道地址",
+    "paymentPID": "商戶 ID",
+    "paymentID": "商戶 ID",
+    "paymentKey": "商戶密鑰",
+    "paymentKeyPlaceholder": "留空表示不修改目前密鑰",
+    "enabledChannels": "啟用的支付渠道",
+    "savePayment": "儲存支付設定"
   },
   "referral": {
     "title": "邀請註冊",

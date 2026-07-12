@@ -40,7 +40,7 @@
     "toggleTheme": "テーマを切り替え"
   },
   "footer": {
-    "openSource": "Houlang Open Source",
+    "openSource": "Open Source",
     "branch": "ブランチ",
     "commit": "コミット"
   },
@@ -97,6 +97,8 @@
     "adminSettings": "設定",
     "adminNotifications": "通知管理",
     "audit": "コンテンツ監査",
+    "friendLinks": "リンク",
+    "adminFriendLinks": "リンク管理",
     "profile": "プロフィール"
   },
   "dashboard": {
@@ -173,6 +175,10 @@
     "alipay": "Alipay",
     "wechat": "WeChat Pay",
     "qq": "QQウォレット",
+    "epay": "Epay",
+    "codepay": "CodePay",
+    "noMethodAvailable": "利用可能な支払い方法がありません",
+    "noPaymentMethod": "支払い方法を選択してください",
     "goPay": "今すぐ支払う",
     "creating": "作成中...",
     "orderCreated": "注文が作成されました。新しいウィンドウで支払いを完了してください",
@@ -186,6 +192,30 @@
       "failed": "支払失敗",
       "expired": "期限切れ"
     }
+  },
+  "friendLinks": {
+    "title": "相互リンク",
+    "subtitle": "パートナーサイトとおすすめサイト",
+    "noLinks": "リンクがありません",
+    "adminTitle": "リンク管理",
+    "adminSubtitle": "公開ページに表示するリンクを管理",
+    "add": "リンク追加",
+    "addTitle": "リンク作成",
+    "editTitle": "リンク編集",
+    "deleteTitle": "リンク削除",
+    "deleteConfirm": "リンク「{{name}}」を削除しますか？この操作は取り消せません。",
+    "colName": "名前",
+    "colUrl": "URL",
+    "colDesc": "説明",
+    "colLogo": "Logo URL",
+    "colSort": "並び順",
+    "colStatus": "ステータス",
+    "namePlaceholder": "サイト名",
+    "descPlaceholder": "サイト説明（任意）",
+    "nameUrlRequired": "名前とURLは必須です",
+    "created": "リンクを作成しました",
+    "updated": "リンクを更新しました",
+    "deleted": "リンクを削除しました"
   },
   "claimDialog": {
     "title": "サブドメインを取得",
@@ -444,6 +474,8 @@
     "status": "ステータス",
     "actions": "操作",
     "default": "デフォルト",
+    "adminGroup": "管理者グループ",
+    "adminGroupHint": "このグループのユーザーは管理者権限を持ちます",
     "setAsDefault": "デフォルトに設定",
     "deleteGroup": "グループを削除",
     "deleteConfirm": "グループ「{{name}}」を削除しますか？{{count}} 人のユーザーが対象グループに移行されます。",
@@ -524,17 +556,20 @@
     "seoDescriptionHint": "検索結果に表示される説明（推奨120-160文字）",
     "seoKeywords": "キーワード",
     "seoKeywordsHint": "カンマ区切りのキーワードリスト",
-    "seoAuthor": "作成者",
-    "seoOGImage": "Open Graph 画像URL",
-    "seoOGImageHint": "ソーシャル共有時に表示される画像URL（推奨1200x630px）",
-    "seoTwitterCard": "Twitter カードタイプ",
-    "seoTwitterSite": "Twitter アカウント",
-    "seoTwitterSiteHint": "例: @youraccount",
-    "seoAnalyticsID": "Google Analytics ID",
-    "seoAnalyticsIDHint": "例: G-XXXXXXXXXX",
     "seoIndexingDisabled": "検索エンジンインデックスを無効化",
     "seoIndexingDisabledHint": "有効化すると robots.txt がすべてのクローラーを拒否します",
-    "saveSEO": "SEOを保存"
+    "saveSEO": "SEOを保存",
+    "paymentTitle": "支払い設定",
+    "paymentDesc": "EpayとCodePayゲートウェイを設定し、チャネルごとに支払い方法を有効化",
+    "epayConfig": "Epay",
+    "codepayConfig": "CodePay",
+    "paymentURL": "ゲートウェイURL",
+    "paymentPID": "マーチャントID",
+    "paymentID": "マーチャントID",
+    "paymentKey": "マーチャントキー",
+    "paymentKeyPlaceholder": "空欄で現在のキーを維持",
+    "enabledChannels": "有効なチャネル",
+    "savePayment": "支払い設定を保存"
   },
   "referral": {
     "title": "紹介プログラム",

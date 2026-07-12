@@ -39,12 +39,26 @@ var allowedConfigKeys = map[string]bool{
 	"site_footer_content":        true,
 	"seo_description":            true,
 	"seo_keywords":               true,
-	"seo_author":                 true,
-	"seo_og_image":               true,
-	"seo_twitter_card":           true,
-	"seo_twitter_site":           true,
-	"seo_analytics_id":           true,
 	"seo_indexing_disabled":      true,
+	// 支付配置
+	"epay_url":                  true,
+	"epay_pid":                  true,
+	"epay_key":                  true,
+	"codepay_url":               true,
+	"codepay_id":                true,
+	"codepay_key":               true,
+	"epay_alipay_enabled":       true,
+	"epay_wechat_enabled":       true,
+	"epay_qq_enabled":           true,
+	"codepay_alipay_enabled":    true,
+	"codepay_wechat_enabled":    true,
+	"codepay_qq_enabled":        true,
+}
+
+// 支付密钥类 key，在返回给前端时需要脱敏
+var paymentSecretConfigKeys = map[string]bool{
+	"epay_key":    true,
+	"codepay_key": true,
 }
 
 func (h *AdminHandler) GetConfig(c *gin.Context) {
@@ -70,6 +84,13 @@ func (h *AdminHandler) GetConfig(c *gin.Context) {
 
 	// Never return client secret value to frontend.
 	delete(configs, configKeyOIDCClientSecret)
+
+	// 对支付密钥进行脱敏：已配置则返回占位符，未配置则返回空
+	for key := range paymentSecretConfigKeys {
+		if v, ok := configs[key]; ok && v != "" {
+			configs[key] = "********"
+		}
+	}
 
 	response.OK(c, gin.H{
 		"values": configs,
@@ -326,11 +347,19 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 		if normalized, ok := normalizedConfigValues[key]; ok {
 			trimmed = normalized
 		}
+		// 支付密钥脱敏占位符：前端如果回传 "********" 表示不修改
+		if paymentSecretConfigKeys[key] && trimmed == "********" {
+			continue
+		}
 		if err := h.repo.SetSystemConfig(key, trimmed); err != nil {
 			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
 			return
 		}
-		details[key] = trimmed
+		if paymentSecretConfigKeys[key] {
+			details[key] = "***"
+		} else {
+			details[key] = trimmed
+		}
 	}
 
 	if admin := ctxutil.GetUser(c); admin != nil {

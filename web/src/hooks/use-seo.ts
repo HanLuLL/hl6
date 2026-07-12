@@ -58,9 +58,6 @@ function applySEO(meta: SEOMeta): void {
   if (meta.site_keywords) {
     ensureMetaName("keywords", meta.site_keywords);
   }
-  if (meta.site_author) {
-    ensureMetaName("author", meta.site_author);
-  }
 
   // Open Graph tags
   ensureMetaProperty("og:site_name", meta.site_name);
@@ -68,45 +65,6 @@ function applySEO(meta: SEOMeta): void {
     ensureMetaProperty("og:description", meta.site_description);
   }
   ensureMetaProperty("og:type", "website");
-  if (meta.site_og_image) {
-    ensureMetaProperty("og:image", meta.site_og_image);
-  }
-
-  // Twitter Card tags
-  if (meta.twitter_card) {
-    ensureMetaName("twitter:card", meta.twitter_card);
-  }
-  if (meta.twitter_site) {
-    ensureMetaName("twitter:site", meta.twitter_site);
-  }
-  if (meta.site_og_image) {
-    ensureMetaName("twitter:image", meta.site_og_image);
-  }
-
-  // Analytics (Google Analytics gtag.js)
-  if (meta.analytics_id) {
-    injectAnalytics(meta.analytics_id);
-  }
-}
-
-function injectAnalytics(id: string): void {
-  if (document.getElementById("ga-gtag-src")) return;
-
-  const script1 = document.createElement("script");
-  script1.id = "ga-gtag-src";
-  script1.async = true;
-  script1.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
-  document.head.appendChild(script1);
-
-  const script2 = document.createElement("script");
-  script2.id = "ga-gtag-init";
-  script2.text = `
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', '${id}');
-  `;
-  document.head.appendChild(script2);
 }
 
 export function useSEOInit(): void {
@@ -124,11 +82,6 @@ export function useSEOInit(): void {
           site_name: res.data.site_name || "HL6",
           site_description: res.data.site_description || "",
           site_keywords: res.data.site_keywords || "",
-          site_author: res.data.site_author || "",
-          site_og_image: res.data.site_og_image || "",
-          twitter_card: res.data.twitter_card || "summary_large_image",
-          twitter_site: res.data.twitter_site || "",
-          analytics_id: res.data.analytics_id || "",
         };
         writeSEOCache(meta);
         applySEO(meta);

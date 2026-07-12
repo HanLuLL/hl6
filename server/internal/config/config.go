@@ -30,12 +30,6 @@ type Config struct {
 	AuditScanInterval    time.Duration
 	AuditScanWorkerCount int
 	AuditScanTimeout     time.Duration
-	EpayURL              string
-	EpayPID              string
-	EpayKey              string
-	CodePayURL           string
-	CodePayID            string
-	CodePayKey           string
 }
 
 func Load() *Config {
@@ -81,12 +75,6 @@ func Load() *Config {
 		AuditScanInterval:    getEnvDuration("AUDIT_SCAN_INTERVAL", 30*time.Minute),
 		AuditScanWorkerCount: getEnvInt("AUDIT_SCAN_WORKER_COUNT", 2),
 		AuditScanTimeout:     getEnvDuration("AUDIT_SCAN_TIMEOUT", 15*time.Second),
-		EpayURL:              getEnv("EPAY_URL", ""),
-		EpayPID:              getEnv("EPAY_PID", ""),
-		EpayKey:              getEnv("EPAY_KEY", ""),
-		CodePayURL:           getEnv("CODEPAY_URL", ""),
-		CodePayID:            getEnv("CODEPAY_ID", ""),
-		CodePayKey:           getEnv("CODEPAY_KEY", ""),
 	}
 
 	if keyHex := getEnv("ENCRYPTION_KEY", ""); keyHex != "" {

@@ -15,6 +15,11 @@ const DEFAULT_BRANDING: BrandingResponse = {
   logo_url: null,
   favicon_url: null,
   version: "0",
+  announcement_enabled: false,
+  announcement_content: "",
+  footer_icp: "",
+  footer_icp_link: "",
+  footer_content: "",
 };
 
 interface CachedBranding {
@@ -29,6 +34,11 @@ function normalizeBranding(data: BrandingResponse | null | undefined): BrandingR
     logo_url: data?.logo_url ?? null,
     favicon_url: data?.favicon_url ?? null,
     version: data?.version ?? "0",
+    announcement_enabled: data?.announcement_enabled ?? false,
+    announcement_content: data?.announcement_content ?? "",
+    footer_icp: data?.footer_icp ?? "",
+    footer_icp_link: data?.footer_icp_link ?? "",
+    footer_content: data?.footer_content ?? "",
   };
 }
 

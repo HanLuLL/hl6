@@ -147,12 +147,12 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {branding.announcement_enabled && (branding as any).announcement_content && (
+      {branding.announcement_enabled && branding.announcement_content && (
         <div className="border-b bg-brand/5 border-brand/20">
           <div className="max-w-7xl mx-auto px-6 py-3">
             <div
               className="text-sm text-foreground prose prose-sm prose-neutral dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-              dangerouslySetInnerHTML={{ __html: sanitizeHTML((branding as any).announcement_content) }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHTML(branding.announcement_content) }}
             />
           </div>
         </div>

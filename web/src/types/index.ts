@@ -2,6 +2,7 @@ export interface UserGroup {
   id: number;
   name: string;
   is_default: boolean;
+  is_admin: boolean;
   user_count?: number;
   created_at: string;
   updated_at: string;
@@ -625,15 +626,42 @@ export interface CreateOrderResponse {
   amount: number;
 }
 
+export interface PaymentMethodOption {
+  gateway: PaymentGateway;
+  method: PaymentMethod;
+}
+
+export interface PaymentMethodsResponse {
+  methods: PaymentMethodOption[];
+}
+
 // ---- SEO Types ----
 
 export interface SEOMeta {
   site_name: string;
   site_description: string;
   site_keywords: string;
-  site_author: string;
-  site_og_image: string;
-  twitter_card: string;
-  twitter_site: string;
-  analytics_id: string;
+}
+
+// ---- FriendLink Types ----
+
+export interface FriendLink {
+  id: number;
+  name: string;
+  url: string;
+  description: string;
+  logo_url: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface FriendLinkInput {
+  name: string;
+  url: string;
+  description?: string;
+  logo_url?: string;
+  sort_order?: number;
+  is_active?: boolean;
 }

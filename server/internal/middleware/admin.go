@@ -17,7 +17,8 @@ func AdminRequired() gin.HandlerFunc {
 			return
 		}
 
-		if user.Role != "admin" {
+		// 管理员判定：role=admin 或者 所属用户组标记为管理员
+		if user.Role != "admin" && (user.Group == nil || !user.Group.IsAdmin) {
 			response.ErrorWithKey(c, http.StatusForbidden, "admin access required", "error.adminRequired")
 			c.Abort()
 			return

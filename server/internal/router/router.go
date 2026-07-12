@@ -75,6 +75,7 @@ func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context) *gin.Engine {
 	registerNotificationRoutes(api, auth, h)
 	registerAdminRoutes(api, auth, h)
 	registerPaymentRoutes(api, auth, h)
+	registerFriendLinkRoutes(api, auth, h)
 
 	setupFrontendRoutes(r)
 

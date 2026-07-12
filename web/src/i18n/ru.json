@@ -40,7 +40,7 @@
     "toggleTheme": "Переключить тему"
   },
   "footer": {
-    "openSource": "Houlang Open Source",
+    "openSource": "Open Source",
     "branch": "Ветка",
     "commit": "Коммит"
   },
@@ -97,6 +97,8 @@
     "adminSettings": "Настройки",
     "adminNotifications": "Уведомления",
     "audit": "Модерация контента",
+    "friendLinks": "Ссылки",
+    "adminFriendLinks": "Упр. ссылками",
     "profile": "Профиль"
   },
   "dashboard": {
@@ -173,6 +175,10 @@
     "alipay": "Alipay",
     "wechat": "WeChat Pay",
     "qq": "QQ Wallet",
+    "epay": "Epay",
+    "codepay": "CodePay",
+    "noMethodAvailable": "Нет доступных способов оплаты",
+    "noPaymentMethod": "Выберите способ оплаты",
     "goPay": "Оплатить",
     "creating": "Создание...",
     "orderCreated": "Заказ создан, завершите оплату в новом окне",
@@ -186,6 +192,30 @@
       "failed": "Ошибка",
       "expired": "Истёк"
     }
+  },
+  "friendLinks": {
+    "title": "Дружеские ссылки",
+    "subtitle": "Наши партнёры и рекомендуемые сайты",
+    "noLinks": "Ссылок пока нет",
+    "adminTitle": "Управление ссылками",
+    "adminSubtitle": "Управление ссылками на публичной странице",
+    "add": "Добавить ссылку",
+    "addTitle": "Создать ссылку",
+    "editTitle": "Редактировать ссылку",
+    "deleteTitle": "Удалить ссылку",
+    "deleteConfirm": "Вы уверены, что хотите удалить ссылку «{{name}}»? Действие нельзя отменить.",
+    "colName": "Название",
+    "colUrl": "URL",
+    "colDesc": "Описание",
+    "colLogo": "Logo URL",
+    "colSort": "Сортировка",
+    "colStatus": "Статус",
+    "namePlaceholder": "Название сайта",
+    "descPlaceholder": "Описание сайта (необязательно)",
+    "nameUrlRequired": "Название и URL обязательны",
+    "created": "Ссылка создана",
+    "updated": "Ссылка обновлена",
+    "deleted": "Ссылка удалена"
   },
   "claimDialog": {
     "title": "Регистрация поддомена",
@@ -444,6 +474,8 @@
     "status": "Статус",
     "actions": "Действия",
     "default": "По умолчанию",
+    "adminGroup": "Админ-группа",
+    "adminGroupHint": "Пользователи этой группы имеют права администратора",
     "setAsDefault": "Установить по умолчанию",
     "deleteGroup": "Удалить группу",
     "deleteConfirm": "Удалить группу «{{name}}»? Все {{count}} пользователей будут перенесены в целевую группу.",
@@ -524,17 +556,20 @@
     "seoDescriptionHint": "Отображается в результатах поиска (рекомендуется 120-160 символов)",
     "seoKeywords": "Ключевые слова",
     "seoKeywordsHint": "Список ключевых слов через запятую",
-    "seoAuthor": "Автор",
-    "seoOGImage": "URL изображения Open Graph",
-    "seoOGImageHint": "URL изображения для соцсетей (рекомендуется 1200x630px)",
-    "seoTwitterCard": "Тип карточки Twitter",
-    "seoTwitterSite": "Аккаунт Twitter",
-    "seoTwitterSiteHint": "напр. @youraccount",
-    "seoAnalyticsID": "Google Analytics ID",
-    "seoAnalyticsIDHint": "напр. G-XXXXXXXXXX",
     "seoIndexingDisabled": "Отключить индексацию",
     "seoIndexingDisabledHint": "При включении robots.txt запретит всех поисковых роботов",
-    "saveSEO": "Сохранить SEO"
+    "saveSEO": "Сохранить SEO",
+    "paymentTitle": "Настройки платежей",
+    "paymentDesc": "Настройте шлюзы Epay и CodePay, включите способы оплаты по каналам",
+    "epayConfig": "Epay",
+    "codepayConfig": "CodePay",
+    "paymentURL": "URL шлюза",
+    "paymentPID": "ID мерчанта",
+    "paymentID": "ID мерчанта",
+    "paymentKey": "Ключ мерчанта",
+    "paymentKeyPlaceholder": "Оставьте пустым, чтобы сохранить текущий ключ",
+    "enabledChannels": "Включенные каналы",
+    "savePayment": "Сохранить настройки платежей"
   },
   "referral": {
     "title": "Реферальная программа",

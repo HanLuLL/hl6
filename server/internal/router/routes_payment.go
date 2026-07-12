@@ -13,6 +13,9 @@ func registerPaymentRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware
 	api.POST("/payment/codepay/notify", h.Payment.CodePayCallback)
 	api.GET("/payment/return", h.Payment.PaymentReturn)
 
+	// Public endpoints (no auth) - available payment methods
+	api.GET("/payment/methods", h.Payment.GetPaymentMethods)
+
 	// Authenticated endpoints
 	authed := api.Group("", auth.Required())
 	authed.GET("/payment/products", h.Payment.GetProducts)

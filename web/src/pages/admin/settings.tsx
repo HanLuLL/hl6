@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function AdminSettingsPage() {
@@ -38,12 +37,21 @@ export default function AdminSettingsPage() {
   const [footerContent, setFooterContent] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [seoKeywords, setSeoKeywords] = useState("");
-  const [seoAuthor, setSeoAuthor] = useState("");
-  const [seoOGImage, setSeoOGImage] = useState("");
-  const [seoTwitterCard, setSeoTwitterCard] = useState("summary_large_image");
-  const [seoTwitterSite, setSeoTwitterSite] = useState("");
-  const [seoAnalyticsID, setSeoAnalyticsID] = useState("");
   const [seoIndexingDisabled, setSeoIndexingDisabled] = useState(false);
+
+  // 支付配置
+  const [epayURL, setEpayURL] = useState("");
+  const [epayPID, setEpayPID] = useState("");
+  const [epayKey, setEpayKey] = useState("");
+  const [codepayURL, setCodepayURL] = useState("");
+  const [codepayID, setCodepayID] = useState("");
+  const [codepayKey, setCodepayKey] = useState("");
+  const [epayAlipayEnabled, setEpayAlipayEnabled] = useState(false);
+  const [epayWechatEnabled, setEpayWechatEnabled] = useState(false);
+  const [epayQQEnabled, setEpayQQEnabled] = useState(false);
+  const [codepayAlipayEnabled, setCodepayAlipayEnabled] = useState(false);
+  const [codepayWechatEnabled, setCodepayWechatEnabled] = useState(false);
+  const [codepayQQEnabled, setCodepayQQEnabled] = useState(false);
 
   useEffect(() => {
     if (!config) {
@@ -74,12 +82,20 @@ export default function AdminSettingsPage() {
     setFooterContent(values.site_footer_content ?? "");
     setSeoDescription(values.seo_description ?? "");
     setSeoKeywords(values.seo_keywords ?? "");
-    setSeoAuthor(values.seo_author ?? "");
-    setSeoOGImage(values.seo_og_image ?? "");
-    setSeoTwitterCard(values.seo_twitter_card ?? "summary_large_image");
-    setSeoTwitterSite(values.seo_twitter_site ?? "");
-    setSeoAnalyticsID(values.seo_analytics_id ?? "");
     setSeoIndexingDisabled(values.seo_indexing_disabled === "true");
+    // 支付配置
+    setEpayURL(values.epay_url ?? "");
+    setEpayPID(values.epay_pid ?? "");
+    setEpayKey(values.epay_key && values.epay_key !== "" ? "********" : "");
+    setCodepayURL(values.codepay_url ?? "");
+    setCodepayID(values.codepay_id ?? "");
+    setCodepayKey(values.codepay_key && values.codepay_key !== "" ? "********" : "");
+    setEpayAlipayEnabled(values.epay_alipay_enabled === "true");
+    setEpayWechatEnabled(values.epay_wechat_enabled === "true");
+    setEpayQQEnabled(values.epay_qq_enabled === "true");
+    setCodepayAlipayEnabled(values.codepay_alipay_enabled === "true");
+    setCodepayWechatEnabled(values.codepay_wechat_enabled === "true");
+    setCodepayQQEnabled(values.codepay_qq_enabled === "true");
   }, [config]);
 
   const updateMutation = useMutation({
@@ -171,13 +187,31 @@ export default function AdminSettingsPage() {
     updateMutation.mutate({
       seo_description: seoDescription,
       seo_keywords: seoKeywords,
-      seo_author: seoAuthor,
-      seo_og_image: seoOGImage,
-      seo_twitter_card: seoTwitterCard,
-      seo_twitter_site: seoTwitterSite,
-      seo_analytics_id: seoAnalyticsID,
       seo_indexing_disabled: String(seoIndexingDisabled),
     });
+  };
+
+  const savePayment = () => {
+    const payload: Record<string, string> = {
+      epay_url: epayURL,
+      epay_pid: epayPID,
+      codepay_url: codepayURL,
+      codepay_id: codepayID,
+      epay_alipay_enabled: String(epayAlipayEnabled),
+      epay_wechat_enabled: String(epayWechatEnabled),
+      epay_qq_enabled: String(epayQQEnabled),
+      codepay_alipay_enabled: String(codepayAlipayEnabled),
+      codepay_wechat_enabled: String(codepayWechatEnabled),
+      codepay_qq_enabled: String(codepayQQEnabled),
+    };
+    // 仅在用户修改了密钥时才提交（避免把 "********" 当作真实值提交）
+    if (epayKey.trim() !== "" && epayKey.trim() !== "********") {
+      payload.epay_key = epayKey.trim();
+    }
+    if (codepayKey.trim() !== "" && codepayKey.trim() !== "********") {
+      payload.codepay_key = codepayKey.trim();
+    }
+    updateMutation.mutate(payload);
   };
 
   if (isLoading) {
@@ -456,68 +490,14 @@ export default function AdminSettingsPage() {
             />
             <p className="text-xs text-muted-foreground">{t("adminSettings.seoDescriptionHint")}</p>
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-2">
-              <Label>{t("adminSettings.seoKeywords")}</Label>
-              <Input
-                value={seoKeywords}
-                onChange={(e) => setSeoKeywords(e.target.value)}
-                placeholder={t("adminSettings.seoKeywordsHint")}
-              />
-              <p className="text-xs text-muted-foreground">{t("adminSettings.seoKeywordsHint")}</p>
-            </div>
-            <div className="space-y-2">
-              <Label>{t("adminSettings.seoAuthor")}</Label>
-              <Input
-                value={seoAuthor}
-                onChange={(e) => setSeoAuthor(e.target.value)}
-                placeholder={t("adminSettings.seoAuthor")}
-              />
-            </div>
-          </div>
           <div className="space-y-2">
-            <Label>{t("adminSettings.seoOGImage")}</Label>
+            <Label>{t("adminSettings.seoKeywords")}</Label>
             <Input
-              value={seoOGImage}
-              onChange={(e) => setSeoOGImage(e.target.value)}
-              placeholder="https://example.com/og-image.png"
+              value={seoKeywords}
+              onChange={(e) => setSeoKeywords(e.target.value)}
+              placeholder={t("adminSettings.seoKeywordsHint")}
             />
-            <p className="text-xs text-muted-foreground">{t("adminSettings.seoOGImageHint")}</p>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-2">
-              <Label>{t("adminSettings.seoTwitterCard")}</Label>
-              <Select
-                value={seoTwitterCard}
-                onValueChange={setSeoTwitterCard}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t("adminSettings.seoTwitterCard")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="summary">summary</SelectItem>
-                  <SelectItem value="summary_large_image">summary_large_image</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{t("adminSettings.seoTwitterSite")}</Label>
-              <Input
-                value={seoTwitterSite}
-                onChange={(e) => setSeoTwitterSite(e.target.value)}
-                placeholder="@youraccount"
-              />
-              <p className="text-xs text-muted-foreground">{t("adminSettings.seoTwitterSiteHint")}</p>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("adminSettings.seoAnalyticsID")}</Label>
-            <Input
-              value={seoAnalyticsID}
-              onChange={(e) => setSeoAnalyticsID(e.target.value)}
-              placeholder="G-XXXXXXXXXX"
-            />
-            <p className="text-xs text-muted-foreground">{t("adminSettings.seoAnalyticsIDHint")}</p>
+            <p className="text-xs text-muted-foreground">{t("adminSettings.seoKeywordsHint")}</p>
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
@@ -534,6 +514,106 @@ export default function AdminSettingsPage() {
             disabled={updateMutation.isPending}
           >
             {updateMutation.isPending ? t("common.saving") : t("adminSettings.saveSEO")}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* 支付配置 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("adminSettings.paymentTitle")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("adminSettings.paymentDesc")}</p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* 易支付 */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold">{t("adminSettings.epayConfig")}</h3>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="space-y-2">
+                <Label>{t("adminSettings.paymentURL")}</Label>
+                <Input value={epayURL} onChange={(e) => setEpayURL(e.target.value)} placeholder="https://pay.example.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("adminSettings.paymentPID")}</Label>
+                <Input value={epayPID} onChange={(e) => setEpayPID(e.target.value)} placeholder="1001" />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("adminSettings.paymentKey")}</Label>
+                <Input
+                  type="password"
+                  value={epayKey}
+                  onChange={(e) => setEpayKey(e.target.value)}
+                  placeholder={t("adminSettings.paymentKeyPlaceholder")}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("adminSettings.enabledChannels")}</Label>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch checked={epayAlipayEnabled} onCheckedChange={setEpayAlipayEnabled} />
+                  <Label className="font-normal">{t("credits.alipay")}</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={epayWechatEnabled} onCheckedChange={setEpayWechatEnabled} />
+                  <Label className="font-normal">{t("credits.wechat")}</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={epayQQEnabled} onCheckedChange={setEpayQQEnabled} />
+                  <Label className="font-normal">{t("credits.qq")}</Label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="my-2 border-t" />
+
+          {/* 码支付 */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold">{t("adminSettings.codepayConfig")}</h3>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="space-y-2">
+                <Label>{t("adminSettings.paymentURL")}</Label>
+                <Input value={codepayURL} onChange={(e) => setCodepayURL(e.target.value)} placeholder="https://codepay.example.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("adminSettings.paymentID")}</Label>
+                <Input value={codepayID} onChange={(e) => setCodepayID(e.target.value)} placeholder="1002" />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("adminSettings.paymentKey")}</Label>
+                <Input
+                  type="password"
+                  value={codepayKey}
+                  onChange={(e) => setCodepayKey(e.target.value)}
+                  placeholder={t("adminSettings.paymentKeyPlaceholder")}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("adminSettings.enabledChannels")}</Label>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch checked={codepayAlipayEnabled} onCheckedChange={setCodepayAlipayEnabled} />
+                  <Label className="font-normal">{t("credits.alipay")}</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={codepayWechatEnabled} onCheckedChange={setCodepayWechatEnabled} />
+                  <Label className="font-normal">{t("credits.wechat")}</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={codepayQQEnabled} onCheckedChange={setCodepayQQEnabled} />
+                  <Label className="font-normal">{t("credits.qq")}</Label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Button
+            onClick={savePayment}
+            disabled={updateMutation.isPending}
+          >
+            {updateMutation.isPending ? t("common.saving") : t("adminSettings.savePayment")}
           </Button>
         </CardContent>
       </Card>

@@ -302,6 +302,7 @@ func (h *AdminHandler) CreateGroup(c *gin.Context) {
 	var body struct {
 		Name      string `json:"name" binding:"required"`
 		IsDefault bool   `json:"is_default"`
+		IsAdmin   bool   `json:"is_admin"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
@@ -309,7 +310,8 @@ func (h *AdminHandler) CreateGroup(c *gin.Context) {
 	}
 
 	group := &model.UserGroup{
-		Name: body.Name,
+		Name:    body.Name,
+		IsAdmin: body.IsAdmin,
 	}
 
 	if err := h.repo.CreateUserGroup(group); err != nil {
@@ -326,7 +328,7 @@ func (h *AdminHandler) CreateGroup(c *gin.Context) {
 	}
 
 	if admin := ctxutil.GetUser(c); admin != nil {
-		details, _ := json.Marshal(map[string]interface{}{"group_name": body.Name})
+		details, _ := json.Marshal(map[string]interface{}{"group_name": body.Name, "is_admin": body.IsAdmin})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:     admin.ID,
 			Action:     "admin_create_group",
@@ -352,6 +354,7 @@ func (h *AdminHandler) UpdateGroup(c *gin.Context) {
 	var body struct {
 		Name      *string `json:"name"`
 		IsDefault *bool   `json:"is_default"`
+		IsAdmin   *bool   `json:"is_admin"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
@@ -360,6 +363,9 @@ func (h *AdminHandler) UpdateGroup(c *gin.Context) {
 
 	if body.Name != nil {
 		group.Name = *body.Name
+	}
+	if body.IsAdmin != nil {
+		group.IsAdmin = *body.IsAdmin
 	}
 	if body.IsDefault != nil && *body.IsDefault {
 		if err := h.repo.SetDefaultUserGroup(group.ID); err != nil {
@@ -374,7 +380,7 @@ func (h *AdminHandler) UpdateGroup(c *gin.Context) {
 		return
 	}
 	if admin := ctxutil.GetUser(c); admin != nil {
-		details, _ := json.Marshal(map[string]interface{}{"group_name": group.Name})
+		details, _ := json.Marshal(map[string]interface{}{"group_name": group.Name, "is_admin": group.IsAdmin})
 		h.repo.CreateAuditLog(&model.AuditLog{
 			UserID:     admin.ID,
 			Action:     "admin_update_group",

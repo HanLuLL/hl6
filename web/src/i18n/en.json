@@ -40,7 +40,7 @@
     "toggleTheme": "Toggle theme"
   },
   "footer": {
-    "openSource": "Houlang Open Source",
+    "openSource": "Open Source",
     "branch": "Branch",
     "commit": "Commit"
   },
@@ -97,6 +97,8 @@
     "adminSettings": "Settings",
     "adminNotifications": "Notifications",
     "audit": "Content Audit",
+    "friendLinks": "Friend Links",
+    "adminFriendLinks": "Friend Links Mgmt",
     "profile": "Profile"
   },
   "dashboard": {
@@ -173,6 +175,10 @@
     "alipay": "Alipay",
     "wechat": "WeChat Pay",
     "qq": "QQ Wallet",
+    "epay": "Epay",
+    "codepay": "CodePay",
+    "noMethodAvailable": "No payment method available",
+    "noPaymentMethod": "Please select a payment method",
     "goPay": "Pay Now",
     "creating": "Creating...",
     "orderCreated": "Order created, please complete payment in the new window",
@@ -186,6 +192,30 @@
       "failed": "Failed",
       "expired": "Expired"
     }
+  },
+  "friendLinks": {
+    "title": "Friend Links",
+    "subtitle": "Our partners and recommended sites",
+    "noLinks": "No friend links yet",
+    "adminTitle": "Friend Links Management",
+    "adminSubtitle": "Manage friend links displayed on the public page",
+    "add": "Add Friend Link",
+    "addTitle": "Create Friend Link",
+    "editTitle": "Edit Friend Link",
+    "deleteTitle": "Delete Friend Link",
+    "deleteConfirm": "Are you sure you want to delete friend link \"{{name}}\"? This action cannot be undone.",
+    "colName": "Name",
+    "colUrl": "URL",
+    "colDesc": "Description",
+    "colLogo": "Logo URL",
+    "colSort": "Sort Order",
+    "colStatus": "Status",
+    "namePlaceholder": "Site name",
+    "descPlaceholder": "Site description (optional)",
+    "nameUrlRequired": "Name and URL are required",
+    "created": "Friend link created",
+    "updated": "Friend link updated",
+    "deleted": "Friend link deleted"
   },
   "claimDialog": {
     "title": "Claim Subdomain",
@@ -444,6 +474,8 @@
     "status": "Status",
     "actions": "Actions",
     "default": "Default",
+    "adminGroup": "Admin Group",
+    "adminGroupHint": "Users in this group have admin access",
     "setAsDefault": "Set as Default",
     "deleteGroup": "Delete Group",
     "deleteConfirm": "Delete group \"{{name}}\"? All {{count}} users will be migrated to the target group.",
@@ -524,17 +556,20 @@
     "seoDescriptionHint": "Displayed in search results (recommended 120-160 characters)",
     "seoKeywords": "Keywords",
     "seoKeywordsHint": "Comma-separated keyword list",
-    "seoAuthor": "Author",
-    "seoOGImage": "Open Graph Image URL",
-    "seoOGImageHint": "Image URL for social sharing (recommended 1200x630px)",
-    "seoTwitterCard": "Twitter Card Type",
-    "seoTwitterSite": "Twitter Account",
-    "seoTwitterSiteHint": "e.g. @youraccount",
-    "seoAnalyticsID": "Google Analytics ID",
-    "seoAnalyticsIDHint": "e.g. G-XXXXXXXXXX",
     "seoIndexingDisabled": "Disable Search Engine Indexing",
     "seoIndexingDisabledHint": "When enabled, robots.txt will disallow all crawlers",
-    "saveSEO": "Save SEO"
+    "saveSEO": "Save SEO",
+    "paymentTitle": "Payment Configuration",
+    "paymentDesc": "Configure Epay and CodePay gateways, enable payment methods per channel",
+    "epayConfig": "Epay",
+    "codepayConfig": "CodePay",
+    "paymentURL": "Gateway URL",
+    "paymentPID": "Merchant ID",
+    "paymentID": "Merchant ID",
+    "paymentKey": "Merchant Key",
+    "paymentKeyPlaceholder": "Leave blank to keep current key",
+    "enabledChannels": "Enabled Channels",
+    "savePayment": "Save Payment Config"
   },
   "referral": {
     "title": "Referral Program",
