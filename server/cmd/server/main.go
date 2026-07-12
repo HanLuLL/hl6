@@ -193,6 +193,10 @@ func runSchemaMigrations(db *gorm.DB) error {
 			&model.UserReferral{},
 			&model.PaymentOrder{},
 			&model.FriendLink{},
+			&model.AIModelConfig{},
+			&model.AuditPromptTemplate{},
+			&model.AuditAIReview{},
+			&model.UserAppeal{},
 		); err != nil {
 			return err
 		}

@@ -45,6 +45,7 @@ import {
   Menu,
   Link2,
   LinkIcon,
+  Brain,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -90,6 +91,7 @@ const adminItems: NavItem[] = [
   { labelKey: "nav.audit", href: "/admin/audit", icon: ShieldCheck },
   { labelKey: "nav.auditLogs", href: "/admin/audit-logs", icon: ClipboardList },
   { labelKey: "nav.adminFriendLinks", href: "/admin/friend-links", icon: LinkIcon },
+  { labelKey: "nav.adminAIAudit", href: "/admin/ai-audit", icon: Brain },
   { labelKey: "nav.adminSettings", href: "/admin/settings", icon: SlidersHorizontal },
 ];
 

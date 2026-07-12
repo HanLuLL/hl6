@@ -18,7 +18,22 @@ type AuthMiddleware struct {
 }
 
 func allowBannedAccess(method, path string) bool {
-	return method == http.MethodPost && path == "/api/v1/auth/logout"
+	// 允许登出
+	if method == http.MethodPost && path == "/api/v1/auth/logout" {
+		return true
+	}
+	// 允许获取封禁信息
+	if method == http.MethodGet && path == "/api/v1/ban-info" {
+		return true
+	}
+	// 允许查看和提交申诉
+	if method == http.MethodGet && path == "/api/v1/appeals" {
+		return true
+	}
+	if method == http.MethodPost && path == "/api/v1/appeals" {
+		return true
+	}
+	return false
 }
 
 func clearSessionCookie(c *gin.Context) {
@@ -74,7 +89,6 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 			return
 		}
 		if user.IsBanned && !allowBannedAccess(c.Request.Method, c.Request.URL.Path) {
-			clearSessionCookie(c)
 			response.ErrorWithKeyData(c, http.StatusForbidden, "user is banned", "error.userBanned", gin.H{
 				"reason": user.BannedReason,
 			})
