@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - main
+<<<<<<< HEAD
   workflow_dispatch:
+=======
+  workflow_dispatch:  
+>>>>>>> ba9d03e8876f9f2abc6aba9b61eb69553f6e5c40
 
 # 允许 Action 写入 GHCR
 permissions:
@@ -44,6 +48,3 @@ jobs:
             ghcr.io/hanlull/hl6:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            APP_GIT_BRANCH=${{ github.ref_name }}
-            APP_GIT_COMMIT=${{ github.sha }}
