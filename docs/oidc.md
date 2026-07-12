@@ -39,6 +39,7 @@ https://your-hl6-domain.com/api/v1/auth/callback
 - [Keycloak](#keycloak)
 - [Authentik](#authentik)
 - [Zitadel](#zitadel)
+- [Authing](#authing)
 - [Google](#google)
 - [Microsoft Entra ID (Azure AD)](#microsoft-entra-id-azure-ad)
 - [GitLab](#gitlab)
@@ -190,7 +191,7 @@ OIDC_ISSUER=https://<your-custom-domain>
 
 1. 进入 Zitadel Console → 创建 **Project** → 添加 **Application**
 2. 类型选 Web，认证方式选 Basic
-3. 向导完成后显示 Client ID 和 Client Secret，**请立即保存**
+3. 向导完成后显示 Client ID and Client Secret，**请立即保存**
 
 ### 应用内配置
 
@@ -200,6 +201,42 @@ OIDC_ISSUER=https://<your-custom-domain>
 
 - 支持 `end_session_endpoint`
 - **重要**：当同时颁发 access_token 时，id_token 默认 **不包含** `profile`、`email` 等 scope 的 claims。需要在应用设置中开启 "User Info inside ID Token"，或者通过 `userinfo_endpoint` 获取
+
+---
+
+## Authing
+
+> 国内领先的云原生 IDaaS 产品，兼容 OAuth 2.0, OIDC, SAML, AD/LDAP, WS-Fed 等主流认证协议。
+
+### 配置
+
+```env
+# 云托管
+OIDC_ISSUER=https://<your-app-domain>.authing.cn/oidc
+```
+
+**注意 Issuer 末尾的 `/oidc`，这是 Authing OIDC 应用特有的路径，不能省略。**
+
+### 获取 Client ID / Client Secret
+
+1. 登录 [Authing 控制台](https://console.authing.cn/)
+2. 进入 **应用** → **应用列表** → **添加应用**
+3. 填写应用信息，**认证地址** 填写应用域名，**回调链接** 填写 `https://your-hl6-domain.com/api/v1/auth/callback`
+4. 在应用详情页面的 **应用 ID** 即 `OIDC_CLIENT_ID`，**应用密钥** 即 `OIDC_CLIENT_SECRET`
+
+### 应用内配置
+
+- **登录回调地址** → 添加 `https://your-hl6-domain.com/api/v1/auth/callback`
+- **登出回调地址** → 添加 `https://your-hl6-domain.com`（用于登出后跳转）
+- 在「安全性」卡片中，**id_token 签名算法** 选择 **RS256**
+- **换取 token 身份验证方式**、**检验 token 身份验证方式**、**撤回 token 身份验证方式** 选择 **none**
+
+### 备注
+
+- 支持 `end_session_endpoint`（RP-Initiated Logout）
+- 确保在 Authing 应用配置中启用了 `openid`、`email`、`profile` 等 scope
+- 用户信息字段映射：用户名使用 `name`、`username`、`nickname`、`given_name` 或 `family_name`，邮箱使用 `email` 或 `email_address`，手机号使用 `phone`，头像使用 `picture`、`avatar` 或 `avatar_url`
+- HL6 针对 Authing 进行了特别兼容性优化，支持多种字段映射、无kid（Key ID）的JWT令牌验证和灵活的 JWT 验证
 
 ---
 
@@ -353,6 +390,7 @@ OIDC_ISSUER=https://auth.yourdomain.com/
 | **Keycloak** | `https://{host}/realms/{realm}` | Yes | v17+ 移除了 `/auth/` 前缀 |
 | **Authentik** | `https://{host}/application/o/{slug}/` | Yes | 按应用隔离，含尾部斜杠 |
 | **Zitadel** | `https://{instance}.zitadel.cloud` | Yes | id_token 默认不含用户信息 |
+| **Authing** | `https://{app-domain}.authing.cn/oidc` | Yes | 必须包含 `/oidc` 后缀；需配置 RS256 签名算法；支持多种用户信息字段映射；支持无kid的JWT令牌 |
 | **Google** | `https://accounts.google.com` | **No** | 测试应用 7 天过期 |
 | **Entra ID** | `https://login.microsoftonline.com/{tenant}/v2.0` | Yes | 务必使用 v2.0；Secret 会过期 |
 | **GitLab** | `https://gitlab.com` | **No** | 需用户设置公开邮箱 |

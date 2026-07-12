@@ -14,7 +14,7 @@ HL6 是一个域名/子域名管理平台。用户可以在已注册域名下认
 
 - 前端：React 19 + TypeScript + Vite + Tailwind CSS 4 + TanStack React Query
 - 后端：Go（Gin + GORM）+ PostgreSQL 16
-- 认证：OIDC 兼容（支持 Logto、Keycloak、Authentik、Google、Zitadel 等）+ JWT
+- 认证：OIDC 兼容（支持 Logto、Keycloak、Authentik、Authing、Google、Zitadel 等）+ JWT
 - 基础设施：Docker Compose（本地 PostgreSQL）
 
 ## 云应用一键部署

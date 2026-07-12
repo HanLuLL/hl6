@@ -412,7 +412,7 @@ openssl rand -hex 32
 > python3 -c "import secrets; print(secrets.token_hex(32))"
 > ```
 
-> **没有 OIDC 提供商？** 你需要一个 OIDC 兼容的身份认证服务才能完成登录流程。推荐自部署 [Logto](https://logto.io/)（开源免费）或 [Casdoor](https://casdoor.org/)。完整的提供商配置教程见 **[OIDC 提供商配置指南](./oidc.md)**。
+> **没有 OIDC 提供商？** 你需要一个 OIDC 兼容的身份认证服务才能完成登录流程。推荐自部署 [Logto](https://logto.io/)（开源免费）或 [Casdoor](https://casdoor.org/)，或使用国内的 [Authing](https://authing.cn/)。完整的提供商配置教程见 **[OIDC 提供商配置指南](./oidc.md)**。
 > **会话密钥说明**：服务会把内部会话密钥持久化在数据库 `system_configs._internal_session_secret`。数据库重置后会重新生成，会导致所有用户需要重新登录。
 
 ### 3.3 安装前端依赖
