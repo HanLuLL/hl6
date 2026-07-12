@@ -96,7 +96,8 @@
     "auditLogs": "稽核日誌",
     "adminSettings": "系統設定",
     "adminNotifications": "通知管理",
-    "audit": "內容審查"
+    "audit": "內容審查",
+    "profile": "個人設定"
   },
   "dashboard": {
     "title": "控制台",
@@ -162,7 +163,29 @@
     "dailyCheckinNow": "立即簽到",
     "dailyCheckingIn": "簽到中...",
     "dailyCheckinClaimed": "今日已簽到",
-    "dailyCheckinSuccess": "簽到成功，獲得 {{amount}} 積分"
+    "dailyCheckinSuccess": "簽到成功，獲得 {{amount}} 積分",
+    "rechargeTitle": "積分充值",
+    "rechargeDesc": "選擇充值套餐或自訂金額",
+    "customAmount": "自訂金額",
+    "cnyUnit": "元",
+    "creditsUnit": "積分",
+    "payMethod": "支付方式",
+    "alipay": "支付寶",
+    "wechat": "微信支付",
+    "qq": "QQ錢包",
+    "goPay": "立即支付",
+    "creating": "建立中...",
+    "orderCreated": "訂單已建立，請在新視窗完成支付",
+    "invalidAmount": "請輸入有效的充值金額",
+    "paymentOrders": "充值記錄",
+    "rechargeOrder": "充值 {{credits}} 積分",
+    "noPaymentOrders": "暫無充值記錄",
+    "orderStatus": {
+      "pending": "待支付",
+      "paid": "已支付",
+      "failed": "支付失敗",
+      "expired": "已過期"
+    }
   },
   "claimDialog": {
     "title": "申請子網域",
@@ -337,6 +360,7 @@
     "creditCost": "積分費用",
     "description": "描述",
     "optionalDescription": "選填描述",
+    "descriptionTemplate": "ICP備案號：\n備案接入商：\n\n⚠️ 聲明：本域名下的子域名不得用於任何違法用途。系統已部署自動化內容掃描機制，對違規內容將採取封禁、刪除等處置措施。",
     "editDomain": "編輯網域：{{name}}",
     "domainCreated": "網域已建立",
     "domainUpdated": "網域已更新",
@@ -479,7 +503,38 @@
     "dailyCheckinGroups": "可簽到使用者組",
     "dailyCheckinGroupsHint": "未選擇使用者組時，所有使用者均不可簽到",
     "dailyCheckinZeroDisableHint": "當積分為 0 時，運行時視為簽到功能關閉",
-    "noGroups": "暫無可選使用者組"
+    "noGroups": "暫無可選使用者組",
+    "announcementTitle": "站點公告",
+    "announcementDesc": "配置首頁和控制台公告，支援 HTML 格式",
+    "announcementEnabled": "啟用公告",
+    "announcementContent": "公告內容",
+    "announcementContentHint": "支援 HTML 格式，將顯示在首頁和控制台頁面頂部",
+    "saveAnnouncement": "儲存公告",
+    "footerTitle": "頁尾資訊",
+    "footerDesc": "配置站點頁尾的備案資訊和自訂內容",
+    "footerIcp": "ICP 備案號",
+    "footerIcpLink": "備案連結",
+    "footerIcpLinkHint": "點擊備案號時跳轉的連結",
+    "footerContent": "自訂頁尾內容",
+    "footerContentHint": "支援 HTML 格式，顯示在頁尾底部",
+    "saveFooter": "儲存頁尾",
+    "seoTitle": "SEO 最佳化",
+    "seoDesc": "設定搜尋引擎最佳化元資料",
+    "seoDescription": "站點描述",
+    "seoDescriptionHint": "顯示在搜尋結果中的站點描述（建議 120-160 字元）",
+    "seoKeywords": "關鍵字",
+    "seoKeywordsHint": "逗號分隔的關鍵字列表",
+    "seoAuthor": "作者",
+    "seoOGImage": "Open Graph 圖片 URL",
+    "seoOGImageHint": "社群分享時顯示的圖片 URL（建議 1200x630px）",
+    "seoTwitterCard": "Twitter 卡片類型",
+    "seoTwitterSite": "Twitter 帳號",
+    "seoTwitterSiteHint": "例如 @youraccount",
+    "seoAnalyticsID": "Google Analytics ID",
+    "seoAnalyticsIDHint": "例如 G-XXXXXXXXXX",
+    "seoIndexingDisabled": "禁止搜尋引擎索引",
+    "seoIndexingDisabledHint": "啟用後 robots.txt 將禁止所有爬蟲",
+    "saveSEO": "儲存 SEO"
   },
   "referral": {
     "title": "邀請註冊",
@@ -533,7 +588,8 @@
     "subdomainDeletedDeduct": "管理員刪除網域，扣回子網域 {{fqdn}} 的獎勵積分",
     "referralInviter": "邀請用戶 {{name}} 註冊獎勵",
     "referralInvitee": "受 {{name}} 邀請註冊獎勵",
-    "dailyCheckin": "每日簽到獎勵"
+    "dailyCheckin": "每日簽到獎勵",
+    "recharge": "積分充值（訂單號：{{order_no}}）"
   },
   "notifications": {
     "title": "通知",
@@ -1044,6 +1100,17 @@
       "sendNotify": "通知用户",
       "reasonPlaceholder": "可选：说明释放原因"
     }
+  },
+  "profile": {
+    "title": "個人設定",
+    "subtitle": "管理你的個人資料",
+    "name": "姓名",
+    "namePlaceholder": "輸入你的姓名",
+    "avatarUrl": "頭像 URL",
+    "bio": "個人簡介",
+    "bioPlaceholder": "簡單介紹一下自己...",
+    "website": "個人網站",
+    "saved": "資料已儲存"
   },
   "notification": {
     "subdomainSuspended": {

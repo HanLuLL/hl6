@@ -35,6 +35,7 @@ import {
   Globe,
   Layers,
   Coins,
+  UserCircle,
   Users,
   Settings2,
   ShieldCheck,
@@ -77,6 +78,7 @@ const navItems: NavItem[] = [
   { labelKey: "nav.domains", href: "/domains", icon: Globe },
   { labelKey: "nav.mySubdomains", href: "/subdomains", icon: Layers },
   { labelKey: "nav.credits", href: "/credits", icon: Coins },
+  { labelKey: "nav.profile", href: "/profile", icon: UserCircle },
 ];
 
 const adminItems: NavItem[] = [

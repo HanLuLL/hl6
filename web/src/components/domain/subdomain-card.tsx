@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Markdown from "react-markdown";
 import type { Domain } from "@/types";
 
 interface SubdomainCardProps {
@@ -21,8 +20,8 @@ export function SubdomainCard({ domain, onClaim }: SubdomainCardProps) {
           <Badge variant="secondary">{t("domains.creditCost", { count: domain.credit_cost })}</Badge>
         </div>
         {domain.description && (
-          <div className="text-sm text-muted-foreground prose prose-sm prose-neutral dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-            <Markdown>{domain.description}</Markdown>
+          <div className="text-sm text-muted-foreground whitespace-pre-line break-words">
+            {domain.description}
           </div>
         )}
       </CardHeader>

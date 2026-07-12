@@ -5,7 +5,11 @@
 
 web/node_modules
 web/dist
-
 server/server
 
 public
+docs
+specs
+.specify
+.github
+.gitlab-ci.yml

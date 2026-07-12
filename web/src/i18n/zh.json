@@ -96,7 +96,8 @@
     "auditLogs": "审计日志",
     "adminSettings": "系统设置",
     "adminNotifications": "通知管理",
-    "audit": "内容审查"
+    "audit": "内容审查",
+    "profile": "个人设置"
   },
   "dashboard": {
     "title": "控制台",
@@ -162,7 +163,29 @@
     "dailyCheckinNow": "立即签到",
     "dailyCheckingIn": "签到中...",
     "dailyCheckinClaimed": "今日已签到",
-    "dailyCheckinSuccess": "签到成功，获得 {{amount}} 积分"
+    "dailyCheckinSuccess": "签到成功，获得 {{amount}} 积分",
+    "rechargeTitle": "积分充值",
+    "rechargeDesc": "选择充值套餐或自定义金额",
+    "customAmount": "自定义金额",
+    "cnyUnit": "元",
+    "creditsUnit": "积分",
+    "payMethod": "支付方式",
+    "alipay": "支付宝",
+    "wechat": "微信支付",
+    "qq": "QQ钱包",
+    "goPay": "立即支付",
+    "creating": "创建中...",
+    "orderCreated": "订单已创建，请在新窗口完成支付",
+    "invalidAmount": "请输入有效的充值金额",
+    "paymentOrders": "充值记录",
+    "rechargeOrder": "充值 {{credits}} 积分",
+    "noPaymentOrders": "暂无充值记录",
+    "orderStatus": {
+      "pending": "待支付",
+      "paid": "已支付",
+      "failed": "支付失败",
+      "expired": "已过期"
+    }
   },
   "claimDialog": {
     "title": "申请子域名",
@@ -337,6 +360,7 @@
     "creditCost": "积分费用",
     "description": "描述",
     "optionalDescription": "可选描述",
+    "descriptionTemplate": "ICP备案号：\n备案接入商：\n\n⚠️ 声明：本域名下的子域名不得用于任何违法用途。系统已部署自动化内容扫描机制，对违规内容将采取封禁、删除等处置措施。",
     "editDomain": "编辑域名：{{name}}",
     "domainCreated": "域名已创建",
     "domainUpdated": "域名已更新",
@@ -479,7 +503,38 @@
     "dailyCheckinGroups": "可签到用户组",
     "dailyCheckinGroupsHint": "未选择用户组时，所有用户均不可签到",
     "dailyCheckinZeroDisableHint": "当积分为 0 时，运行时视为签到功能关闭",
-    "noGroups": "暂无可选用户组"
+    "noGroups": "暂无可选用户组",
+    "announcementTitle": "站点公告",
+    "announcementDesc": "配置首页和控制台公告，支持 HTML 格式",
+    "announcementEnabled": "启用公告",
+    "announcementContent": "公告内容",
+    "announcementContentHint": "支持 HTML 格式，将显示在首页和控制台页面顶部",
+    "saveAnnouncement": "保存公告",
+    "footerTitle": "页脚信息",
+    "footerDesc": "配置站点页脚的备案信息和自定义内容",
+    "footerIcp": "ICP 备案号",
+    "footerIcpLink": "备案链接",
+    "footerIcpLinkHint": "点击备案号时跳转的链接",
+    "footerContent": "自定义页脚内容",
+    "footerContentHint": "支持 HTML 格式，显示在页脚底部",
+    "saveFooter": "保存页脚",
+    "seoTitle": "SEO 优化",
+    "seoDesc": "配置搜索引擎优化元数据",
+    "seoDescription": "站点描述",
+    "seoDescriptionHint": "显示在搜索结果中的站点描述（建议 120-160 字符）",
+    "seoKeywords": "关键词",
+    "seoKeywordsHint": "逗号分隔的关键词列表",
+    "seoAuthor": "作者",
+    "seoOGImage": "Open Graph 图片 URL",
+    "seoOGImageHint": "社交分享时显示的图片 URL（建议 1200x630px）",
+    "seoTwitterCard": "Twitter 卡片类型",
+    "seoTwitterSite": "Twitter 账号",
+    "seoTwitterSiteHint": "例如 @youraccount",
+    "seoAnalyticsID": "Google Analytics ID",
+    "seoAnalyticsIDHint": "例如 G-XXXXXXXXXX",
+    "seoIndexingDisabled": "禁止搜索引擎索引",
+    "seoIndexingDisabledHint": "启用后 robots.txt 将禁止所有爬虫",
+    "saveSEO": "保存 SEO"
   },
   "referral": {
     "title": "邀请注册",
@@ -533,7 +588,8 @@
     "subdomainDeletedDeduct": "管理员删除域名，扣回子域名 {{fqdn}} 的奖励积分",
     "referralInviter": "邀请用户 {{name}} 注册奖励",
     "referralInvitee": "受 {{name}} 邀请注册奖励",
-    "dailyCheckin": "每日签到奖励"
+    "dailyCheckin": "每日签到奖励",
+    "recharge": "积分充值（订单号：{{order_no}}）"
   },
   "notifications": {
     "title": "通知",
@@ -736,7 +792,9 @@
     "dnsBulkJobQueuedBan": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试封禁",
     "dnsBulkJobQueuedDelete": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试删除",
     "dnsBulkJobQueuedRelease": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试释放",
-    "dnsBulkJobQueuedOperation": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试操作"
+    "dnsBulkJobQueuedOperation": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试操作",
+    "nameCannotBeEmpty": "姓名不能为空",
+    "failedToUpdateProfile": "更新资料失败"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -1044,6 +1102,17 @@
       "sendNotify": "通知用户",
       "reasonPlaceholder": "可选：说明释放原因"
     }
+  },
+  "profile": {
+    "title": "个人设置",
+    "subtitle": "管理你的个人资料",
+    "name": "姓名",
+    "namePlaceholder": "输入你的姓名",
+    "avatarUrl": "头像 URL",
+    "bio": "个人简介",
+    "bioPlaceholder": "简单介绍一下自己...",
+    "website": "个人网站",
+    "saved": "资料已保存"
   },
   "notification": {
     "subdomainSuspended": {

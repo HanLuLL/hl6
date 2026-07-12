@@ -16,6 +16,12 @@ func (r *Repository) ListDomains(activeOnly bool) ([]model.Domain, error) {
 	return domains, err
 }
 
+func (r *Repository) GetActiveDomains() ([]model.Domain, error) {
+	var domains []model.Domain
+	err := r.DB.Where("is_active = ?", true).Find(&domains).Error
+	return domains, err
+}
+
 func (r *Repository) DomainExistsByZoneIDOrName(zoneID, name string) (bool, error) {
 	var count int64
 	err := r.DB.Model(&model.Domain{}).

@@ -13,5 +13,6 @@ func registerAuthRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, h
 
 	authed := api.Group("", auth.Required())
 	authed.GET("/auth/me", h.Auth.Me)
+	authed.PUT("/auth/profile", h.Auth.UpdateProfile)
 	authed.POST("/auth/logout", h.OIDC.Logout)
 }

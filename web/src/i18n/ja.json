@@ -96,7 +96,8 @@
     "auditLogs": "監査ログ",
     "adminSettings": "設定",
     "adminNotifications": "通知管理",
-    "audit": "コンテンツ監査"
+    "audit": "コンテンツ監査",
+    "profile": "プロフィール"
   },
   "dashboard": {
     "title": "ダッシュボード",
@@ -162,7 +163,29 @@
     "dailyCheckinNow": "今すぐチェックイン",
     "dailyCheckingIn": "チェックイン中...",
     "dailyCheckinClaimed": "本日は受取済み",
-    "dailyCheckinSuccess": "チェックイン成功、{{amount}} クレジット獲得"
+    "dailyCheckinSuccess": "チェックイン成功、{{amount}} クレジット獲得",
+    "rechargeTitle": "クレジットチャージ",
+    "rechargeDesc": "パッケージを選択またはカスタム金額を入力",
+    "customAmount": "カスタム金額",
+    "cnyUnit": "元",
+    "creditsUnit": "クレジット",
+    "payMethod": "支払い方法",
+    "alipay": "Alipay",
+    "wechat": "WeChat Pay",
+    "qq": "QQウォレット",
+    "goPay": "今すぐ支払う",
+    "creating": "作成中...",
+    "orderCreated": "注文が作成されました。新しいウィンドウで支払いを完了してください",
+    "invalidAmount": "有効な金額を入力してください",
+    "paymentOrders": "支払い履歴",
+    "rechargeOrder": "{{credits}} クレジットをチャージ",
+    "noPaymentOrders": "支払い記録なし",
+    "orderStatus": {
+      "pending": "支払待ち",
+      "paid": "支払済み",
+      "failed": "支払失敗",
+      "expired": "期限切れ"
+    }
   },
   "claimDialog": {
     "title": "サブドメインを取得",
@@ -337,6 +360,7 @@
     "creditCost": "クレジットコスト",
     "description": "説明",
     "optionalDescription": "任意の説明",
+    "descriptionTemplate": "ICP登録番号：\n登録プロバイダ：\n\n⚠️ 注意：このドメイン下のサブドメインは違法目的に使用することはできません。自動コンテンツスキャンシステムが導入されており、違反が確認された場合は停止・削除等の措置が取られます。",
     "editDomain": "ドメインを編集：{{name}}",
     "domainCreated": "ドメインを作成しました",
     "domainUpdated": "ドメインを更新しました",
@@ -479,7 +503,38 @@
     "dailyCheckinGroups": "許可ユーザーグループ",
     "dailyCheckinGroupsHint": "グループ未選択時は誰もチェックインできません",
     "dailyCheckinZeroDisableHint": "クレジットが 0 の場合、実行時は無効として扱われます",
-    "noGroups": "利用可能なグループがありません"
+    "noGroups": "利用可能なグループがありません",
+    "announcementTitle": "サイトのお知らせ",
+    "announcementDesc": "ホームページとダッシュボードのお知らせを設定、HTML対応",
+    "announcementEnabled": "お知らせを有効にする",
+    "announcementContent": "お知らせ内容",
+    "announcementContentHint": "HTML形式対応、ホームページとダッシュボードの上部に表示",
+    "saveAnnouncement": "お知らせを保存",
+    "footerTitle": "フッター情報",
+    "footerDesc": "サイトフッターのICP登録情報とカスタムコンテンツを設定",
+    "footerIcp": "ICP登録番号",
+    "footerIcpLink": "登録リンク",
+    "footerIcpLinkHint": "ICP番号クリック時の遷移先URL",
+    "footerContent": "カスタムフッターコンテンツ",
+    "footerContentHint": "HTML形式対応、フッター下部に表示",
+    "saveFooter": "フッターを保存",
+    "seoTitle": "SEO最適化",
+    "seoDesc": "検索エンジン最適化メタデータを設定",
+    "seoDescription": "サイトの説明",
+    "seoDescriptionHint": "検索結果に表示される説明（推奨120-160文字）",
+    "seoKeywords": "キーワード",
+    "seoKeywordsHint": "カンマ区切りのキーワードリスト",
+    "seoAuthor": "作成者",
+    "seoOGImage": "Open Graph 画像URL",
+    "seoOGImageHint": "ソーシャル共有時に表示される画像URL（推奨1200x630px）",
+    "seoTwitterCard": "Twitter カードタイプ",
+    "seoTwitterSite": "Twitter アカウント",
+    "seoTwitterSiteHint": "例: @youraccount",
+    "seoAnalyticsID": "Google Analytics ID",
+    "seoAnalyticsIDHint": "例: G-XXXXXXXXXX",
+    "seoIndexingDisabled": "検索エンジンインデックスを無効化",
+    "seoIndexingDisabledHint": "有効化すると robots.txt がすべてのクローラーを拒否します",
+    "saveSEO": "SEOを保存"
   },
   "referral": {
     "title": "紹介プログラム",
@@ -533,7 +588,8 @@
     "subdomainDeletedDeduct": "管理者がドメインを削除、サブドメイン {{fqdn}} のボーナスクレジットを回収",
     "referralInviter": "{{name}} の招待報酬",
     "referralInvitee": "{{name}} からの招待報酬",
-    "dailyCheckin": "デイリーチェックイン報酬"
+    "dailyCheckin": "デイリーチェックイン報酬",
+    "recharge": "クレジットチャージ（注文番号：{{order_no}}）"
   },
   "notifications": {
     "title": "通知",
@@ -1044,6 +1100,17 @@
       "sendNotify": "Notify user",
       "reasonPlaceholder": "Optional reason"
     }
+  },
+  "profile": {
+    "title": "プロフィール",
+    "subtitle": "個人情報の管理",
+    "name": "名前",
+    "namePlaceholder": "名前を入力",
+    "avatarUrl": "アバター URL",
+    "bio": "自己紹介",
+    "bioPlaceholder": "自己紹介を入力...",
+    "website": "ウェブサイト",
+    "saved": "プロフィールを保存しました"
   },
   "notification": {
     "subdomainSuspended": {

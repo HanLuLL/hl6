@@ -12,6 +12,8 @@ type User struct {
 	Email        string     `json:"email"`
 	Name         string     `json:"name"`
 	AvatarURL    string     `json:"avatar_url"`
+	Bio         string     `json:"bio" gorm:"type:text;default:''"`
+	Website     string     `json:"website" gorm:"type:varchar(255);default:''"`
 	Role         string     `json:"role" gorm:"default:user"`
 	IsBanned     bool       `json:"is_banned" gorm:"not null;default:false;index"`
 	BannedReason string     `json:"banned_reason"`

@@ -10,26 +10,32 @@ import (
 )
 
 type Config struct {
-	Port                  string
-	DatabaseURL           string
-	OIDCIssuer            string
-	OIDCClientID          string
-	OIDCClientSecret      string
-	SessionSecret         string
-	AppURL                string
-	BackendURLs           []string
-	FrontendURLs          []string
-	BackendURL            string
-	FrontendURL           string
-	BackendURLEnvSet      bool
-	FrontendURLEnvSet     bool
-	AllowedOrigins        []string
-	EncryptionKey         []byte
-	DNSBatchThreshold     int
-	RedisAddr             string
-	AuditScanInterval     time.Duration
-	AuditScanWorkerCount  int
-	AuditScanTimeout      time.Duration
+	Port                 string
+	DatabaseURL          string
+	OIDCIssuer           string
+	OIDCClientID         string
+	OIDCClientSecret     string
+	SessionSecret        string
+	AppURL               string
+	BackendURLs          []string
+	FrontendURLs         []string
+	BackendURL           string
+	FrontendURL          string
+	BackendURLEnvSet     bool
+	FrontendURLEnvSet    bool
+	AllowedOrigins       []string
+	EncryptionKey        []byte
+	DNSBatchThreshold    int
+	RedisAddr            string
+	AuditScanInterval    time.Duration
+	AuditScanWorkerCount int
+	AuditScanTimeout     time.Duration
+	EpayURL              string
+	EpayPID              string
+	EpayKey              string
+	CodePayURL           string
+	CodePayID            string
+	CodePayKey           string
 }
 
 func Load() *Config {
@@ -56,25 +62,31 @@ func Load() *Config {
 	databaseURL := expandEnvRefs(getEnv("DATABASE_URL", "postgres://hl6:hl6dev@localhost:5433/hl6?sslmode=disable"))
 
 	cfg := &Config{
-		Port:              getEnv("SERVER_PORT", "8081"),
-		DatabaseURL:       databaseURL,
-		OIDCIssuer:        getEnv("OIDC_ISSUER", ""),
-		OIDCClientID:      getEnv("OIDC_CLIENT_ID", ""),
-		OIDCClientSecret:  getEnv("OIDC_CLIENT_SECRET", ""),
-		SessionSecret:     getEnv("SESSION_SECRET", ""),
-		AppURL:            sharedURL,
-		BackendURLs:       backendURLs,
-		FrontendURLs:      frontendURLs,
-		BackendURL:        effectiveBackendURL,
-		FrontendURL:       effectiveFrontendURL,
-		BackendURLEnvSet:  len(backendURLs) > 0,
-		FrontendURLEnvSet: len(frontendURLs) > 0,
+		Port:                 getEnv("SERVER_PORT", "8081"),
+		DatabaseURL:          databaseURL,
+		OIDCIssuer:           getEnv("OIDC_ISSUER", ""),
+		OIDCClientID:         getEnv("OIDC_CLIENT_ID", ""),
+		OIDCClientSecret:     getEnv("OIDC_CLIENT_SECRET", ""),
+		SessionSecret:        getEnv("SESSION_SECRET", ""),
+		AppURL:               sharedURL,
+		BackendURLs:          backendURLs,
+		FrontendURLs:         frontendURLs,
+		BackendURL:           effectiveBackendURL,
+		FrontendURL:          effectiveFrontendURL,
+		BackendURLEnvSet:     len(backendURLs) > 0,
+		FrontendURLEnvSet:    len(frontendURLs) > 0,
 		AllowedOrigins:       parseList(getEnv("ALLOWED_ORIGINS", "")),
 		DNSBatchThreshold:    getEnvInt("DNS_BATCH_ASYNC_THRESHOLD", getEnvInt("DNS_BATCH_THRESHOLD", 200)),
 		RedisAddr:            strings.TrimSpace(getEnv("REDIS_ADDR", "")),
 		AuditScanInterval:    getEnvDuration("AUDIT_SCAN_INTERVAL", 30*time.Minute),
 		AuditScanWorkerCount: getEnvInt("AUDIT_SCAN_WORKER_COUNT", 2),
 		AuditScanTimeout:     getEnvDuration("AUDIT_SCAN_TIMEOUT", 15*time.Second),
+		EpayURL:              getEnv("EPAY_URL", ""),
+		EpayPID:              getEnv("EPAY_PID", ""),
+		EpayKey:              getEnv("EPAY_KEY", ""),
+		CodePayURL:           getEnv("CODEPAY_URL", ""),
+		CodePayID:            getEnv("CODEPAY_ID", ""),
+		CodePayKey:           getEnv("CODEPAY_KEY", ""),
 	}
 
 	if keyHex := getEnv("ENCRYPTION_KEY", ""); keyHex != "" {

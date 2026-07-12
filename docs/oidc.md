@@ -1,5 +1,8 @@
 # OIDC 提供商配置指南
 
+- **GitHub 仓库**：[https://github.com/HanLuLL/hl6](https://github.com/HanLuLL/hl6)
+- **原项目仓库**：[https://git.houlang.cloud/houlangcloud/hl6](https://git.houlang.cloud/houlangcloud/hl6)
+
 HL6 兼容所有标准 OIDC 提供商。登录前会通过 `/.well-known/openid-configuration` 自动发现 endpoint。
 
 推荐通过环境变量配置：

@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import type { OIDCStatusPayload } from "@/types";
 import { Zap, Globe, Settings2 } from "lucide-react";
 import { DomainSearchBar } from "@/components/domain/search-bar";
+import { sanitizeHTML } from "@/lib/utils";
 
 // 懒加载：把 three.js / vanta（~600KB）拆成异步 chunk，不拖累首屏。
 const DomainFog = lazy(() =>
@@ -145,6 +146,17 @@ export default function LandingPage() {
           </div>
         </div>
       </header>
+
+      {branding.announcement_enabled && (branding as any).announcement_content && (
+        <div className="border-b bg-brand/5 border-brand/20">
+          <div className="max-w-7xl mx-auto px-6 py-3">
+            <div
+              className="text-sm text-foreground prose prose-sm prose-neutral dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+              dangerouslySetInnerHTML={{ __html: sanitizeHTML((branding as any).announcement_content) }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Hero — full first viewport below nav */}
       <section className="relative flex min-h-[calc(100dvh-3.5rem)] items-center overflow-hidden">
