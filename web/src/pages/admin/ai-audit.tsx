@@ -823,8 +823,8 @@ function AIReviewTab() {
   const [reviewStatus, setReviewStatus] = useState<string>("confirmed");
   const [reviewNote, setReviewNote] = useState("");
 
-  const reviews = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const reviews = (data?.data ?? []) as AuditAIReview[];
+  const total = (data?.total ?? 0) as number;
   const totalPages = Math.ceil(total / 15);
 
   const handleReview = () => {
@@ -1039,8 +1039,8 @@ function AppealTab() {
   const [appealStatus, setAppealStatus] = useState<string>("approved");
   const [appealReply, setAppealReply] = useState("");
 
-  const appeals = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const appeals = (data?.data ?? []) as UserAppeal[];
+  const total = (data?.total ?? 0) as number;
   const totalPages = Math.ceil(total / 15);
 
   const handleReview = () => {
