@@ -11,7 +11,7 @@ import { ShieldX, MessageSquare, LogOut, Send } from "lucide-react";
 export default function BannedPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { signOut } = useAuth();
   const { data: banInfo, isLoading } = useBanInfo();
   const { data: appeals } = useMyAppeals();
   const createAppeal = useCreateAppeal();
@@ -37,7 +37,7 @@ export default function BannedPage() {
   };
 
   const handleLogout = async () => {
-    await logout();
+    await signOut(); // ✅ 修改：logout → signOut
     navigate("/", { replace: true });
   };
 
