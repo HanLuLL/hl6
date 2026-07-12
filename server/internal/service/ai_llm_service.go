@@ -16,7 +16,7 @@ import (
 	"hl6-server/pkg/crypto"
 )
 
-// ---- OpenAI API 兼容的 LLM 调用服务 ----
+// OpenAIAPI兼容的LLM
 
 // LLMChatRequest OpenAI Chat Completion 请求格式。
 type LLMChatRequest struct {
@@ -35,6 +35,7 @@ type LLMChatMessage struct {
 // LLMChatResponse OpenAI Chat Completion 响应格式。
 type LLMChatResponse struct {
 	ID      string        `json:"id"`
+	Model   string        `json:"model"`
 	Choices []LLMChoice   `json:"choices"`
 	Usage   LLMUsage      `json:"usage"`
 	Error   *LLMAPIError  `json:"error,omitempty"`
@@ -42,9 +43,9 @@ type LLMChatResponse struct {
 
 // LLMChoice 选项。
 type LLMChoice struct {
-	Index   int           `json:"index"`
-	Message LLMChatMessage `json:"message"`
-	FinishReason string    `json:"finish_reason"`
+	Index        int           `json:"index"`
+	Message      LLMChatMessage `json:"message"`
+	FinishReason string        `json:"finish_reason"`
 }
 
 // LLMUsage Token 用量。
@@ -63,11 +64,11 @@ type LLMAPIError struct {
 
 // LLMSendResult LLM 调用结果。
 type LLMSendResult struct {
-	Response    string
-	TokensUsed  int
-	ModelUsed   string
-	Duration    time.Duration
-	Error       error
+	Response   string
+	TokensUsed int
+	ModelUsed  string
+	Duration   time.Duration
+	Error      error
 }
 
 // AILLMService 封装与 AI LLM 的交互，支持 OpenAI API 兼容格式。
