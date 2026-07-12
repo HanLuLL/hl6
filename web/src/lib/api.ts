@@ -109,19 +109,6 @@ type RequestOptions = RequestInit & {
 
 let handlingBannedSession = false;
 
-async function forceLogoutForBannedUser(): Promise<void> {
-  try {
-    await fetch(buildApiUrl("/auth/logout"), {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  } catch {
-    // Best effort only.
-  }
-}
 
 export function getErrorMessage(err: unknown, t?: (key: string) => string): string {
   if (err instanceof ApiError && err.messageKey && t) {
