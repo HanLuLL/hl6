@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useBranding } from "@/hooks/use-branding";
+import DOMPurify from 'dompurify';
 
 const OPEN_SOURCE_URL = "https://github.com/HanLuLL/hl6";
 
@@ -79,7 +80,7 @@ export function SiteFooter({ withBorder = true, centered = false, className }: S
       {footerContent && (
         <div
           className="mt-2 text-xs text-muted-foreground prose prose-xs prose-neutral dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-          dangerouslySetInnerHTML={{ __html: sanitizeHTML(footerContent) }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(footerContent) }}   // 114514 DOMPurify.sanitize
         />
       )}
     </footer>
