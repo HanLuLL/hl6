@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:  
 
 # 允许 Action 写入 GHCR
 permissions:
@@ -12,7 +13,6 @@ permissions:
 
 jobs:
   docker:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -38,14 +38,9 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          
-          # 推送镜像
           push: true
-
           tags: |
             ghcr.io/hanlull/hl6:latest
             ghcr.io/hanlull/hl6:${{ github.sha }}
-
-          # 使用 GitHub Actions 缓存，加快后续构建
           cache-from: type=gha
           cache-to: type=gha,mode=max
