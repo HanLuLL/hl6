@@ -100,6 +100,7 @@
     "friendLinks": "Friend Links",
     "adminFriendLinks": "Friend Links Mgmt",
     "adminAIAudit": "AI Audit",
+    "emailLogs": "Email Logs",
     "profile": "Profile"
   },
   "dashboard": {
@@ -375,6 +376,31 @@
       "approved": "Approved",
       "rejected": "Rejected"
     }
+  },
+  "emailLogs": {
+    "title": "Email Logs",
+    "subtitle": "View system email sending records",
+    "listTitle": "Sending Records",
+    "filterStatus": "Filter Status",
+    "filterType": "Filter Type",
+    "allStatus": "All Status",
+    "allTypes": "All Types",
+    "statusPending": "Pending",
+    "statusSent": "Sent",
+    "statusFailed": "Failed",
+    "typeBanNotify": "Ban Notification",
+    "typeTest": "Test Email",
+    "noLogs": "No email logs yet",
+    "colRecipient": "Recipient",
+    "colSubject": "Subject",
+    "colType": "Type",
+    "colStatus": "Status",
+    "colRetries": "Retries",
+    "colCreatedAt": "Sent At",
+    "colActions": "Actions",
+    "retry": "Retry",
+    "retrySuccess": "Email retried successfully",
+    "hasError": "Has error"
   },
   "claimDialog": {
     "title": "Claim Subdomain",
@@ -728,7 +754,22 @@
     "paymentKey": "Merchant Key",
     "paymentKeyPlaceholder": "Leave blank to keep current key",
     "enabledChannels": "Enabled Channels",
-    "savePayment": "Save Payment Config"
+    "savePayment": "Save Payment Config",
+    "smtpTitle": "Email Service (SMTP)",
+    "smtpDesc": "Configure SMTP email service for system notifications like ban alerts",
+    "smtpEnabled": "Enable Email Service",
+    "smtpEnabledHint": "When enabled, ban notification emails will be sent automatically",
+    "smtpHost": "SMTP Server",
+    "smtpPort": "Port",
+    "smtpUsername": "Username",
+    "smtpPassword": "Password",
+    "smtpPasswordPlaceholder": "Leave blank to keep unchanged",
+    "smtpFromName": "Sender Name",
+    "smtpFromAddr": "Sender Address",
+    "smtpUseTLS": "Use TLS Encryption",
+    "saveSMTP": "Save SMTP Config",
+    "testSMTP": "Send Test Email",
+    "smtpTestSent": "Test email sent to {{recipient}}"
   },
   "referral": {
     "title": "Referral Program",

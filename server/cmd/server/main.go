@@ -197,6 +197,7 @@ func runSchemaMigrations(db *gorm.DB) error {
 			&model.AuditPromptTemplate{},
 			&model.AuditAIReview{},
 			&model.UserAppeal{},
+			&model.EmailLog{},
 		); err != nil {
 			return err
 		}

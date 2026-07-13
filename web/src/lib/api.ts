@@ -49,6 +49,7 @@ import type {
   SEOMeta,
   FriendLink,
   FriendLinkInput,
+  EmailLog,
 } from "@/types";
 import type { AIModelConfig, AIModelConfigInput, AuditPromptTemplate, PromptTemplateInput, AuditAIReview, AIAuditStats, UserAppeal, BanInfo } from "@/types/ai-audit";
 import { buildPaginatedQuery } from "@/lib/api-query";
@@ -655,4 +656,12 @@ export const api = {
     request<PaginatedResponse<UserAppeal>>(`/admin/ai-audit/appeals${params ? "?" + params : ""}`),
   adminReviewAppeal: (id: number, status: string, reply?: string) =>
     request<ApiResponse<{ updated: boolean }>>(`/admin/ai-audit/appeals/${id}`, { method: "PUT", body: JSON.stringify({ status, reply }) }),
+
+  // Admin Email
+  adminListEmailLogs: (page = 1, perPage = 20, emailType = "", status = "") =>
+    request<PaginatedResponse<EmailLog[]>>(`/admin/emails?page=${page}&per_page=${perPage}${emailType ? `&email_type=${encodeURIComponent(emailType)}` : ""}${status ? `&status=${encodeURIComponent(status)}` : ""}`),
+  adminRetryEmail: (id: number) =>
+    request<ApiResponse<{ retried: boolean }>>(`/admin/emails/${id}/retry`, { method: "POST" }),
+  adminTestSMTP: () =>
+    request<ApiResponse<{ sent: boolean; recipient: string }>>("/admin/emails/test", { method: "POST" }),
 };

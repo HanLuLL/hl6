@@ -100,6 +100,7 @@
     "friendLinks": "Ссылки",
     "adminFriendLinks": "Упр. ссылками",
     "adminAIAudit": "АИ Аудит",
+    "emailLogs": "Журнал писем",
     "profile": "Профиль"
   },
   "dashboard": {
@@ -375,6 +376,31 @@
       "approved": "Одобрена",
       "rejected": "Отклонена"
     }
+  },
+  "emailLogs": {
+    "title": "Журнал писем",
+    "subtitle": "Просмотр записей отправки системных писем",
+    "listTitle": "Записи отправки",
+    "filterStatus": "Фильтр по статусу",
+    "filterType": "Фильтр по типу",
+    "allStatus": "Все статусы",
+    "allTypes": "Все типы",
+    "statusPending": "Ожидает",
+    "statusSent": "Отправлено",
+    "statusFailed": "Ошибка",
+    "typeBanNotify": "Уведомление о бане",
+    "typeTest": "Тестовое письмо",
+    "noLogs": "Нет записей",
+    "colRecipient": "Получатель",
+    "colSubject": "Тема",
+    "colType": "Тип",
+    "colStatus": "Статус",
+    "colRetries": "Повторы",
+    "colCreatedAt": "Время отправки",
+    "colActions": "Действия",
+    "retry": "Повторить",
+    "retrySuccess": "Письмо повторно отправлено",
+    "hasError": "Есть ошибка"
   },
   "claimDialog": {
     "title": "Регистрация поддомена",
@@ -728,7 +754,22 @@
     "paymentKey": "Ключ мерчанта",
     "paymentKeyPlaceholder": "Оставьте пустым, чтобы сохранить текущий ключ",
     "enabledChannels": "Включенные каналы",
-    "savePayment": "Сохранить настройки платежей"
+    "savePayment": "Сохранить настройки платежей",
+    "smtpTitle": "Почтовая служба (SMTP)",
+    "smtpDesc": "Настройка SMTP для системных уведомлений, таких как уведомления о бане",
+    "smtpEnabled": "Включить почтовую службу",
+    "smtpEnabledHint": "При включении уведомления о бане будут отправляться автоматически",
+    "smtpHost": "SMTP-сервер",
+    "smtpPort": "Порт",
+    "smtpUsername": "Имя пользователя",
+    "smtpPassword": "Пароль",
+    "smtpPasswordPlaceholder": "Оставьте пустым, чтобы не менять",
+    "smtpFromName": "Имя отправителя",
+    "smtpFromAddr": "Адрес отправителя",
+    "smtpUseTLS": "Использовать TLS",
+    "saveSMTP": "Сохранить SMTP",
+    "testSMTP": "Отправить тестовое письмо",
+    "smtpTestSent": "Тестовое письмо отправлено на {{recipient}}"
   },
   "referral": {
     "title": "Реферальная программа",

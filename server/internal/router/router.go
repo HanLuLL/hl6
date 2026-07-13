@@ -77,6 +77,7 @@ func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context) *gin.Engine {
 	registerPaymentRoutes(api, auth, h)
 	registerFriendLinkRoutes(api, auth, h)
 	registerAIAuditRoutes(api, auth, h)
+	registerEmailRoutes(api, auth, h)
 
 	setupFrontendRoutes(r)
 

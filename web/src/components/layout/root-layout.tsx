@@ -46,6 +46,7 @@ import {
   Link2,
   LinkIcon,
   Brain,
+  Mail,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -92,6 +93,7 @@ const adminItems: NavItem[] = [
   { labelKey: "nav.auditLogs", href: "/admin/audit-logs", icon: ClipboardList },
   { labelKey: "nav.adminFriendLinks", href: "/admin/friend-links", icon: LinkIcon },
   { labelKey: "nav.adminAIAudit", href: "/admin/ai-audit", icon: Brain },
+  { labelKey: "nav.emailLogs", href: "/admin/email-logs", icon: Mail },
   { labelKey: "nav.adminSettings", href: "/admin/settings", icon: SlidersHorizontal },
 ];
 

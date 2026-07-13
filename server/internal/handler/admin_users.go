@@ -204,6 +204,14 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 			ResourceID: target.ID,
 			Details:    details,
 		})
+
+		// 异步发送封禁通知邮件
+		go func() {
+			if h.emailSvc != nil {
+				_ = h.emailSvc.SendBanNotification(target, reason)
+			}
+		}()
+
 		return service.OperationResult{
 			HTTPStatus: http.StatusOK,
 			Message:    "ok",

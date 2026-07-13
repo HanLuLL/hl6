@@ -469,3 +469,27 @@ const (
 )
 
 func (UserAppeal) TableName() string { return "user_appeals" }
+
+// EmailLog 邮件发送记录。
+type EmailLog struct {
+	ID         uint      `json:"id" gorm:"primaryKey"`
+	Recipient  string    `json:"recipient" gorm:"type:varchar(255);not null;index"`           // 收件人邮箱
+	Subject    string    `json:"subject" gorm:"type:varchar(255);not null"`                   // 邮件主题
+	Body       string    `json:"body" gorm:"type:text;not null"`                              // 邮件正文
+	Status     string    `json:"status" gorm:"type:varchar(16);not null;default:pending;index"` // pending / sent / failed
+	Error      string    `json:"error" gorm:"type:text;default:''"`                           // 失败原因
+	UserID     *uint     `json:"user_id" gorm:"index"`                                        // 关联用户
+	EmailType  string    `json:"email_type" gorm:"type:varchar(32);not null;default:''"`      // 邮件类型（如 ban_notify）
+	RetryCount int       `json:"retry_count" gorm:"default:0"`                               // 重试次数
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+// EmailLog 状态常量
+const (
+	EmailStatusPending = "pending"
+	EmailStatusSent    = "sent"
+	EmailStatusFailed  = "failed"
+)
+
+func (EmailLog) TableName() string { return "email_logs" }

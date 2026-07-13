@@ -100,6 +100,7 @@
     "friendLinks": "リンク",
     "adminFriendLinks": "リンク管理",
     "adminAIAudit": "AI監査",
+    "emailLogs": "メールログ",
     "profile": "プロフィール"
   },
   "dashboard": {
@@ -375,6 +376,31 @@
       "approved": "承認済み",
       "rejected": "却下済み"
     }
+  },
+  "emailLogs": {
+    "title": "メールログ",
+    "subtitle": "システムメール送信記録の確認",
+    "listTitle": "送信記録",
+    "filterStatus": "ステータス絞り込み",
+    "filterType": "タイプ絞り込み",
+    "allStatus": "すべて",
+    "allTypes": "すべて",
+    "statusPending": "送信待ち",
+    "statusSent": "送信済み",
+    "statusFailed": "送信失敗",
+    "typeBanNotify": "ブロック通知",
+    "typeTest": "テストメール",
+    "noLogs": "メール記録なし",
+    "colRecipient": "宛先",
+    "colSubject": "件名",
+    "colType": "タイプ",
+    "colStatus": "ステータス",
+    "colRetries": "リトライ",
+    "colCreatedAt": "送信時間",
+    "colActions": "操作",
+    "retry": "リトライ",
+    "retrySuccess": "メールを再送信しました",
+    "hasError": "エラーあり"
   },
   "claimDialog": {
     "title": "サブドメインを取得",
@@ -728,7 +754,22 @@
     "paymentKey": "マーチャントキー",
     "paymentKeyPlaceholder": "空欄で現在のキーを維持",
     "enabledChannels": "有効なチャネル",
-    "savePayment": "支払い設定を保存"
+    "savePayment": "支払い設定を保存",
+    "smtpTitle": "メールサービス (SMTP)",
+    "smtpDesc": "ブロック通知などのシステムメール送信のためのSMTP設定",
+    "smtpEnabled": "メールサービスを有効化",
+    "smtpEnabledHint": "有効にするとブロック通知メールが自動送信されます",
+    "smtpHost": "SMTPサーバー",
+    "smtpPort": "ポート",
+    "smtpUsername": "ユーザー名",
+    "smtpPassword": "パスワード",
+    "smtpPasswordPlaceholder": "空欄で変更なし",
+    "smtpFromName": "送信者名",
+    "smtpFromAddr": "送信者アドレス",
+    "smtpUseTLS": "TLS暗号化を使用",
+    "saveSMTP": "SMTP設定を保存",
+    "testSMTP": "テストメールを送信",
+    "smtpTestSent": "テストメールを {{recipient}} に送信しました"
   },
   "referral": {
     "title": "紹介プログラム",

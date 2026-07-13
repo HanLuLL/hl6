@@ -100,6 +100,7 @@
     "friendLinks": "友链",
     "adminFriendLinks": "友链管理",
     "adminAIAudit": "AI审查",
+    "emailLogs": "邮件日志",
     "profile": "个人设置"
   },
   "dashboard": {
@@ -375,6 +376,31 @@
       "approved": "已通过",
       "rejected": "已驳回"
     }
+  },
+  "emailLogs": {
+    "title": "邮件日志",
+    "subtitle": "查看系统邮件发送记录",
+    "listTitle": "发送记录",
+    "filterStatus": "筛选状态",
+    "filterType": "筛选类型",
+    "allStatus": "全部状态",
+    "allTypes": "全部类型",
+    "statusPending": "待发送",
+    "statusSent": "已发送",
+    "statusFailed": "发送失败",
+    "typeBanNotify": "封禁通知",
+    "typeTest": "测试邮件",
+    "noLogs": "暂无邮件记录",
+    "colRecipient": "收件人",
+    "colSubject": "主题",
+    "colType": "类型",
+    "colStatus": "状态",
+    "colRetries": "重试",
+    "colCreatedAt": "发送时间",
+    "colActions": "操作",
+    "retry": "重试",
+    "retrySuccess": "邮件已重新发送",
+    "hasError": "有错误"
   },
   "claimDialog": {
     "title": "申请子域名",
@@ -728,7 +754,22 @@
     "paymentKey": "商户密钥",
     "paymentKeyPlaceholder": "留空表示不修改当前密钥",
     "enabledChannels": "启用的支付渠道",
-    "savePayment": "保存支付配置"
+    "savePayment": "保存支付配置",
+    "smtpTitle": "邮件服务 (SMTP)",
+    "smtpDesc": "配置 SMTP 邮件服务，用于发送封禁通知等系统邮件",
+    "smtpEnabled": "启用邮件服务",
+    "smtpEnabledHint": "启用后将自动发送封禁通知邮件",
+    "smtpHost": "SMTP 服务器",
+    "smtpPort": "端口",
+    "smtpUsername": "用户名",
+    "smtpPassword": "密码",
+    "smtpPasswordPlaceholder": "留空表示不修改",
+    "smtpFromName": "发件人名称",
+    "smtpFromAddr": "发件人地址",
+    "smtpUseTLS": "使用 TLS 加密",
+    "saveSMTP": "保存邮件配置",
+    "testSMTP": "发送测试邮件",
+    "smtpTestSent": "测试邮件已发送至 {{recipient}}"
   },
   "referral": {
     "title": "邀请注册",
