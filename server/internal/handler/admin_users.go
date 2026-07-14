@@ -259,6 +259,13 @@ func (h *AdminHandler) UnbanUser(c *gin.Context) {
 		Details:    details,
 	})
 
+	// 异步发送解封通知邮件
+	go func() {
+		if h.emailSvc != nil {
+			_ = h.emailSvc.SendUnbanNotification(target)
+		}
+	}()
+
 	response.OK(c, gin.H{"message": "user unbanned"})
 }
 
