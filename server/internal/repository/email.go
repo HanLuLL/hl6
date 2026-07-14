@@ -2,8 +2,6 @@ package repository
 
 import (
 	"hl6-server/internal/model"
-
-	"gorm.io/gorm"
 )
 
 // CreateEmailLog 创建邮件发送记录。
