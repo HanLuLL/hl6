@@ -43,12 +43,7 @@ func (h *EmailHandler) ListEmailLogs(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, gin.H{
-		"data":     logs,
-		"total":    total,
-		"page":     page,
-		"per_page": perPage,
-	})
+	response.Paginated(c, logs, total, page, perPage)
 }
 
 // RetryEmail 管理员手动重试发送失败的邮件。
