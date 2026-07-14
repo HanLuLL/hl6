@@ -186,6 +186,8 @@ func runSchemaMigrations(db *gorm.DB) error {
 			&model.DailyCheckinClaim{},
 			&model.AuditLog{},
 			&model.SystemConfig{},
+			&model.NativeAuthCode{},
+			&model.NativeAuthRequest{},
 			&model.Notification{},
 			&model.NotificationRead{},
 			&model.NotificationImage{},
@@ -230,6 +232,8 @@ func runSchemaMigrations(db *gorm.DB) error {
 			&model.User{},
 			&model.UserGroup{},
 			&model.SystemConfig{},
+			&model.NativeAuthCode{},
+			&model.NativeAuthRequest{},
 		}); err != nil {
 			return err
 		}

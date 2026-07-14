@@ -8,6 +8,7 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
+	"hl6-server/internal/clientauth"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/repository"
 	"hl6-server/pkg/response"
@@ -65,14 +66,20 @@ func NewAuthMiddleware(sessionSecret string, repo *repository.Repository) *AuthM
 
 func (a *AuthMiddleware) Required() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		cookie, err := c.Cookie("hl6_session")
-		if err != nil || cookie == "" {
+		sessionToken, err := c.Cookie("hl6_session")
+		if err != nil || sessionToken == "" {
+			authorization := c.GetHeader("Authorization")
+			if len(authorization) > len("Bearer ") && authorization[:len("Bearer ")] == "Bearer " {
+				sessionToken = authorization[len("Bearer "):]
+			}
+		}
+		if sessionToken == "" {
 			response.ErrorWithKey(c, http.StatusUnauthorized, "not authenticated", "error.missingToken")
 			c.Abort()
 			return
 		}
 
-		parsed, err := jwt.Parse([]byte(cookie),
+		parsed, err := jwt.Parse([]byte(sessionToken),
 			jwt.WithKey(jwa.HS256, a.sessionKey),
 			jwt.WithValidate(true),
 			jwt.WithIssuer("hl6"),
@@ -82,6 +89,14 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 			response.ErrorWithKey(c, http.StatusUnauthorized, "invalid session", "error.invalidToken")
 			c.Abort()
 			return
+		}
+		if nativeClient, _ := parsed.Get(clientauth.NativeSessionClaim); nativeClient == true {
+			sessionKeyHash, ok := parsed.Get(clientauth.NativeSessionKeyHashClaim)
+			if !ok || !a.isAuthorizedNativeClientKey(c.GetHeader("X-HL6-Client-Key"), sessionKeyHash) {
+				response.ErrorWithKey(c, http.StatusUnauthorized, "invalid client key", "error.invalidToken")
+				c.Abort()
+				return
+			}
 		}
 
 		externalID := parsed.Subject()
@@ -117,4 +132,16 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+func (a *AuthMiddleware) isAuthorizedNativeClientKey(key string, sessionKeyHash interface{}) bool {
+	claimedHash, ok := sessionKeyHash.(string)
+	if !ok {
+		return false
+	}
+	storedHash, err := a.repo.GetSystemConfig(clientauth.CommunicationKeyHashConfigKey)
+	if err != nil {
+		return false
+	}
+	return clientauth.SameHash(claimedHash, storedHash) && clientauth.IsAuthorized(key, storedHash)
 }

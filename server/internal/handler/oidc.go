@@ -3,6 +3,8 @@ package handler
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -19,6 +21,7 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
+	"hl6-server/internal/clientauth"
 	"hl6-server/internal/config"
 	"hl6-server/internal/model"
 	"hl6-server/internal/oidc"
@@ -39,11 +42,15 @@ type OIDCHandler struct {
 const (
 	firstUserAdminLockKey         int64 = 19490331
 	maxReferralCodeCreateAttempts       = 20
+	nativeRedirectCookieName             = "hl6_native_redirect"
+	nativeAuthRequestTTL                 = 90 * time.Second
+	nativeAuthCodeTTL                    = 90 * time.Second
 )
 
 var (
-	referralCodePattern       = regexp.MustCompile(`^[a-z]{5}$`)
-	legacyReferralCodePattern = regexp.MustCompile(`^[0-9a-f]{16}$`)
+	referralCodePattern         = regexp.MustCompile(`^[a-z]{5}$`)
+	legacyReferralCodePattern   = regexp.MustCompile(`^[0-9a-f]{16}$`)
+	nativeRedirectSchemePattern = regexp.MustCompile(`^[a-z][a-z0-9+.-]{0,63}$`)
 )
 
 func NewOIDCHandler(repo *repository.Repository, cfg *config.Config) *OIDCHandler {
@@ -88,6 +95,20 @@ func (h *OIDCHandler) Login(c *gin.Context) {
 
 	callbackURL := strings.TrimRight(urlState.BackendURL, "/") + "/api/v1/auth/callback"
 	secureCookie := strings.HasPrefix(urlState.FrontendURL, "https://")
+	if strings.TrimSpace(c.Query("native_redirect_uri")) != "" {
+		response.ErrorWithKey(c, http.StatusBadRequest, "native redirect uri must be created through the client API", "error.invalidRequestBody")
+		return
+	}
+	nativeRedirectURI, err := h.consumeNativeLoginRequest(c)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "invalid native login request", "error.invalidToken")
+		return
+	}
+	if nativeRedirectURI == "" {
+		h.setSessionCookie(c, nativeRedirectCookieName, "", -1, secureCookie)
+	} else {
+		h.setSessionCookie(c, nativeRedirectCookieName, base64.RawURLEncoding.EncodeToString([]byte(nativeRedirectURI)), 900, secureCookie)
+	}
 
 	state, err := generateRandomState()
 	if err != nil {
@@ -153,6 +174,7 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 	// Clear state cookie
 	h.setSessionCookie(c, "hl6_state", "", -1, secureCookie)
+	nativeRedirectURI := h.consumeNativeRedirectURI(c, secureCookie)
 
 	// 2. Exchange code for tokens
 	tokenResp, err := h.exchangeCode(c.Request.Context(), provider, runtimeState, code, callbackURL)
@@ -178,67 +200,23 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	// Try standard JWT validation first
+	// Try standard validation first. Some OIDC providers omit kid, so retry each
+	// published JWK, but never accept an ID token without signature validation.
 	idToken, err := jwt.Parse([]byte(idTokenStr),
 		jwt.WithKeySet(keySet),
 		jwt.WithIssuer(provider.Issuer),
 		jwt.WithAudience(runtimeState.ClientID),
 		jwt.WithAcceptableSkew(2*time.Minute),
 	)
-	
 	if err != nil {
 		log.Printf("standard id_token validation failed: %v", err)
-		
-		// Handle case where token doesn't have kid (Key ID) - common with Authing
-	// Try to validate by iterating through all available keys in the key set
-	idToken, err = validateTokenWithAllKeys([]byte(idTokenStr), keySet, provider.Issuer, runtimeState.ClientID)
-	if err != nil {
-		log.Printf("id_token validation failed with all keys: %v", err)
-		
-		// As a last resort, try to parse and validate manually
-		// We'll extract header and payload separately to check issuer and audience
-		// without relying on signature verification (which caused the original issue)
-		token, parseErr := jwt.Parse([]byte(idTokenStr))
-		if parseErr != nil {
-			// If we can't even parse the token structure, give up
-			log.Printf("failed to parse id_token structure: %v", parseErr)
+		idToken, err = validateTokenWithAllKeys([]byte(idTokenStr), keySet, provider.Issuer, runtimeState.ClientID)
+		if err != nil {
+			log.Printf("id_token validation failed with all keys: %v", err)
 			c.String(http.StatusBadGateway, "authentication failed")
 			return
 		}
-		
-		// Check issuer and audience from the parsed token
-		if token.Issuer() != provider.Issuer {
-			log.Printf("id_token issuer mismatch: expected %s, got %s", provider.Issuer, token.Issuer())
-			c.String(http.StatusBadGateway, "authentication failed")
-			return
-		}
-		
-		audience := token.Audience()
-		found := false
-		for _, aud := range audience {
-			if aud == runtimeState.ClientID {
-				found = true
-				break
-			}
-		}
-		if !found {
-			log.Printf("id_token audience mismatch: expected %s to be in %v", runtimeState.ClientID, audience)
-			c.String(http.StatusBadGateway, "authentication failed")
-			return
-		}
-		
-		// At this point, we have a token with correct issuer and audience
-		// but couldn't verify the signature with any key. This could be due to:
-		// 1. The key was rotated and not yet reflected in JWKS
-		// 2. The JWT header doesn't contain kid (as in Authing case)
-		// 3. Some other JWKS/key mismatch
-		
-		// For now, we'll proceed with the parsed token but log a warning
-		log.Printf("WARNING: Proceeding with id_token that couldn't be verified with any known key - possible Authing configuration issue")
-		idToken = token
-	} else {
 		log.Printf("parsed id_token using all available keys for Authing compatibility")
-	}
 	}
 
 	sub := idToken.Subject()
@@ -439,6 +417,10 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		user.BannedAt = nil
 		user.BannedUntil = nil
 	}
+	if nativeRedirectURI != "" {
+		h.redirectNativeAuth(c, nativeRedirectURI, user.ExternalID)
+		return
+	}
 	if user.IsBanned {
 		// Issue a restricted session so the user can read ban details and submit an
 		// appeal. Auth middleware blocks every other protected endpoint.
@@ -465,6 +447,151 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 	// 7. Redirect to dashboard
 	c.Redirect(http.StatusFound, frontendDashboardURL)
+}
+
+func (h *OIDCHandler) NativeStart(c *gin.Context) {
+	var body struct {
+		RedirectURI string `json:"redirect_uri"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
+		return
+	}
+	redirectURI := strings.TrimSpace(body.RedirectURI)
+	if !isValidNativeRedirectURI(redirectURI) {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid native redirect uri", "error.invalidRequestBody")
+		return
+	}
+	requestToken, err := generateRandomState()
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create native login request", "error.databaseError")
+		return
+	}
+	requestHash := sha256.Sum256([]byte(requestToken))
+	if err := h.repo.CreateNativeAuthRequest(hex.EncodeToString(requestHash[:]), redirectURI, time.Now().Add(nativeAuthRequestTTL)); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to save native login request", "error.databaseError")
+		return
+	}
+	urlState, err := h.urlResolver.Resolve(c)
+	if err != nil {
+		log.Printf("failed to resolve runtime URLs: %v", err)
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to resolve runtime URL", "error.databaseError")
+		return
+	}
+	loginURL, err := url.Parse(strings.TrimRight(urlState.BackendURL, "/") + "/api/v1/auth/login")
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to build native login url", "error.databaseError")
+		return
+	}
+	query := loginURL.Query()
+	query.Set("native_request", requestToken)
+	loginURL.RawQuery = query.Encode()
+	response.OK(c, gin.H{"login_url": loginURL.String()})
+}
+
+func (h *OIDCHandler) NativeExchange(c *gin.Context) {
+	var body struct {
+		Code string `json:"code"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
+		return
+	}
+	code := strings.TrimSpace(body.Code)
+	if code == "" || len(code) > 128 {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid native auth code", "error.invalidRequestBody")
+		return
+	}
+	codeHash := sha256.Sum256([]byte(code))
+	externalID, err := h.repo.ConsumeNativeAuthCode(hex.EncodeToString(codeHash[:]))
+	if err != nil {
+		if errors.Is(err, repository.ErrNativeAuthCodeInvalid) {
+			response.ErrorWithKey(c, http.StatusUnauthorized, "invalid native auth code", "error.invalidToken")
+			return
+		}
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to exchange native auth code", "error.databaseError")
+		return
+	}
+	clientKeyHash, err := h.repo.GetSystemConfig(clientauth.CommunicationKeyHashConfigKey)
+	if err != nil || clientKeyHash == "" {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "invalid client key", "error.invalidToken")
+		return
+	}
+	token, err := h.issueNativeSessionJWT(externalID, clientKeyHash)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to issue native session", "error.databaseError")
+		return
+	}
+	response.OK(c, gin.H{
+		"access_token": token,
+		"expires_in":   int((7 * 24 * time.Hour).Seconds()),
+	})
+}
+
+func (h *OIDCHandler) consumeNativeLoginRequest(c *gin.Context) (string, error) {
+	requestToken := strings.TrimSpace(c.Query("native_request"))
+	if requestToken == "" {
+		return "", nil
+	}
+	if len(requestToken) > 128 {
+		return "", repository.ErrNativeAuthRequestInvalid
+	}
+	requestHash := sha256.Sum256([]byte(requestToken))
+	redirectURI, err := h.repo.ConsumeNativeAuthRequest(hex.EncodeToString(requestHash[:]))
+	if err != nil {
+		return "", err
+	}
+	if !isValidNativeRedirectURI(redirectURI) {
+		return "", repository.ErrNativeAuthRequestInvalid
+	}
+	return redirectURI, nil
+}
+
+func (h *OIDCHandler) consumeNativeRedirectURI(c *gin.Context, secureCookie bool) string {
+	encoded, err := c.Cookie(nativeRedirectCookieName)
+	h.setSessionCookie(c, nativeRedirectCookieName, "", -1, secureCookie)
+	if err != nil || encoded == "" {
+		return ""
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(encoded)
+	if err != nil {
+		return ""
+	}
+	redirectURI := string(raw)
+	if !isValidNativeRedirectURI(redirectURI) {
+		return ""
+	}
+	return redirectURI
+}
+
+func (h *OIDCHandler) redirectNativeAuth(c *gin.Context, redirectURI, externalID string) {
+	code, err := generateRandomState()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "failed to create native auth code")
+		return
+	}
+	codeHash := sha256.Sum256([]byte(code))
+	if err := h.repo.CreateNativeAuthCode(hex.EncodeToString(codeHash[:]), externalID, time.Now().Add(nativeAuthCodeTTL)); err != nil {
+		c.String(http.StatusInternalServerError, "failed to save native auth code")
+		return
+	}
+	target, err := url.Parse(redirectURI)
+	if err != nil {
+		c.String(http.StatusBadRequest, "invalid native redirect uri")
+		return
+	}
+	query := target.Query()
+	query.Set("code", code)
+	target.RawQuery = query.Encode()
+	c.Redirect(http.StatusFound, target.String())
+}
+
+func isValidNativeRedirectURI(rawURI string) bool {
+	parsed, err := url.ParseRequestURI(rawURI)
+	if err != nil || !nativeRedirectSchemePattern.MatchString(parsed.Scheme) {
+		return false
+	}
+	return parsed.Host == "auth" && parsed.Path == "/callback" && parsed.RawQuery == "" && parsed.Fragment == ""
 }
 
 func defaultProfileName(email string) string {
@@ -579,19 +706,34 @@ func (h *OIDCHandler) exchangeCode(ctx context.Context, provider *oidc.ProviderC
 }
 
 func (h *OIDCHandler) issueSessionJWT(externalID string) (string, error) {
+	return h.issueSessionJWTWithClientType(externalID, false, "")
+}
+
+func (h *OIDCHandler) issueNativeSessionJWT(externalID, clientKeyHash string) (string, error) {
+	return h.issueSessionJWTWithClientType(externalID, true, clientKeyHash)
+}
+
+func (h *OIDCHandler) issueSessionJWTWithClientType(externalID string, nativeClient bool, clientKeyHash string) (string, error) {
 	key, err := jwk.FromRaw([]byte(h.cfg.SessionSecret))
 	if err != nil {
 		return "", err
 	}
 
 	now := time.Now()
-	token, err := jwt.NewBuilder().
+	builder := jwt.NewBuilder().
 		Subject(externalID).
 		Issuer("hl6").
 		Audience([]string{"hl6"}).
 		IssuedAt(now).
-		Expiration(now.Add(7 * 24 * time.Hour)).
-		Build()
+		Expiration(now.Add(7 * 24 * time.Hour))
+	if nativeClient {
+		if clientKeyHash == "" {
+			return "", errors.New("native session requires a client key hash")
+		}
+		builder = builder.Claim(clientauth.NativeSessionClaim, true)
+		builder = builder.Claim(clientauth.NativeSessionKeyHashClaim, clientKeyHash)
+	}
+	token, err := builder.Build()
 	if err != nil {
 		return "", err
 	}

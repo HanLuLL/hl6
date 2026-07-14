@@ -54,6 +54,28 @@ type SystemConfig struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// NativeAuthCode is a one-time handoff code for the Android Custom Tabs OIDC flow.
+// Only a SHA-256 hash is persisted; the raw code is never stored in the database.
+type NativeAuthCode struct {
+	ID         uint       `json:"id" gorm:"primaryKey"`
+	CodeHash   string     `json:"-" gorm:"uniqueIndex;size:64;not null"`
+	ExternalID string     `json:"-" gorm:"index;not null"`
+	ExpiresAt  time.Time  `json:"expires_at" gorm:"index;not null"`
+	UsedAt     *time.Time `json:"used_at"`
+	CreatedAt  time.Time  `json:"created_at"`
+}
+
+// NativeAuthRequest records the server-approved deep link for one native OIDC
+// login start. The opaque request token is hashed before it reaches storage.
+type NativeAuthRequest struct {
+	ID          uint       `json:"id" gorm:"primaryKey"`
+	RequestHash string     `json:"-" gorm:"uniqueIndex;size:64;not null"`
+	RedirectURI string     `json:"-" gorm:"type:text;not null"`
+	ExpiresAt   time.Time  `json:"expires_at" gorm:"index;not null"`
+	UsedAt      *time.Time `json:"used_at"`
+	CreatedAt   time.Time  `json:"created_at"`
+}
+
 type Domain struct {
 	ID                    uint      `json:"id" gorm:"primaryKey"`
 	Name                  string    `json:"name" gorm:"uniqueIndex;not null"`

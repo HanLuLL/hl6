@@ -384,15 +384,29 @@ OIDC_ISSUER=https://auth.yourdomain.com/
 
 ---
 
-## 客户端适配
+## 原生 Android 客户端适配
 
-HL6 Android 客户端使用内嵌网页 UI，不需要向 OIDC 提供商注册独立的原生客户端。客户端与网页端共用以下回调地址：
+HL6 Android 客户端是 Kotlin + Jetpack Compose 纯原生应用，不使用 WebView、内嵌网页或 H5。OIDC 登录会在系统浏览器中完成，浏览器不会把 Cookie 交给 App。
+
+OIDC 提供商仍只需要配置以下服务器 HTTPS 回调地址：
 
 ```
 https://your-hl6-domain.com/api/v1/auth/callback
 ```
 
-在 OIDC 提供商中保留该 HTTPS 回调地址，并将 `https://your-hl6-domain.com` 加入登出回调地址。客户端构建时还需要在后台生成通信密钥，并通过 GitHub Actions 的 `communication_key` 参数传入；客户端 API 请求会携带该密钥，用户身份和权限仍由 OIDC 会话处理。
+不要将 Android 深链接登记为 OIDC 提供商回调。服务端在验证 OIDC 后会生成一个 90 秒有效、只能消费一次的授权代码，再跳转到构建时生成的：
+
+```
+hl6.<android-package-name>://auth/callback?code=<one-time-code>
+```
+
+原生客户端先带 `X-HL6-Client-Key` 调用 `POST /api/v1/auth/native/start`，提交构建时生成的深链。服务端返回 90 秒有效、只能使用一次的浏览器登录地址；只有这个短期地址会进入系统 Custom Tabs，通讯密钥不会进入浏览器 URL、OIDC 提供商或深链。
+
+OIDC 回调完成后，服务端会生成 90 秒有效、只能消费一次的授权代码并跳转到 Android 深链。App 必须再带 `X-HL6-Client-Key` 调用 `POST /api/v1/auth/native/exchange` 交换 Bearer 会话令牌。该会话的每个受保护 API 请求都会由服务端重新校验通讯密钥。通讯密钥由 HL6 后台生成、轮换或作废，密钥失效后客户端必须重新构建和安装。
+
+不要直接在浏览器调用 `/api/v1/auth/login?native_redirect_uri=...`；该参数已被服务端拒绝。Android 深链不需要、也不应登记为 OIDC 提供商回调地址。
+
+详见 [原生客户端构建与运维](native-client.md) 和 [客户端适配规范](agent.md)。
 
 ## 快速参考表
 

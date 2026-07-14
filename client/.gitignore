@@ -1,3 +1,6 @@
-android/
-www/
-node_modules/
+.gradle/
+build/
+local.properties
+release.keystore
+app/build/
+app/src/main/res/drawable/client_icon.png

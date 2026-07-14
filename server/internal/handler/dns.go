@@ -561,12 +561,16 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 				Details:    banDetails,
 			})
 
-			// 异步发送封禁通知邮件
-			go func() {
+			// Reload after the transaction so the mail always includes the persisted ban times.
+			go func(userID uint, fallback *model.User, banReason string) {
 				if h.emailSvc != nil {
-					_ = h.emailSvc.SendBanNotification(target, reason)
+					updated, err := h.repo.FindUserByID(userID)
+					if err != nil {
+						updated = fallback
+					}
+					_ = h.emailSvc.SendBanNotification(updated, banReason)
 				}
-			}()
+			}(target.ID, target, reason)
 		} else {
 			if err := h.ops.DeleteRecordAtomic(ctx, service.DeleteRecordInput{
 				Subdomain: sub,

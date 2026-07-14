@@ -10,6 +10,8 @@ func registerAuthRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, h
 	api.POST("/auth/oidc/bootstrap", h.OIDC.Bootstrap)
 	api.GET("/auth/login", h.OIDC.Login)
 	api.GET("/auth/callback", h.OIDC.Callback)
+	api.POST("/auth/native/start", h.Client.RequireClientKey(), h.OIDC.NativeStart)
+	api.POST("/auth/native/exchange", h.Client.RequireClientKey(), h.OIDC.NativeExchange)
 
 	authed := api.Group("", auth.Required())
 	authed.GET("/auth/me", h.Auth.Me)

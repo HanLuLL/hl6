@@ -100,11 +100,11 @@ func (s *EmailService) SendBanNotification(user *model.User, reason string) erro
 	subject := fmt.Sprintf("[%s] 账号封禁通知", siteName)
 	bannedAt := ""
 	if user.BannedAt != nil {
-		bannedAt = user.BannedAt.Format("2006-01-02 15:04:05")
+		bannedAt = user.BannedAt.Format("2006-01-02 15:04:05 MST")
 	}
 	bannedUntil := ""
 	if user.BannedUntil != nil {
-		bannedUntil = user.BannedUntil.Format("2006-01-02 15:04:05")
+		bannedUntil = user.BannedUntil.Format("2006-01-02 15:04:05 MST")
 	}
 	body := buildBanEmailHTML(user.Name, reason, bannedAt, bannedUntil, siteName)
 

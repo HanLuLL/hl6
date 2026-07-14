@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function AdminSettingsPage() {
@@ -76,6 +77,7 @@ export default function AdminSettingsPage() {
   const [clientUpdateNotice, setClientUpdateNotice] = useState("");
   const [clientUpdateURL, setClientUpdateURL] = useState("");
   const [communicationKey, setCommunicationKey] = useState("");
+  const [revokeClientKeyDialogOpen, setRevokeClientKeyDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!config) {
@@ -172,6 +174,17 @@ export default function AdminSettingsPage() {
       setCommunicationKey(res.data.communication_key);
       queryClient.invalidateQueries({ queryKey: ["admin-client-config"] });
       toast.success("通信密钥已生成，仅显示本次");
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+
+  const revokeClientKeyMutation = useMutation({
+    mutationFn: api.adminRevokeClientCommunicationKey,
+    onSuccess: () => {
+      setCommunicationKey("");
+      setRevokeClientKeyDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-client-config"] });
+      toast.success("通信密钥已作废，所有已构建客户端将无法继续连接");
     },
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
@@ -468,6 +481,15 @@ export default function AdminSettingsPage() {
             <Button variant="outline" onClick={() => generateClientKeyMutation.mutate()} disabled={generateClientKeyMutation.isPending}>
               {generateClientKeyMutation.isPending ? t("common.loading") : clientConfig?.communication_key_configured ? "轮换通信密钥" : "生成通信密钥"}
             </Button>
+            {clientConfig?.communication_key_configured && (
+              <Button
+                variant="destructive"
+                onClick={() => setRevokeClientKeyDialogOpen(true)}
+                disabled={revokeClientKeyMutation.isPending}
+              >
+                {revokeClientKeyMutation.isPending ? t("common.saving") : "作废全部客户端密钥"}
+              </Button>
+            )}
           </div>
           {communicationKey && (
             <div className="space-y-2 rounded-md border border-amber-500/50 bg-amber-500/5 p-3">
@@ -480,6 +502,19 @@ export default function AdminSettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={revokeClientKeyDialogOpen}
+        onOpenChange={setRevokeClientKeyDialogOpen}
+        title="作废全部客户端密钥"
+        description="作废后所有已构建客户端会立即失去 API 访问权限，必须使用新密钥重新构建。"
+        confirmText="确认作废"
+        confirmInput="REVOKE"
+        confirmInputLabel="输入 REVOKE 确认作废"
+        destructive
+        loading={revokeClientKeyMutation.isPending}
+        onConfirm={() => revokeClientKeyMutation.mutate()}
+      />
 
       <Card>
         <CardHeader>

@@ -110,7 +110,6 @@ type RequestOptions = RequestInit & {
 };
 
 let handlingBannedSession = false;
-const CLIENT_COMMUNICATION_KEY = import.meta.env.VITE_CLIENT_COMMUNICATION_KEY?.trim();
 
 
 export function getErrorMessage(err: unknown, t?: (key: string) => string): string {
@@ -128,9 +127,6 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
-  if (CLIENT_COMMUNICATION_KEY) {
-    headers["X-HL6-Client-Key"] = CLIENT_COMMUNICATION_KEY;
-  }
   if (!["GET", "HEAD", "OPTIONS"].includes(method) && !headers["X-Idempotency-Key"]) {
     headers["X-Idempotency-Key"] = options.idempotencyKey || createIdempotencyKey();
   }
@@ -397,12 +393,13 @@ export const api = {
     request<ApiResponse<{ message: string }>>("/admin/config/url-confirm", { method: "POST" }),
 
   // Client version and communication key management
-  getClientVersion: () => request<ApiResponse<ClientVersionConfig>>("/client/version"),
   adminGetClientConfig: () => request<ApiResponse<ClientVersionConfig>>("/admin/client/config"),
   adminUpdateClientConfig: (data: Partial<Pick<ClientVersionConfig, "latest_version" | "force_update" | "update_notice" | "update_url">>) =>
     request<ApiResponse<{ message: string }>>("/admin/client/config", { method: "PUT", body: JSON.stringify(data) }),
   adminGenerateClientCommunicationKey: () =>
     request<ApiResponse<{ communication_key: string }>>("/admin/client/communication-key", { method: "POST" }),
+  adminRevokeClientCommunicationKey: () =>
+    request<ApiResponse<{ message: string }>>("/admin/client/communication-key", { method: "DELETE" }),
 
   // Admin: DNS Provider Accounts
   adminListDNSProviderAccounts: () =>

@@ -20,7 +20,6 @@ import AdminFriendLinksPage from "@/pages/admin/friend-links";
 import AdminAIAuditPage from "@/pages/admin/ai-audit";
 import AdminEmailLogsPage from "@/pages/admin/email-logs";
 import BannedPage from "@/pages/banned";
-import { ClientUpdateGuard } from "@/components/client-update-guard";
 
 import AdminSettingsPage from "@/pages/admin/settings";
 import NotFoundPage from "@/pages/not-found";
@@ -79,10 +78,8 @@ function AdminRoute() {
 
 export default function App() {
   return (
-    <>
-      <ClientUpdateGuard />
-      <BrowserRouter>
-        <Routes>
+    <BrowserRouter>
+      <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/callback" element={<CallbackPage />} />
         <Route element={<ProtectedRoute />}>
@@ -113,8 +110,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Route>
-        </Routes>
-      </BrowserRouter>
-    </>
+      </Routes>
+    </BrowserRouter>
   );
 }
