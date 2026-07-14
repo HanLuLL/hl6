@@ -561,14 +561,23 @@ func (h *AIAuditHandler) GetBanInfo(c *gin.Context) {
         if !ok {
                 return
         }
-        if !user.IsBanned {
-                response.OK(c, gin.H{"banned": false})
-                return
-        }
+	if !user.IsBanned {
+		response.OK(c, gin.H{"banned": false})
+		return
+	}
+	if user.BannedUntil != nil && !user.BannedUntil.After(time.Now()) {
+		if err := h.repo.UnbanUser(user.ID); err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to restore expired ban", "error.databaseError")
+			return
+		}
+		response.OK(c, gin.H{"banned": false})
+		return
+	}
         response.OK(c, gin.H{
-                "banned":    true,
-                "reason":    user.BannedReason,
-                "banned_at": user.BannedAt,
+                "banned":      true,
+                "reason":      user.BannedReason,
+                "banned_at":   user.BannedAt,
+                "banned_until": user.BannedUntil,
         })
 }
 

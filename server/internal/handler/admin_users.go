@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -151,7 +152,8 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 	}
 
 	var body struct {
-		Reason string `json:"reason"`
+		Reason      string     `json:"reason"`
+		BannedUntil *time.Time `json:"banned_until"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
@@ -159,13 +161,17 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 	}
 
 	reason := strings.TrimSpace(body.Reason)
+	if body.BannedUntil != nil && !body.BannedUntil.After(time.Now()) {
+		response.ErrorWithKey(c, http.StatusBadRequest, "banned_until must be in the future", "error.invalidRequestBody")
+		return
+	}
 	key, ok := idempotencyKeyFromHeader(c)
 	if !ok {
 		return
 	}
 	scope := fmt.Sprintf("admin:ban:user:%d", target.ID)
 	opResult := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
-		result, failures, asyncJobID, err := executeAdminBanUserWithCleanup(ctx, h.repo, h.ops, admin.ID, target, reason)
+		result, failures, asyncJobID, err := executeAdminBanUserWithCleanup(ctx, h.repo, h.ops, admin.ID, target, reason, body.BannedUntil)
 		if asyncJobID != nil {
 			return service.OperationResult{
 				HTTPStatus: http.StatusConflict,
@@ -193,6 +199,7 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 			"target_user_id":     target.ID,
 			"target_user_role":   result.TargetRole,
 			"reason":             reason,
+			"banned_until":       body.BannedUntil,
 			"delete_resources":   true,
 			"subdomains_deleted": result.SubdomainsDeleted,
 			"deleted_dns_count":  result.DeletedDNSCount,
@@ -208,7 +215,11 @@ func (h *AdminHandler) BanUser(c *gin.Context) {
 		// 异步发送封禁通知邮件
 		go func() {
 			if h.emailSvc != nil {
-				_ = h.emailSvc.SendBanNotification(target, reason)
+				updated, err := h.repo.FindUserByID(target.ID)
+				if err != nil {
+					updated = target
+				}
+				_ = h.emailSvc.SendBanNotification(updated, reason)
 			}
 		}()
 
@@ -242,6 +253,7 @@ func (h *AdminHandler) UnbanUser(c *gin.Context) {
 		"is_banned":     false,
 		"banned_reason": "",
 		"banned_at":     nil,
+		"banned_until":  nil,
 		"banned_by":     nil,
 	}).Error; err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to unban user", "error.failedToUnbanUser")

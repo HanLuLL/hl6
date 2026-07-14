@@ -55,15 +55,20 @@ export default function BannedPage() {
           {isLoading ? null : (
             <>
               {/* 封禁原因 */}
-              {banInfo?.reason && (
+              {banInfo && (
                 <div className="rounded-lg border bg-muted/50 p-4">
                   <p className="text-sm font-medium text-muted-foreground mb-1">{t("banned.reason")}</p>
-                  <p className="text-sm">{banInfo.reason}</p>
+                  <p className="text-sm">{banInfo.reason || "-"}</p>
                   {banInfo.banned_at && (
                     <p className="text-xs text-muted-foreground mt-2">
                       {t("banned.bannedAt", { date: new Date(banInfo.banned_at).toLocaleString() })}
                     </p>
                   )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {banInfo.banned_until
+                      ? t("banned.expectedUnban", { date: new Date(banInfo.banned_until).toLocaleString(), defaultValue: `Expected unban time: ${new Date(banInfo.banned_until).toLocaleString()}` })
+                      : t("banned.expectedUnbanManual", { defaultValue: "Expected unban time: manual review required." })}
+                  </p>
                 </div>
               )}
 

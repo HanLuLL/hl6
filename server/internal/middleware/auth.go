@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lestrrat-go/jwx/v2/jwa"
@@ -20,6 +21,10 @@ type AuthMiddleware struct {
 func allowBannedAccess(method, path string) bool {
 	// 允许登出
 	if method == http.MethodPost && path == "/api/v1/auth/logout" {
+		return true
+	}
+	// Allow the shell to resolve the signed-in identity for the restricted ban page.
+	if method == http.MethodGet && path == "/api/v1/auth/me" {
 		return true
 	}
 	// 允许获取封禁信息
@@ -88,9 +93,22 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		if user.IsBanned && user.BannedUntil != nil && !user.BannedUntil.After(time.Now()) {
+			if err := a.repo.UnbanUser(user.ID); err != nil {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "failed to restore expired ban", "error.databaseError")
+				c.Abort()
+				return
+			}
+			user.IsBanned = false
+			user.BannedReason = ""
+			user.BannedAt = nil
+			user.BannedUntil = nil
+		}
 		if user.IsBanned && !allowBannedAccess(c.Request.Method, c.Request.URL.Path) {
 			response.ErrorWithKeyData(c, http.StatusForbidden, "user is banned", "error.userBanned", gin.H{
-				"reason": user.BannedReason,
+				"reason":       user.BannedReason,
+				"banned_at":    user.BannedAt,
+				"banned_until": user.BannedUntil,
 			})
 			c.Abort()
 			return

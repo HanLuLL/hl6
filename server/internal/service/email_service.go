@@ -102,7 +102,11 @@ func (s *EmailService) SendBanNotification(user *model.User, reason string) erro
 	if user.BannedAt != nil {
 		bannedAt = user.BannedAt.Format("2006-01-02 15:04:05")
 	}
-	body := buildBanEmailHTML(user.Name, reason, bannedAt, siteName)
+	bannedUntil := ""
+	if user.BannedUntil != nil {
+		bannedUntil = user.BannedUntil.Format("2006-01-02 15:04:05")
+	}
+	body := buildBanEmailHTML(user.Name, reason, bannedAt, bannedUntil, siteName)
 
 	emailLog := &model.EmailLog{
 		Recipient: user.Email,

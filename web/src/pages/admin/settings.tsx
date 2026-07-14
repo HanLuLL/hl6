@@ -24,6 +24,14 @@ export default function AdminSettingsPage() {
     },
     staleTime: 30_000,
   });
+  const { data: clientConfig } = useQuery({
+    queryKey: ["admin-client-config"],
+    queryFn: async () => {
+      const res = await api.adminGetClientConfig();
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
 
   const [frontendUrls, setFrontendUrls] = useState("");
   const [backendUrls, setBackendUrls] = useState("");
@@ -63,6 +71,11 @@ export default function AdminSettingsPage() {
   const [smtpUseTLS, setSmtpUseTLS] = useState(true);
   const [smtpEnabled, setSmtpEnabled] = useState(false);
   const [smtpTesting, setSmtpTesting] = useState(false);
+  const [clientVersion, setClientVersion] = useState("");
+  const [clientForceUpdate, setClientForceUpdate] = useState(false);
+  const [clientUpdateNotice, setClientUpdateNotice] = useState("");
+  const [clientUpdateURL, setClientUpdateURL] = useState("");
+  const [communicationKey, setCommunicationKey] = useState("");
 
   useEffect(() => {
     if (!config) {
@@ -118,6 +131,14 @@ export default function AdminSettingsPage() {
     setSmtpEnabled(values.smtp_enabled === "true");
   }, [config]);
 
+  useEffect(() => {
+    if (!clientConfig) return;
+    setClientVersion(clientConfig.latest_version || "1.0.0");
+    setClientForceUpdate(clientConfig.force_update);
+    setClientUpdateNotice(clientConfig.update_notice ?? "");
+    setClientUpdateURL(clientConfig.update_url ?? "");
+  }, [clientConfig]);
+
   const updateMutation = useMutation({
     mutationFn: api.adminUpdateConfig,
     onSuccess: () => {
@@ -132,6 +153,25 @@ export default function AdminSettingsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-config"] });
       toast.success(t("adminSettings.urlConfirmed"));
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+
+  const updateClientMutation = useMutation({
+    mutationFn: api.adminUpdateClientConfig,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-client-config"] });
+      toast.success("客户端版本配置已保存");
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+
+  const generateClientKeyMutation = useMutation({
+    mutationFn: api.adminGenerateClientCommunicationKey,
+    onSuccess: (res) => {
+      setCommunicationKey(res.data.communication_key);
+      queryClient.invalidateQueries({ queryKey: ["admin-client-config"] });
+      toast.success("通信密钥已生成，仅显示本次");
     },
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
@@ -209,6 +249,24 @@ export default function AdminSettingsPage() {
       seo_keywords: seoKeywords,
       seo_indexing_disabled: String(seoIndexingDisabled),
     });
+  };
+
+  const saveClientConfig = () => {
+    updateClientMutation.mutate({
+      latest_version: clientVersion.trim(),
+      force_update: clientForceUpdate,
+      update_notice: clientUpdateNotice,
+      update_url: clientUpdateURL.trim(),
+    });
+  };
+
+  const copyCommunicationKey = async () => {
+    try {
+      await navigator.clipboard.writeText(communicationKey);
+      toast.success("通信密钥已复制");
+    } catch {
+      toast.error("无法复制通信密钥，请手动保存");
+    }
   };
 
   const savePayment = () => {
@@ -373,6 +431,53 @@ export default function AdminSettingsPage() {
               {config?.oidc_runtime?.configured ? t("adminSettings.oidcConfigured") : t("adminSettings.oidcNotConfigured")}
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>客户端版本与通信</CardTitle>
+          <p className="text-sm text-muted-foreground">用于已构建客户端的版本检查、强制更新和 API 通信认证。</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>最新版本号</Label>
+              <Input value={clientVersion} onChange={(e) => setClientVersion(e.target.value)} placeholder="1.0.0" />
+            </div>
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div className="space-y-1">
+                <Label>强制更新</Label>
+                <p className="text-xs text-muted-foreground">客户端版本低于最新版本时阻止继续使用。</p>
+              </div>
+              <Switch checked={clientForceUpdate} onCheckedChange={setClientForceUpdate} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>更新公告</Label>
+            <Textarea value={clientUpdateNotice} onChange={(e) => setClientUpdateNotice(e.target.value)} rows={3} />
+          </div>
+          <div className="space-y-2">
+            <Label>更新链接</Label>
+            <Input value={clientUpdateURL} onChange={(e) => setClientUpdateURL(e.target.value)} placeholder="https://example.com/releases" />
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={saveClientConfig} disabled={updateClientMutation.isPending}>
+              {updateClientMutation.isPending ? t("common.saving") : "保存客户端配置"}
+            </Button>
+            <Button variant="outline" onClick={() => generateClientKeyMutation.mutate()} disabled={generateClientKeyMutation.isPending}>
+              {generateClientKeyMutation.isPending ? t("common.loading") : clientConfig?.communication_key_configured ? "轮换通信密钥" : "生成通信密钥"}
+            </Button>
+          </div>
+          {communicationKey && (
+            <div className="space-y-2 rounded-md border border-amber-500/50 bg-amber-500/5 p-3">
+              <Label>通信密钥（仅显示本次）</Label>
+              <div className="flex gap-2">
+                <Input value={communicationKey} readOnly className="font-mono text-xs" />
+                <Button type="button" variant="outline" onClick={copyCommunicationKey}>复制</Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -26,6 +26,7 @@ func executeAdminBanUserWithCleanup(
 	adminID uint,
 	target *model.User,
 	reason string,
+	bannedUntil *time.Time,
 ) (adminBanExecutionResult, []cfFailureRecord, *uint, error) {
 	result := adminBanExecutionResult{}
 	if target == nil {
@@ -151,6 +152,7 @@ func executeAdminBanUserWithCleanup(
 			"is_banned":     true,
 			"banned_reason": reason,
 			"banned_at":     now,
+			"banned_until":  bannedUntil,
 			"banned_by":     adminID,
 		}).Error; err != nil {
 			return err

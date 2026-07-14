@@ -19,11 +19,20 @@ export interface User {
   is_banned: boolean;
   banned_reason?: string;
   banned_at?: string;
+  banned_until?: string;
   banned_by?: number;
   group_id?: number;
   group?: UserGroup;
   created_at: string;
   updated_at: string;
+}
+
+export interface ClientVersionConfig {
+  latest_version: string;
+  force_update: boolean;
+  update_notice: string;
+  update_url: string;
+  communication_key_configured?: boolean;
 }
 
 export interface Domain {

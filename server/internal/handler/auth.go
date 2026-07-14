@@ -2,7 +2,9 @@ package handler
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"hl6-server/internal/repository"
@@ -52,20 +54,35 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 
 	if body.Name != nil {
 		trimmed := strings.TrimSpace(*body.Name)
-		if trimmed == "" {
+		if trimmed == "" || utf8.RuneCountInString(trimmed) > 100 {
 			response.ErrorWithKey(c, http.StatusBadRequest, "name cannot be empty", "error.nameCannotBeEmpty")
 			return
 		}
 		user.Name = trimmed
 	}
 	if body.AvatarURL != nil {
-		user.AvatarURL = *body.AvatarURL
+		avatarURL := strings.TrimSpace(*body.AvatarURL)
+		if utf8.RuneCountInString(avatarURL) > 2048 || !isHTTPURLOrEmpty(avatarURL) {
+			response.ErrorWithKey(c, http.StatusBadRequest, "invalid avatar url", "error.invalidRequestBody")
+			return
+		}
+		user.AvatarURL = avatarURL
 	}
 	if body.Bio != nil {
-		user.Bio = *body.Bio
+		bio := strings.TrimSpace(*body.Bio)
+		if utf8.RuneCountInString(bio) > 1000 {
+			response.ErrorWithKey(c, http.StatusBadRequest, "bio is too long", "error.invalidRequestBody")
+			return
+		}
+		user.Bio = bio
 	}
 	if body.Website != nil {
-		user.Website = *body.Website
+		website := strings.TrimSpace(*body.Website)
+		if utf8.RuneCountInString(website) > 255 || !isHTTPURLOrEmpty(website) {
+			response.ErrorWithKey(c, http.StatusBadRequest, "invalid website url", "error.invalidRequestBody")
+			return
+		}
+		user.Website = website
 	}
 
 	if err := h.repo.UpdateUser(user); err != nil {
@@ -74,4 +91,12 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	response.OK(c, gin.H{"user": user})
+}
+
+func isHTTPURLOrEmpty(rawURL string) bool {
+	if rawURL == "" {
+		return true
+	}
+	parsed, err := url.ParseRequestURI(rawURL)
+	return err == nil && (parsed.Scheme == "http" || parsed.Scheme == "https") && parsed.Host != ""
 }

@@ -289,6 +289,9 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		}
 
 		// New user — create in a single transaction
+		if strings.TrimSpace(name) == "" {
+			name = defaultProfileName(email)
+		}
 		user = &model.User{
 			ExternalID: sub,
 			Email:      email,
@@ -404,19 +407,47 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 		}
 		user = loaded
 	} else {
-		// Existing user — update info
-		user.Email = email
-		user.Name = name
-		user.AvatarURL = picture
-		if err := h.repo.UpdateUser(user); err != nil {
+		// OIDC claims are an identity source, not profile ownership. Only fill
+		// fields which have never been set by the user.
+		profileChanged := false
+		if email = strings.TrimSpace(email); email != "" && email != user.Email {
+			user.Email = email
+			profileChanged = true
+		}
+		if user.Name == "" && strings.TrimSpace(name) != "" {
+			user.Name = strings.TrimSpace(name)
+			profileChanged = true
+		}
+		if user.Name == "" {
+			user.Name = defaultProfileName(user.Email)
+			profileChanged = true
+		}
+		if profileChanged && h.repo.UpdateUser(user) != nil {
 			c.String(http.StatusInternalServerError, "failed to update user profile")
 			return
 		}
 	}
 
 	// Banned users cannot create new sessions.
+	if user.IsBanned && user.BannedUntil != nil && !user.BannedUntil.After(time.Now()) {
+		if err := h.repo.UnbanUser(user.ID); err != nil {
+			c.String(http.StatusInternalServerError, "failed to restore expired ban")
+			return
+		}
+		user.IsBanned = false
+		user.BannedReason = ""
+		user.BannedAt = nil
+		user.BannedUntil = nil
+	}
 	if user.IsBanned {
-		h.setSessionCookie(c, "hl6_session", "", -1, secureCookie)
+		// Issue a restricted session so the user can read ban details and submit an
+		// appeal. Auth middleware blocks every other protected endpoint.
+		sessionToken, err := h.issueSessionJWT(user.ExternalID)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "failed to issue banned session")
+			return
+		}
+		h.setSessionCookie(c, "hl6_session", sessionToken, 7*24*60*60, secureCookie)
 		c.Redirect(http.StatusFound, buildBannedRedirectURL(frontendBaseURL, user.BannedReason))
 		return
 	}
@@ -436,6 +467,17 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 	c.Redirect(http.StatusFound, frontendDashboardURL)
 }
 
+func defaultProfileName(email string) string {
+	email = strings.TrimSpace(email)
+	if at := strings.Index(email, "@"); at > 0 {
+		return email[:at]
+	}
+	if email != "" {
+		return email
+	}
+	return "User"
+}
+
 func buildBannedRedirectURL(frontendBaseURL, reason string) string {
 	targetURL, err := url.Parse(frontendBaseURL + "/")
 	if err != nil {
@@ -444,10 +486,11 @@ func buildBannedRedirectURL(frontendBaseURL, reason string) string {
 		if trimmedReason != "" {
 			values.Set("reason", trimmedReason)
 		}
-		return frontendBaseURL + "/?" + values.Encode()
+		return strings.TrimRight(frontendBaseURL, "/") + "/banned?" + values.Encode()
 	}
 
 	query := targetURL.Query()
+	targetURL.Path = strings.TrimRight(targetURL.Path, "/") + "/banned"
 	query.Set("error", "user_banned")
 	trimmedReason := strings.TrimSpace(reason)
 	if trimmedReason != "" {

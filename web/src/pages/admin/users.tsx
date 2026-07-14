@@ -135,6 +135,7 @@ function UsersContent() {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [banUserId, setBanUserId] = useState<number | null>(null);
   const [banReason, setBanReason] = useState("");
+  const [banUntil, setBanUntil] = useState("");
   const [banReasonPreset, setBanReasonPreset] = useState<string>("");
   const [isBanRetrying, setIsBanRetrying] = useState(false);
 
@@ -175,16 +176,17 @@ function UsersContent() {
   });
 
   const banMutation = useMutation({
-    mutationFn: async ({ userId, reason }: { userId: number; reason: string }) => {
+    mutationFn: async ({ userId, reason, bannedUntil }: { userId: number; reason: string; bannedUntil: string }) => {
       const idempotencyKey = createIdempotencyKey();
+      const data = { reason, ...(bannedUntil ? { banned_until: new Date(bannedUntil).toISOString() } : {}) };
       try {
-        return await api.adminBanUser(userId, { reason }, { idempotencyKey, timeoutMs: 3000 });
+        return await api.adminBanUser(userId, data, { idempotencyKey, timeoutMs: 3000 });
       } catch (err) {
         if (!isRetryableMutationError(err)) {
           throw err;
         }
         setIsBanRetrying(true);
-        return api.adminBanUser(userId, { reason }, { idempotencyKey, timeoutMs: 3000 });
+        return api.adminBanUser(userId, data, { idempotencyKey, timeoutMs: 3000 });
       } finally {
         setIsBanRetrying(false);
       }
@@ -194,6 +196,7 @@ function UsersContent() {
       toast.success(t("adminUsers.banSuccess"));
       setBanUserId(null);
       setBanReason("");
+		setBanUntil("");
       setBanReasonPreset("");
     },
     onError: (err) => {
@@ -368,6 +371,7 @@ function UsersContent() {
                           onClick={() => {
                             setBanUserId(user.id);
                             setBanReason("");
+							setBanUntil("");
                           }}
                           disabled={banMutation.isPending || isBanRetrying || user.id === currentUser?.id}
                         >
@@ -397,6 +401,7 @@ function UsersContent() {
         if (!open) {
           setBanUserId(null);
           setBanReason("");
+			setBanUntil("");
           setBanReasonPreset("");
         }
       }}>
@@ -437,6 +442,10 @@ function UsersContent() {
               </div>
             </div>
             <div className="space-y-2">
+              <Label>预计解封时间（留空为需管理员审核）</Label>
+              <Input type="datetime-local" value={banUntil} onChange={(e) => setBanUntil(e.target.value)} min={new Date().toISOString().slice(0, 16)} />
+            </div>
+            <div className="space-y-2">
               <Label>{banReasonPreset === "custom" ? t("adminUsers.banReasonCustomLabel") : t("adminUsers.banReasonOptional")}</Label>
               <Input
                 value={banReason}
@@ -451,12 +460,13 @@ function UsersContent() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setBanUserId(null); setBanReason(""); setBanReasonPreset(""); }} disabled={banMutation.isPending || isBanRetrying}>{t("common.cancel")}</Button>
+            <Button variant="outline" onClick={() => { setBanUserId(null); setBanReason(""); setBanReasonPreset(""); setBanUntil(""); }} disabled={banMutation.isPending || isBanRetrying}>{t("common.cancel")}</Button>
             <Button
               variant="destructive"
               onClick={() => banUserId && banMutation.mutate({
                 userId: banUserId,
                 reason: banReason.trim(),
+				bannedUntil: banUntil,
               })}
               disabled={banMutation.isPending || isBanRetrying || !banReason.trim()}
               data-dialog-primary="true"
@@ -585,6 +595,7 @@ function UserDetailDialog({ user, onClose }: { user: UserWithInviter | null; onC
               <p className="text-sm font-semibold">{t("adminUsers.banInfo")}</p>
               <UserDetailRow label={t("adminUsers.bannedReason")} value={user.banned_reason || "-"} />
               <UserDetailRow label={t("adminUsers.bannedAt")} value={formatDate(user.banned_at, true)} />
+              <UserDetailRow label="预计解封时间" value={user.banned_until ? formatDate(user.banned_until, true) : "需管理员审核"} />
               <UserDetailRow label={t("adminUsers.bannedBy")} value={user.banned_by ? String(user.banned_by) : "-"} mono />
             </div>
 

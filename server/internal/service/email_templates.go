@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"html"
 	"strings"
 )
 
@@ -57,8 +58,11 @@ func emailBaseHTML(siteName, title, contentHTML string) string {
 
 // buildBanEmailHTML 构建封禁通知邮件的 HTML 内容。
 // 包含封禁原因、封禁时间和申诉途径，不包含 SubDomain 相关信息。
-func buildBanEmailHTML(userName, reason, bannedAt, siteName string) string {
+func buildBanEmailHTML(userName, reason, bannedAt, bannedUntil, siteName string) string {
 	var sb strings.Builder
+	userName = html.EscapeString(userName)
+	reason = html.EscapeString(reason)
+	siteName = html.EscapeString(siteName)
 
 	sb.WriteString(fmt.Sprintf(`<p style="margin:0 0 16px 0;color:#374151;font-size:15px;line-height:1.8;">尊敬的 <strong>%s</strong>：</p>`, userName))
 	sb.WriteString(fmt.Sprintf(`<p style="margin:0 0 24px 0;color:#374151;font-size:15px;line-height:1.8;">您的 <strong>%s</strong> 账号已被封禁。请仔细阅读以下封禁详情：</p>`, siteName))
@@ -73,6 +77,11 @@ func buildBanEmailHTML(userName, reason, bannedAt, siteName string) string {
 		sb.WriteString(`<tr><td style="padding:0 20px 16px 20px;color:#374151;font-size:14px;line-height:1.8;">封禁时间：—</td></tr>`)
 	}
 	sb.WriteString(`</table>`)
+	if bannedUntil != "" {
+		sb.WriteString(fmt.Sprintf(`<p style="margin:0 0 24px 0;color:#374151;font-size:14px;line-height:1.8;">&#39044;&#35745;&#35299;&#23553;&#26102;&#38388;: <strong>%s</strong></p>`, html.EscapeString(bannedUntil)))
+	} else {
+		sb.WriteString(`<p style="margin:0 0 24px 0;color:#374151;font-size:14px;line-height:1.8;">&#39044;&#35745;&#35299;&#23553;&#26102;&#38388;: &#38656;&#31649;&#29702;&#21592;&#23457;&#26680;&#21518;&#35299;&#38500;</p>`)
+	}
 
 	// 申诉途径
 	sb.WriteString(`<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:24px;">`)

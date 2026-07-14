@@ -57,6 +57,9 @@ func registerAdminRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, 
 	admin.GET("/config", h.Admin.GetConfig)
 	admin.PUT("/config", h.Admin.UpdateConfig)
 	admin.POST("/config/url-confirm", h.Admin.ConfirmURLConfig)
+	admin.GET("/client/config", h.Client.GetAdminConfig)
+	admin.PUT("/client/config", h.Client.UpdateAdminConfig)
+	admin.POST("/client/communication-key", h.Client.GenerateCommunicationKey)
 
 	// Stats & monitoring
 	admin.GET("/stats", h.Admin.Stats)

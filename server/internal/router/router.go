@@ -59,6 +59,7 @@ func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context) *gin.Engine {
 	auth := middleware.NewAuthMiddleware(cfg.SessionSecret, repo)
 
 	api := r.Group("/api/v1")
+	api.Use(h.Client.ValidatePresentedKey())
 
 	api.GET("/branding", h.Branding.GetBranding)
 	api.GET("/branding/logo.webp", h.Branding.GetLogo)
@@ -68,6 +69,7 @@ func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context) *gin.Engine {
 	r.GET("/robots.txt", h.SEO.RobotsTXT)
 	r.GET("/sitemap.xml", h.SEO.SitemapXML)
 	api.GET("/seo/meta", h.SEO.GetSEOMeta)
+	api.GET("/client/version", h.Client.GetVersion)
 
 	registerAuthRoutes(api, auth, h)
 	registerDNSRoutes(api, auth, h)

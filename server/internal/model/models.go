@@ -18,6 +18,7 @@ type User struct {
 	IsBanned     bool       `json:"is_banned" gorm:"not null;default:false;index"`
 	BannedReason string     `json:"banned_reason"`
 	BannedAt     *time.Time `json:"banned_at"`
+	BannedUntil  *time.Time `json:"banned_until"`
 	BannedBy     *uint      `json:"banned_by" gorm:"index"`
 	ReferralCode string     `json:"referral_code" gorm:"uniqueIndex;size:16"`
 	GroupID      *uint      `json:"group_id" gorm:"index"`

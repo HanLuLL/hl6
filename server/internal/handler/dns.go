@@ -522,7 +522,7 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 			var failures []cfFailureRecord
 			var banErr error
 			var asyncJobID *uint
-			banResult, failures, asyncJobID, banErr = executeAdminBanUserWithCleanup(ctx, h.repo, h.ops, admin.ID, target, reason)
+			banResult, failures, asyncJobID, banErr = executeAdminBanUserWithCleanup(ctx, h.repo, h.ops, admin.ID, target, reason, nil)
 			if asyncJobID != nil {
 				return service.OperationResult{
 					HTTPStatus: http.StatusConflict,

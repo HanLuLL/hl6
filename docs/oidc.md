@@ -384,6 +384,16 @@ OIDC_ISSUER=https://auth.yourdomain.com/
 
 ---
 
+## 客户端适配
+
+HL6 Android 客户端使用内嵌网页 UI，不需要向 OIDC 提供商注册独立的原生客户端。客户端与网页端共用以下回调地址：
+
+```
+https://your-hl6-domain.com/api/v1/auth/callback
+```
+
+在 OIDC 提供商中保留该 HTTPS 回调地址，并将 `https://your-hl6-domain.com` 加入登出回调地址。客户端构建时还需要在后台生成通信密钥，并通过 GitHub Actions 的 `communication_key` 参数传入；客户端 API 请求会携带该密钥，用户身份和权限仍由 OIDC 会话处理。
+
 ## 快速参考表
 
 | 提供商 | `OIDC_ISSUER` 格式 | 支持登出 | 注意事项 |

@@ -94,6 +94,7 @@ func (r *Repository) UnbanUser(userID uint) error {
 		"is_banned":     false,
 		"banned_reason": "",
 		"banned_at":     nil,
+		"banned_until":  nil,
 		"banned_by":     nil,
 	}).Error
 }

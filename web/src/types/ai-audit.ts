@@ -102,4 +102,5 @@ export interface BanInfo {
   banned: boolean;
   reason?: string;
   banned_at?: string;
+  banned_until?: string;
 }

@@ -50,6 +50,7 @@ import type {
   FriendLink,
   FriendLinkInput,
   EmailLog,
+  ClientVersionConfig,
 } from "@/types";
 import type { AIModelConfig, AIModelConfigInput, AuditPromptTemplate, PromptTemplateInput, AuditAIReview, AIAuditStats, UserAppeal, BanInfo } from "@/types/ai-audit";
 import { buildPaginatedQuery } from "@/lib/api-query";
@@ -109,6 +110,7 @@ type RequestOptions = RequestInit & {
 };
 
 let handlingBannedSession = false;
+const CLIENT_COMMUNICATION_KEY = import.meta.env.VITE_CLIENT_COMMUNICATION_KEY?.trim();
 
 
 export function getErrorMessage(err: unknown, t?: (key: string) => string): string {
@@ -126,6 +128,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
+  if (CLIENT_COMMUNICATION_KEY) {
+    headers["X-HL6-Client-Key"] = CLIENT_COMMUNICATION_KEY;
+  }
   if (!["GET", "HEAD", "OPTIONS"].includes(method) && !headers["X-Idempotency-Key"]) {
     headers["X-Idempotency-Key"] = options.idempotencyKey || createIdempotencyKey();
   }
@@ -375,7 +380,7 @@ export const api = {
     request<ApiResponse<{ message: string }>>(`/admin/groups/${id}?migrate_to=${migrateTo}`, { method: "DELETE" }),
   adminUpdateUserGroup: (userId: number, groupId: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/users/${userId}/group`, { method: "PUT", body: JSON.stringify({ group_id: groupId }) }),
-  adminBanUser: (userId: number, data: { reason?: string }, opts?: { idempotencyKey?: string; timeoutMs?: number }) =>
+  adminBanUser: (userId: number, data: { reason?: string; banned_until?: string }, opts?: { idempotencyKey?: string; timeoutMs?: number }) =>
     request<ApiResponse<{ message: string; failed_records?: Array<{ subdomain_fqdn: string; record_type: string; record_content: string; provider_record_id: string; error: string }> }>>(
       `/admin/users/${userId}/ban`,
       { method: "PUT", body: JSON.stringify(data), idempotencyKey: opts?.idempotencyKey, timeoutMs: opts?.timeoutMs }
@@ -390,6 +395,14 @@ export const api = {
     request<ApiResponse<{ message: string }>>("/admin/config", { method: "PUT", body: JSON.stringify(data) }),
   adminConfirmUrlConfig: () =>
     request<ApiResponse<{ message: string }>>("/admin/config/url-confirm", { method: "POST" }),
+
+  // Client version and communication key management
+  getClientVersion: () => request<ApiResponse<ClientVersionConfig>>("/client/version"),
+  adminGetClientConfig: () => request<ApiResponse<ClientVersionConfig>>("/admin/client/config"),
+  adminUpdateClientConfig: (data: Partial<Pick<ClientVersionConfig, "latest_version" | "force_update" | "update_notice" | "update_url">>) =>
+    request<ApiResponse<{ message: string }>>("/admin/client/config", { method: "PUT", body: JSON.stringify(data) }),
+  adminGenerateClientCommunicationKey: () =>
+    request<ApiResponse<{ communication_key: string }>>("/admin/client/communication-key", { method: "POST" }),
 
   // Admin: DNS Provider Accounts
   adminListDNSProviderAccounts: () =>

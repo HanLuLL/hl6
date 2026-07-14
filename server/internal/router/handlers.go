@@ -29,6 +29,7 @@ type Handlers struct {
 	FriendLink        *handler.FriendLinkHandler
 	AIAudit           *handler.AIAuditHandler
 	Email             *handler.EmailHandler
+	Client            *handler.ClientHandler
 }
 
 func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *service.DNSOperationService, migSvc *service.DomainMigrationService, sseBroker *handler.SSEBroker, audit auditStack) *Handlers {
@@ -55,5 +56,6 @@ func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *servic
 		FriendLink:        handler.NewFriendLinkHandler(repo),
 		AIAudit:           handler.NewAIAuditHandler(repo, cfg.EncryptionKey),
 		Email:             handler.NewEmailHandler(repo, emailSvc),
+		Client:            handler.NewClientHandler(repo),
 	}
 }
