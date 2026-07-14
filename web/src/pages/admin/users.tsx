@@ -194,6 +194,7 @@ function UsersContent() {
       toast.success(t("adminUsers.banSuccess"));
       setBanUserId(null);
       setBanReason("");
+      setBanReasonPreset("");
     },
     onError: (err) => {
       handleDnsBulkJobError(err, t, "ban", (e) => toast.error(getErrorMessage(e, t)));
