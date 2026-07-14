@@ -12,15 +12,17 @@ type AdminHandler struct {
 	repo         *repository.Repository
 	cfg          *config.Config
 	ops          *service.DNSOperationService
+	emailSvc     *service.EmailService
 	urlResolver  *URLResolver
 	oidcResolver *OIDCRuntimeResolver
 }
 
-func NewAdminHandler(repo *repository.Repository, cfg *config.Config, ops *service.DNSOperationService) *AdminHandler {
+func NewAdminHandler(repo *repository.Repository, cfg *config.Config, ops *service.DNSOperationService, emailSvc *service.EmailService) *AdminHandler {
 	return &AdminHandler{
 		repo:         repo,
 		cfg:          cfg,
 		ops:          ops,
+		emailSvc:     emailSvc,
 		urlResolver:  NewURLResolver(repo, cfg),
 		oidcResolver: NewOIDCRuntimeResolver(repo, cfg),
 	}

@@ -53,6 +53,17 @@ export default function AdminSettingsPage() {
   const [codepayWechatEnabled, setCodepayWechatEnabled] = useState(false);
   const [codepayQQEnabled, setCodepayQQEnabled] = useState(false);
 
+  // 邮件 SMTP 配置
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpPort, setSmtpPort] = useState("587");
+  const [smtpUsername, setSmtpUsername] = useState("");
+  const [smtpPassword, setSmtpPassword] = useState("");
+  const [smtpFromName, setSmtpFromName] = useState("");
+  const [smtpFromAddr, setSmtpFromAddr] = useState("");
+  const [smtpUseTLS, setSmtpUseTLS] = useState(true);
+  const [smtpEnabled, setSmtpEnabled] = useState(false);
+  const [smtpTesting, setSmtpTesting] = useState(false);
+
   useEffect(() => {
     if (!config) {
       return;
@@ -96,6 +107,15 @@ export default function AdminSettingsPage() {
     setCodepayAlipayEnabled(values.codepay_alipay_enabled === "true");
     setCodepayWechatEnabled(values.codepay_wechat_enabled === "true");
     setCodepayQQEnabled(values.codepay_qq_enabled === "true");
+    // 邮件 SMTP 配置
+    setSmtpHost(values.smtp_host ?? "");
+    setSmtpPort(values.smtp_port ?? "587");
+    setSmtpUsername(values.smtp_username ?? "");
+    setSmtpPassword(values.smtp_password && values.smtp_password !== "" ? "********" : "");
+    setSmtpFromName(values.smtp_from_name ?? "");
+    setSmtpFromAddr(values.smtp_from_addr ?? "");
+    setSmtpUseTLS(values.smtp_use_tls !== "false");
+    setSmtpEnabled(values.smtp_enabled === "true");
   }, [config]);
 
   const updateMutation = useMutation({
@@ -212,6 +232,34 @@ export default function AdminSettingsPage() {
       payload.codepay_key = codepayKey.trim();
     }
     updateMutation.mutate(payload);
+  };
+
+  const saveSMTP = () => {
+    const payload: Record<string, string> = {
+      smtp_host: smtpHost,
+      smtp_port: smtpPort,
+      smtp_username: smtpUsername,
+      smtp_from_name: smtpFromName,
+      smtp_from_addr: smtpFromAddr,
+      smtp_use_tls: String(smtpUseTLS),
+      smtp_enabled: String(smtpEnabled),
+    };
+    if (smtpPassword.trim() !== "" && smtpPassword.trim() !== "********") {
+      payload.smtp_password = smtpPassword.trim();
+    }
+    updateMutation.mutate(payload);
+  };
+
+  const testSMTP = async () => {
+    setSmtpTesting(true);
+    try {
+      const res = await api.adminTestSMTP();
+      toast.success(t("adminSettings.smtpTestSent", { recipient: res.data.recipient }));
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
+    } finally {
+      setSmtpTesting(false);
+    }
   };
 
   if (isLoading) {
@@ -615,6 +663,65 @@ export default function AdminSettingsPage() {
           >
             {updateMutation.isPending ? t("common.saving") : t("adminSettings.savePayment")}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* 邮件 SMTP 配置 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("adminSettings.smtpTitle")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("adminSettings.smtpDesc")}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label>{t("adminSettings.smtpEnabled")}</Label>
+              <p className="text-xs text-muted-foreground">{t("adminSettings.smtpEnabledHint")}</p>
+            </div>
+            <Switch checked={smtpEnabled} onCheckedChange={setSmtpEnabled} />
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t("adminSettings.smtpHost")}</Label>
+              <Input value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} placeholder="smtp.example.com" />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("adminSettings.smtpPort")}</Label>
+              <Input value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} placeholder="587" />
+            </div>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t("adminSettings.smtpUsername")}</Label>
+              <Input value={smtpUsername} onChange={(e) => setSmtpUsername(e.target.value)} placeholder="noreply@example.com" />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("adminSettings.smtpPassword")}</Label>
+              <Input type="password" value={smtpPassword} onChange={(e) => setSmtpPassword(e.target.value)} placeholder={t("adminSettings.smtpPasswordPlaceholder")} />
+            </div>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t("adminSettings.smtpFromName")}</Label>
+              <Input value={smtpFromName} onChange={(e) => setSmtpFromName(e.target.value)} placeholder="SubDomain" />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("adminSettings.smtpFromAddr")}</Label>
+              <Input value={smtpFromAddr} onChange={(e) => setSmtpFromAddr(e.target.value)} placeholder="noreply@example.com" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <Label>{t("adminSettings.smtpUseTLS")}</Label>
+            <Switch checked={smtpUseTLS} onCheckedChange={setSmtpUseTLS} />
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={saveSMTP} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? t("common.saving") : t("adminSettings.saveSMTP")}
+            </Button>
+            <Button variant="outline" onClick={testSMTP} disabled={smtpTesting || !smtpEnabled}>
+              {smtpTesting ? t("common.loading") : t("adminSettings.testSMTP")}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -100,6 +100,7 @@
     "friendLinks": "Enlaces",
     "adminFriendLinks": "Gestión de Enlaces",
     "adminAIAudit": "Auditoría IA",
+    "emailLogs": "Registros de Correo",
     "profile": "Perfil"
   },
   "dashboard": {
@@ -375,6 +376,31 @@
       "approved": "Aprobada",
       "rejected": "Rechazada"
     }
+  },
+  "emailLogs": {
+    "title": "Registros de Correo",
+    "subtitle": "Ver registros de envío de correo del sistema",
+    "listTitle": "Registros de Envío",
+    "filterStatus": "Filtrar Estado",
+    "filterType": "Filtrar Tipo",
+    "allStatus": "Todos",
+    "allTypes": "Todos",
+    "statusPending": "Pendiente",
+    "statusSent": "Enviado",
+    "statusFailed": "Fallido",
+    "typeBanNotify": "Notificación de Bloqueo",
+    "typeTest": "Correo de Prueba",
+    "noLogs": "Sin registros de correo",
+    "colRecipient": "Destinatario",
+    "colSubject": "Asunto",
+    "colType": "Tipo",
+    "colStatus": "Estado",
+    "colRetries": "Reintentos",
+    "colCreatedAt": "Enviado",
+    "colActions": "Acciones",
+    "retry": "Reintentar",
+    "retrySuccess": "Correo reenviado con éxito",
+    "hasError": "Con error"
   },
   "claimDialog": {
     "title": "Solicitar subdominio",
@@ -728,7 +754,22 @@
     "paymentKey": "Clave de Comerciante",
     "paymentKeyPlaceholder": "Dejar en blanco para mantener la clave actual",
     "enabledChannels": "Canales Habilitados",
-    "savePayment": "Guardar Config. de Pago"
+    "savePayment": "Guardar Config. de Pago",
+    "smtpTitle": "Servicio de Correo (SMTP)",
+    "smtpDesc": "Configurar servicio SMTP para notificaciones del sistema como alertas de bloqueo",
+    "smtpEnabled": "Habilitar Servicio de Correo",
+    "smtpEnabledHint": "Al habilitar, se enviarán correos de notificación de bloqueo automáticamente",
+    "smtpHost": "Servidor SMTP",
+    "smtpPort": "Puerto",
+    "smtpUsername": "Usuario",
+    "smtpPassword": "Contraseña",
+    "smtpPasswordPlaceholder": "Dejar en blanco para mantener",
+    "smtpFromName": "Nombre del Remitente",
+    "smtpFromAddr": "Dirección del Remitente",
+    "smtpUseTLS": "Usar Cifrado TLS",
+    "saveSMTP": "Guardar Config SMTP",
+    "testSMTP": "Enviar Correo de Prueba",
+    "smtpTestSent": "Correo de prueba enviado a {{recipient}}"
   },
   "referral": {
     "title": "Programa de referidos",

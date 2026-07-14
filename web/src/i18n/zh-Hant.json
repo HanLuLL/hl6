@@ -100,6 +100,7 @@
     "friendLinks": "友鏈",
     "adminFriendLinks": "友鏈管理",
     "adminAIAudit": "AI審查",
+    "emailLogs": "郵件日誌",
     "profile": "個人設定"
   },
   "dashboard": {
@@ -375,6 +376,31 @@
       "approved": "已通過",
       "rejected": "已駁回"
     }
+  },
+  "emailLogs": {
+    "title": "郵件日誌",
+    "subtitle": "查看系統郵件發送記錄",
+    "listTitle": "發送記錄",
+    "filterStatus": "篩選狀態",
+    "filterType": "篩選類型",
+    "allStatus": "全部狀態",
+    "allTypes": "全部類型",
+    "statusPending": "待發送",
+    "statusSent": "已發送",
+    "statusFailed": "發送失敗",
+    "typeBanNotify": "封禁通知",
+    "typeTest": "測試郵件",
+    "noLogs": "暫無郵件記錄",
+    "colRecipient": "收件人",
+    "colSubject": "主題",
+    "colType": "類型",
+    "colStatus": "狀態",
+    "colRetries": "重試",
+    "colCreatedAt": "發送時間",
+    "colActions": "操作",
+    "retry": "重試",
+    "retrySuccess": "郵件已重新發送",
+    "hasError": "有錯誤"
   },
   "claimDialog": {
     "title": "申請子網域",
@@ -728,7 +754,22 @@
     "paymentKey": "商戶密鑰",
     "paymentKeyPlaceholder": "留空表示不修改目前密鑰",
     "enabledChannels": "啟用的支付渠道",
-    "savePayment": "儲存支付設定"
+    "savePayment": "儲存支付設定",
+    "smtpTitle": "郵件服務 (SMTP)",
+    "smtpDesc": "設定 SMTP 郵件服務，用於發送封禁通知等系統郵件",
+    "smtpEnabled": "啟用郵件服務",
+    "smtpEnabledHint": "啟用後將自動發送封禁通知郵件",
+    "smtpHost": "SMTP 伺服器",
+    "smtpPort": "連接埠",
+    "smtpUsername": "使用者名稱",
+    "smtpPassword": "密碼",
+    "smtpPasswordPlaceholder": "留空表示不修改",
+    "smtpFromName": "寄件人名稱",
+    "smtpFromAddr": "寄件人位址",
+    "smtpUseTLS": "使用 TLS 加密",
+    "saveSMTP": "儲存郵件設定",
+    "testSMTP": "發送測試郵件",
+    "smtpTestSent": "測試郵件已發送至 {{recipient}}"
   },
   "referral": {
     "title": "邀請註冊",

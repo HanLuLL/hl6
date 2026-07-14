@@ -28,17 +28,20 @@ type Handlers struct {
 	SEO               *handler.SEOHandler
 	FriendLink        *handler.FriendLinkHandler
 	AIAudit           *handler.AIAuditHandler
+	Email             *handler.EmailHandler
 }
 
 func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *service.DNSOperationService, migSvc *service.DomainMigrationService, sseBroker *handler.SSEBroker, audit auditStack) *Handlers {
+	emailSvc := service.NewEmailService(repo, cfg.EncryptionKey)
+
 	return &Handlers{
 		Auth:              handler.NewAuthHandler(repo),
 		OIDC:              handler.NewOIDCHandler(repo, cfg),
 		Domain:            handler.NewDomainHandler(repo, dnsOps),
 		Subdomain:         handler.NewSubdomainHandler(repo, sseBroker, dnsOps, audit.enqueue, audit.notif, audit.subSvc, audit.auditLog),
-		DNS:               handler.NewDNSHandler(repo, sseBroker, dnsOps, audit.enqueue),
+		DNS:               handler.NewDNSHandler(repo, sseBroker, dnsOps, audit.enqueue, emailSvc),
 		Credit:            handler.NewCreditHandler(repo),
-		Admin:             handler.NewAdminHandler(repo, cfg, dnsOps),
+		Admin:             handler.NewAdminHandler(repo, cfg, dnsOps, emailSvc),
 		Branding:          handler.NewBrandingHandler(repo, cfg),
 		Referral:          handler.NewReferralHandler(repo),
 		DNSAccount:        handler.NewDNSProviderAccountHandler(repo, cfg, dnsOps),
@@ -51,5 +54,6 @@ func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *servic
 		SEO:               handler.NewSEOHandler(repo),
 		FriendLink:        handler.NewFriendLinkHandler(repo),
 		AIAudit:           handler.NewAIAuditHandler(repo, cfg.EncryptionKey),
+		Email:             handler.NewEmailHandler(repo, emailSvc),
 	}
 }

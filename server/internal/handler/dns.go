@@ -24,10 +24,11 @@ import (
 )
 
 type DNSHandler struct {
-	repo    *repository.Repository
-	broker  *SSEBroker
-	ops     *service.DNSOperationService
-	enqueue *service.AuditEnqueueService
+	repo     *repository.Repository
+	broker   *SSEBroker
+	ops      *service.DNSOperationService
+	enqueue  *service.AuditEnqueueService
+	emailSvc *service.EmailService
 }
 
 var (
@@ -38,8 +39,8 @@ var (
 	errDNSRecordLimitExceeded    = errors.New("dns record limit exceeded")
 )
 
-func NewDNSHandler(repo *repository.Repository, broker *SSEBroker, ops *service.DNSOperationService, enqueue *service.AuditEnqueueService) *DNSHandler {
-	return &DNSHandler{repo: repo, broker: broker, ops: ops, enqueue: enqueue}
+func NewDNSHandler(repo *repository.Repository, broker *SSEBroker, ops *service.DNSOperationService, enqueue *service.AuditEnqueueService, emailSvc *service.EmailService) *DNSHandler {
+	return &DNSHandler{repo: repo, broker: broker, ops: ops, enqueue: enqueue, emailSvc: emailSvc}
 }
 
 func (h *DNSHandler) checkSubdomainSuspended(c *gin.Context, sub *model.Subdomain) bool {
@@ -559,6 +560,13 @@ func (h *DNSHandler) AdminDeleteRecord(c *gin.Context) {
 				ResourceID: sub.UserID,
 				Details:    banDetails,
 			})
+
+			// 异步发送封禁通知邮件
+			go func() {
+				if h.emailSvc != nil {
+					_ = h.emailSvc.SendBanNotification(target, reason)
+				}
+			}()
 		} else {
 			if err := h.ops.DeleteRecordAtomic(ctx, service.DeleteRecordInput{
 				Subdomain: sub,

@@ -53,12 +53,22 @@ var allowedConfigKeys = map[string]bool{
 	"codepay_alipay_enabled":    true,
 	"codepay_wechat_enabled":    true,
 	"codepay_qq_enabled":        true,
+	// 邮件 SMTP 配置
+	"smtp_host":       true,
+	"smtp_port":       true,
+	"smtp_username":   true,
+	"smtp_password":   true,
+	"smtp_from_name":  true,
+	"smtp_from_addr":  true,
+	"smtp_use_tls":    true,
+	"smtp_enabled":    true,
 }
 
 // 支付密钥类 key，在返回给前端时需要脱敏
 var paymentSecretConfigKeys = map[string]bool{
-	"epay_key":    true,
-	"codepay_key": true,
+	"epay_key":      true,
+	"codepay_key":   true,
+	"smtp_password": true,
 }
 
 func (h *AdminHandler) GetConfig(c *gin.Context) {
@@ -270,6 +280,23 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 		}
 	}
 
+	// SMTP 密钥加密存储
+	if raw, ok := body[configKeySMTPPassword]; ok {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed != "" && trimmed != "********" {
+			encPassword, err := crypto.EncryptIfKey(trimmed, h.cfg.EncryptionKey)
+			if err != nil {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "failed to encrypt smtp password", "error.encryptionFailed")
+				return
+			}
+			if err := h.repo.SetSystemConfig(configKeySMTPPassword, encPassword); err != nil {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
+				return
+			}
+			details[configKeySMTPPassword] = "***"
+		}
+	}
+
 	if raw, ok := body[configKeyDailyCheckinEnabled]; ok {
 		normalized, err := normalizeBooleanConfig(raw)
 		if err != nil {
@@ -340,7 +367,7 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 	}
 
 	for key, value := range body {
-		if isURLConfigKey(key) || isOIDCConfigKey(key) {
+		if isURLConfigKey(key) || isOIDCConfigKey(key) || key == configKeySMTPPassword {
 			continue
 		}
 		trimmed := strings.TrimSpace(value)

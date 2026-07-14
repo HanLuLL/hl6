@@ -665,3 +665,17 @@ export interface FriendLinkInput {
   sort_order?: number;
   is_active?: boolean;
 }
+
+export interface EmailLog {
+  id: number;
+  recipient: string;
+  subject: string;
+  body: string;
+  status: "pending" | "sent" | "failed";
+  error: string;
+  user_id: number | null;
+  email_type: string;
+  retry_count: number;
+  created_at: string;
+  updated_at: string;
+}

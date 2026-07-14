@@ -18,6 +18,7 @@ import AdminAuditLogsPage from "@/pages/admin/audit-logs";
 import AdminAuditPage from "@/pages/admin/audit";
 import AdminFriendLinksPage from "@/pages/admin/friend-links";
 import AdminAIAuditPage from "@/pages/admin/ai-audit";
+import AdminEmailLogsPage from "@/pages/admin/email-logs";
 import BannedPage from "@/pages/banned";
 
 import AdminSettingsPage from "@/pages/admin/settings";
@@ -104,6 +105,7 @@ export default function App() {
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
             <Route path="/admin/friend-links" element={<AdminFriendLinksPage />} />
             <Route path="/admin/ai-audit" element={<AdminAIAuditPage />} />
+            <Route path="/admin/email-logs" element={<AdminEmailLogsPage />} />
             <Route path="/admin/notifications" element={<Navigate to="/admin/users?tab=notifications" replace />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

@@ -21,6 +21,8 @@ const (
 	oidcSourceUnset = "none"
 )
 
+const configKeySMTPPassword = "smtp_password"
+
 var errOIDCNotConfigured = errors.New("oidc is not configured")
 
 type OIDCRuntimeState struct {
