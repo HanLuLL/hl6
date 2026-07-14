@@ -74,10 +74,10 @@ func (s *EmailService) IsEnabled() bool {
 	return cfg.Enabled && cfg.Host != ""
 }
 
-// getSiteName 从数据库读取站点名称。
+// getSiteName 从数据库读取品牌名称，与 branding 接口使用相同的 brand_name 键。
 func (s *EmailService) getSiteName() string {
 	siteName := "SubDomain"
-	if name, err := s.repo.GetSystemConfig("site_name"); err == nil && name != "" {
+	if name, err := s.repo.GetSystemConfig("brand_name"); err == nil && name != "" {
 		siteName = name
 	}
 	return siteName

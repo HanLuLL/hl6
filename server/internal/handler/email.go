@@ -87,7 +87,7 @@ func (h *EmailHandler) TestSMTPConfig(c *gin.Context) {
 	}
 
 	siteName := "SubDomain"
-	if name, err := h.repo.GetSystemConfig("site_name"); err == nil && name != "" {
+	if name, err := h.repo.GetSystemConfig("brand_name"); err == nil && name != "" {
 		siteName = name
 	}
 
