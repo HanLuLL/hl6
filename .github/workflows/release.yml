@@ -4,6 +4,22 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号（例如 v1.0.0）'
+        required: true
+        type: string
+      prerelease:
+        description: '是否为预发布版本'
+        required: false
+        default: false
+        type: boolean
+      draft:
+        description: '是否存为草稿'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -27,15 +43,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Determine version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Generate Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/hanlull/hl6
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest
+            type=raw,value=${{ steps.ver.outputs.tag }}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -51,14 +75,16 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
           generate_release_notes: true
           body: |
-            ## Docker镜像已发布
+            ## Docker 镜像已发布
 
             ```bash
-            docker pull ghcr.io/hanlull/hl6:${{ github.ref_name }}
+            docker pull ghcr.io/hanlull/hl6:${{ steps.ver.outputs.tag }}
             ```
 
             更多标签请查看 [GHCR 页面](https://github.com/HanLuLL/hl6/pkgs/container/hl6)
-          draft: false
-          prerelease: false
+          draft: ${{ github.event.inputs.draft || false }}
+          prerelease: ${{ github.event.inputs.prerelease || false }}
