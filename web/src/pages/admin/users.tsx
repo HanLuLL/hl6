@@ -427,8 +427,8 @@ function UsersContent() {
                     }}
                     className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
                       banReasonPreset === opt.key
-                        ? "border-destructive bg-destructive text-destructive-foreground"
-                        : "border-input bg-background hover:bg-accent"
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
                     }`}
                   >
                     {opt.label}
