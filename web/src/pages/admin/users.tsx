@@ -135,6 +135,7 @@ function UsersContent() {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [banUserId, setBanUserId] = useState<number | null>(null);
   const [banReason, setBanReason] = useState("");
+  const [banReasonPreset, setBanReasonPreset] = useState<string>("");
   const [isBanRetrying, setIsBanRetrying] = useState(false);
 
   const submitGrant = () => {
@@ -193,6 +194,7 @@ function UsersContent() {
       toast.success(t("adminUsers.banSuccess"));
       setBanUserId(null);
       setBanReason("");
+      setBanReasonPreset("");
     },
     onError: (err) => {
       handleDnsBulkJobError(err, t, "ban", (e) => toast.error(getErrorMessage(e, t)));
@@ -395,17 +397,52 @@ function UsersContent() {
         if (!open) {
           setBanUserId(null);
           setBanReason("");
+          setBanReasonPreset("");
         }
       }}>
         <DialogContent aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{t("adminUsers.banUser")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>{t("adminUsers.banReasonOptional")}</Label>
+              <Label>{t("adminUsers.banReasonSelect")}</Label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: "domain_violation", label: t("adminUsers.banReasonDomainViolation") },
+                  { key: "malicious_registration", label: t("adminUsers.banReasonMaliciousRegistration") },
+                  { key: "illegal_content", label: t("adminUsers.banReasonIllegalContent") },
+                  { key: "ip_infringement", label: t("adminUsers.banReasonIPInfringement") },
+                  { key: "repeated_violations", label: t("adminUsers.banReasonRepeatedViolations") },
+                  { key: "custom", label: t("adminUsers.banReasonCustom") },
+                ].map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => {
+                      setBanReasonPreset(opt.key);
+                      if (opt.key !== "custom") {
+                        setBanReason(opt.label);
+                      } else {
+                        setBanReason("");
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                      banReasonPreset === opt.key
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{banReasonPreset === "custom" ? t("adminUsers.banReasonCustomLabel") : t("adminUsers.banReasonOptional")}</Label>
               <Input
                 value={banReason}
                 onChange={(e) => setBanReason(e.target.value)}
                 placeholder={t("adminUsers.banReasonPlaceholder")}
+                disabled={banReasonPreset !== "" && banReasonPreset !== "custom"}
               />
             </div>
             <div className="rounded-md border p-3">
@@ -414,14 +451,14 @@ function UsersContent() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBanUserId(null)} disabled={banMutation.isPending || isBanRetrying}>{t("common.cancel")}</Button>
+            <Button variant="outline" onClick={() => { setBanUserId(null); setBanReason(""); setBanReasonPreset(""); }} disabled={banMutation.isPending || isBanRetrying}>{t("common.cancel")}</Button>
             <Button
               variant="destructive"
               onClick={() => banUserId && banMutation.mutate({
                 userId: banUserId,
                 reason: banReason.trim(),
               })}
-              disabled={banMutation.isPending || isBanRetrying}
+              disabled={banMutation.isPending || isBanRetrying || !banReason.trim()}
               data-dialog-primary="true"
             >
               {isBanRetrying ? `${t("common.retry")}...` : banMutation.isPending ? t("common.saving") : t("adminUsers.banUser")}
@@ -513,7 +550,7 @@ function UserDetailDialog({ user, onClose }: { user: UserWithInviter | null; onC
 
   return (
     <Dialog open={!!user} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl" aria-describedby={undefined}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>{t("adminUsers.userDetail")}</DialogTitle>
         </DialogHeader>
@@ -567,8 +604,8 @@ function UserDetailDialog({ user, onClose }: { user: UserWithInviter | null; onC
             </div>
           </div>
         )}
-        <DialogFooter>
-          <Button onClick={onClose} data-dialog-primary="true">{t("common.confirm")}</Button>
+        <DialogFooter className="sticky bottom-0 bg-background pt-2">
+          <Button onClick={onClose} data-dialog-primary="true" className="w-full sm:w-auto">{t("common.confirm")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

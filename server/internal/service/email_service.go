@@ -74,7 +74,16 @@ func (s *EmailService) IsEnabled() bool {
 	return cfg.Enabled && cfg.Host != ""
 }
 
-// SendBanNotification 发送封禁通知邮件。
+// getSiteName 从数据库读取品牌名称，与 branding 接口使用相同的 brand_name 键。
+func (s *EmailService) getSiteName() string {
+	siteName := "SubDomain"
+	if name, err := s.repo.GetSystemConfig("brand_name"); err == nil && name != "" {
+		siteName = name
+	}
+	return siteName
+}
+
+// SendBanNotification 发送封禁通知邮件（HTML 格式）。
 func (s *EmailService) SendBanNotification(user *model.User, reason string) error {
 	if !s.IsEnabled() {
 		log.Printf("[email] SMTP not enabled, skip ban notification for user %d", user.ID)
@@ -86,16 +95,15 @@ func (s *EmailService) SendBanNotification(user *model.User, reason string) erro
 		return nil
 	}
 
-	// 获取站点名称
-	siteName := "SubDomain"
-	if name, err := s.repo.GetSystemConfig("site_name"); err == nil && name != "" {
-		siteName = name
-	}
+	siteName := s.getSiteName()
 
 	subject := fmt.Sprintf("[%s] 账号封禁通知", siteName)
-	body := s.buildBanEmailBody(user, reason, siteName)
+	bannedAt := ""
+	if user.BannedAt != nil {
+		bannedAt = user.BannedAt.Format("2006-01-02 15:04:05")
+	}
+	body := buildBanEmailHTML(user.Name, reason, bannedAt, siteName)
 
-	// 创建邮件发送记录
 	emailLog := &model.EmailLog{
 		Recipient: user.Email,
 		Subject:   subject,
@@ -109,7 +117,6 @@ func (s *EmailService) SendBanNotification(user *model.User, reason string) erro
 		return err
 	}
 
-	// 发送邮件
 	cfg, _ := s.getSMTPConfig()
 	err := s.sendSMTP(cfg, user.Email, subject, body)
 	if err != nil {
@@ -127,26 +134,54 @@ func (s *EmailService) SendBanNotification(user *model.User, reason string) erro
 	return nil
 }
 
-// buildBanEmailBody 构建封禁通知邮件正文。
-func (s *EmailService) buildBanEmailBody(user *model.User, reason, siteName string) string {
-	var sb strings.Builder
-
-	sb.WriteString(fmt.Sprintf("尊敬的 %s：\n\n", user.Name))
-	sb.WriteString(fmt.Sprintf("您的 %s 账号已被封禁。\n\n", siteName))
-	sb.WriteString("封禁详情：\n")
-	sb.WriteString(fmt.Sprintf("  - 封禁原因：%s\n", reason))
-	if user.BannedAt != nil {
-		sb.WriteString(fmt.Sprintf("  - 封禁时间：%s\n", user.BannedAt.Format("2006-01-02 15:04:05")))
+// SendUnbanNotification 发送解封通知邮件（HTML 格式）。
+func (s *EmailService) SendUnbanNotification(user *model.User) error {
+	if !s.IsEnabled() {
+		log.Printf("[email] SMTP not enabled, skip unban notification for user %d", user.ID)
+		return nil
 	}
-	sb.WriteString("\n")
-	sb.WriteString("申诉途径：\n")
-	sb.WriteString("  如果您认为此封禁有误，可以登录平台后在封禁页面提交申诉，管理员将会审核您的申诉请求。\n\n")
-	sb.WriteString(fmt.Sprintf("此邮件由 %s 系统自动发送，请勿直接回复。\n", siteName))
 
-	return sb.String()
+	if user.Email == "" {
+		log.Printf("[email] user %d has no email, skip unban notification", user.ID)
+		return nil
+	}
+
+	siteName := s.getSiteName()
+
+	subject := fmt.Sprintf("[%s] 账号解封通知", siteName)
+	body := buildUnbanEmailHTML(user.Name, siteName)
+
+	emailLog := &model.EmailLog{
+		Recipient: user.Email,
+		Subject:   subject,
+		Body:      body,
+		Status:    model.EmailStatusPending,
+		UserID:    &user.ID,
+		EmailType: "unban_notify",
+	}
+	if err := s.repo.CreateEmailLog(emailLog); err != nil {
+		log.Printf("[email] failed to create email log: %v", err)
+		return err
+	}
+
+	cfg, _ := s.getSMTPConfig()
+	err := s.sendSMTP(cfg, user.Email, subject, body)
+	if err != nil {
+		emailLog.Status = model.EmailStatusFailed
+		emailLog.Error = err.Error()
+		emailLog.RetryCount++
+		_ = s.repo.UpdateEmailLog(emailLog)
+		log.Printf("[email] failed to send unban notification to %s: %v", user.Email, err)
+		return err
+	}
+
+	emailLog.Status = model.EmailStatusSent
+	_ = s.repo.UpdateEmailLog(emailLog)
+	log.Printf("[email] unban notification sent to %s", user.Email)
+	return nil
 }
 
-// sendSMTP 通过 SMTP 发送邮件。
+// sendSMTP 通过 SMTP 发送 HTML 邮件。
 func (s *EmailService) sendSMTP(cfg *smtpConfig, to, subject, body string) error {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	from := cfg.FromAddr
@@ -166,7 +201,7 @@ func (s *EmailService) sendSMTP(cfg *smtpConfig, to, subject, body string) error
 	msg.WriteString(fmt.Sprintf("To: %s\r\n", to))
 	msg.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
 	msg.WriteString("MIME-Version: 1.0\r\n")
-	msg.WriteString("Content-Type: text/plain; charset=UTF-8\r\n")
+	msg.WriteString("Content-Type: text/html; charset=UTF-8\r\n")
 	msg.WriteString("\r\n")
 	msg.WriteString(body)
 
@@ -279,7 +314,7 @@ func (s *EmailService) SendTestEmail(recipientEmail, siteName string) error {
 	}
 
 	subject := fmt.Sprintf("[%s] SMTP 配置测试", siteName)
-	body := "这是一封测试邮件，用于验证 SMTP 配置是否正确。如果您收到此邮件，说明配置成功。"
+	body := buildTestEmailHTML(siteName)
 
 	return s.sendSMTP(cfg, recipientEmail, subject, body)
 }
