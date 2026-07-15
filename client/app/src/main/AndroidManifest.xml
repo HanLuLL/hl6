@@ -3,7 +3,7 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@drawable/client_icon"
+        android:icon="${clientIcon}"
         android:label="${clientAppName}"
         android:usesCleartextTraffic="false"
         android:supportsRtl="true"

@@ -1,9 +1,15 @@
-import { access, copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, extname, isAbsolute, relative, resolve } from "node:path";
 
 const clientRoot = resolve(import.meta.dirname, "..");
 const projectRoot = resolve(clientRoot, "..");
 const drawableRoot = resolve(clientRoot, "app", "src", "main", "res", "drawable");
+const localPropertiesPath = resolve(clientRoot, "local.properties");
+const temporaryPropertiesPath = resolve(clientRoot, "local.properties.tmp");
+const customIconPaths = [
+  resolve(drawableRoot, "client_icon_custom.png"),
+  resolve(drawableRoot, "client_icon_custom.webp"),
+];
 const maxIconBytes = 2 * 1024 * 1024;
 
 const required = (name) => {
@@ -118,6 +124,14 @@ if (!/^[A-Za-z0-9._-]+$/.test(keystoreType)) throw new Error("CLIENT_KEYSTORE_TY
 
 const versionParts = (versionName.match(/\d+/g) ?? []).slice(0, 3).map(Number);
 const versionCode = Math.max(1, (versionParts[0] ?? 0) * 1_000_000 + (versionParts[1] ?? 0) * 1_000 + (versionParts[2] ?? 0));
+const iconInput = process.env.CLIENT_ICON_PATH?.trim();
+const icon = iconInput
+  ? /^https:\/\//i.test(iconInput)
+    ? await readRemoteIcon(iconInput)
+    : await readRepositoryIcon(iconInput)
+  : null;
+const customIconPath = icon ? resolve(drawableRoot, `client_icon_custom.${icon.type}`) : null;
+const temporaryCustomIconPath = customIconPath ? `${customIconPath}.tmp` : null;
 const properties = {
   "client.applicationId": applicationId,
   "client.versionCode": String(versionCode),
@@ -125,6 +139,7 @@ const properties = {
   "client.displayName": displayName,
   "client.apiBaseUrl": normalizeApiBaseUrl(communicationDomain),
   "client.communicationKey": communicationKey,
+  "client.iconResource": icon ? "@drawable/client_icon_custom" : "@drawable/client_icon",
   "client.nativeRedirectUri": `hl6.${applicationId}://auth/callback`,
   "client.keystoreFile": keystoreFile,
   "client.keystorePassword": keystorePassword,
@@ -133,27 +148,28 @@ const properties = {
   "client.keyPassword": keyPassword,
 };
 
-await writeFile(
-  resolve(clientRoot, "local.properties"),
-  `${Object.entries(properties).map(([key, value]) => `${key}=${escapeProperty(value)}`).join("\n")}\n`,
-  "utf8",
-);
+const propertyContents = `${Object.entries(properties).map(([key, value]) => `${key}=${escapeProperty(value)}`).join("\n")}\n`;
 
-const iconInput = process.env.CLIENT_ICON_PATH?.trim();
-await Promise.all([
-  rm(resolve(drawableRoot, "client_icon.png"), { force: true }),
-  rm(resolve(drawableRoot, "client_icon.webp"), { force: true }),
-  rm(resolve(drawableRoot, "client_icon.xml"), { force: true }),
-]);
-if (iconInput) {
-  const icon = /^https:\/\//i.test(iconInput)
-    ? await readRemoteIcon(iconInput)
-    : await readRepositoryIcon(iconInput);
-  await mkdir(drawableRoot, { recursive: true });
-  await writeFile(resolve(drawableRoot, `client_icon.${icon.type}`), icon.bytes);
-  console.log(`Applied native Android ${icon.type.toUpperCase()} icon from ${icon.source}.`);
-} else {
-  await copyFile(resolve(drawableRoot, "client_icon_default.xml"), resolve(drawableRoot, "client_icon.xml"));
+try {
+  await writeFile(temporaryPropertiesPath, propertyContents, "utf8");
+  if (icon && temporaryCustomIconPath) {
+    await mkdir(drawableRoot, { recursive: true });
+    await writeFile(temporaryCustomIconPath, icon.bytes);
+  }
+
+  await Promise.all(customIconPaths.map((path) => rm(path, { force: true })));
+  if (customIconPath && temporaryCustomIconPath) await rename(temporaryCustomIconPath, customIconPath);
+  await rm(localPropertiesPath, { force: true });
+  await rename(temporaryPropertiesPath, localPropertiesPath);
+
+  if (icon) {
+    console.log(`Applied native Android ${icon.type.toUpperCase()} icon from ${icon.source}.`);
+  }
+} finally {
+  await Promise.all([
+    rm(temporaryPropertiesPath, { force: true }),
+    ...(temporaryCustomIconPath ? [rm(temporaryCustomIconPath, { force: true })] : []),
+  ]);
 }
 
 console.log(`Configured native Android build: ${applicationId} ${versionName} (${versionCode}).`);

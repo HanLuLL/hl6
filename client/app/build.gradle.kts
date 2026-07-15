@@ -26,6 +26,7 @@ val clientVersionName = clientProperty("client.versionName")
 val clientDisplayName = clientProperty("client.displayName")
 val clientApiBaseUrl = clientProperty("client.apiBaseUrl")
 val clientCommunicationKey = clientProperty("client.communicationKey")
+val clientIconResource = clientProperty("client.iconResource")
 val clientNativeRedirectUri = clientProperty("client.nativeRedirectUri")
 val clientKeystoreFile = clientProperty("client.keystoreFile")
 val clientKeystorePassword = clientProperty("client.keystorePassword")
@@ -44,6 +45,7 @@ android {
         versionCode = clientVersionCode
         versionName = clientVersionName
         manifestPlaceholders["clientAppName"] = clientDisplayName
+        manifestPlaceholders["clientIcon"] = clientIconResource
         manifestPlaceholders["nativeRedirectScheme"] = clientNativeRedirectUri.substringBefore("://")
 
         buildConfigField("String", "API_BASE_URL", buildConfigString(clientApiBaseUrl))
