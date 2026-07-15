@@ -31,10 +31,17 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-client-pages
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    outputs:
+      apk_relative_path: ${{ steps.pages_payload.outputs.apk_relative_path }}
+      apk_sha256: ${{ steps.pages_payload.outputs.apk_sha256 }}
     env:
       CLIENT_COMMUNICATION_DOMAIN: ${{ inputs.communication_domain }}
       CLIENT_COMMUNICATION_KEY: ${{ inputs.communication_key }}
@@ -209,13 +216,51 @@ jobs:
           BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
           "$BUILD_TOOLS/apksigner" verify --verbose web/android/app/build/outputs/apk/release/app-release.apk
 
-      - name: Report verified APK
+      - name: Prepare direct APK download
+        id: pages_payload
         run: |
-          {
-            echo "## Android APK verified"
-            echo
-            echo "The signed APK was built and verified on the runner. This workflow does not create a GitHub Release or publish an APK without an explicitly configured distribution channel."
-          } >> "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          apk_source="web/android/app/build/outputs/apk/release/app-release.apk"
+          pages_root="$RUNNER_TEMP/hl6-pages"
+          app_dir="$pages_root/android/$CLIENT_APPLICATION_ID"
+          asset_name="$CLIENT_APPLICATION_ID-$CLIENT_VERSION_NAME.apk"
+          relative_path="android/$CLIENT_APPLICATION_ID/latest.apk"
+
+          test -s "$apk_source"
+          mkdir -p "$app_dir"
+          cp "$apk_source" "$app_dir/$asset_name"
+          cp "$apk_source" "$app_dir/latest.apk"
+          apk_sha256="$(sha256sum "$apk_source" | awk '{print $1}')"
+          export APK_ASSET_NAME="$asset_name" APK_SHA256="$apk_sha256" PAGES_APP_DIR="$app_dir"
+
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const manifest = {
+            schema_version: 1,
+            application_id: process.env.CLIENT_APPLICATION_ID,
+            display_name: process.env.CLIENT_DISPLAY_NAME,
+            version: process.env.CLIENT_VERSION_NAME,
+            commit: process.env.GITHUB_SHA,
+            built_at: new Date().toISOString(),
+            sha256: process.env.APK_SHA256,
+            apk: {
+              latest: "latest.apk",
+              versioned: process.env.APK_ASSET_NAME,
+            },
+          };
+          fs.writeFileSync(path.join(process.env.PAGES_APP_DIR, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+          NODE
+
+          : > "$pages_root/.nojekyll"
+          printf 'apk_relative_path=%s\n' "$relative_path" >> "$GITHUB_OUTPUT"
+          printf 'apk_sha256=%s\n' "$apk_sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK Pages payload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/hl6-pages
+          retention-days: 1
 
       - name: Clean generated signing material
         if: always()
@@ -225,3 +270,33 @@ jobs:
           rm -f web/android/app/src/main/res/drawable/hl6_client_icon.png
           rm -f web/android/app/src/main/res/values/hl6_client.xml
           rm -rf web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy direct APK download
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Report direct APK download
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          APK_RELATIVE_PATH: ${{ needs.build.outputs.apk_relative_path }}
+          APK_SHA256: ${{ needs.build.outputs.apk_sha256 }}
+        run: |
+          set -euo pipefail
+          direct_url="${PAGE_URL%/}/$APK_RELATIVE_PATH"
+          {
+            echo "## Android APK published"
+            echo
+            echo "Direct APK: $direct_url"
+            echo "SHA-256: \`$APK_SHA256\`"
+          } >> "$GITHUB_STEP_SUMMARY"

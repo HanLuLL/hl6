@@ -42,7 +42,25 @@ Windows PowerShell 可使用以下命令编码 keystore：
 
 同一包名的所有版本必须使用同一份 release keystore，否则 Android 无法在旧版上覆盖安装更新。
 
-工作流依次构建网页 UI、同步 Capacitor、写入动态 Android 配置、签名 Release APK，并执行 `apksigner verify`。默认**不会**创建 GitHub Release、发布 APK 或上传外部交付物。GitHub Actions Artifact 下载固定为 ZIP；若需要直接 APK，必须由仓库所有者明确授权并单独配置发布渠道，例如 Release 或受控 HTTPS 下载服务。
+工作流依次构建网页 UI、同步 Capacitor、写入动态 Android 配置、签名 Release APK，并执行 `apksigner verify`。签名校验通过后，工作流通过仓库所有者批准的 GitHub Pages 渠道发布最新 APK；它不会创建 GitHub Release，也不会把普通 Actions ZIP Artifact 当作客户端下载地址。
+
+## APK 直链交付
+
+首次使用前，在仓库 **Settings > Pages** 中将 **Build and deployment > Source** 设置为 **GitHub Actions**。不需要创建 `gh-pages` 分支、GitHub Release 或额外访问令牌。
+
+每次成功构建会部署以下文件：
+
+- `https://hanlull.github.io/hl6/android/<applicationId>/latest.apk`：稳定的最新 APK 下载地址
+- `https://hanlull.github.io/hl6/android/<applicationId>/<applicationId>-<version>.apk`：当前构建的版本文件
+- `https://hanlull.github.io/hl6/android/<applicationId>/manifest.json`：版本、提交、构建时间和 APK SHA-256
+
+Pages 每次部署会替换上一次内容，只保证最新构建和它的版本文件可用，不作为历史版本仓库。内部 `github-pages` 传输 Artifact 保留 1 天，但用户访问的是未套 ZIP 的原始 `.apk` HTTPS 文件。清单和工作流摘要禁止包含通讯密钥或签名信息。
+
+当前 `cc.lxii.domain` 客户端的稳定更新链接为：
+
+    https://hanlull.github.io/hl6/android/cc.lxii.domain/latest.apk
+
+管理后台的客户端更新链接应填写该稳定地址；升级版本后无需修改链接，只需更新最新版本号、强制更新策略和公告。
 
 ## OIDC
 
