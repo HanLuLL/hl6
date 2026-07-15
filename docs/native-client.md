@@ -65,11 +65,13 @@ Capacitor Android 请求的来源是 `https://localhost`。当前服务端版本
     curl -i -X OPTIONS https://your-hl6-domain.example/api/v1/auth/native/start \
       -H 'Origin: https://localhost' \
       -H 'Access-Control-Request-Method: POST' \
-      -H 'Access-Control-Request-Headers: content-type,x-hl6-client-key'
+      -H 'Access-Control-Request-Headers: content-type,x-hl6-client-key,x-idempotency-key'
 
 响应中必须包含：
 
     Access-Control-Allow-Origin: https://localhost
+
+    Access-Control-Allow-Headers: Origin, Content-Type, Accept, Authorization, X-HL6-Client-Key, X-Idempotency-Key
 
 若缺失该响应头，说明容器仍在运行旧镜像，或反向代理移除了 CORS 响应头。应更新服务端镜像并检查代理配置后再重新构建 APK。
 
@@ -96,7 +98,7 @@ Capacitor Android 请求的来源是 `https://localhost`。当前服务端版本
 
 | 现象 | 处理方式 |
 | --- | --- |
-| 原生登录显示 `Failed to fetch` | 检查 API 域名、网络和上方 CORS 预检。预期来源为 `https://localhost`。 |
+| 原生登录显示 `Failed to fetch` | 检查 API 域名、网络和上方 CORS 预检。预期来源为 `https://localhost`，允许头必须包含 `X-HL6-Client-Key` 和 `X-Idempotency-Key`。 |
 | 缺少 `Access-Control-Allow-Origin` | 部署当前服务端镜像；若仍缺失，检查反向代理响应头。 |
 | OIDC 后未返回 App | 确认包名、生成的深链和已安装 APK 包名完全一致。 |
 | `invalid native auth code` | 授权码已过期或已使用，重新发起登录。 |

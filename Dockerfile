@@ -31,6 +31,7 @@ RUN go mod download
 
 COPY server/ ./
 
+RUN go test ./internal/middleware
 RUN CGO_ENABLED=1 GOOS=linux go build -o /out/hl6-server ./cmd/server
 
 
