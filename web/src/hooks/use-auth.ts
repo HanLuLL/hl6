@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { api, buildApiUrl } from "@/lib/api";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { api, buildApiUrl, getErrorMessage } from "@/lib/api";
 import { isNativeClient } from "@/lib/client-runtime";
 import { signOutNativeClient, startNativeSignIn } from "@/lib/native-client";
 
 export function useAuth() {
+  const { t } = useTranslation();
   const { data, isLoading, error } = useQuery({
     queryKey: ["me"],
     queryFn: () => api.getMe(),
@@ -20,7 +23,7 @@ export function useAuth() {
     credits: data?.data?.credits ?? 0,
     signIn: (ref?: string) => {
       if (isNativeClient) {
-        void startNativeSignIn(ref);
+        void startNativeSignIn(ref).catch((err) => toast.error(getErrorMessage(err, t)));
         return;
       }
       const url = new URL(buildApiUrl("/auth/login"), window.location.origin);

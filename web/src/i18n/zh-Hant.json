@@ -969,6 +969,7 @@
     "oidcAlreadyConfigured": "OIDC 已完成設定",
     "failedToCreateUser": "建立使用者失敗",
     "failedToFetchJWKS": "驗證身分失敗",
+    "networkRequestFailed": "無法連線至伺服器，請檢查客戶端網域、網路連線及伺服器 CORS 設定。",
     "migrateToRequired": "需要指定遷移目標",
     "invalidMigrateTo": "無效的遷移目標",
     "migrationTaskBlocked": "目前網域存在未完成的遷移任務，請先處理後再發起新任務",

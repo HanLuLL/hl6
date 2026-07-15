@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Development Docker Image
 
 on:
   push:
@@ -35,7 +35,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/hanlull/hl6:latest
-            ghcr.io/hanlull/hl6:${{ github.sha }}
+            ghcr.io/hanlull/hl6:dev
+            ghcr.io/hanlull/hl6:dev-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

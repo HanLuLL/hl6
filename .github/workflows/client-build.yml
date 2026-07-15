@@ -29,7 +29,7 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -209,31 +209,12 @@ jobs:
           BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
           "$BUILD_TOOLS/apksigner" verify --verbose web/android/app/build/outputs/apk/release/app-release.apk
 
-      - name: Publish direct APK release asset
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Report verified APK
         run: |
-          set -euo pipefail
-          asset_name="${CLIENT_APPLICATION_ID}-${CLIENT_VERSION_NAME}.apk"
-          release_tag="android-${CLIENT_APPLICATION_ID//./-}-v${CLIENT_VERSION_NAME}-${GITHUB_RUN_NUMBER}"
-          release_dir="$RUNNER_TEMP/hl6-release"
-          mkdir -p "$release_dir"
-          cp web/android/app/build/outputs/apk/release/app-release.apk "$release_dir/$asset_name"
-
-          if gh release view "$release_tag" >/dev/null 2>&1; then
-            gh release upload "$release_tag" "$release_dir/$asset_name#$asset_name" --clobber
-          else
-            gh release create "$release_tag" "$release_dir/$asset_name#$asset_name" \
-              --target "$GITHUB_SHA" \
-              --title "$CLIENT_DISPLAY_NAME $CLIENT_VERSION_NAME" \
-              --notes "Signed Android APK built from the HL6 web UI."
-          fi
-
-          direct_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${release_tag}/${asset_name}"
           {
-            echo "## Android APK ready"
+            echo "## Android APK verified"
             echo
-            echo "Direct APK: $direct_url"
+            echo "The signed APK was built and verified on the runner. This workflow does not create a GitHub Release or publish an APK without an explicitly configured distribution channel."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Clean generated signing material

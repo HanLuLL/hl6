@@ -183,7 +183,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       upstreamSignal.removeEventListener("abort", abortByUpstream);
     }
     if (err instanceof DOMException && err.name === "AbortError" && !upstreamSignal?.aborted && timeoutMs > 0) {
-      throw new ApiError("Request timeout", "error.failedToFetch", undefined, 408);
+      throw new ApiError("Request timeout", "error.networkRequestFailed", undefined, 408);
+    }
+    if (err instanceof TypeError) {
+      throw new ApiError("Network request failed", "error.networkRequestFailed");
     }
     throw err;
   } finally {

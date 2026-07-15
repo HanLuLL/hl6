@@ -1,9 +1,9 @@
 # Android Client Adaptation Rules
 
-HL6 Android is a Kotlin + Jetpack Compose pure native client. WebView, embedded pages, HTML bundles, H5 shells, JavaScript runtimes, and hybrid rendering are forbidden.
+HL6 Android packages the local `web/` React/Vite production build with Capacitor. It reuses the same UI, routes, translations and API client as the web application; the APK must never load a remote website as its UI source.
 
-Every web, server, API, field, UI, state, or documentation change that affects Android use must update the native client and [docs/agent.md](docs/agent.md) in the same change set. Changes without the required client adaptation must not be merged or released.
+Every web, server, API, field, UI, state or documentation change that affects Android use must update the client integration and [docs/agent.md](docs/agent.md) in the same change set. Changes without the required client adaptation must not be merged or released.
 
-The client renders UI, stores credentials with Android Keystore protection, sends API requests with `X-HL6-Client-Key`, displays server state, and applies server version policy. It must not implement business rules, permission checks, DNS changes, credit decisions, or server-side validation locally.
+The Android layer is limited to application startup, deep links, system-browser OIDC, Android Keystore-backed session storage and API transport. Server-side business rules, authorization, validation, DNS changes and credit decisions remain on the server.
 
-The full mandatory UI, API, version, signing, OIDC, security, workflow, and change-record specification is maintained in [docs/agent.md](docs/agent.md).
+The full UI, API, version, signing, OIDC, CORS and change-record specification is maintained in [docs/agent.md](docs/agent.md).

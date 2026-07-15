@@ -6,7 +6,9 @@ HL6 是一个域名/子域名管理平台，支持在已注册域名下认领和
 >
 > **本项目地址**：[https://github.com/HanLuLL/hl6](https://github.com/HanLuLL/hl6)
 >
-> **容器镜像**：`ghcr.milu.moe/hanlull/hl6:latest`
+> **国际镜像**：`ghcr.io/hanlull/hl6:latest`
+>
+> **中国大陆代理**：`ghcr.milu.moe/hanlull/hl6:latest`（详见 [容器镜像说明](docs/container-images.md)）
 
 ---
 
@@ -19,6 +21,7 @@ HL6 是一个域名/子域名管理平台，支持在已注册域名下认领和
 | [OIDC 认证配置](docs/oidc.md) | 10+ 种 OIDC 提供商的配置方法（Logto、Keycloak、Authing、Google 等） |
 | [架构设计](docs/architecture.md) | 系统架构、目录结构、数据模型、API 设计 |
 | [故障排查](docs/troubleshooting.md) | 常见问题诊断与解决方案 |
+| [容器镜像](docs/container-images.md) | 国际 / 中国大陆镜像地址、标签规则与 Compose 选择 |
 
 ## 核心功能
 
@@ -60,7 +63,10 @@ make dev
 ## 容器部署
 
 ```bash
-# 使用预构建镜像
+# 国际网络
+docker pull ghcr.io/hanlull/hl6:latest
+
+# 中国大陆网络（GHCR 拉取代理）
 docker pull ghcr.milu.moe/hanlull/hl6:latest
 
 # 或使用 Docker Compose

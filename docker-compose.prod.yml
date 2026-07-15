@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.milu.moe/hanlull/hl6:latest
+    image: "${HL6_IMAGE:-ghcr.io/hanlull/hl6:latest}"
     container_name: hl6-app
     restart: unless-stopped
     depends_on:
@@ -29,7 +29,7 @@ services:
       start_period: 10s
 
   postgres:
-    image: postgres:16-alpine
+    image: "${POSTGRES_IMAGE:-postgres:16-alpine}"
     container_name: hl6-postgres
     restart: unless-stopped
     environment:

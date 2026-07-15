@@ -969,6 +969,7 @@
     "oidcAlreadyConfigured": "OIDC はすでに設定済みです",
     "failedToCreateUser": "ユーザーの作成に失敗しました",
     "failedToFetchJWKS": "認証の検証に失敗しました",
+    "networkRequestFailed": "サーバーに接続できません。クライアントのドメイン、ネットワーク接続、サーバーの CORS 設定を確認してください。",
     "migrateToRequired": "移行先の指定が必要です",
     "invalidMigrateTo": "無効な移行先",
     "migrationTaskBlocked": "このドメインには未完了の移行タスクがあります。先に解消してから新規作成してください。",

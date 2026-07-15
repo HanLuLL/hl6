@@ -89,7 +89,7 @@ openssl rand -hex 32
 ### 2.3 安装前端依赖
 
 ```bash
-cd web && npm install && cd ..
+cd web && pnpm install --frozen-lockfile && cd ..
 ```
 
 ---
@@ -106,7 +106,7 @@ make dev
 
 1. `docker compose up -d --wait` — 启动 PostgreSQL 容器
 2. `go run ./cmd/server` — 编译并启动 Go 后端（端口 `SERVER_PORT`，默认 8081）
-3. `npm run dev` — 启动 Vite 前端开发服务器（端口 `VITE_DEV_PORT`，默认 5174）
+3. `pnpm run dev` — 启动 Vite 前端开发服务器（端口 `VITE_DEV_PORT`，默认 5174）
 
 启动成功标志：
 
@@ -221,7 +221,7 @@ hl6/
 ### 5.4 Lint
 
 ```bash
-cd web && npm run lint   # ESLint
+cd web && pnpm run lint   # ESLint
 ```
 
 ---
@@ -236,7 +236,7 @@ docker build -t hl6:local .
 
 Dockerfile 采用三阶段构建：
 
-1. `node:22-alpine` — 构建前端 (`npm run build`)
+1. `node:22-alpine` — 通过 Corepack 和 pnpm 构建前端 (`pnpm run build`)
 2. `golang:1.25-alpine` — 构建后端二进制（CGO 启用）
 3. `alpine:3.22` — 最终镜像，内嵌前端 dist + 后端二进制
 
@@ -253,7 +253,7 @@ docker build \
 ### 6.2 前端单独构建
 
 ```bash
-cd web && npm run build
+cd web && pnpm run build
 # 产物在 web/dist/
 ```
 
@@ -268,4 +268,4 @@ CGO_ENABLED=1 go build -o hl6-server ./cmd/server
 
 ### 6.4 生产部署
 
-生产环境部署使用预构建镜像 `ghcr.milu.moe/hanlull/hl6:latest`，详细流程见 [部署指南](./deployment.md)。
+生产环境默认使用国际镜像 `ghcr.io/hanlull/hl6:latest`；中国大陆网络可在 `.env` 中设置 `HL6_IMAGE=ghcr.milu.moe/hanlull/hl6:latest` 使用代理入口。详细流程见 [部署指南](./deployment.md)。
