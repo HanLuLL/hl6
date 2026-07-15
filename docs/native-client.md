@@ -28,6 +28,8 @@ base64 -w 0 hl6-release.keystore
 
 不要提交 keystore、Base64 文本或密码。工作流仅在运行目录写入 keystore，构建完成或失败后均会清理。
 
+Windows 证书工具导出的 PKCS12 文件可能使用与填写别名不同的内部别名。对于恰好包含一个私钥条目的 keystore，工作流会通过 `keytool` 自动识别内部别名和 keystore 类型，再注入 Gradle；不会在日志中输出签名值。包含多个私钥条目的 keystore 会被拒绝，避免误用错误的发布证书。
+
 ## 手动构建
 
 在 GitHub Actions 中运行 `Build Native Android Client`，填写：

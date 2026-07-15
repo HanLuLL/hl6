@@ -29,6 +29,7 @@ val clientCommunicationKey = clientProperty("client.communicationKey")
 val clientNativeRedirectUri = clientProperty("client.nativeRedirectUri")
 val clientKeystoreFile = clientProperty("client.keystoreFile")
 val clientKeystorePassword = clientProperty("client.keystorePassword")
+val clientKeystoreType = clientProperty("client.keystoreType")
 val clientKeyAlias = clientProperty("client.keyAlias")
 val clientKeyPassword = clientProperty("client.keyPassword")
 
@@ -61,6 +62,7 @@ android {
         create("release") {
             storeFile = rootProject.file(clientKeystoreFile)
             storePassword = clientKeystorePassword
+            storeType = clientKeystoreType
             keyAlias = clientKeyAlias
             keyPassword = clientKeyPassword
         }

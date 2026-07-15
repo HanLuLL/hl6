@@ -116,10 +116,36 @@ jobs:
             echo "::error title=Invalid Android keystore::ANDROID_KEYSTORE_BASE64 is not valid Base64."
             exit 1
           fi
-          if ! keytool -list -keystore client/release.keystore -storepass "$CLIENT_KEYSTORE_PASSWORD" -alias "$CLIENT_KEY_ALIAS" >/dev/null 2>&1; then
-            echo "::error title=Invalid Android keystore configuration::Check ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, and ANDROID_KEY_ALIAS."
+
+          if ! keystore_metadata="$(keytool -list -v -keystore client/release.keystore -storepass "$CLIENT_KEYSTORE_PASSWORD" 2>&1)"; then
+            echo "::error title=Invalid Android keystore configuration::Check ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD."
             exit 1
           fi
+
+          keystore_type="$(printf '%s\n' "$keystore_metadata" | awk -F ': ' '/^Keystore type: / { print $2; exit }')"
+          mapfile -t private_key_aliases < <(
+            printf '%s\n' "$keystore_metadata" | awk -F ': ' '
+              /^Alias name: / { alias = $2 }
+              /^Entry type: PrivateKeyEntry$/ && alias != "" { print alias }
+            '
+          )
+
+          if [ -z "$keystore_type" ] || [ "${#private_key_aliases[@]}" -ne 1 ]; then
+            echo "::error title=Unsupported Android keystore::The release keystore must contain exactly one private-key entry."
+            exit 1
+          fi
+
+          detected_key_alias="${private_key_aliases[0]}"
+          if [ "$CLIENT_KEY_ALIAS" != "$detected_key_alias" ]; then
+            echo "::warning title=Android signing alias normalized::The configured alias did not match the only private-key entry, so the detected alias will be used."
+          fi
+
+          export CLIENT_KEY_ALIAS="$detected_key_alias"
+          export CLIENT_KEYSTORE_TYPE="$keystore_type"
+          {
+            printf 'CLIENT_KEY_ALIAS=%s\n' "$CLIENT_KEY_ALIAS"
+            printf 'CLIENT_KEYSTORE_TYPE=%s\n' "$CLIENT_KEYSTORE_TYPE"
+          } >> "$GITHUB_ENV"
           node client/scripts/configure-build.mjs
 
       - name: Build signed release APK

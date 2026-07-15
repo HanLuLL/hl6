@@ -50,7 +50,9 @@ On Windows PowerShell, create the Base64 value with:
 [Convert]::ToBase64String([IO.File]::ReadAllBytes(".\hl6-release.keystore"))
 ```
 
-Never commit the keystore, its Base64 value, or either password. The workflow lists missing configuration names without printing secret values and checks that the configured alias can be opened before Gradle starts.
+Never commit the keystore, its Base64 value, or either password. The workflow lists missing configuration names without printing secret values and validates the keystore before Gradle starts.
+
+For a keystore containing exactly one private-key entry, the workflow detects its internal alias and keystore type through `keytool` before Gradle starts. This supports PKCS12 files exported by Windows certificate tools as well as JKS files generated with `keytool`; no signing value is printed in the build log.
 
 ## OIDC
 
