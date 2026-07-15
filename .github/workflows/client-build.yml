@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       client_icon:
-        description: Optional repository-relative PNG icon path
+        description: Optional HTTPS PNG/WebP URL or repository-relative PNG/WebP icon path
         required: false
         type: string
       version:

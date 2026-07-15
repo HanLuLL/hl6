@@ -56,5 +56,8 @@ HL6 Android 客户端必须是 Kotlin + Jetpack Compose 的纯原生应用。禁
 | 2026-07-15 | 新增受密钥保护的原生 OIDC 启动接口、原生会话密钥绑定、服务端版本比较，以及子域名、DNS、签到和通知的原生 API 展示与操作。 |
 | 2026-07-15 | 强化 Android 构建工作流的签名预检：一次报告缺失的输入或 Secrets、验证 release keystore 与别名，并在构建后清理临时密钥材料；同步补充 GitHub Actions 签名配置与排错教程。 |
 | 2026-07-15 | 修复 Windows 导出 PKCS12 与 Android 构建的别名兼容问题：工作流仅在 keystore 含一个私钥条目时自动识别内部别名和类型并注入 Gradle，避免错误别名导致发布构建中断。 |
+| 2026-07-15 | 扩展客户端构建图标输入：支持受限 HTTPS 与仓库内 PNG/WebP 资源，构建时校验重定向、凭据、体积和文件签名，适配后台品牌图标 URL。 |
+| 2026-07-15 | 统一 Android Java 与 Kotlin 编译目标为 JDK 17，修复 Kotlin 2.0 对 Java 1.8/Kotlin 17 不一致目标的发布构建阻断。 |
+| 2026-07-15 | 修复原生 Compose 布局的 `weight` 内部 API 导入，改为由 Row/Column 作用域解析公开扩展，恢复 Kotlin 发布编译。 |
 
 所有客户端相关代码、接口、工作流和文档变更必须在本文件追加记录。

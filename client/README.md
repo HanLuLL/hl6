@@ -28,6 +28,8 @@ The client does not make DNS, credit, permission, validation, or business decisi
 
 The GitHub workflow supplies the first five through dispatch inputs and the signing values from repository secrets. The resulting APK is a signed release APK.
 
+`CLIENT_ICON_PATH` is optional. It accepts a repository-relative PNG/WebP file or a direct HTTPS PNG/WebP URL. Remote images are fetched without credentials, cannot redirect, are limited to 2 MiB, and are validated by file signature before being written into Android resources.
+
 ## GitHub Actions release signing
 
 Before the first release build, configure these repository-level Actions secrets in GitHub under **Settings > Secrets and variables > Actions**:
