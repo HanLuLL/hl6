@@ -4,14 +4,29 @@
 
 在 HL6 管理后台的“客户端版本与通信”卡片中生成通讯密钥，并保存仅显示一次的明文。配置版本号、更新类型、公告和 HTTPS 更新链接。
 
-在 GitHub 仓库 Secrets 中设置以下签名信息：
+在 GitHub 仓库 **Settings > Secrets and variables > Actions** 中设置以下仓库级签名信息：
 
 - `ANDROID_KEYSTORE_BASE64`: release keystore 的 Base64 内容。
 - `ANDROID_KEYSTORE_PASSWORD`: keystore 密码。
 - `ANDROID_KEY_ALIAS`: 签名别名。
 - `ANDROID_KEY_PASSWORD`: 签名私钥密码。
 
-这些 Secrets 缺失时，构建会明确失败。不能使用每次自动生成的新签名密钥，因为 Android 无法用不同证书覆盖安装后续更新。
+这些 Secrets 缺失时，构建会明确失败。`CLIENT_KEYSTORE_PASSWORD` 报错对应缺少 `ANDROID_KEYSTORE_PASSWORD`；工作流会一次列出全部缺失项。不能使用每次自动生成的新签名密钥，因为 Android 无法用不同证书覆盖安装后续更新。
+
+首次构建前，请在受控设备上只生成一次 release keystore，并长期妥善保存。示例：
+
+```bash
+keytool -genkeypair -keystore hl6-release.keystore -storetype PKCS12 -alias hl6-release -keyalg RSA -keysize 4096 -validity 9125
+base64 -w 0 hl6-release.keystore
+```
+
+将第二条命令输出的一行 Base64 配置为 `ANDROID_KEYSTORE_BASE64`，并将 `keytool` 提示输入的 keystore 密码、别名和密钥密码分别配置为其余三个 Secret。PKCS12 通常使用相同的 keystore 密码和密钥密码。Windows PowerShell 可用以下命令生成 Base64：
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes(".\hl6-release.keystore"))
+```
+
+不要提交 keystore、Base64 文本或密码。工作流仅在运行目录写入 keystore，构建完成或失败后均会清理。
 
 ## 手动构建
 

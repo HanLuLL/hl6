@@ -54,5 +54,6 @@ HL6 Android 客户端必须是 Kotlin + Jetpack Compose 的纯原生应用。禁
 | --- | --- |
 | 2026-07-15 | 废弃 Capacitor/H5 方案，建立 Kotlin + Jetpack Compose 原生客户端、原生 OIDC 一次性代码交换、密钥作废和签名 APK 规范。 |
 | 2026-07-15 | 新增受密钥保护的原生 OIDC 启动接口、原生会话密钥绑定、服务端版本比较，以及子域名、DNS、签到和通知的原生 API 展示与操作。 |
+| 2026-07-15 | 强化 Android 构建工作流的签名预检：一次报告缺失的输入或 Secrets、验证 release keystore 与别名，并在构建后清理临时密钥材料；同步补充 GitHub Actions 签名配置与排错教程。 |
 
 所有客户端相关代码、接口、工作流和文档变更必须在本文件追加记录。

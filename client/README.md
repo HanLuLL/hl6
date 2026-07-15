@@ -28,6 +28,30 @@ The client does not make DNS, credit, permission, validation, or business decisi
 
 The GitHub workflow supplies the first five through dispatch inputs and the signing values from repository secrets. The resulting APK is a signed release APK.
 
+## GitHub Actions release signing
+
+Before the first release build, configure these repository-level Actions secrets in GitHub under **Settings > Secrets and variables > Actions**:
+
+- `ANDROID_KEYSTORE_BASE64`: one-line Base64 representation of the release keystore.
+- `ANDROID_KEYSTORE_PASSWORD`: password protecting that keystore.
+- `ANDROID_KEY_ALIAS`: alias of the signing key.
+- `ANDROID_KEY_PASSWORD`: signing key password. Use the same value as the keystore password for a PKCS12 keystore.
+
+Create the keystore once and keep it for every later release. Replacing it prevents Android from installing a newer APK over an existing installation. For example, run the following locally with Java `keytool`, then use the prompted passwords as the corresponding GitHub secrets:
+
+```bash
+keytool -genkeypair -keystore hl6-release.keystore -storetype PKCS12 -alias hl6-release -keyalg RSA -keysize 4096 -validity 9125
+base64 -w 0 hl6-release.keystore
+```
+
+On Windows PowerShell, create the Base64 value with:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes(".\hl6-release.keystore"))
+```
+
+Never commit the keystore, its Base64 value, or either password. The workflow lists missing configuration names without printing secret values and checks that the configured alias can be opened before Gradle starts.
+
 ## OIDC
 
 The native redirect URI is generated as `hl6.<applicationId>://auth/callback`. The app first calls `/auth/native/start` with `X-HL6-Client-Key`; the server records the approved redirect URI and returns a short-lived browser URL. The app opens only that URL in Custom Tabs. After the provider returns to the server, the server redirects to the deep link with a short-lived, one-time code. The app exchanges that code with `X-HL6-Client-Key` for a Bearer session token, and the server requires the key again for every protected native-session request.
