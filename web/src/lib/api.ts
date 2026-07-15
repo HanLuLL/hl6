@@ -54,6 +54,12 @@ import type {
 } from "@/types";
 import type { AIModelConfig, AIModelConfigInput, AuditPromptTemplate, PromptTemplateInput, AuditAIReview, AIAuditStats, UserAppeal, BanInfo } from "@/types/ai-audit";
 import { buildPaginatedQuery } from "@/lib/api-query";
+import {
+  clientCommunicationKey,
+  clearNativeAccessToken,
+  getNativeAccessToken,
+  isNativeClient,
+} from "@/lib/client-runtime";
 
 function normalizeApiBaseUrl(rawValue: string | undefined): string {
   const value = rawValue?.trim() ?? "";
@@ -111,6 +117,19 @@ type RequestOptions = RequestInit & {
 
 let handlingBannedSession = false;
 
+function nativeRequestHeaders(): Record<string, string> {
+  if (!isNativeClient) return {};
+
+  const headers: Record<string, string> = {};
+  if (clientCommunicationKey) {
+    headers["X-HL6-Client-Key"] = clientCommunicationKey;
+  }
+  const accessToken = getNativeAccessToken();
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return headers;
+}
 
 export function getErrorMessage(err: unknown, t?: (key: string) => string): string {
   if (err instanceof ApiError && err.messageKey && t) {
@@ -129,6 +148,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   };
   if (!["GET", "HEAD", "OPTIONS"].includes(method) && !headers["X-Idempotency-Key"]) {
     headers["X-Idempotency-Key"] = options.idempotencyKey || createIdempotencyKey();
+  }
+  for (const [key, value] of Object.entries(nativeRequestHeaders())) {
+    if (!headers[key]) headers[key] = value;
   }
 
   const timeoutMs = options.timeoutMs ?? 0;
@@ -152,7 +174,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     res = await fetch(buildApiUrl(path), {
       ...options,
       headers,
-      credentials: "include",
+      credentials: isNativeClient ? "omit" : "include",
       signal: timeoutController.signal,
     });
   } catch (err) {
@@ -172,6 +194,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   if (res.status === 401) {
+    if (isNativeClient) {
+      clearNativeAccessToken();
+      throw new ApiError("Not authenticated", "error.missingToken", undefined, 401);
+    }
     if (!path.includes("/auth/me")) {
       const key = "hl6_401_count";
       const timeKey = "hl6_401_time";
@@ -239,6 +265,12 @@ export const api = {
     return res;
   },
   getOIDCStatus: () => request<ApiResponse<OIDCStatusPayload>>("/auth/oidc/status"),
+  getClientVersion: (currentVersion: string) =>
+    request<ApiResponse<ClientVersionConfig>>(`/client/version?current_version=${encodeURIComponent(currentVersion)}`, { timeoutMs: 10_000 }),
+  startNativeLogin: (data: { redirect_uri: string; referral_code?: string }) =>
+    request<ApiResponse<{ login_url: string }>>("/auth/native/start", { method: "POST", body: JSON.stringify(data) }),
+  exchangeNativeAuthCode: (data: { code: string }) =>
+    request<ApiResponse<{ access_token: string; expires_in: number }>>("/auth/native/exchange", { method: "POST", body: JSON.stringify(data) }),
   bootstrapOIDCConfig: (data: { oidc_issuer: string; oidc_client_id: string; oidc_client_secret: string }) =>
     request<ApiResponse<OIDCStatusPayload>>("/auth/oidc/bootstrap", { method: "POST", body: JSON.stringify(data) }),
   logout: () => request<ApiResponse<{ logout_url: string }>>("/auth/logout", { method: "POST" }),
@@ -506,7 +538,11 @@ export const api = {
     const res = await fetch(buildApiUrl("/admin/branding/logo"), {
       method: "POST",
       body: formData,
-      credentials: "include",
+      headers: {
+        ...nativeRequestHeaders(),
+        "X-Idempotency-Key": createIdempotencyKey(),
+      },
+      credentials: isNativeClient ? "omit" : "include",
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({ message: res.statusText }));
@@ -549,7 +585,11 @@ export const api = {
     const res = await fetch(buildApiUrl("/admin/notifications/images"), {
       method: "POST",
       body: formData,
-      credentials: "include",
+      headers: {
+        ...nativeRequestHeaders(),
+        "X-Idempotency-Key": createIdempotencyKey(),
+      },
+      credentials: isNativeClient ? "omit" : "include",
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({ message: res.statusText }));

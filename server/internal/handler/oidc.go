@@ -451,7 +451,8 @@ func (h *OIDCHandler) Callback(c *gin.Context) {
 
 func (h *OIDCHandler) NativeStart(c *gin.Context) {
 	var body struct {
-		RedirectURI string `json:"redirect_uri"`
+		RedirectURI  string `json:"redirect_uri"`
+		ReferralCode string `json:"referral_code"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
@@ -485,6 +486,9 @@ func (h *OIDCHandler) NativeStart(c *gin.Context) {
 	}
 	query := loginURL.Query()
 	query.Set("native_request", requestToken)
+	if referralCode := strings.ToLower(strings.TrimSpace(body.ReferralCode)); isValidReferralCode(referralCode) {
+		query.Set("ref", referralCode)
+	}
 	loginURL.RawQuery = query.Encode()
 	response.OK(c, gin.H{"login_url": loginURL.String()})
 }

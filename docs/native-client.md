@@ -1,85 +1,86 @@
-# 原生 Android 客户端构建与运维
+# Android 网页客户端构建与运维
 
-## 前置条件
+## 架构
 
-在 HL6 管理后台的“客户端版本与通信”卡片中生成通讯密钥，并保存仅显示一次的明文。配置版本号、更新类型、公告和 HTTPS 更新链接。
+Android 客户端使用 Capacitor 打包 `web/` 的 React/Vite 生产构建。APK 内包含本地 `web/dist`，因此页面、样式、路由、国际化和 API 调用与网页端来自完全相同的源码。Android 平台层只提供应用容器、深链、系统浏览器和安全会话存储。
 
-在 GitHub 仓库 **Settings > Secrets and variables > Actions** 中设置以下仓库级签名信息：
+## 签名 Secrets
 
-- `ANDROID_KEYSTORE_BASE64`: release keystore 的 Base64 内容。
-- `ANDROID_KEYSTORE_PASSWORD`: keystore 密码。
-- `ANDROID_KEY_ALIAS`: 签名别名。
-- `ANDROID_KEY_PASSWORD`: 签名私钥密码。
+在 GitHub 仓库 **Settings > Secrets and variables > Actions** 配置：
 
-这些 Secrets 缺失时，构建会明确失败。`CLIENT_KEYSTORE_PASSWORD` 报错对应缺少 `ANDROID_KEYSTORE_PASSWORD`；工作流会一次列出全部缺失项。不能使用每次自动生成的新签名密钥，因为 Android 无法用不同证书覆盖安装后续更新。
+- `ANDROID_KEYSTORE_BASE64`：release keystore 的单行 Base64。
+- `ANDROID_KEYSTORE_PASSWORD`：keystore 密码。
+- `ANDROID_KEY_ALIAS`：签名别名。
+- `ANDROID_KEY_PASSWORD`：私钥密码。PKCS12 通常与 keystore 密码相同。
 
-首次构建前，请在受控设备上只生成一次 release keystore，并长期妥善保存。示例：
-
-```bash
-keytool -genkeypair -keystore hl6-release.keystore -storetype PKCS12 -alias hl6-release -keyalg RSA -keysize 4096 -validity 9125
-base64 -w 0 hl6-release.keystore
-```
-
-将第二条命令输出的一行 Base64 配置为 `ANDROID_KEYSTORE_BASE64`，并将 `keytool` 提示输入的 keystore 密码、别名和密钥密码分别配置为其余三个 Secret。PKCS12 通常使用相同的 keystore 密码和密钥密码。Windows PowerShell 可用以下命令生成 Base64：
+只生成并长期保存一份 release keystore。更换证书会导致 Android 无法覆盖安装旧版本。Windows PowerShell 可用以下命令将 keystore 转成 Secret 值：
 
 ```powershell
 [Convert]::ToBase64String([IO.File]::ReadAllBytes(".\hl6-release.keystore"))
 ```
 
-不要提交 keystore、Base64 文本或密码。工作流仅在运行目录写入 keystore，构建完成或失败后均会清理。
+不要提交 keystore、Base64、密码、通讯密钥或构建后的 APK。
 
-Windows 证书工具导出的 PKCS12 文件可能使用与填写别名不同的内部别名。对于恰好包含一个私钥条目的 keystore，工作流会通过 `keytool` 自动识别内部别名和 keystore 类型，再注入 Gradle；不会在日志中输出签名值。包含多个私钥条目的 keystore 会被拒绝，避免误用错误的发布证书。
+## GitHub 构建
 
-## 手动构建
-
-在 GitHub Actions 中运行 `Build Native Android Client`，填写：
+在 GitHub Actions 手动运行 `Build Web Android Client`，填写：
 
 | 参数 | 说明 |
 | --- | --- |
-| `communication_domain` | HL6 HTTPS 域名，不含 `/api/v1`。 |
+| `communication_domain` | HL6 HTTPS 域名，不含 `/api/v1`，例如 `domain.example.com`。 |
 | `communication_key` | 后台生成的全局通讯密钥。 |
 | `client_name` | Android 应用展示名称。 |
-| `client_icon` | 可选的仓库内 PNG/WebP 相对路径，或直接 HTTPS PNG/WebP 图标 URL；远程图标不携带凭据、禁止重定向、限制 2 MiB 并校验文件签名。构建仅生成被忽略的自定义图标资源，不会修改受版本控制的默认图标。 |
-| `version` | `major.minor.patch`，例如 `1.0.0`；每个数字段为 0-999。 |
-| `android_package_name` | 小写 Android 包名，例如 `cloud.houlang.hl6`；最长 60 个字符，以满足原生 OIDC URI scheme 限制。 |
+| `client_icon` | 可选 HTTPS PNG/WebP URL 或仓库相对 PNG/WebP 路径；远程图标禁止凭据和重定向，最大 2 MiB。 |
+| `version` | `major.minor.patch`，例如 `1.0.0`。 |
+| `android_package_name` | 小写包名，例如 `cc.example.domain`；每段必须以字母开头，且仅使用小写字母和数字，以兼容 OIDC 深链。 |
 
-工作流将验证参数、生成临时构建配置、验证签名，并上传 `app-release.apk` Artifact。`communication_key` 是敏感值：工作流会在日志中掩码，但 GitHub 的手动工作流输入不等同于 GitHub Secret，因此只能由受信任的仓库管理员触发和查看。
+工作流依次构建网页、同步 Capacitor Android 项目、生成图标与动态应用配置、签名、校验 APK。完成后会创建 GitHub Release，并将 `.apk` 作为直接下载资产发布；不会使用 ZIP Artifact。
 
-工作流文件必须先进入仓库默认分支，GitHub Actions 才会在 Actions 页面注册 `workflow_dispatch` 的手动构建入口。
+通讯密钥会被打进 APK，所以不是用户权限凭据。工作流会掩码日志中的值，但手动工作流输入不等同于 GitHub Secret，只有受信任的仓库管理员应触发构建。
 
 ## OIDC 配置
 
-OIDC 提供商仍只需要配置服务器回调：
+OIDC 提供商始终只需要配置服务端回调：
 
-```
+```text
 https://your-hl6-domain.example/api/v1/auth/callback
 ```
 
-原生客户端先通过带 `X-HL6-Client-Key` 的 `POST /api/v1/auth/native/start` 提交构建时生成的深链。服务端保存该深链对应的一次性、90 秒有效请求并返回浏览器登录地址。App 只把该不含密钥的短期地址交给系统 Custom Tabs。
+不要向提供商配置 Android 深链。客户端调用 `POST /api/v1/auth/native/start` 创建短期登录请求，在系统浏览器中完成 OIDC；服务端随后跳转到：
 
-OIDC 登录完成后，服务端重定向到构建时生成的 `hl6.<applicationId>://auth/callback?code=...`。深链仅携带 90 秒有效且只能消费一次的代码，App 必须再带 `X-HL6-Client-Key` 调用 `POST /api/v1/auth/native/exchange` 换取 Bearer 会话。原生会话的每次受保护 API 调用都会在服务端重新校验通讯密钥；密钥轮换或作废会立即使旧 APK 的会话失效。
+```text
+hl6.<android-package-name>://auth/callback?code=<one-time-code>
+```
 
-使用新密钥覆盖安装新 APK 时，客户端会替换 Android Keystore 中保存的旧密钥并清除与旧密钥哈希绑定的会话令牌，用户需要重新完成 OIDC 登录。
+Capacitor 接收该深链，并使用 `POST /api/v1/auth/native/exchange` 与 `X-HL6-Client-Key` 换取 Bearer 会话。会话令牌存储于 Android Keystore 支持的安全存储中。密钥轮换或作废时，受保护请求会失效，用户必须安装使用新密钥构建的 APK 并重新登录。
 
-不要把 Android 深链接配置成 OIDC 提供商回调地址，也不要直接调用 `/api/v1/auth/login?native_redirect_uri=...`。该旧参数已被拒绝，避免未受通讯密钥保护的深链登录请求。
+## 本地验证
 
-## 原生 API 契约
+需要 Node.js 22、JDK 21、Android SDK 36 和同一份 release keystore。设置六个 `CLIENT_*` 环境变量后执行：
 
-所有 Android API 请求都携带 `X-HL6-Client-Key`。`/auth/native/exchange` 后取得的 Bearer 会话带有当前通讯密钥哈希声明，服务端会在每次受保护请求中同时验证请求密钥和该声明，因此密钥轮换会立即失效旧会话。
+```bash
+cd web
+pnpm install --frozen-lockfile
+pnpm run build
+pnpm exec cap sync android
+node scripts/configure-capacitor-build.mjs
+cd android
+./gradlew :app:assembleRelease \
+  -PHL6_KEYSTORE_FILE=release.keystore \
+  -PHL6_KEYSTORE_PASSWORD="$CLIENT_KEYSTORE_PASSWORD" \
+  -PHL6_KEYSTORE_TYPE=PKCS12 \
+  -PHL6_KEY_ALIAS="$CLIENT_KEY_ALIAS" \
+  -PHL6_KEY_PASSWORD="$CLIENT_KEY_PASSWORD"
+```
 
-| 接口 | 用途 |
-| --- | --- |
-| `GET /api/v1/client/version?current_version=x.y.z` | 服务端计算 `update_available` 并返回更新策略。 |
-| `POST /api/v1/auth/native/start` | 创建一次性浏览器登录请求，输入为 `redirect_uri`。 |
-| `POST /api/v1/auth/native/exchange` | 用 Android 深链中的一次性 `code` 换取 Bearer 会话。 |
+随后使用 Android SDK 的 `apksigner verify --verbose app/build/outputs/apk/release/app-release.apk` 校验签名。
 
 ## 排错
 
-| 现象 | 原因与处理 |
+| 现象 | 处理 |
 | --- | --- |
-| App 未被登录回调唤醒 | 检查构建时包名是否与安装的 APK 一致，重新安装对应包名的 APK。 |
-| `invalid native auth code` | 授权代码仅能使用一次且 90 秒过期；重新发起登录。 |
-| `invalid native login request` | 浏览器登录地址超过 90 秒、重复使用，或不是由 `/auth/native/start` 创建；回到 App 重新点击登录。 |
-| 客户端通讯密钥不可用 | 密钥已被轮换或作废；在后台生成新密钥后重新构建并安装 APK。 |
-| 无法覆盖安装更新 | 新 APK 使用了不同签名；确保所有 Actions 构建使用相同 GitHub Secrets 中的 keystore。 |
-| 强制更新无法进入 App | 这是服务端强制更新策略；修正更新链接并安装最新 APK。 |
+| OIDC 后未回到 App | 确认构建包名、深链和已安装 APK 的包名一致。 |
+| `invalid native auth code` | 授权代码已过期或已被使用；重新发起登录。 |
+| `invalid client key` | 后台已轮换或作废密钥；重新构建并安装 APK。 |
+| 无法覆盖安装更新 | 所有构建必须使用同一份 Android signing Secrets。 |
+| 下载后得到 ZIP | 应从 workflow 创建的 GitHub Release 资产下载 `.apk`，不要使用 Actions Artifact 下载入口。 |

@@ -9,6 +9,11 @@ func CORS(allowedOrigins []string) gin.HandlerFunc {
 	for _, o := range allowedOrigins {
 		originSet[o] = true
 	}
+	// Capacitor's local Android origin. Native requests still require the
+	// communication key and native bearer session, so this does not grant API access.
+	originSet["http://localhost"] = true
+	originSet["https://localhost"] = true
+	originSet["capacitor://localhost"] = true
 
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")

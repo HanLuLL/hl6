@@ -32,6 +32,7 @@ export interface ClientVersionConfig {
   force_update: boolean;
   update_notice: string;
   update_url: string;
+  update_available?: boolean;
   communication_key_configured?: boolean;
 }
 

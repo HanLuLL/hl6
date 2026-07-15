@@ -23,6 +23,7 @@ import BannedPage from "@/pages/banned";
 
 import AdminSettingsPage from "@/pages/admin/settings";
 import NotFoundPage from "@/pages/not-found";
+import { NativeUpdateGate } from "@/components/client/native-update-gate";
 
 function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -79,6 +80,7 @@ function AdminRoute() {
 export default function App() {
   return (
     <BrowserRouter>
+      <NativeUpdateGate />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/callback" element={<CallbackPage />} />

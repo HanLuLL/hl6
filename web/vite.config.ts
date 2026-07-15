@@ -45,25 +45,27 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, projectRoot, "")
   const serverPort = env.SERVER_PORT || "8081"
   const devPort = Number(env.VITE_DEV_PORT || "5174")
+  const capacitorBuild = env.VITE_CAPACITOR_APP === "true" || process.env.VITE_CAPACITOR_APP === "true"
 
   return {
-  envDir: projectRoot,
-  define: {
-    __APP_GIT_BRANCH__: JSON.stringify(gitBranch),
-    __APP_GIT_COMMIT__: JSON.stringify(gitCommit),
-  },
-  plugins: [react(), tailwindcss()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
+    base: capacitorBuild ? "./" : "/",
+    envDir: projectRoot,
+    define: {
+      __APP_GIT_BRANCH__: JSON.stringify(gitBranch),
+      __APP_GIT_COMMIT__: JSON.stringify(gitCommit),
     },
-  },
-  server: {
-    port: devPort,
-    strictPort: true,
-    proxy: {
-      "/api": `http://localhost:${serverPort}`,
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+      },
     },
-  },
+    server: {
+      port: devPort,
+      strictPort: true,
+      proxy: {
+        "/api": `http://localhost:${serverPort}`,
+      },
+    },
   }
 })

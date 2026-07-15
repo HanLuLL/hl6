@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SEOProvider } from "@/hooks/use-seo";
 import App from "./App";
+import { initializeNativeClient } from "@/lib/native-client";
 import "./i18n";
 import "./index.css";
 
@@ -18,15 +19,19 @@ const queryClient = new QueryClient({
   },
 });
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <SEOProvider>
-          <App />
-        </SEOProvider>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
-  </StrictMode>
-);
+function renderApp() {
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <SEOProvider>
+            <App />
+          </SEOProvider>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </StrictMode>
+  );
+}
+
+void initializeNativeClient().finally(renderApp);

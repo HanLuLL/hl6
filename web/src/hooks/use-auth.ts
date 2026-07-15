@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, buildApiUrl } from "@/lib/api";
+import { isNativeClient } from "@/lib/client-runtime";
+import { signOutNativeClient, startNativeSignIn } from "@/lib/native-client";
 
 export function useAuth() {
   const { data, isLoading, error } = useQuery({
@@ -17,11 +19,19 @@ export function useAuth() {
     user: data?.data?.user ?? null,
     credits: data?.data?.credits ?? 0,
     signIn: (ref?: string) => {
+      if (isNativeClient) {
+        void startNativeSignIn(ref);
+        return;
+      }
       const url = new URL(buildApiUrl("/auth/login"), window.location.origin);
       if (ref) url.searchParams.set("ref", ref);
       window.location.href = url.toString();
     },
     signOut: async () => {
+      if (isNativeClient) {
+        await signOutNativeClient();
+        return;
+      }
       try {
         const res = await api.logout();
         const logoutUrl = res?.data?.logout_url;
