@@ -1,271 +1,181 @@
-# HL6 开发环境搭建
+# 开发指南
 
-本指南说明如何从源码搭建 HL6 的本地开发环境。
+本文面向 HL6 贡献者，说明本地环境、目录边界、常用命令和提交前检查。生产配置见[生产部署与升级](deployment.md)，Android 特殊要求见[客户端适配规范](agent.md)。
 
-- **GitHub 仓库**：[https://github.com/HanLuLL/hl6](https://github.com/HanLuLL/hl6)
-- **原项目仓库**：[https://git.houlang.cloud/houlangcloud/hl6](https://git.houlang.cloud/houlangcloud/hl6)
+## 1. 技术要求
 
----
+| 工具 | 建议版本 | 用途 |
+| --- | --- | --- |
+| Go | 与 `server/go.mod` 兼容的稳定版本 | 后端 API、Worker、迁移 |
+| Node.js | 22 | React/Vite 与构建脚本 |
+| pnpm | 11.7.0 | 前端依赖 |
+| PostgreSQL | 16 | 主数据库 |
+| Docker / Compose | Engine 24+ / Compose v2 | 开发数据库和生产构建 |
+| Redis | 可选 | 多实例审核队列 |
+| JDK / Android SDK | JDK 21 / SDK 36 | 仅 Android 构建 |
 
-## 目录
+中国大陆开发网络可配置组织批准的 Go、npm 和 Docker 镜像源，但不要把个人代理地址或凭据提交到仓库。
 
-- [1. 前置条件](#1-前置条件)
-- [2. 克隆与环境配置](#2-克隆与环境配置)
-- [3. 启动开发](#3-启动开发)
-- [4. 项目结构](#4-项目结构)
-- [5. 代码规范与约定](#5-代码规范与约定)
-- [6. 生产构建](#6-生产构建)
-
----
-
-## 1. 前置条件
-
-| 依赖 | 版本要求 | 说明 |
-|------|---------|------|
-| Go | ≥ 1.25 | 后端语言 |
-| Node.js | ≥ 22（推荐 LTS） | 前端构建 |
-| Docker & Docker Compose | 任意现代版本 | 运行 PostgreSQL 16 |
-| Make | 任意版本 | 任务编排 |
-| Git | 任意版本 | 版本控制 |
-
-### 中国大陆网络优化
-
-```bash
-# Go 模块代理
-go env -w GOPROXY=https://goproxy.cn,direct
-
-# npm 镜像
-npm config set registry https://registry.npmmirror.com
-```
-
----
-
-## 2. 克隆与环境配置
-
-### 2.1 克隆仓库
+## 2. 初始化
 
 ```bash
 git clone https://github.com/HanLuLL/hl6.git
 cd hl6
-```
-
-### 2.2 配置环境变量
-
-```bash
 cp .env.example .env
 ```
 
-编辑 `.env`，关键配置项：
+开发默认数据库：
 
-```env
-# 数据库（Docker 默认配置，通常无需修改）
+```dotenv
 DATABASE_URL=postgres://hl6:hl6dev@localhost:5433/hl6?sslmode=disable
 SERVER_PORT=8081
-
-# OIDC 认证（必填，或留空使用 Web UI 首配向导）
-OIDC_ISSUER=https://your-oidc-provider.example.com
-OIDC_CLIENT_ID=your-client-id
-OIDC_CLIENT_SECRET=your-client-secret
-
-# 前端地址
+VITE_DEV_PORT=5174
+BACKEND_URL=http://localhost:8081
 FRONTEND_URL=http://localhost:5174
 ALLOWED_ORIGINS=http://localhost:5174
-
-# 会话密钥（留空自动生成）
-SESSION_SECRET=
-
-# 加密密钥（可选，用于加密敏感配置）
-ENCRYPTION_KEY=
 ```
 
-OIDC 配置指南见 [OIDC 提供商配置](./oidc.md)。
+OIDC 三项可以指向测试租户，也可以全部留空后使用首配向导。不要使用生产 Client Secret、DNS Token、支付密钥或 Android 通讯密钥进行普通本地开发。
 
-生成 `ENCRYPTION_KEY`（可选）：
+## 3. 常用命令
 
 ```bash
-openssl rand -hex 32
+make dev           # 启动开发数据库、Go 服务端和 Vite
+make dev-server    # cd server && go run ./cmd/server
+make dev-web       # cd web && pnpm run dev
+make db-up         # 启动开发 PostgreSQL
+make db-down       # 停止开发 PostgreSQL
 ```
 
-### 2.3 安装前端依赖
+前端：
 
 ```bash
-cd web && pnpm install --frozen-lockfile && cd ..
+cd web
+pnpm install --frozen-lockfile
+pnpm run dev
+pnpm run build
+pnpm run lint
 ```
 
----
-
-## 3. 启动开发
-
-### 3.1 一键启动
-
-```bash
-make dev
-```
-
-该命令并行执行：
-
-1. `docker compose up -d --wait` — 启动 PostgreSQL 容器
-2. `go run ./cmd/server` — 编译并启动 Go 后端（端口 `SERVER_PORT`，默认 8081）
-3. `pnpm run dev` — 启动 Vite 前端开发服务器（端口 `VITE_DEV_PORT`，默认 5174）
-
-启动成功标志：
-
-```
-✔ Container hl6-postgres  Started
-Database migrated successfully
-Server starting on :8081
-VITE vX.x.x  ready
-  ➜  Local:   http://localhost:5174/
-```
-
-访问 `http://localhost:5174`。
-
-### 3.2 分离启动
-
-如需单独启动各组件：
-
-```bash
-make db-up         # 仅启动 PostgreSQL
-make dev-server    # 仅启动 Go 后端
-make dev-web       # 仅启动前端
-```
-
-### 3.3 停止服务
-
-在 `make dev` 终端按 `Ctrl+C` 停止前后端。
-
-停止数据库：
-
-```bash
-make db-down
-```
-
-> `make db-down` 不会删除数据。彻底清除数据：`docker compose down -v`。
-
-### 3.4 Vite 代理
-
-Vite 开发服务器将 `/api` 请求代理到 `localhost:8081`（由 `SERVER_PORT` 控制）。跨域部署时可在 `.env` 中设置 `VITE_API_BASE_URL`。
-
----
-
-## 4. 项目结构
-
-```
-hl6/
-├── .env.example              # 环境变量模板
-├── .env                      # 本地配置（不提交 Git）
-├── Makefile                  # 开发命令
-├── docker-compose.yml        # PostgreSQL 容器定义
-├── Dockerfile                # 多阶段构建（前端 + 后端）
-├── server/                   # Go 后端
-│   ├── cmd/server/main.go    # 入口点
-│   ├── internal/
-│   │   ├── config/           # 环境变量加载
-│   │   ├── handler/          # HTTP 处理器
-│   │   ├── middleware/       # 认证、CORS、管理员权限
-│   │   ├── model/            # GORM 数据模型
-│   │   ├── repository/       # 数据访问层
-│   │   ├── router/           # 路由配置
-│   │   ├── service/          # 业务逻辑（DNS 提供商、审计、支付等）
-│   │   ├── worker/           # 审计扫描 worker
-│   │   └── oidc/             # OIDC Discovery
-│   └── pkg/
-│       ├── audit/            # 审计抓取器
-│       ├── crypto/           # AES-256-GCM 加解密
-│       ├── queue/            # 任务队列
-│       ├── response/         # 统一 API 响应
-│       └── validator/        # DNS 记录验证
-└── web/                      # React 前端
-    ├── src/
-    │   ├── pages/            # 路由页面
-    │   ├── components/       # UI 与业务组件
-    │   ├── hooks/            # 自定义 hooks（React Query 封装）
-    │   ├── lib/              # API 客户端、工具函数
-    │   ├── i18n/             # 国际化（6 种语言）
-    │   └── types/            # TypeScript 类型
-    └── vite.config.ts        # Vite 配置（envDir 读取根 .env）
-```
-
-详细架构设计见 [架构文档](./architecture.md)。
-
----
-
-## 5. 代码规范与约定
-
-### 5.1 后端（Go）
-
-- **框架**：Gin (HTTP) + GORM (ORM)
-- **分层**：`handler` → `service` → `repository` → `model`
-- **响应格式**：统一使用 `pkg/response`，返回 `ApiResponse{code, message, data}`
-- **错误处理**：使用 i18n key（`message_key`），前端匹配翻译
-- **认证**：JWT (HS256) 存储在 `hl6_session` Cookie
-- **配置**：环境变量优先，部分支持数据库配置（OIDC、URL）
-- **日志**：`log` 用于启动信息，`log/slog` 用于业务日志
-
-### 5.2 前端（TypeScript / React）
-
-- **状态管理**：TanStack React Query，封装在 `hooks/` 中
-- **UI 组件**：Shadcn UI + Radix Primitives + Tailwind CSS 4
-- **国际化**：i18next，语言文件在 `i18n/`
-- **API 客户端**：`lib/api.ts`，Bearer token 认证
-- **通知**：Sonner toast，mutation 成功/失败时展示国际化消息
-- **路径别名**：`@/*` 映射到 `web/src/*`
-
-### 5.3 通用约定
-
-- **API 响应**：`code: 0` 成功，`-1` 失败
-- **DNS 记录类型**：A / AAAA / CNAME / TXT
-- **积分单位**：内部 int64，1 显示积分 = 10 内部单位
-- **首个注册用户自动成为管理员**
-
-### 5.4 Lint
-
-```bash
-cd web && pnpm run lint   # ESLint
-```
-
----
-
-## 6. 生产构建
-
-### 6.1 Docker 镜像构建
-
-```bash
-docker build -t hl6:local .
-```
-
-Dockerfile 采用三阶段构建：
-
-1. `node:22-alpine` — 通过 Corepack 和 pnpm 构建前端 (`pnpm run build`)
-2. `golang:1.25-alpine` — 构建后端二进制（CGO 启用）
-3. `alpine:3.22` — 最终镜像，内嵌前端 dist + 后端二进制
-
-构建参数：
-
-```bash
-docker build \
-  --build-arg APP_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
-  --build-arg APP_GIT_COMMIT=$(git rev-parse --short HEAD) \
-  --build-arg GOPROXY=https://goproxy.cn,direct \
-  -t hl6:local .
-```
-
-### 6.2 前端单独构建
-
-```bash
-cd web && pnpm run build
-# 产物在 web/dist/
-```
-
-### 6.3 后端单独构建
+后端：
 
 ```bash
 cd server
-CGO_ENABLED=1 go build -o hl6-server ./cmd/server
+go run ./cmd/server
+go test ./...
 ```
 
-> 后端依赖 CGO（PostgreSQL 驱动需要），构建时需确保 C 编译器可用。
+Vite 从仓库根目录读取 `.env`，并将 `/api` 代理到 Go 服务端。跨域调试时显式设置 `VITE_API_BASE_URL`，同时更新服务端 CORS。
 
-### 6.4 生产部署
+## 4. 目录边界
 
-生产环境默认使用国际镜像 `ghcr.io/hanlull/hl6:latest`；中国大陆网络可在 `.env` 中设置 `HL6_IMAGE=ghcr.milu.moe/hanlull/hl6:latest` 使用代理入口。详细流程见 [部署指南](./deployment.md)。
+```text
+server/
+  cmd/server/             启动、迁移、种子
+  internal/config/        环境变量与运行时配置
+  internal/handler/       HTTP 输入输出
+  internal/middleware/    认证、CORS、管理员权限
+  internal/model/         GORM 数据模型
+  internal/repository/    数据访问
+  internal/router/        路由注册与依赖组装
+  internal/service/       DNS、审核、迁移等业务编排
+  internal/worker/        审核调度与消费
+  pkg/                    响应、验证、加密、队列基础能力
+
+web/
+  src/pages/              路由页面
+  src/components/ui/      Shadcn/Radix 基础组件
+  src/components/         领域组件和布局
+  src/hooks/              React Query 查询与 mutation
+  src/lib/api.ts          统一 REST 客户端
+  src/i18n/               六种语言资源
+  src/types/              API/页面类型
+  android/                Capacitor Android 工程
+  scripts/                客户端构建配置脚本
+
+docs/                     长期维护文档
+.github/workflows/        镜像、客户端和正式 Release 流程
+```
+
+Handler 不直接承载复杂 DNS 或审核流程；业务编排放入 Service，持久化放入 Repository。前端页面通过 Hook 和统一 API 客户端访问后端，不在组件内散落 Fetch 和鉴权逻辑。
+
+## 5. 后端约定
+
+- 使用 Gin 路由组明确公开、登录和管理员边界。
+- 使用统一 `response.Response`、分页响应和 `message_key`。
+- 结构化 JSON 使用绑定和模型，不使用字符串拼接解析。
+- 管理员判定同时支持用户角色和管理员用户组。
+- DNS 写操作进入幂等服务和提供商抽象，不绕过审计。
+- 外部 URL、凭据和回调必须经过验证；敏感字段使用 AES-256-GCM。
+- 数据库迁移保持向前兼容，破坏性迁移必须提供明确升级/回滚说明。
+- 日志不输出凭据、会话、支付签名或通讯密钥。
+
+新增路由时同步更新[API 集成指南](api.md)。修改数据流或组件边界时同步更新[系统架构](architecture.md)。
+
+## 6. 前端约定
+
+- React Query 负责服务端状态、缓存、预取和 mutation 失效。
+- `web/src/lib/api.ts` 负责 API 基址、Bearer 会话、原生通讯头、超时和错误转换。
+- 操作成功/失败通过 Sonner 和 i18n Key 展示。
+- 页面和组件不复制服务端权限、积分、DNS 或审核判定。
+- 新文案同步维护 `en`、`zh`、`zh-Hant`、`es`、`ru`、`ja`。
+- 延续现有 Shadcn、Tailwind 和图标体系，兼顾桌面与移动布局。
+- 资料字段以服务端持久化值为准，登录刷新不得重置用户自定义姓名或头像。
+
+## 7. API 与幂等
+
+所有 API 位于 `/api/v1`。网页会话通过 `Authorization: Bearer` 传递。Android 请求还携带 `X-HL6-Client-Key`。
+
+非安全方法由统一客户端生成 `X-Idempotency-Key`。Handler 需要幂等时通过公共提取函数读取，Service 以业务 Scope 和 Key 持久化结果。不要在页面重试中生成第二个键，除非用户明确发起新操作。
+
+## 8. 数据库与迁移
+
+服务启动时自动迁移模型。新增字段应：
+
+1. 选择兼容旧数据的默认/可空策略。
+2. 更新模型、Repository 和响应类型。
+3. 检查管理员列表、导出和筛选。
+4. 评估索引、唯一约束和并发写入。
+5. 更新架构文档和升级说明。
+
+禁止为了修复本地开发数据而提交会删除生产数据的自动迁移。
+
+## 9. Android 同步要求
+
+Android 复用整个 `web/` UI。任何影响页面、路由、API、字段、错误码、OIDC、会话或版本行为的修改，都必须检查 Capacitor 构建和原生运行环境。
+
+客户端变更至少检查：
+
+- `https://localhost` CORS。
+- `X-HL6-Client-Key` 与 `X-Idempotency-Key`。
+- 深链与包名。
+- Keystore 会话恢复。
+- `pnpm run build` 与 `cap sync android`。
+- 普通/强制更新。
+- `docs/agent.md` 变更记录。
+
+## 10. 提交前检查
+
+根据改动范围运行最小充分验证：
+
+```bash
+cd web && pnpm run lint
+cd web && pnpm run build
+cd server && go test ./...
+git diff --check
+```
+
+纯文档修改至少检查本地链接、示例命令、环境变量名称和 `git diff --check`。工作流修改还需由 GitHub Actions 实际解析并执行关键路径。
+
+提交内容保持聚焦。不要把无关格式化、生成文件、APK、keystore、`.env` 或个人工具配置混入变更。
+
+## 11. 安全评审
+
+变更涉及以下内容时提高评审级别：
+
+- 认证、会话、OIDC、管理员判断或 CORS。
+- DNS 写操作、幂等、批量任务或域名迁移。
+- 支付签名、积分入账或人工补偿。
+- 文件上传、外部 URL、HTML/Markdown 内容。
+- 加密密钥、API Key、通讯密钥和日志。
+- Release、Docker 推送、Android 签名和公开下载。

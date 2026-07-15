@@ -1,22 +1,35 @@
-name: Release Docker Image
+name: Publish Formal Release
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       version:
-        description: '版本号（例如 v1.0.0）'
+        description: Formal release tag in vX.Y.Z format
         required: true
+        default: v1.0.0
+        type: string
+      apk_url:
+        description: Versioned HTTPS Android APK URL
+        required: true
+        default: https://hanlull.github.io/hl6/android/cc.lxii.domain/cc.lxii.domain-1.0.0.apk
+        type: string
+      apk_manifest_url:
+        description: HTTPS Pages manifest.json URL for APK verification
+        required: true
+        default: https://hanlull.github.io/hl6/android/cc.lxii.domain/manifest.json
+        type: string
+      release_notes_path:
+        description: Repository-relative bilingual release notes path
+        required: true
+        default: .github/release-notes/v1.0.0.md
         type: string
       prerelease:
-        description: '是否为预发布版本'
+        description: Publish as a prerelease
         required: false
         default: false
         type: boolean
       draft:
-        description: '是否存为草稿'
+        description: Keep the release as a draft
         required: false
         default: false
         type: boolean
@@ -25,13 +38,102 @@ permissions:
   contents: write
   packages: write
 
+concurrency:
+  group: formal-release-${{ inputs.version }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 45
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      APK_URL: ${{ inputs.apk_url }}
+      APK_MANIFEST_URL: ${{ inputs.apk_manifest_url }}
+      RELEASE_NOTES_PATH: ${{ inputs.release_notes_path }}
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Validate release inputs and APK
+        id: release
+        run: |
+          set -euo pipefail
+
+          version="$RELEASE_VERSION"
+          if [[ ! "$version" =~ ^v(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]]; then
+            echo "::error title=Invalid release version::version must use vX.Y.Z semantic versioning."
+            exit 1
+          fi
+
+          client_version="${version#v}"
+          notes_path="$RELEASE_NOTES_PATH"
+          apk_path="$RUNNER_TEMP/linyu-android-$client_version.apk"
+          manifest_path="$RUNNER_TEMP/hl6-android-manifest.json"
+
+          export CLIENT_VERSION="$client_version"
+          export RELEASE_NOTES_PATH="$notes_path"
+          node <<'NODE'
+          const path = require("node:path");
+
+          for (const [name, raw] of [
+            ["APK_URL", process.env.APK_URL],
+            ["APK_MANIFEST_URL", process.env.APK_MANIFEST_URL],
+          ]) {
+            const url = new URL(raw);
+            if (url.protocol !== "https:" || url.username || url.password) {
+              throw new Error(`${name} must be an HTTPS URL without credentials.`);
+            }
+            if (name === "APK_URL" && !url.pathname.toLowerCase().endsWith(".apk")) {
+              throw new Error("APK_URL must reference an .apk file.");
+            }
+            if (name === "APK_MANIFEST_URL" && !url.pathname.toLowerCase().endsWith("/manifest.json")) {
+              throw new Error("APK_MANIFEST_URL must reference manifest.json.");
+            }
+          }
+
+          const notesPath = process.env.RELEASE_NOTES_PATH.replaceAll("\\", "/");
+          if (
+            path.isAbsolute(notesPath) ||
+            notesPath.includes("..") ||
+            !notesPath.startsWith(".github/release-notes/") ||
+            !notesPath.endsWith(".md")
+          ) {
+            throw new Error("RELEASE_NOTES_PATH must be a Markdown file under .github/release-notes/.");
+          }
+          NODE
+
+          test -s "$notes_path"
+          curl --fail --silent --show-error --location --retry 3 "$APK_URL" --output "$apk_path"
+          curl --fail --silent --show-error --location --retry 3 "$APK_MANIFEST_URL" --output "$manifest_path"
+          test -s "$apk_path"
+          test -s "$manifest_path"
+          unzip -tq "$apk_path"
+
+          apk_sha256="$(sha256sum "$apk_path" | awk '{print $1}')"
+          export APK_SHA256="$apk_sha256"
+          export APK_MANIFEST_PATH="$manifest_path"
+          node <<'NODE'
+          const fs = require("node:fs");
+          const manifest = JSON.parse(fs.readFileSync(process.env.APK_MANIFEST_PATH, "utf8"));
+          if (manifest.version !== process.env.CLIENT_VERSION) {
+            throw new Error(`APK manifest version ${manifest.version} does not match release ${process.env.CLIENT_VERSION}.`);
+          }
+          if (manifest.application_id !== "cc.lxii.domain") {
+            throw new Error(`Unexpected Android application ID: ${manifest.application_id}.`);
+          }
+          if (manifest.sha256 !== process.env.APK_SHA256) {
+            throw new Error("APK SHA-256 does not match the Pages manifest.");
+          }
+          NODE
+
+          {
+            printf 'version=%s\n' "$version"
+            printf 'client_version=%s\n' "$client_version"
+            printf 'apk_path=%s\n' "$apk_path"
+            printf 'apk_sha256=%s\n' "$apk_sha256"
+            printf 'notes_path=%s\n' "$notes_path"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -43,25 +145,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Determine version
-        id: ver
-        run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Generate Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/hanlull/hl6
           tags: |
-            type=raw,value=${{ steps.ver.outputs.tag }}
-            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+            type=raw,value=${{ steps.release.outputs.version }}
+            type=raw,value=latest
 
-      - name: Build and push
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -72,19 +165,36 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - name: Create GitHub Release with Android APK
+        id: publish
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.ver.outputs.tag }}
-          name: ${{ steps.ver.outputs.tag }}
-          generate_release_notes: true
-          body: |
-            ## Docker 镜像已发布
+          tag_name: ${{ steps.release.outputs.version }}
+          name: HL6 ${{ steps.release.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          body_path: ${{ steps.release.outputs.notes_path }}
+          files: ${{ steps.release.outputs.apk_path }}
+          fail_on_unmatched_files: true
+          preserve_order: true
+          draft: ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
+          make_latest: ${{ inputs.draft == false && inputs.prerelease == false }}
 
-            ```bash
-            docker pull ghcr.io/hanlull/hl6:${{ steps.ver.outputs.tag }}
-            ```
+      - name: Report formal release
+        env:
+          RELEASE_URL: ${{ steps.publish.outputs.url }}
+          RELEASE_APK_SHA256: ${{ steps.release.outputs.apk_sha256 }}
+        run: |
+          {
+            echo "## Formal release published"
+            echo
+            echo "Release: $RELEASE_URL"
+            echo "Android version: ${{ steps.release.outputs.client_version }}"
+            echo "APK SHA-256: \`$RELEASE_APK_SHA256\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-            更多标签请查看 [GHCR 页面](https://github.com/HanLuLL/hl6/pkgs/container/hl6)
-          draft: ${{ github.event.inputs.draft || false }}
-          prerelease: ${{ github.event.inputs.prerelease || false }}
+      - name: Clean downloaded release files
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP"/linyu-android-*.apk
+          rm -f "$RUNNER_TEMP/hl6-android-manifest.json"
