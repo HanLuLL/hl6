@@ -195,6 +195,7 @@ jobs:
 
       - name: Build signed release APK
         run: |
+          chmod +x ./gradlew
           ./gradlew :app:assembleRelease --no-daemon --stacktrace \
             -PHL6_KEYSTORE_FILE=release.keystore \
             -PHL6_KEYSTORE_PASSWORD="$CLIENT_KEYSTORE_PASSWORD" \
