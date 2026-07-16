@@ -11,7 +11,7 @@ on:
       client_version:
         description: Android versionName that was built and published to Pages
         required: true
-        default: 1.0.0
+        default: 2.0.0
         type: string
       android_package_name:
         description: Android applicationId used by the published APK

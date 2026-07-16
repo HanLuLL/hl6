@@ -55,7 +55,7 @@ When a signed-in user is banned, protected requests return `403` with `reason`, 
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/client/version?current_version=1.0.0` | Latest version, update flag, force-update flag, announcement, and URL |
+| GET | `/client/version?current_version=2.0.0` | Latest version, update flag, force-update flag, announcement, and URL |
 
 Valid clients send `X-HL6-Client-Key`. A missing or invalid key receives only a forced-update recovery payload when an administrator has configured replacement metadata; it never permits normal API access.
 
