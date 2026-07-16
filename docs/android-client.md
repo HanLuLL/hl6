@@ -49,6 +49,8 @@ ANDROID_KEY_PASSWORD
 
 The workflow validates inputs, masks sensitive values, builds the local UI, synchronizes it into Android, dynamically injects name/icon/package/version, signs the release APK, verifies its signature, and publishes direct `.apk` artifacts with SHA-256 metadata. It never archives the APK in a ZIP.
 
+For the official LinYu release build, use the checked-in `web/resources/linyu-client-icon.webp` path. Repository-relative icon paths avoid a release-time dependency on third-party network reachability while retaining the workflow's external HTTPS icon option for other branded builds.
+
 ## Formal Release
 
 Use `.github/workflows/release.yml` only after the Android workflow has published the matching APK. The formal-release workflow accepts the repository-controlled GitHub Pages paths only:
