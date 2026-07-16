@@ -16,6 +16,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const configKeySMTPPassword = "smtp_password"
+
 var allowedConfigKeys = map[string]bool{
 	"registration_bonus_credits": true,
 	"referral_enabled":           true,
@@ -37,34 +39,34 @@ var allowedConfigKeys = map[string]bool{
 	"seo_keywords":               true,
 	"seo_indexing_disabled":      true,
 	// 支付配置
-	"epay_url":                  true,
-	"epay_pid":                  true,
-	"epay_key":                  true,
-	"codepay_url":               true,
-	"codepay_id":                true,
-	"codepay_key":               true,
-	"epay_alipay_enabled":       true,
-	"epay_wechat_enabled":       true,
-	"epay_qq_enabled":           true,
-	"codepay_alipay_enabled":    true,
-	"codepay_wechat_enabled":    true,
-	"codepay_qq_enabled":        true,
+	"epay_url":               true,
+	"epay_pid":               true,
+	"epay_key":               true,
+	"codepay_url":            true,
+	"codepay_id":             true,
+	"codepay_key":            true,
+	"epay_alipay_enabled":    true,
+	"epay_wechat_enabled":    true,
+	"epay_qq_enabled":        true,
+	"codepay_alipay_enabled": true,
+	"codepay_wechat_enabled": true,
+	"codepay_qq_enabled":     true,
 	// 邮件 SMTP 配置
-	"smtp_host":       true,
-	"smtp_port":       true,
-	"smtp_username":   true,
-	"smtp_password":   true,
-	"smtp_from_name":  true,
-	"smtp_from_addr":  true,
-	"smtp_use_tls":    true,
-	"smtp_enabled":    true,
+	"smtp_host":           true,
+	"smtp_port":           true,
+	"smtp_username":       true,
+	configKeySMTPPassword: true,
+	"smtp_from_name":      true,
+	"smtp_from_addr":      true,
+	"smtp_use_tls":        true,
+	"smtp_enabled":        true,
 }
 
 // 支付密钥类 key，在返回给前端时需要脱敏
 var paymentSecretConfigKeys = map[string]bool{
-	"epay_key":      true,
-	"codepay_key":   true,
-	"smtp_password": true,
+	"epay_key":            true,
+	"codepay_key":         true,
+	configKeySMTPPassword: true,
 }
 
 func (h *AdminHandler) GetConfig(c *gin.Context) {
