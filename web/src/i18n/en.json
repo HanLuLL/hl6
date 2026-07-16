@@ -364,6 +364,8 @@
     "subtitle": "Your account has been banned for violating platform rules",
     "reason": "Ban Reason",
     "bannedAt": "Banned at: {{date}}",
+    "expectedUnban": "Expected unban time: {{date}}",
+    "expectedUnbanManual": "Expected unban time: manual review required.",
     "submitAppeal": "Submit Appeal",
     "appealPlaceholder": "Describe your appeal...",
     "submit": "Submit",

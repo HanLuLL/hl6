@@ -364,6 +364,8 @@
     "subtitle": "プラットフォームのルールに違反したため、アカウントが封禁されました",
     "reason": "封禁理由",
     "bannedAt": "封禁日時：{{date}}",
+    "expectedUnban": "解禁予定時刻：{{date}}",
+    "expectedUnbanManual": "解禁予定時刻：手動審査が必要です。",
     "submitAppeal": "不服申立を提出",
     "appealPlaceholder": "申立理由を入力してください...",
     "submit": "提出",

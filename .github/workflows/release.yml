@@ -77,10 +77,9 @@ jobs:
           java-version: 21
 
       - name: Set up Android build tools
-        uses: android-actions/setup-android@v3
-
-      - name: Install APK verification tools
-        run: sdkmanager "build-tools;36.0.0"
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "build-tools;36.0.0"
 
       - name: Validate release inputs and APK
         id: release

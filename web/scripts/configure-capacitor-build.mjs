@@ -15,6 +15,8 @@ const propertiesOutputPath = resolve(androidRoot, "hl6-client-build.properties")
 const propertiesTemporaryPath = `${propertiesOutputPath}.tmp`;
 const defaultIconPath = resolve(webRoot, "resources", "default-client-icon.svg");
 const maxIconBytes = 2 * 1024 * 1024;
+const remoteIconDownloadAttempts = 3;
+const remoteIconRetryDelayMs = 1_000;
 
 const required = (name) => {
   const value = process.env[name]?.trim();
@@ -49,6 +51,41 @@ const detectImageType = (bytes) => {
   return isWebp ? "webp" : null;
 };
 
+const waitForRetry = (attempt) => new Promise((resolveRetry) => {
+  setTimeout(resolveRetry, remoteIconRetryDelayMs * attempt);
+});
+
+const isRetryableIconResponse = (status) => status === 408 || status === 429 || status >= 500;
+
+const downloadRemoteIcon = async (url) => {
+  for (let attempt = 1; attempt <= remoteIconDownloadAttempts; attempt += 1) {
+    let response;
+    try {
+      response = await fetch(url, {
+        headers: { Accept: "image/png,image/webp" },
+        redirect: "error",
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch {
+      if (attempt < remoteIconDownloadAttempts) {
+        await waitForRetry(attempt);
+        continue;
+      }
+      throw new Error("CLIENT_ICON_PATH could not be downloaded from the configured HTTPS URL.");
+    }
+
+    if (response.ok && response.body) return response;
+    if (attempt < remoteIconDownloadAttempts && isRetryableIconResponse(response.status)) {
+      await response.body?.cancel();
+      await waitForRetry(attempt);
+      continue;
+    }
+    throw new Error("CLIENT_ICON_PATH could not be downloaded from the configured HTTPS URL.");
+  }
+
+  throw new Error("CLIENT_ICON_PATH could not be downloaded from the configured HTTPS URL.");
+};
+
 const readRemoteIcon = async (value) => {
   let url;
   try {
@@ -60,17 +97,7 @@ const readRemoteIcon = async (value) => {
     throw new Error("CLIENT_ICON_PATH remote URLs must use HTTPS without embedded credentials.");
   }
 
-  let response;
-  try {
-    response = await fetch(url, {
-      headers: { Accept: "image/png,image/webp" },
-      redirect: "error",
-      signal: AbortSignal.timeout(15_000),
-    });
-  } catch {
-    throw new Error("CLIENT_ICON_PATH could not be downloaded from the configured HTTPS URL.");
-  }
-  if (!response.ok || !response.body) throw new Error("CLIENT_ICON_PATH could not be downloaded from the configured HTTPS URL.");
+  const response = await downloadRemoteIcon(url);
 
   const contentLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(contentLength) && contentLength > maxIconBytes) {

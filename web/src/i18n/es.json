@@ -364,6 +364,8 @@
     "subtitle": "Su cuenta ha sido bloqueada por violar las reglas de la plataforma",
     "reason": "Motivo del Bloqueo",
     "bannedAt": "Bloqueado el: {{date}}",
+    "expectedUnban": "Hora estimada de desbloqueo: {{date}}",
+    "expectedUnbanManual": "Hora estimada de desbloqueo: requiere revisión manual.",
     "submitAppeal": "Enviar Apelación",
     "appealPlaceholder": "Describa su apelación...",
     "submit": "Enviar",

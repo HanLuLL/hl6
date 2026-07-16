@@ -364,6 +364,8 @@
     "subtitle": "您的账号因违反平台规则已被封禁",
     "reason": "封禁原因",
     "bannedAt": "封禁时间：{{date}}",
+    "expectedUnban": "预计解封时间：{{date}}",
+    "expectedUnbanManual": "预计解封时间：需人工审核。",
     "submitAppeal": "提交申诉",
     "appealPlaceholder": "请描述您的申诉理由...",
     "submit": "提交",

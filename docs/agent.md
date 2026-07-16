@@ -71,3 +71,4 @@ The web administration console controls latest version, forced-update flag, upda
 | 2026-07-16 | Standardized system-setting sections as shared horizontal tabs and moved access, client, communication-key, payment, and data-maintenance copy into all six shared web/Android translation catalogs. |
 | 2026-07-16 | Audited the hard authentication cutover: runtime routes, configuration, and Android build inputs use first-party email/password authentication only; the irreversible migration removes legacy external-provider data during cutover. |
 | 2026-07-16 | Removed obsolete identity-provider error translations from the shared web and Android UI; the packaged client now exposes only the email/password authentication flow. |
+| 2026-07-16 | Hardened Android delivery against transient remote-icon failures, upgraded SDK setup to the supported workflow action with only required SDK packages, and added shared expected-unban translations for every packaged-client locale. |
