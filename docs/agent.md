@@ -73,3 +73,4 @@ The web administration console controls latest version, forced-update flag, upda
 | 2026-07-16 | Removed obsolete identity-provider error translations from the shared web and Android UI; the packaged client now exposes only the email/password authentication flow. |
 | 2026-07-16 | Hardened Android delivery against transient remote-icon failures, upgraded SDK setup to the supported workflow action with only required SDK packages, and added shared expected-unban translations for every packaged-client locale. |
 | 2026-07-16 | Matched formal-release APK certificate verification to the client build's unique private-key alias detection, so an outdated alias secret cannot block release validation when the keystore itself is valid. |
+| 2026-07-17 | Added safe formal-release certificate-mismatch diagnostics using only public SHA-256 fingerprints; private keys, passwords, aliases, and communication keys remain masked. |
