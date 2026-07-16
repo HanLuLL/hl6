@@ -6,15 +6,14 @@ import (
 )
 
 func registerAuthRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, h *Handlers) {
-	api.GET("/auth/oidc/status", h.OIDC.Status)
-	api.POST("/auth/oidc/bootstrap", h.OIDC.Bootstrap)
-	api.GET("/auth/login", h.OIDC.Login)
-	api.GET("/auth/callback", h.OIDC.Callback)
-	api.POST("/auth/native/start", h.Client.RequireClientKey(), h.OIDC.NativeStart)
-	api.POST("/auth/native/exchange", h.Client.RequireClientKey(), h.OIDC.NativeExchange)
+	api.POST("/auth/registration/request", h.EmailAuth.RegistrationRequest)
+	api.POST("/auth/activation/request", h.EmailAuth.ActivationRequest)
+	api.POST("/auth/password/forgot", h.EmailAuth.ForgotPassword)
+	api.POST("/auth/password/complete", h.EmailAuth.CompletePassword)
+	api.POST("/auth/login", h.EmailAuth.Login)
 
 	authed := api.Group("", auth.Required())
 	authed.GET("/auth/me", h.Auth.Me)
 	authed.PUT("/auth/profile", h.Auth.UpdateProfile)
-	authed.POST("/auth/logout", h.OIDC.Logout)
+	authed.POST("/auth/logout", h.EmailAuth.Logout)
 }

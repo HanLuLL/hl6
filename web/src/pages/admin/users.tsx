@@ -586,7 +586,6 @@ function UserDetailDialog({ user, onClose }: { user: UserWithInviter | null; onC
             <div className="space-y-2">
               <p className="text-sm font-semibold">{t("adminUsers.accountMeta")}</p>
               <UserDetailRow label={t("adminUsers.id")} value={String(user.id)} mono />
-              <UserDetailRow label={t("adminUsers.externalId")} value={user.external_id || "-"} mono breakAll />
               <UserDetailRow label={t("adminUsers.referralCode")} value={user.referral_code || "-"} mono />
               <UserDetailRow label={t("adminUsers.avatarUrl")} value={user.avatar_url || "-"} breakAll />
             </div>

@@ -30,6 +30,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { resolveAvatarURL } from "@/lib/avatar";
 import {
   LayoutDashboard,
   Globe,
@@ -335,7 +336,7 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
                 <Avatar className="h-7 w-7">
-                  <AvatarImage src={user?.avatar_url} />
+                  <AvatarImage src={resolveAvatarURL(user)} />
                   <AvatarFallback className="text-xs">{user?.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
                 </Avatar>
               </Button>

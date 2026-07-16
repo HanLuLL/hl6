@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { resolveAvatarURL } from "@/lib/avatar";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -20,8 +21,8 @@ export default function ProfilePage() {
 
   const [name, setName] = useState(user?.name ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? "");
-  const [bio, setBio] = useState((user as any)?.bio ?? "");
-  const [website, setWebsite] = useState((user as any)?.website ?? "");
+  const [bio, setBio] = useState(user?.bio ?? "");
+  const [website, setWebsite] = useState(user?.website ?? "");
 
   const mutation = useMutation({
     mutationFn: (data: { name?: string; avatar_url?: string; bio?: string; website?: string }) =>
@@ -37,8 +38,8 @@ export default function ProfilePage() {
     const data: Record<string, string> = {};
     if (name !== (user?.name ?? "")) data.name = name;
     if (avatarUrl !== (user?.avatar_url ?? "")) data.avatar_url = avatarUrl;
-    if (bio !== ((user as any)?.bio ?? "")) data.bio = bio;
-    if (website !== ((user as any)?.website ?? "")) data.website = website;
+    if (bio !== (user?.bio ?? "")) data.bio = bio;
+    if (website !== (user?.website ?? "")) data.website = website;
     if (Object.keys(data).length === 0) return;
     mutation.mutate(data);
   };
@@ -54,7 +55,7 @@ export default function ProfilePage() {
         <CardHeader>
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={avatarUrl} />
+              <AvatarImage src={resolveAvatarURL({ email: user?.email, avatar_url: avatarUrl })} />
               <AvatarFallback className="text-lg">{name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
             </Avatar>
             <div>

@@ -10,26 +10,36 @@ import (
 )
 
 type Config struct {
-	Port                 string
-	DatabaseURL          string
-	OIDCIssuer           string
-	OIDCClientID         string
-	OIDCClientSecret     string
-	SessionSecret        string
-	AppURL               string
-	BackendURLs          []string
-	FrontendURLs         []string
-	BackendURL           string
-	FrontendURL          string
-	BackendURLEnvSet     bool
-	FrontendURLEnvSet    bool
-	AllowedOrigins       []string
-	EncryptionKey        []byte
-	DNSBatchThreshold    int
-	RedisAddr            string
-	AuditScanInterval    time.Duration
-	AuditScanWorkerCount int
-	AuditScanTimeout     time.Duration
+	Port                  string
+	DatabaseURL           string
+	SessionSecret         string
+	AuthPasswordPepperID  string
+	AuthPasswordPepper    string
+	AuthPreviousPepperID  string
+	AuthPreviousPepper    string
+	BootstrapSMTPHost     string
+	BootstrapSMTPPort     string
+	BootstrapSMTPUsername string
+	BootstrapSMTPPassword string
+	BootstrapSMTPFromName string
+	BootstrapSMTPFromAddr string
+	BootstrapSMTPUseTLS   bool
+	BootstrapSMTPEnabled  bool
+	MaintenanceDataDir    string
+	AppURL                string
+	BackendURLs           []string
+	FrontendURLs          []string
+	BackendURL            string
+	FrontendURL           string
+	BackendURLEnvSet      bool
+	FrontendURLEnvSet     bool
+	AllowedOrigins        []string
+	EncryptionKey         []byte
+	DNSBatchThreshold     int
+	RedisAddr             string
+	AuditScanInterval     time.Duration
+	AuditScanWorkerCount  int
+	AuditScanTimeout      time.Duration
 }
 
 func Load() *Config {
@@ -56,25 +66,35 @@ func Load() *Config {
 	databaseURL := expandEnvRefs(getEnv("DATABASE_URL", "postgres://hl6:hl6dev@localhost:5433/hl6?sslmode=disable"))
 
 	cfg := &Config{
-		Port:                 getEnv("SERVER_PORT", "8081"),
-		DatabaseURL:          databaseURL,
-		OIDCIssuer:           getEnv("OIDC_ISSUER", ""),
-		OIDCClientID:         getEnv("OIDC_CLIENT_ID", ""),
-		OIDCClientSecret:     getEnv("OIDC_CLIENT_SECRET", ""),
-		SessionSecret:        getEnv("SESSION_SECRET", ""),
-		AppURL:               sharedURL,
-		BackendURLs:          backendURLs,
-		FrontendURLs:         frontendURLs,
-		BackendURL:           effectiveBackendURL,
-		FrontendURL:          effectiveFrontendURL,
-		BackendURLEnvSet:     len(backendURLs) > 0,
-		FrontendURLEnvSet:    len(frontendURLs) > 0,
-		AllowedOrigins:       parseList(getEnv("ALLOWED_ORIGINS", "")),
-		DNSBatchThreshold:    getEnvInt("DNS_BATCH_ASYNC_THRESHOLD", getEnvInt("DNS_BATCH_THRESHOLD", 200)),
-		RedisAddr:            strings.TrimSpace(getEnv("REDIS_ADDR", "")),
-		AuditScanInterval:    getEnvDuration("AUDIT_SCAN_INTERVAL", 30*time.Minute),
-		AuditScanWorkerCount: getEnvInt("AUDIT_SCAN_WORKER_COUNT", 2),
-		AuditScanTimeout:     getEnvDuration("AUDIT_SCAN_TIMEOUT", 15*time.Second),
+		Port:                  getEnv("SERVER_PORT", "8081"),
+		DatabaseURL:           databaseURL,
+		SessionSecret:         getEnv("SESSION_SECRET", ""),
+		AuthPasswordPepperID:  getEnv("AUTH_PASSWORD_PEPPER_ID", "v1"),
+		AuthPasswordPepper:    getEnv("AUTH_PASSWORD_PEPPER", ""),
+		AuthPreviousPepperID:  getEnv("AUTH_PREVIOUS_PASSWORD_PEPPER_ID", ""),
+		AuthPreviousPepper:    getEnv("AUTH_PREVIOUS_PASSWORD_PEPPER", ""),
+		BootstrapSMTPHost:     strings.TrimSpace(getEnv("SMTP_BOOTSTRAP_HOST", "")),
+		BootstrapSMTPPort:     strconv.Itoa(getEnvInt("SMTP_BOOTSTRAP_PORT", 587)),
+		BootstrapSMTPUsername: strings.TrimSpace(getEnv("SMTP_BOOTSTRAP_USERNAME", "")),
+		BootstrapSMTPPassword: getEnv("SMTP_BOOTSTRAP_PASSWORD", ""),
+		BootstrapSMTPFromName: strings.TrimSpace(getEnv("SMTP_BOOTSTRAP_FROM_NAME", "HL6")),
+		BootstrapSMTPFromAddr: strings.TrimSpace(getEnv("SMTP_BOOTSTRAP_FROM_ADDR", "")),
+		BootstrapSMTPUseTLS:   getEnvBool("SMTP_BOOTSTRAP_USE_TLS", true),
+		BootstrapSMTPEnabled:  getEnvBool("SMTP_BOOTSTRAP_ENABLED", false),
+		MaintenanceDataDir:    getEnv("MAINTENANCE_DATA_DIR", "./data/maintenance"),
+		AppURL:                sharedURL,
+		BackendURLs:           backendURLs,
+		FrontendURLs:          frontendURLs,
+		BackendURL:            effectiveBackendURL,
+		FrontendURL:           effectiveFrontendURL,
+		BackendURLEnvSet:      len(backendURLs) > 0,
+		FrontendURLEnvSet:     len(frontendURLs) > 0,
+		AllowedOrigins:        parseList(getEnv("ALLOWED_ORIGINS", "")),
+		DNSBatchThreshold:     getEnvInt("DNS_BATCH_ASYNC_THRESHOLD", getEnvInt("DNS_BATCH_THRESHOLD", 200)),
+		RedisAddr:             strings.TrimSpace(getEnv("REDIS_ADDR", "")),
+		AuditScanInterval:     getEnvDuration("AUDIT_SCAN_INTERVAL", 30*time.Minute),
+		AuditScanWorkerCount:  getEnvInt("AUDIT_SCAN_WORKER_COUNT", 2),
+		AuditScanTimeout:      getEnvDuration("AUDIT_SCAN_TIMEOUT", 15*time.Second),
 	}
 
 	if keyHex := getEnv("ENCRYPTION_KEY", ""); keyHex != "" {
@@ -150,4 +170,17 @@ func getEnvDuration(key string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return d
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+	value, err := strconv.ParseBool(raw)
+	if err != nil {
+		log.Printf("invalid %s=%q, fallback to %t", key, raw, fallback)
+		return fallback
+	}
+	return value
 }

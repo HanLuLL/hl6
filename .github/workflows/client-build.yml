@@ -134,7 +134,7 @@ jobs:
           }
           const applicationId = process.env.CLIENT_APPLICATION_ID.trim();
           if (!/^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/.test(applicationId) || applicationId.length > 60) {
-            throw new Error("CLIENT_APPLICATION_ID must be a lowercase Android package name of at most 60 characters and compatible with the native OIDC redirect scheme.");
+            throw new Error("CLIENT_APPLICATION_ID must be a lowercase Android package name of at most 60 characters.");
           }
           const key = process.env.CLIENT_COMMUNICATION_KEY.trim();
           if (!/^[A-Za-z0-9_-]{43}$/.test(key)) {
@@ -145,7 +145,6 @@ jobs:
             `VITE_API_BASE_URL=${url.origin}/api/v1`,
             `VITE_CLIENT_COMMUNICATION_KEY=${key}`,
             `VITE_CLIENT_VERSION=${version}`,
-            `VITE_NATIVE_REDIRECT_URI=hl6.${applicationId}://auth/callback`,
           ];
           require("node:fs").appendFileSync(process.env.GITHUB_ENV, `${output.join("\n")}\n`);
           NODE

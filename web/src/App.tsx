@@ -4,7 +4,13 @@ import { RootLayout } from "@/components/layout/root-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import LandingPage from "@/pages/landing";
-import CallbackPage from "@/pages/callback";
+import LoginPage from "@/pages/auth/login";
+import RegisterPage from "@/pages/auth/register";
+import VerifyEmailPage from "@/pages/auth/verify-email";
+import SetPasswordPage from "@/pages/auth/set-password";
+import ActivateAccountPage from "@/pages/auth/activate-account";
+import ForgotPasswordPage from "@/pages/auth/forgot-password";
+import ResetPasswordPage from "@/pages/auth/reset-password";
 import DashboardPage from "@/pages/dashboard";
 import DomainsPage from "@/pages/domains";
 import SubdomainsPage from "@/pages/subdomains";
@@ -61,7 +67,7 @@ function ProtectedRoute() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <RootLayout><ErrorBoundary><Outlet /></ErrorBoundary></RootLayout>;
@@ -83,7 +89,13 @@ export default function App() {
       <NativeUpdateGate />
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/callback" element={<CallbackPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/set-password" element={<SetPasswordPage />} />
+        <Route path="/activate-account" element={<ActivateAccountPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/domains" element={<DomainsPage />} />

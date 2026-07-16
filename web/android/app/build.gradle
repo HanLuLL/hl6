@@ -2,13 +2,22 @@ apply plugin: 'com.android.application'
 
 def hl6ClientProperties = new Properties()
 def hl6ClientPropertiesFile = rootProject.file('hl6-client-build.properties')
-if (hl6ClientPropertiesFile.isFile()) {
-    hl6ClientPropertiesFile.withInputStream { stream -> hl6ClientProperties.load(stream) }
+if (!hl6ClientPropertiesFile.isFile()) {
+    throw new GradleException('Missing hl6-client-build.properties. Run scripts/configure-capacitor-build.mjs with the required build inputs first.')
+}
+hl6ClientPropertiesFile.withInputStream { stream -> hl6ClientProperties.load(stream) }
+
+def requiredClientProperty = { String name ->
+    def value = hl6ClientProperties.getProperty(name)
+    if (value == null || value.trim().isEmpty()) {
+        throw new GradleException("Missing required client build property: ${name}")
+    }
+    return value.trim()
 }
 
-def hl6ApplicationId = hl6ClientProperties.getProperty('hl6.applicationId', 'cloud.houlang.hl6')
-def hl6VersionCode = (hl6ClientProperties.getProperty('hl6.versionCode', '1') as Integer)
-def hl6VersionName = hl6ClientProperties.getProperty('hl6.versionName', '1.0.0')
+def hl6ApplicationId = requiredClientProperty('hl6.applicationId')
+def hl6VersionCode = requiredClientProperty('hl6.versionCode') as Integer
+def hl6VersionName = requiredClientProperty('hl6.versionName')
 def releaseKeystoreFile = providers.gradleProperty('HL6_KEYSTORE_FILE').orNull
 def releaseKeystorePassword = providers.gradleProperty('HL6_KEYSTORE_PASSWORD').orNull
 def releaseKeystoreType = providers.gradleProperty('HL6_KEYSTORE_TYPE').orNull
@@ -24,7 +33,6 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode hl6VersionCode
         versionName hl6VersionName
-        manifestPlaceholders = [hl6RedirectScheme: "hl6.${hl6ApplicationId}"]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

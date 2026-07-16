@@ -1,0 +1,76 @@
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { PasswordField } from "@/components/auth/password-field";
+import { api, getErrorMessage } from "@/lib/api";
+import { isNativeClient } from "@/lib/client-runtime";
+import { setNativeAccessToken } from "@/lib/client-runtime";
+import { SecureStoragePlugin } from "capacitor-secure-storage-plugin";
+
+type SetPasswordPageProps = { reset?: boolean };
+
+export default function SetPasswordPage({ reset = false }: SetPasswordPageProps) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const token = useMemo(() => searchParams.get("token")?.trim() ?? "", [searchParams]);
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (token) window.history.replaceState(null, "", window.location.pathname);
+  }, [token]);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (password !== confirmation) {
+      setError(t("auth.passwordMismatch", { defaultValue: "Passwords do not match." }));
+      return;
+    }
+    setError("");
+    setSubmitting(true);
+    try {
+      const result = await api.completePassword({ token, password });
+      const accessToken = result.data.access_token?.trim();
+      if (isNativeClient && accessToken) {
+        setNativeAccessToken(accessToken);
+        await SecureStoragePlugin.set({ key: "hl6_native_session", value: accessToken });
+      }
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      navigate(result.data.banned ? "/banned" : "/dashboard", { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err, t));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <AuthShell
+      title={reset ? t("auth.reset.title", { defaultValue: "Set a new password" }) : t("auth.setPassword.title", { defaultValue: "Set your password" })}
+      description={t("auth.setPassword.description", { defaultValue: "Choose a password with at least 12 characters." })}
+    >
+      <form className="space-y-4" onSubmit={submit} noValidate>
+        <div className="space-y-2">
+          <Label htmlFor="new-password">{t("auth.password", { defaultValue: "Password" })}</Label>
+          <PasswordField id="new-password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirm-password">{t("auth.confirmPassword", { defaultValue: "Confirm password" })}</Label>
+          <PasswordField id="confirm-password" autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required />
+        </div>
+        {!token ? <p role="alert" className="text-sm text-destructive">{t("auth.invalidLink", { defaultValue: "This link is invalid or has expired." })}</p> : null}
+        {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+        <Button type="submit" className="w-full" disabled={!token || submitting}>{submitting ? t("common.saving") : t("auth.setPassword.continue", { defaultValue: "Continue" })}</Button>
+      </form>
+    </AuthShell>
+  );
+}

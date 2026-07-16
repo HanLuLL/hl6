@@ -34,7 +34,6 @@ import type {
   RetryFailuresResult,
   CleanupSourceResult,
   DNSProviderStatusEntry,
-  OIDCStatusPayload,
   AuditSummary,
   AuditWorkbenchItem,
   AuditSubdomainDetail,
@@ -51,12 +50,14 @@ import type {
   FriendLinkInput,
   EmailLog,
   ClientVersionConfig,
+  AccessSettingsPayload,
+  DatabaseRestoreJob,
 } from "@/types";
 import type { AIModelConfig, AIModelConfigInput, AuditPromptTemplate, PromptTemplateInput, AuditAIReview, AIAuditStats, UserAppeal, BanInfo } from "@/types/ai-audit";
 import { buildPaginatedQuery } from "@/lib/api-query";
 import {
-  clientCommunicationKey,
   clearNativeAccessToken,
+  getClientCommunicationKey,
   getNativeAccessToken,
   isNativeClient,
 } from "@/lib/client-runtime";
@@ -121,8 +122,9 @@ function nativeRequestHeaders(): Record<string, string> {
   if (!isNativeClient) return {};
 
   const headers: Record<string, string> = {};
-  if (clientCommunicationKey) {
-    headers["X-HL6-Client-Key"] = clientCommunicationKey;
+  const communicationKey = getClientCommunicationKey();
+  if (communicationKey) {
+    headers["X-HL6-Client-Key"] = communicationKey;
   }
   const accessToken = getNativeAccessToken();
   if (accessToken) {
@@ -130,6 +132,16 @@ function nativeRequestHeaders(): Record<string, string> {
   }
   return headers;
 }
+
+export type AuthSessionPayload = {
+  user: User;
+  banned: boolean;
+  banned_reason?: string;
+  banned_at?: string | null;
+  banned_until?: string | null;
+  access_token?: string;
+  expires_in?: number;
+};
 
 export function getErrorMessage(err: unknown, t?: (key: string) => string): string {
   if (err instanceof ApiError && err.messageKey && t) {
@@ -218,7 +230,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       sessionStorage.setItem(timeKey, String(now));
 
       if (count <= 3) {
-        window.location.href = buildApiUrl("/auth/login");
+        window.location.href = "/login";
       }
     }
     throw new ApiError("Not authenticated", "error.missingToken", undefined, 401);
@@ -267,15 +279,18 @@ export const api = {
     sessionStorage.removeItem("hl6_401_time");
     return res;
   },
-  getOIDCStatus: () => request<ApiResponse<OIDCStatusPayload>>("/auth/oidc/status"),
+  requestRegistration: (data: { email: string; referral_code?: string }) =>
+    request<ApiResponse<undefined>>("/auth/registration/request", { method: "POST", body: JSON.stringify(data) }),
+  requestActivation: (data: { email: string }) =>
+    request<ApiResponse<undefined>>("/auth/activation/request", { method: "POST", body: JSON.stringify(data) }),
+  requestPasswordReset: (data: { email: string }) =>
+    request<ApiResponse<undefined>>("/auth/password/forgot", { method: "POST", body: JSON.stringify(data) }),
+  completePassword: (data: { token: string; password: string }) =>
+    request<ApiResponse<AuthSessionPayload>>("/auth/password/complete", { method: "POST", body: JSON.stringify(data) }),
+  login: (data: { email: string; password: string }) =>
+    request<ApiResponse<AuthSessionPayload>>("/auth/login", { method: "POST", body: JSON.stringify(data) }),
   getClientVersion: (currentVersion: string) =>
     request<ApiResponse<ClientVersionConfig>>(`/client/version?current_version=${encodeURIComponent(currentVersion)}`, { timeoutMs: 10_000 }),
-  startNativeLogin: (data: { redirect_uri: string; referral_code?: string }) =>
-    request<ApiResponse<{ login_url: string }>>("/auth/native/start", { method: "POST", body: JSON.stringify(data) }),
-  exchangeNativeAuthCode: (data: { code: string }) =>
-    request<ApiResponse<{ access_token: string; expires_in: number }>>("/auth/native/exchange", { method: "POST", body: JSON.stringify(data) }),
-  bootstrapOIDCConfig: (data: { oidc_issuer: string; oidc_client_id: string; oidc_client_secret: string }) =>
-    request<ApiResponse<OIDCStatusPayload>>("/auth/oidc/bootstrap", { method: "POST", body: JSON.stringify(data) }),
   logout: () => request<ApiResponse<{ logout_url: string }>>("/auth/logout", { method: "POST" }),
   updateProfile: (data: { name?: string; avatar_url?: string; bio?: string; website?: string }) =>
     request<ApiResponse<{ user: User }>>("/auth/profile", { method: "PUT", body: JSON.stringify(data) }),
@@ -424,6 +439,55 @@ export const api = {
     request<ApiResponse<AdminConfigPayload>>("/admin/config"),
   adminUpdateConfig: (data: Record<string, string>) =>
     request<ApiResponse<{ message: string }>>("/admin/config", { method: "PUT", body: JSON.stringify(data) }),
+  adminGetAccessSettings: () =>
+    request<ApiResponse<AccessSettingsPayload>>("/admin/settings/access"),
+  adminUpdateAccessSettings: (data: Omit<AccessSettingsPayload, "local_auth_enabled">) =>
+    request<ApiResponse<AccessSettingsPayload>>("/admin/settings/access", { method: "PUT", body: JSON.stringify(data) }),
+  adminCreateRestoreChallenge: (password: string) =>
+    request<ApiResponse<{ challenge: string; expires_at: string }>>("/admin/maintenance/restore/challenge", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
+  adminRestoreDatabase: async (data: { archive: File; password: string; challenge: string; confirmation: string }) => {
+    const formData = new FormData();
+    formData.append("archive", data.archive);
+    formData.append("password", data.password);
+    formData.append("challenge", data.challenge);
+    formData.append("confirmation", data.confirmation);
+    const res = await fetch(buildApiUrl("/admin/maintenance/restore"), {
+      method: "POST",
+      body: formData,
+      headers: {
+        ...nativeRequestHeaders(),
+        "X-Idempotency-Key": createIdempotencyKey(),
+      },
+      credentials: isNativeClient ? "omit" : "include",
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ message: res.statusText }));
+      throw new ApiError(body.message || res.statusText, body.message_key, body.data, res.status);
+    }
+    return res.json() as Promise<ApiResponse<{ restore: DatabaseRestoreJob; restart_required: boolean; maintenance_mode: boolean }>>;
+  },
+  adminListDatabaseRestores: (page = 1, perPage = 20) =>
+    request<PaginatedResponse<{ items: DatabaseRestoreJob[]; maintenance_mode: boolean }>>(`/admin/maintenance/restores?page=${page}&per_page=${perPage}`),
+  adminDownloadDatabaseExport: async () => {
+    const res = await fetch(buildApiUrl("/admin/maintenance/export"), {
+      method: "POST",
+      headers: {
+        ...nativeRequestHeaders(),
+        "X-Idempotency-Key": createIdempotencyKey(),
+      },
+      credentials: isNativeClient ? "omit" : "include",
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ message: res.statusText }));
+      throw new ApiError(body.message || res.statusText, body.message_key, body.data, res.status);
+    }
+    const disposition = res.headers.get("content-disposition") ?? "";
+    const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] ?? "hl6-backup.zip";
+    return { blob: await res.blob(), filename };
+  },
   adminConfirmUrlConfig: () =>
     request<ApiResponse<{ message: string }>>("/admin/config/url-confirm", { method: "POST" }),
 

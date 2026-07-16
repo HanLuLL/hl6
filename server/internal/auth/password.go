@@ -16,13 +16,13 @@ import (
 )
 
 const (
-	passwordAlgorithm  = "argon2id"
-	passwordVersion    = 19
-	passwordMemoryKiB  = 64 * 1024
-	passwordIterations = 3
+	passwordAlgorithm   = "argon2id"
+	passwordVersion     = 19
+	passwordMemoryKiB   = 64 * 1024
+	passwordIterations  = 3
 	passwordParallelism = 4
-	passwordKeyLength  = 32
-	passwordSaltLength = 16
+	passwordKeyLength   = 32
+	passwordSaltLength  = 16
 )
 
 var (
@@ -46,11 +46,11 @@ type passwordParameters struct {
 }
 
 func HashPassword(password string, peppers PepperSet) (string, error) {
-	if err := validatePassword(password); err != nil {
+	if err := ValidatePassword(password); err != nil {
 		return "", err
 	}
-	if !validPepperID(peppers.CurrentID) || len(peppers.Current) == 0 {
-		return "", ErrPasswordPepperMissing
+	if err := ValidateCurrentPepper(peppers); err != nil {
+		return "", err
 	}
 
 	salt := make([]byte, passwordSaltLength)
@@ -59,10 +59,10 @@ func HashPassword(password string, peppers PepperSet) (string, error) {
 	}
 
 	params := passwordParameters{
-		MemoryKiB:  passwordMemoryKiB,
-		Iterations: passwordIterations,
+		MemoryKiB:   passwordMemoryKiB,
+		Iterations:  passwordIterations,
 		Parallelism: passwordParallelism,
-		PepperID:   strings.TrimSpace(peppers.CurrentID),
+		PepperID:    strings.TrimSpace(peppers.CurrentID),
 	}
 	hash := deriveArgon2id(password, peppers.Current, salt, params)
 
@@ -79,8 +79,17 @@ func HashPassword(password string, peppers PepperSet) (string, error) {
 	), nil
 }
 
+// ValidateCurrentPepper validates the deployment-owned password pepper before
+// a one-time account token is consumed.
+func ValidateCurrentPepper(peppers PepperSet) error {
+	if !validPepperID(peppers.CurrentID) || len(peppers.Current) == 0 {
+		return ErrPasswordPepperMissing
+	}
+	return nil
+}
+
 func VerifyPassword(password, encoded string, peppers PepperSet) (bool, bool, error) {
-	if err := validatePassword(password); err != nil {
+	if err := ValidatePassword(password); err != nil {
 		return false, false, err
 	}
 
@@ -112,7 +121,9 @@ func (p PepperSet) lookup(id string) ([]byte, bool, error) {
 	return nil, false, ErrPasswordPepperMissing
 }
 
-func validatePassword(password string) error {
+// ValidatePassword performs the inexpensive password-format validation used
+// before a one-time token is consumed or an Argon2id operation is started.
+func ValidatePassword(password string) error {
 	if !utf8.ValidString(password) {
 		return ErrInvalidPassword
 	}
@@ -186,10 +197,10 @@ func parsePasswordParameters(raw string) (passwordParameters, error) {
 	}
 
 	return passwordParameters{
-		MemoryKiB:  memory,
-		Iterations: iterations,
+		MemoryKiB:   memory,
+		Iterations:  iterations,
 		Parallelism: uint8(parallelism),
-		PepperID:   pepperID,
+		PepperID:    pepperID,
 	}, nil
 }
 

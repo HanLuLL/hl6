@@ -10,7 +10,7 @@ import (
 // Handlers 集中管理所有 handler 的初始化，作为依赖注入的单一入口。
 type Handlers struct {
 	Auth              *handler.AuthHandler
-	OIDC              *handler.OIDCHandler
+	EmailAuth         *handler.EmailAuthHandler
 	Domain            *handler.DomainHandler
 	Subdomain         *handler.SubdomainHandler
 	DNS               *handler.DNSHandler
@@ -30,14 +30,15 @@ type Handlers struct {
 	AIAudit           *handler.AIAuditHandler
 	Email             *handler.EmailHandler
 	Client            *handler.ClientHandler
+	Maintenance       *handler.MaintenanceHandler
 }
 
-func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *service.DNSOperationService, migSvc *service.DomainMigrationService, sseBroker *handler.SSEBroker, audit auditStack) *Handlers {
+func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *service.DNSOperationService, migSvc *service.DomainMigrationService, maintenanceSvc *service.DatabaseMaintenanceService, sseBroker *handler.SSEBroker, audit auditStack) *Handlers {
 	emailSvc := service.NewEmailService(repo, cfg.EncryptionKey)
 
 	return &Handlers{
 		Auth:              handler.NewAuthHandler(repo),
-		OIDC:              handler.NewOIDCHandler(repo, cfg),
+		EmailAuth:         handler.NewEmailAuthHandler(repo, emailSvc, cfg),
 		Domain:            handler.NewDomainHandler(repo, dnsOps),
 		Subdomain:         handler.NewSubdomainHandler(repo, sseBroker, dnsOps, audit.enqueue, audit.notif, audit.subSvc, audit.auditLog),
 		DNS:               handler.NewDNSHandler(repo, sseBroker, dnsOps, audit.enqueue, emailSvc),
@@ -57,5 +58,6 @@ func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *servic
 		AIAudit:           handler.NewAIAuditHandler(repo, cfg.EncryptionKey),
 		Email:             handler.NewEmailHandler(repo, emailSvc),
 		Client:            handler.NewClientHandler(repo),
+		Maintenance:       handler.NewMaintenanceHandler(repo, cfg, maintenanceSvc),
 	}
 }

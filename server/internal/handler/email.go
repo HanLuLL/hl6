@@ -3,6 +3,8 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
@@ -64,6 +66,10 @@ func (h *EmailHandler) RetryEmail(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusBadRequest, "only failed emails can be retried", "error.invalidRequestBody")
 		return
 	}
+	if strings.HasPrefix(emailLog.EmailType, "auth_") {
+		response.ErrorWithKey(c, http.StatusBadRequest, "one-time authentication emails must be resent through their original flow", "error.invalidRequestBody")
+		return
+	}
 
 	if err := h.emailSvc.RetrySingleEmail(emailLog); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to retry email", "error.internal")
@@ -94,6 +100,10 @@ func (h *EmailHandler) TestSMTPConfig(c *gin.Context) {
 	if err := h.emailSvc.SendTestEmail(admin.Email, siteName); err != nil {
 		auditLogIfAdmin(nil, c, "admin_test_smtp_failed", "system_config", 0, map[string]any{"error": err.Error()})
 		response.ErrorWithKey(c, http.StatusInternalServerError, "SMTP test failed: "+err.Error(), "error.smtpTestFailed")
+		return
+	}
+	if err := h.repo.SetSystemConfig("email.smtp.last_tested_at", time.Now().UTC().Format(time.RFC3339)); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to record SMTP test", "error.databaseError")
 		return
 	}
 

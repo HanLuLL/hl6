@@ -51,7 +51,7 @@ func (r *Repository) FindEmailLog(id uint) (*model.EmailLog, error) {
 // ListFailedEmailLogs 查询重试次数未超限的失败邮件。
 func (r *Repository) ListFailedEmailLogs(maxRetries int) ([]model.EmailLog, error) {
 	var logs []model.EmailLog
-	if err := r.DB.Where("status = ? AND retry_count < ?", model.EmailStatusFailed, maxRetries).Find(&logs).Error; err != nil {
+	if err := r.DB.Where("status = ? AND retry_count < ? AND email_type NOT LIKE ?", model.EmailStatusFailed, maxRetries, "auth_%").Find(&logs).Error; err != nil {
 		return nil, err
 	}
 	return logs, nil

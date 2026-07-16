@@ -50,16 +50,21 @@ func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context) *gin.Engine {
 	repo := repository.New(db)
 	dnsOps := service.NewDNSOperationService(repo, cfg)
 	migSvc := service.NewDomainMigrationService(repo, cfg)
+	maintenanceGate := service.NewDatabaseMaintenanceGate()
+	maintenanceSvc := service.NewDatabaseMaintenanceService(db, repo, cfg, maintenanceGate)
 
 	sseBroker := handler.NewSSEBroker()
 	audit := bootstrapAudit(ctx, cfg, db, repo, dnsOps, sseBroker)
 
-	h := NewHandlers(cfg, repo, dnsOps, migSvc, sseBroker, audit)
+	h := NewHandlers(cfg, repo, dnsOps, migSvc, maintenanceSvc, sseBroker, audit)
 
-	auth := middleware.NewAuthMiddleware(cfg.SessionSecret, repo)
+	trustedOrigins := append([]string{}, cfg.AllowedOrigins...)
+	trustedOrigins = append(trustedOrigins, cfg.FrontendURLs...)
+	auth := middleware.NewAuthMiddleware(cfg.SessionSecret, repo, trustedOrigins)
 
 	api := r.Group("/api/v1")
 	api.Use(h.Client.ValidatePresentedKey())
+	api.Use(middleware.MaintenanceMode(maintenanceGate))
 
 	api.GET("/branding", h.Branding.GetBranding)
 	api.GET("/branding/logo.webp", h.Branding.GetLogo)

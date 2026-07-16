@@ -55,22 +55,18 @@ func ValidateRegistrationDomain(email string, policy DomainPolicy) error {
 	}
 
 	_, domain, _ := strings.Cut(normalizedEmail, "@")
-	mode := strings.TrimSpace(policy.Mode)
-	if mode == "" {
-		mode = DomainPolicyUnrestricted
+	normalizedPolicy, err := NormalizeDomainPolicy(policy)
+	if err != nil {
+		return err
 	}
 
-	normalizedDomains := make(map[string]struct{}, len(policy.Domains))
-	for _, configuredDomain := range policy.Domains {
-		normalizedDomain, err := normalizeDomain(configuredDomain)
-		if err != nil {
-			return fmt.Errorf("%w: %v", ErrInvalidDomainPolicy, err)
-		}
-		normalizedDomains[normalizedDomain] = struct{}{}
+	normalizedDomains := make(map[string]struct{}, len(normalizedPolicy.Domains))
+	for _, configuredDomain := range normalizedPolicy.Domains {
+		normalizedDomains[configuredDomain] = struct{}{}
 	}
 
 	_, matched := normalizedDomains[domain]
-	switch mode {
+	switch normalizedPolicy.Mode {
 	case DomainPolicyUnrestricted:
 		return nil
 	case DomainPolicyAllowlist:
@@ -86,6 +82,36 @@ func ValidateRegistrationDomain(email string, policy DomainPolicy) error {
 	default:
 		return ErrInvalidDomainPolicy
 	}
+}
+
+// NormalizeDomainPolicy validates the exact-domain registration policy that
+// administrators configure. Wildcards and partial suffix matches are rejected
+// so the policy cannot silently permit unintended mailboxes.
+func NormalizeDomainPolicy(policy DomainPolicy) (DomainPolicy, error) {
+	mode := strings.TrimSpace(policy.Mode)
+	if mode == "" {
+		mode = DomainPolicyUnrestricted
+	}
+	switch mode {
+	case DomainPolicyUnrestricted, DomainPolicyAllowlist, DomainPolicyBlocklist:
+	default:
+		return DomainPolicy{}, ErrInvalidDomainPolicy
+	}
+
+	seen := make(map[string]struct{}, len(policy.Domains))
+	domains := make([]string, 0, len(policy.Domains))
+	for _, configuredDomain := range policy.Domains {
+		normalizedDomain, err := normalizeDomain(strings.TrimSpace(configuredDomain))
+		if err != nil {
+			return DomainPolicy{}, fmt.Errorf("%w: %v", ErrInvalidDomainPolicy, err)
+		}
+		if _, exists := seen[normalizedDomain]; exists {
+			continue
+		}
+		seen[normalizedDomain] = struct{}{}
+		domains = append(domains, normalizedDomain)
+	}
+	return DomainPolicy{Mode: mode, Domains: domains}, nil
 }
 
 // QQAvatarURL returns the official QQ image endpoint only for numeric qq.com

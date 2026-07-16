@@ -1,5 +1,5 @@
-import { Link, useSearchParams } from "react-router-dom";
-import { useEffect, useState, lazy, Suspense } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,19 +8,7 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { SiteFooter } from "@/components/layout/site-footer";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
-import type { OIDCStatusPayload } from "@/types";
 import { Zap, Globe, Settings2 } from "lucide-react";
 import { DomainSearchBar } from "@/components/domain/search-bar";
 import { sanitizeHTML } from "@/lib/utils";
@@ -31,19 +19,13 @@ const DomainFog = lazy(() =>
 );
 
 export default function LandingPage() {
-  const { isAuthenticated, signIn } = useAuth();
+  const { isAuthenticated } = useAuth();
   const branding = useBranding();
   const { t } = useTranslation();
   useDocumentTitle();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const ref = searchParams.get("ref") ?? undefined;
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [readOnlyPrompt, setReadOnlyPrompt] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus] = useState<OIDCStatusPayload | null>(null);
-  const [oidcIssuer, setOidcIssuer] = useState("");
-  const [oidcClientID, setOidcClientID] = useState("");
-  const [oidcClientSecret, setOidcClientSecret] = useState("");
 
   useEffect(() => {
     if (searchParams.get("error") === "user_banned") {
@@ -75,50 +57,7 @@ export default function LandingPage() {
     toast.error(t("error.userBanned"));
   }, [searchParams, setSearchParams, t]);
 
-  const openOIDCDialog = (runtime: OIDCStatusPayload, readOnly: boolean) => {
-    setStatus(runtime);
-    setReadOnlyPrompt(readOnly);
-    setOidcIssuer(runtime.issuer ?? "");
-    setOidcClientID(runtime.client_id ?? "");
-    setOidcClientSecret("");
-    setDialogOpen(true);
-  };
-
-  const handleLoginClick = async () => {
-    try {
-      const res = await api.getOIDCStatus();
-      const runtime = res.data;
-      if (runtime.configured) {
-        signIn(ref);
-        return;
-      }
-      if (runtime.setup_allowed) {
-        openOIDCDialog(runtime, false);
-        return;
-      }
-      openOIDCDialog(runtime, true);
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
-    }
-  };
-
-  const submitOIDCSetup = async () => {
-    setSubmitting(true);
-    try {
-      await api.bootstrapOIDCConfig({
-        oidc_issuer: oidcIssuer,
-        oidc_client_id: oidcClientID,
-        oidc_client_secret: oidcClientSecret,
-      });
-      toast.success(t("oidcSetup.saved"));
-      setDialogOpen(false);
-      signIn(ref);
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const handleLoginClick = () => navigate(ref ? `/login?ref=${encodeURIComponent(ref)}` : "/login");
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -316,83 +255,6 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{readOnlyPrompt ? t("oidcSetup.unavailableTitle") : t("oidcSetup.title")}</DialogTitle>
-            <DialogDescription>
-              {readOnlyPrompt ? t("oidcSetup.unavailableDesc") : t("oidcSetup.desc")}
-            </DialogDescription>
-          </DialogHeader>
-
-          {readOnlyPrompt ? (
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>{t("oidcSetup.contactAdmin")}</p>
-              {(status?.missing_fields?.length ?? 0) > 0 && (
-                <p>{t("oidcSetup.missingFields", { fields: status?.missing_fields.join(", ") })}</p>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>{t("oidcSetup.issuer")}</Label>
-                <Input
-                  value={oidcIssuer}
-                  onChange={(e) => setOidcIssuer(e.target.value)}
-                  placeholder="https://issuer.example.com"
-                  disabled={status?.issuer_env_locked}
-                  required={!status?.issuer_env_locked}
-                />
-                {status?.issuer_env_locked && (
-                  <p className="text-xs text-muted-foreground">{t("oidcSetup.lockedByEnv")}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>{t("oidcSetup.clientId")}</Label>
-                <Input
-                  value={oidcClientID}
-                  onChange={(e) => setOidcClientID(e.target.value)}
-                  placeholder="client-id"
-                  disabled={status?.client_id_env_locked}
-                  required={!status?.client_id_env_locked}
-                />
-                {status?.client_id_env_locked && (
-                  <p className="text-xs text-muted-foreground">{t("oidcSetup.lockedByEnv")}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>{t("oidcSetup.clientSecret")}</Label>
-                <Input
-                  type="password"
-                  value={oidcClientSecret}
-                  onChange={(e) => setOidcClientSecret(e.target.value)}
-                  placeholder="client-secret"
-                  disabled={status?.client_secret_env_locked}
-                  required={!status?.client_secret_env_locked}
-                />
-                {status?.client_secret_env_locked && (
-                  <p className="text-xs text-muted-foreground">{t("oidcSetup.lockedByEnv")}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            {readOnlyPrompt ? (
-              <Button onClick={() => setDialogOpen(false)}>{t("common.close")}</Button>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                  {t("common.cancel")}
-                </Button>
-                <Button onClick={submitOIDCSetup} disabled={submitting} data-dialog-primary="true">
-                  {submitting ? t("common.saving") : t("oidcSetup.saveAndLogin")}
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

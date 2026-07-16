@@ -1,34 +1,18 @@
-import { App } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import { SecureStoragePlugin } from "capacitor-secure-storage-plugin";
 import { api } from "@/lib/api";
 import {
-  clientNativeRedirectUri,
+  getBundledClientCommunicationKey,
   getNativeAccessToken,
   isNativeClient,
   registerNativeSessionClearer,
+  setClientCommunicationKey,
   setNativeAccessToken,
 } from "@/lib/client-runtime";
 
 const sessionStorageKey = "hl6_native_session";
+const communicationKeyStorageKey = "hl6_native_communication_key";
 let initialized = false;
-
-function parseUrl(value: string): URL | null {
-  try {
-    return new URL(value);
-  } catch {
-    return null;
-  }
-}
-
-function isNativeCallback(url: string): boolean {
-  const expected = parseUrl(clientNativeRedirectUri);
-  const received = parseUrl(url);
-  if (!expected || !received) return false;
-  return expected.protocol === received.protocol
-    && expected.host === received.host
-    && expected.pathname === received.pathname;
-}
 
 async function persistSession(token: string) {
   setNativeAccessToken(token);
@@ -40,36 +24,36 @@ async function clearPersistedSession() {
   try {
     await SecureStoragePlugin.remove({ key: sessionStorageKey });
   } catch {
-    // A missing value is already equivalent to a cleared session.
-  }
-}
-
-async function completeNativeLogin(callbackUrl: string) {
-  if (!isNativeCallback(callbackUrl)) return;
-
-  const code = new URL(callbackUrl).searchParams.get("code")?.trim();
-  if (!code) return;
-
-  try {
-    const response = await api.exchangeNativeAuthCode({ code });
-    const token = response.data.access_token?.trim();
-    if (!token) throw new Error("Native authentication did not return an access token.");
-    await persistSession(token);
-    await Browser.close();
-    window.location.assign("/dashboard");
-  } catch {
-    await clearPersistedSession();
-    window.location.assign("/?native_auth_error=1");
+    // A missing secure-storage item is already a cleared session.
   }
 }
 
 export async function initializeNativeClient() {
   if (!isNativeClient || initialized) return;
   initialized = true;
-
   registerNativeSessionClearer(() => {
     void clearPersistedSession();
   });
+
+  const bundledKey = getBundledClientCommunicationKey();
+  try {
+    const storedKey = await SecureStoragePlugin.get({ key: communicationKeyStorageKey });
+    if (bundledKey && storedKey.value !== bundledKey) {
+      setClientCommunicationKey(bundledKey);
+      await SecureStoragePlugin.set({ key: communicationKeyStorageKey, value: bundledKey });
+    } else {
+      setClientCommunicationKey(storedKey.value);
+    }
+  } catch {
+    setClientCommunicationKey(bundledKey);
+    if (bundledKey) {
+      try {
+        await SecureStoragePlugin.set({ key: communicationKeyStorageKey, value: bundledKey });
+      } catch {
+        // The bundled identifier still allows the client to show a recoverable update prompt.
+      }
+    }
+  }
 
   try {
     const stored = await SecureStoragePlugin.get({ key: sessionStorageKey });
@@ -77,36 +61,28 @@ export async function initializeNativeClient() {
   } catch {
     setNativeAccessToken(null);
   }
-
-  await App.addListener("appUrlOpen", ({ url }) => {
-    void completeNativeLogin(url);
-  });
-  const launchUrl = await App.getLaunchUrl();
-  if (launchUrl?.url) void completeNativeLogin(launchUrl.url);
 }
 
-export async function startNativeSignIn(ref?: string) {
-  if (!isNativeClient) return;
-  const response = await api.startNativeLogin({
-    redirect_uri: clientNativeRedirectUri,
-    referral_code: ref,
-  });
-  await Browser.open({ url: response.data.login_url });
+export async function signInNative(email: string, password: string) {
+  if (!isNativeClient) {
+    throw new Error("Native sign-in is unavailable outside the packaged client.");
+  }
+  const response = await api.login({ email, password });
+  const token = response.data.access_token?.trim();
+  if (!token) {
+    throw new Error("Native authentication did not return an access token.");
+  }
+  await persistSession(token);
+  return response.data;
 }
 
 export async function signOutNativeClient() {
-  let logoutUrl = "";
   try {
-    const response = await api.logout();
-    logoutUrl = response.data.logout_url?.trim() ?? "";
+    await api.logout();
   } finally {
     await clearPersistedSession();
   }
-
-  if (logoutUrl.startsWith("https://")) {
-    await Browser.open({ url: logoutUrl });
-  }
-  window.location.assign("/");
+  window.location.assign("/login");
 }
 
 export async function openNativeExternalUrl(url: string) {

@@ -1,12 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
-import { api, buildApiUrl, getErrorMessage } from "@/lib/api";
+import { api } from "@/lib/api";
 import { isNativeClient } from "@/lib/client-runtime";
-import { signOutNativeClient, startNativeSignIn } from "@/lib/native-client";
+import { signOutNativeClient } from "@/lib/native-client";
 
 export function useAuth() {
-  const { t } = useTranslation();
   const { data, isLoading, error } = useQuery({
     queryKey: ["me"],
     queryFn: () => api.getMe(),
@@ -22,13 +19,8 @@ export function useAuth() {
     user: data?.data?.user ?? null,
     credits: data?.data?.credits ?? 0,
     signIn: (ref?: string) => {
-      if (isNativeClient) {
-        void startNativeSignIn(ref).catch((err) => toast.error(getErrorMessage(err, t)));
-        return;
-      }
-      const url = new URL(buildApiUrl("/auth/login"), window.location.origin);
-      if (ref) url.searchParams.set("ref", ref);
-      window.location.href = url.toString();
+      const query = ref ? `?ref=${encodeURIComponent(ref)}` : "";
+      window.location.assign(`/login${query}`);
     },
     signOut: async () => {
       if (isNativeClient) {

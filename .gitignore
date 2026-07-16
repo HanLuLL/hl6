@@ -135,7 +135,9 @@ $RECYCLE.BIN/
 # AI tools
 # ================================
 .codex/
+.superpowers/
 .opencode/
+.tools/
 
 # ================================
 # Docker (local volumes, not config)

@@ -1,7 +1,15 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
-const appId = process.env.CLIENT_APPLICATION_ID?.trim() || "cloud.houlang.hl6";
-const appName = process.env.CLIENT_DISPLAY_NAME?.trim() || "HL6";
+function requiredBuildValue(name: "CLIENT_APPLICATION_ID" | "CLIENT_DISPLAY_NAME") {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`${name} must be set before Capacitor synchronization.`);
+  }
+  return value;
+}
+
+const appId = requiredBuildValue("CLIENT_APPLICATION_ID");
+const appName = requiredBuildValue("CLIENT_DISPLAY_NAME");
 
 const config: CapacitorConfig = {
   appId,

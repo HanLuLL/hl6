@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"encoding/base64"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -70,6 +71,17 @@ func TestHashPasswordRejectsUnsafePepperID(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("unsafe pepper ID accepted")
+	}
+}
+
+func TestValidatePasswordRejectsInvalidValuesWithoutHashing(t *testing.T) {
+	for _, password := range []string{"short", strings.Repeat("a", 129), string([]byte{0xff})} {
+		if err := ValidatePassword(password); !errors.Is(err, ErrInvalidPassword) {
+			t.Fatalf("got %v for %q, want ErrInvalidPassword", err, password)
+		}
+	}
+	if err := ValidatePassword("correct horse battery staple"); err != nil {
+		t.Fatalf("valid password rejected: %v", err)
 	}
 }
 

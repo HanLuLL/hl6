@@ -10,11 +10,12 @@ export interface UserGroup {
 
 export interface User {
   id: number;
-  external_id: string;
   referral_code?: string;
   email: string;
   name: string;
   avatar_url: string;
+  bio?: string;
+  website?: string;
   role: "user" | "admin";
   is_banned: boolean;
   banned_reason?: string;
@@ -34,6 +35,7 @@ export interface ClientVersionConfig {
   update_url: string;
   update_available?: boolean;
   communication_key_configured?: boolean;
+  communication_key_invalid?: boolean;
 }
 
 export interface Domain {
@@ -577,28 +579,30 @@ export interface AdminURLRuntime {
   confirmed: boolean;
 }
 
-export interface AdminOIDCRuntime {
-  configured: boolean;
-  missing_fields: string[];
-  issuer: string;
-  client_id: string;
-  issuer_source: "env" | "db" | "none";
-  client_id_source: "env" | "db" | "none";
-  client_secret_source: "env" | "db" | "none";
-  issuer_env_locked: boolean;
-  client_id_env_locked: boolean;
-  client_secret_env_locked: boolean;
-  client_secret_configured: boolean;
-}
-
 export interface AdminConfigPayload {
   values: Record<string, string>;
   url_runtime: AdminURLRuntime;
-  oidc_runtime: AdminOIDCRuntime;
 }
 
-export interface OIDCStatusPayload extends AdminOIDCRuntime {
-  setup_allowed: boolean;
+export interface AccessSettingsPayload {
+  registration_enabled: boolean;
+  domain_policy_mode: "unrestricted" | "allowlist" | "blocklist";
+  domain_policy_domains: string[];
+  local_auth_enabled: boolean;
+}
+
+export interface DatabaseRestoreJob {
+  id: number;
+  created_by_user_id: number;
+  input_checksum_sha256: string;
+  pre_restore_backup_id?: number | null;
+  status: "pending" | "running" | "succeeded" | "failed";
+  validation_result: string;
+  failure_detail: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ---- Payment Types ----

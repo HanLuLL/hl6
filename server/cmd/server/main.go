@@ -15,9 +15,11 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"hl6-server/internal/config"
+	"hl6-server/internal/migration"
 	"hl6-server/internal/model"
 	"hl6-server/internal/referral"
 	"hl6-server/internal/router"
+	cryptoutil "hl6-server/pkg/crypto"
 )
 
 const internalSessionSecretKey = "_internal_session_secret"
@@ -46,7 +48,7 @@ func main() {
 	db.Exec("CREATE INDEX IF NOT EXISTS idx_notifications_target_ids ON notifications USING GIN (target_ids)")
 
 	migrateCreditsToInt(db)
-	seedDefaults(db)
+	seedDefaults(db, cfg)
 	bootstrapSessionSecret(db, cfg)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -149,18 +151,6 @@ func runSchemaMigrations(db *gorm.DB) error {
 			return err
 		}
 
-		// Rename logto_id column to external_id (idempotent)
-		var colExists bool
-		if err := tx.Raw("SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'logto_id')").Scan(&colExists).Error; err != nil {
-			return err
-		}
-		if colExists {
-			if err := tx.Exec("ALTER TABLE users RENAME COLUMN logto_id TO external_id").Error; err != nil {
-				return fmt.Errorf("rename logto_id column: %w", err)
-			}
-			log.Println("Renamed column users.logto_id → external_id")
-		}
-
 		if err := dedupeAuditExemptionPendings(tx); err != nil {
 			return err
 		}
@@ -186,8 +176,6 @@ func runSchemaMigrations(db *gorm.DB) error {
 			&model.DailyCheckinClaim{},
 			&model.AuditLog{},
 			&model.SystemConfig{},
-			&model.NativeAuthCode{},
-			&model.NativeAuthRequest{},
 			&model.Notification{},
 			&model.NotificationRead{},
 			&model.NotificationImage{},
@@ -202,6 +190,12 @@ func runSchemaMigrations(db *gorm.DB) error {
 			&model.EmailLog{},
 		); err != nil {
 			return err
+		}
+		if err := migration.InstallAuthSchema(tx); err != nil {
+			return fmt.Errorf("install local authentication schema: %w", err)
+		}
+		if err := migration.EnsureLocalAuthDefault(tx); err != nil {
+			return fmt.Errorf("initialize local authentication setting: %w", err)
 		}
 		if err := migrateDNSProviderFields(tx); err != nil {
 			return err
@@ -232,8 +226,11 @@ func runSchemaMigrations(db *gorm.DB) error {
 			&model.User{},
 			&model.UserGroup{},
 			&model.SystemConfig{},
-			&model.NativeAuthCode{},
-			&model.NativeAuthRequest{},
+			&model.UserCredential{},
+			&model.AuthToken{},
+			&model.AuthSecurityEvent{},
+			&model.DatabaseBackup{},
+			&model.DatabaseRestoreJob{},
 		}); err != nil {
 			return err
 		}
@@ -403,7 +400,7 @@ func renameColumnIfExists(db *gorm.DB, table, oldName, newName string) error {
 	return nil
 }
 
-func seedDefaults(db *gorm.DB) {
+func seedDefaults(db *gorm.DB, cfg *config.Config) {
 	// 1. Ensure a default user group exists
 	var groupCount int64
 	db.Model(&model.UserGroup{}).Count(&groupCount)
@@ -436,6 +433,9 @@ func seedDefaults(db *gorm.DB) {
 
 	// 4. Seed config defaults
 	configDefaults := map[string]string{
+		"auth.registration.enabled":  "true",
+		"auth.email_domain.mode":     "unrestricted",
+		"auth.email_domain.domains":  "[]",
 		"registration_bonus_credits": "0",
 		"referral_enabled":           "true",
 		"referral_inviter_credits":   "0",
@@ -444,18 +444,18 @@ func seedDefaults(db *gorm.DB) {
 		"daily_checkin_credits":      "0",
 		"daily_checkin_group_ids":    "",
 		// 支付配置默认值（全部禁用，需在后台开启）
-		"epay_url":                  "",
-		"epay_pid":                  "",
-		"epay_key":                  "",
-		"codepay_url":               "",
-		"codepay_id":                "",
-		"codepay_key":               "",
-		"epay_alipay_enabled":       "false",
-		"epay_wechat_enabled":       "false",
-		"epay_qq_enabled":           "false",
-		"codepay_alipay_enabled":    "false",
-		"codepay_wechat_enabled":    "false",
-		"codepay_qq_enabled":        "false",
+		"epay_url":               "",
+		"epay_pid":               "",
+		"epay_key":               "",
+		"codepay_url":            "",
+		"codepay_id":             "",
+		"codepay_key":            "",
+		"epay_alipay_enabled":    "false",
+		"epay_wechat_enabled":    "false",
+		"epay_qq_enabled":        "false",
+		"codepay_alipay_enabled": "false",
+		"codepay_wechat_enabled": "false",
+		"codepay_qq_enabled":     "false",
 	}
 	for key, defaultVal := range configDefaults {
 		var rc model.SystemConfig
@@ -463,6 +463,7 @@ func seedDefaults(db *gorm.DB) {
 			db.Create(&model.SystemConfig{Key: key, Value: defaultVal})
 		}
 	}
+	seedBootstrapSMTPConfig(db, cfg)
 
 	// 5. Backfill referral_code for existing users
 	var usersWithoutCode []model.User
@@ -470,6 +471,49 @@ func seedDefaults(db *gorm.DB) {
 	for _, u := range usersWithoutCode {
 		if err := backfillReferralCode(db, u.ID); err != nil {
 			log.Printf("failed to backfill referral_code for user %d: %v", u.ID, err)
+		}
+	}
+}
+
+// seedBootstrapSMTPConfig makes a new installation usable before an
+// administrator exists. It only fills missing database values, so later UI
+// changes and existing deployments always remain authoritative.
+func seedBootstrapSMTPConfig(db *gorm.DB, cfg *config.Config) {
+	if db == nil || cfg == nil || cfg.BootstrapSMTPHost == "" {
+		return
+	}
+
+	password := cfg.BootstrapSMTPPassword
+	if password != "" {
+		encrypted, err := cryptoutil.EncryptIfKey(password, cfg.EncryptionKey)
+		if err != nil {
+			log.Printf("failed to encrypt SMTP bootstrap password: %v", err)
+			return
+		}
+		password = encrypted
+	}
+	values := map[string]string{
+		"smtp_host":      cfg.BootstrapSMTPHost,
+		"smtp_port":      cfg.BootstrapSMTPPort,
+		"smtp_username":  cfg.BootstrapSMTPUsername,
+		"smtp_password":  password,
+		"smtp_from_name": cfg.BootstrapSMTPFromName,
+		"smtp_from_addr": cfg.BootstrapSMTPFromAddr,
+		"smtp_use_tls":   strconv.FormatBool(cfg.BootstrapSMTPUseTLS),
+		"smtp_enabled":   strconv.FormatBool(cfg.BootstrapSMTPEnabled),
+	}
+	for key, value := range values {
+		var existing model.SystemConfig
+		err := db.Where("\"key\" = ?", key).First(&existing).Error
+		if err == nil {
+			continue
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("failed to read SMTP bootstrap config %s: %v", key, err)
+			continue
+		}
+		if err := db.Create(&model.SystemConfig{Key: key, Value: value}).Error; err != nil {
+			log.Printf("failed to create SMTP bootstrap config %s: %v", key, err)
 		}
 	}
 }

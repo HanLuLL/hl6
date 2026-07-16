@@ -5,7 +5,6 @@ interface ImportMetaEnv {
   readonly VITE_CAPACITOR_APP?: string
   readonly VITE_CLIENT_COMMUNICATION_KEY?: string
   readonly VITE_CLIENT_VERSION?: string
-  readonly VITE_NATIVE_REDIRECT_URI?: string
 }
 
 interface ImportMeta {

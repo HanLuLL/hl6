@@ -1,18 +1,29 @@
 import { Capacitor } from "@capacitor/core";
 
-const communicationKey = import.meta.env.VITE_CLIENT_COMMUNICATION_KEY?.trim() ?? "";
-const nativeRedirectUri = import.meta.env.VITE_NATIVE_REDIRECT_URI?.trim() ?? "";
+const bundledCommunicationKey = import.meta.env.VITE_CLIENT_COMMUNICATION_KEY?.trim() ?? "";
 
 export const isNativeClient = import.meta.env.VITE_CAPACITOR_APP === "true" && Capacitor.isNativePlatform();
 export const clientVersion = import.meta.env.VITE_CLIENT_VERSION?.trim() ?? "";
-export const clientCommunicationKey = communicationKey;
-export const clientNativeRedirectUri = nativeRedirectUri;
+
+let clientCommunicationKey = bundledCommunicationKey;
 
 let nativeAccessToken: string | null = null;
 let nativeSessionClearer: (() => void) | undefined;
 
 export function getNativeAccessToken(): string | null {
   return nativeAccessToken;
+}
+
+export function getClientCommunicationKey(): string {
+  return clientCommunicationKey;
+}
+
+export function getBundledClientCommunicationKey(): string {
+  return bundledCommunicationKey;
+}
+
+export function setClientCommunicationKey(key: string | null) {
+  clientCommunicationKey = key?.trim() || "";
 }
 
 export function setNativeAccessToken(token: string | null) {

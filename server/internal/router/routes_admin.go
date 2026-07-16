@@ -57,10 +57,17 @@ func registerAdminRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, 
 	admin.GET("/config", h.Admin.GetConfig)
 	admin.PUT("/config", h.Admin.UpdateConfig)
 	admin.POST("/config/url-confirm", h.Admin.ConfirmURLConfig)
+	admin.GET("/settings/access", h.Admin.GetAccessSettings)
+	admin.PUT("/settings/access", h.Admin.UpdateAccessSettings)
+	admin.GET("/security-events", h.Admin.ListAuthSecurityEvents)
 	admin.GET("/client/config", h.Client.GetAdminConfig)
 	admin.PUT("/client/config", h.Client.UpdateAdminConfig)
 	admin.POST("/client/communication-key", h.Client.GenerateCommunicationKey)
 	admin.DELETE("/client/communication-key", h.Client.RevokeCommunicationKey)
+	admin.POST("/maintenance/export", h.Maintenance.Export)
+	admin.POST("/maintenance/restore/challenge", h.Maintenance.CreateRestoreChallenge)
+	admin.POST("/maintenance/restore", h.Maintenance.Restore)
+	admin.GET("/maintenance/restores", h.Maintenance.ListRestores)
 
 	// Stats & monitoring
 	admin.GET("/stats", h.Admin.Stats)

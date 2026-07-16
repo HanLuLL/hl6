@@ -14,7 +14,6 @@ type AdminHandler struct {
 	ops          *service.DNSOperationService
 	emailSvc     *service.EmailService
 	urlResolver  *URLResolver
-	oidcResolver *OIDCRuntimeResolver
 }
 
 func NewAdminHandler(repo *repository.Repository, cfg *config.Config, ops *service.DNSOperationService, emailSvc *service.EmailService) *AdminHandler {
@@ -24,6 +23,5 @@ func NewAdminHandler(repo *repository.Repository, cfg *config.Config, ops *servi
 		ops:          ops,
 		emailSvc:     emailSvc,
 		urlResolver:  NewURLResolver(repo, cfg),
-		oidcResolver: NewOIDCRuntimeResolver(repo, cfg),
 	}
 }

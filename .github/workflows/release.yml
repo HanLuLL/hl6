@@ -4,24 +4,31 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Formal release tag in vX.Y.Z format
+        description: Formal HL6 release tag in vX.Y.Z format
         required: true
-        default: v1.0.0
+        default: v2.0.0
+        type: string
+      client_version:
+        description: Android versionName that was built and published to Pages
+        required: true
+        default: 1.0.0
+        type: string
+      android_package_name:
+        description: Android applicationId used by the published APK
+        required: true
         type: string
       apk_url:
-        description: Versioned HTTPS Android APK URL
+        description: Official GitHub Pages HTTPS latest.apk URL produced by the Android workflow
         required: true
-        default: https://hanlull.github.io/hl6/android/cc.lxii.domain/cc.lxii.domain-1.0.0.apk
         type: string
       apk_manifest_url:
-        description: HTTPS Pages manifest.json URL for APK verification
+        description: Official GitHub Pages HTTPS manifest.json URL produced beside the APK
         required: true
-        default: https://hanlull.github.io/hl6/android/cc.lxii.domain/manifest.json
         type: string
       release_notes_path:
         description: Repository-relative bilingual release notes path
         required: true
-        default: .github/release-notes/v1.0.0.md
+        default: .github/release-notes/v2.0.0.md
         type: string
       prerelease:
         description: Publish as a prerelease
@@ -48,41 +55,61 @@ jobs:
     timeout-minutes: 45
     env:
       RELEASE_VERSION: ${{ inputs.version }}
+      CLIENT_VERSION: ${{ inputs.client_version }}
+      ANDROID_PACKAGE_NAME: ${{ inputs.android_package_name }}
       APK_URL: ${{ inputs.apk_url }}
       APK_MANIFEST_URL: ${{ inputs.apk_manifest_url }}
+      PAGES_ORIGIN: https://${{ github.repository_owner }}.github.io
+      PAGES_REPOSITORY_PATH: /${{ github.event.repository.name }}
       RELEASE_NOTES_PATH: ${{ inputs.release_notes_path }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Android build tools
+        uses: android-actions/setup-android@v3
+
+      - name: Install APK verification tools
+        run: sdkmanager "build-tools;36.0.0"
 
       - name: Validate release inputs and APK
         id: release
         run: |
           set -euo pipefail
 
-          version="$RELEASE_VERSION"
-          if [[ ! "$version" =~ ^v(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]]; then
+          if [[ ! "$RELEASE_VERSION" =~ ^v(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]]; then
             echo "::error title=Invalid release version::version must use vX.Y.Z semantic versioning."
             exit 1
           fi
+          if [[ ! "$CLIENT_VERSION" =~ ^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]]; then
+            echo "::error title=Invalid Android version::client_version must use major.minor.patch semantic versioning."
+            exit 1
+          fi
 
-          client_version="${version#v}"
-          notes_path="$RELEASE_NOTES_PATH"
-          apk_path="$RUNNER_TEMP/linyu-android-$client_version.apk"
-          manifest_path="$RUNNER_TEMP/hl6-android-manifest.json"
-
-          export CLIENT_VERSION="$client_version"
-          export RELEASE_NOTES_PATH="$notes_path"
+          export RELEASE_NOTES_PATH ANDROID_PACKAGE_NAME APK_URL APK_MANIFEST_URL GITHUB_SHA PAGES_ORIGIN PAGES_REPOSITORY_PATH
           node <<'NODE'
           const path = require("node:path");
 
+          if (!/^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/.test(process.env.ANDROID_PACKAGE_NAME) || process.env.ANDROID_PACKAGE_NAME.length > 60) {
+            throw new Error("ANDROID_PACKAGE_NAME must be a lowercase Android package name of at most 60 characters.");
+          }
           for (const [name, raw] of [
             ["APK_URL", process.env.APK_URL],
             ["APK_MANIFEST_URL", process.env.APK_MANIFEST_URL],
           ]) {
             const url = new URL(raw);
-            if (url.protocol !== "https:" || url.username || url.password) {
-              throw new Error(`${name} must be an HTTPS URL without credentials.`);
+            if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
+              throw new Error(`${name} must be an HTTPS URL without credentials, query, or fragment.`);
             }
             if (name === "APK_URL" && !url.pathname.toLowerCase().endsWith(".apk")) {
               throw new Error("APK_URL must reference an .apk file.");
@@ -90,6 +117,18 @@ jobs:
             if (name === "APK_MANIFEST_URL" && !url.pathname.toLowerCase().endsWith("/manifest.json")) {
               throw new Error("APK_MANIFEST_URL must reference manifest.json.");
             }
+          }
+          const apkURL = new URL(process.env.APK_URL);
+          const manifestURL = new URL(process.env.APK_MANIFEST_URL);
+          const expectedPagesOrigin = new URL(process.env.PAGES_ORIGIN).origin;
+          const clientPath = `${process.env.PAGES_REPOSITORY_PATH}/android/${process.env.ANDROID_PACKAGE_NAME}/`;
+          if (
+            apkURL.origin !== expectedPagesOrigin ||
+            manifestURL.origin !== expectedPagesOrigin ||
+            apkURL.pathname !== `${clientPath}latest.apk` ||
+            manifestURL.pathname !== `${clientPath}manifest.json`
+          ) {
+            throw new Error("APK and manifest URLs must be the official GitHub Pages publication for this repository and Android package.");
           }
 
           const notesPath = process.env.RELEASE_NOTES_PATH.replaceAll("\\", "/");
@@ -103,36 +142,83 @@ jobs:
           }
           NODE
 
-          test -s "$notes_path"
-          curl --fail --silent --show-error --location --retry 3 "$APK_URL" --output "$apk_path"
-          curl --fail --silent --show-error --location --retry 3 "$APK_MANIFEST_URL" --output "$manifest_path"
+          test -s "$RELEASE_NOTES_PATH"
+          apk_file_name="hl6-android-$ANDROID_PACKAGE_NAME-$CLIENT_VERSION.apk"
+          apk_path="$RUNNER_TEMP/$apk_file_name"
+          apk_sha256_path="$apk_path.sha256"
+          manifest_path="$RUNNER_TEMP/hl6-android-manifest.json"
+
+          curl --fail --silent --show-error --retry 3 --proto '=https' --proto-redir '=https' --max-redirs 0 "$APK_URL" --output "$apk_path"
+          curl --fail --silent --show-error --retry 3 --proto '=https' --proto-redir '=https' --max-redirs 0 "$APK_MANIFEST_URL" --output "$manifest_path"
           test -s "$apk_path"
           test -s "$manifest_path"
           unzip -tq "$apk_path"
 
           apk_sha256="$(sha256sum "$apk_path" | awk '{print $1}')"
-          export APK_SHA256="$apk_sha256"
-          export APK_MANIFEST_PATH="$manifest_path"
+          export APK_SHA256="$apk_sha256" APK_MANIFEST_PATH="$manifest_path"
           node <<'NODE'
           const fs = require("node:fs");
           const manifest = JSON.parse(fs.readFileSync(process.env.APK_MANIFEST_PATH, "utf8"));
           if (manifest.version !== process.env.CLIENT_VERSION) {
-            throw new Error(`APK manifest version ${manifest.version} does not match release ${process.env.CLIENT_VERSION}.`);
+            throw new Error(`APK manifest version ${manifest.version} does not match client version ${process.env.CLIENT_VERSION}.`);
           }
-          if (manifest.application_id !== "cc.lxii.domain") {
-            throw new Error(`Unexpected Android application ID: ${manifest.application_id}.`);
+          if (manifest.application_id !== process.env.ANDROID_PACKAGE_NAME) {
+            throw new Error(`APK manifest application ID ${manifest.application_id} does not match ${process.env.ANDROID_PACKAGE_NAME}.`);
           }
           if (manifest.sha256 !== process.env.APK_SHA256) {
             throw new Error("APK SHA-256 does not match the Pages manifest.");
           }
+          if (manifest.commit !== process.env.GITHUB_SHA) {
+            throw new Error(`APK manifest commit ${manifest.commit} does not match release commit ${process.env.GITHUB_SHA}.`);
+          }
           NODE
 
+          for sensitive_value in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -n "${!sensitive_value:-}" ]; then
+              echo "::add-mask::${!sensitive_value}"
+            fi
+          done
+          missing_signing=()
+          for value in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!value:-}" ]; then
+              missing_signing+=("$value")
+            fi
+          done
+          if [ "${#missing_signing[@]}" -gt 0 ]; then
+            echo "::error title=Missing Android signing configuration::Formal release requires the same Android signing secrets as the client build workflow."
+            exit 1
+          fi
+
+          keystore_path="$RUNNER_TEMP/release-verification.keystore"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          expected_certificate="$(keytool -exportcert -rfc -alias "$ANDROID_KEY_ALIAS" -keystore "$keystore_path" -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>/dev/null | openssl x509 -noout -fingerprint -sha256 | awk -F= '{print $2}' | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          if [ -z "$expected_certificate" ]; then
+            echo "::error title=Invalid Android signing configuration::Unable to read the configured release certificate."
+            exit 1
+          fi
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          "$build_tools/apksigner" verify --verbose --print-certs "$apk_path" > "$RUNNER_TEMP/apksigner.txt"
+          apk_certificate="$(awk -F': ' '/Signer #1 certificate SHA-256 digest:/ {print $2; exit}' "$RUNNER_TEMP/apksigner.txt" | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          if [ -z "$apk_certificate" ] || [ "$apk_certificate" != "$expected_certificate" ]; then
+            echo "::error title=Unexpected APK certificate::The downloaded APK is not signed by the configured release certificate."
+            exit 1
+          fi
+          apk_badging="$("$build_tools/aapt" dump badging "$apk_path")"
+          apk_package="$(printf '%s\n' "$apk_badging" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
+          apk_version="$(printf '%s\n' "$apk_badging" | sed -n "s/^package:.*versionName='\([^']*\)'.*/\1/p")"
+          if [ "$apk_package" != "$ANDROID_PACKAGE_NAME" ] || [ "$apk_version" != "$CLIENT_VERSION" ]; then
+            echo "::error title=APK package metadata mismatch::The downloaded APK package name or version does not match the release inputs."
+            exit 1
+          fi
+          printf '%s  %s\n' "$apk_sha256" "$apk_file_name" > "$apk_sha256_path"
+
           {
-            printf 'version=%s\n' "$version"
-            printf 'client_version=%s\n' "$client_version"
+            printf 'version=%s\n' "$RELEASE_VERSION"
+            printf 'client_version=%s\n' "$CLIENT_VERSION"
             printf 'apk_path=%s\n' "$apk_path"
+            printf 'apk_sha256_path=%s\n' "$apk_sha256_path"
             printf 'apk_sha256=%s\n' "$apk_sha256"
-            printf 'notes_path=%s\n' "$notes_path"
+            printf 'notes_path=%s\n' "$RELEASE_NOTES_PATH"
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
@@ -173,7 +259,9 @@ jobs:
           name: HL6 ${{ steps.release.outputs.version }}
           target_commitish: ${{ github.sha }}
           body_path: ${{ steps.release.outputs.notes_path }}
-          files: ${{ steps.release.outputs.apk_path }}
+          files: |
+            ${{ steps.release.outputs.apk_path }}
+            ${{ steps.release.outputs.apk_sha256_path }}
           fail_on_unmatched_files: true
           preserve_order: true
           draft: ${{ inputs.draft }}
@@ -196,5 +284,8 @@ jobs:
       - name: Clean downloaded release files
         if: always()
         run: |
-          rm -f "$RUNNER_TEMP"/linyu-android-*.apk
+          rm -f "$RUNNER_TEMP"/hl6-android-*.apk
+          rm -f "$RUNNER_TEMP"/hl6-android-*.apk.sha256
           rm -f "$RUNNER_TEMP/hl6-android-manifest.json"
+          rm -f "$RUNNER_TEMP/release-verification.keystore"
+          rm -f "$RUNNER_TEMP/apksigner.txt"

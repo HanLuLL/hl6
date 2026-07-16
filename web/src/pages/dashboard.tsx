@@ -10,6 +10,7 @@ import { useBranding } from "@/hooks/use-branding";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { Coins, Layers, Database } from "lucide-react";
 import { sanitizeHTML } from "@/lib/utils";
+import { resolveAvatarURL } from "@/lib/avatar";
 
 export default function DashboardPage() {
   const { user, credits } = useAuth();
@@ -52,18 +53,18 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {branding.announcement_enabled && (branding as any).announcement_content && (
+      {branding.announcement_enabled && branding.announcement_content && (
         <div className="rounded-lg border bg-brand/5 border-brand/20 p-4">
           <div
             className="text-sm prose prose-sm prose-neutral dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-            dangerouslySetInnerHTML={{ __html: sanitizeHTML((branding as any).announcement_content) }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHTML(branding.announcement_content) }}
           />
         </div>
       )}
       {/* Welcome */}
       <div className="flex items-center gap-4">
         <Avatar className="h-11 w-11 shrink-0">
-          <AvatarImage src={user?.avatar_url} />
+          <AvatarImage src={resolveAvatarURL(user)} />
           <AvatarFallback className="text-sm font-semibold">
             {user?.name?.charAt(0)?.toUpperCase() || "U"}
           </AvatarFallback>

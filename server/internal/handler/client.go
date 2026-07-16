@@ -18,10 +18,10 @@ import (
 )
 
 const (
-	clientLatestVersionConfigKey         = "client_latest_version"
-	clientForceUpdateConfigKey           = "client_force_update"
-	clientUpdateNoticeConfigKey          = "client_update_notice"
-	clientUpdateURLConfigKey             = "client_update_url"
+	clientLatestVersionConfigKey = "client_latest_version"
+	clientForceUpdateConfigKey   = "client_force_update"
+	clientUpdateNoticeConfigKey  = "client_update_notice"
+	clientUpdateURLConfigKey     = "client_update_url"
 )
 
 var clientVersionPattern = regexp.MustCompile(`^(?:0|[1-9][0-9]{0,2})\.(?:0|[1-9][0-9]{0,2})\.(?:0|[1-9][0-9]{0,2})$`)
@@ -35,13 +35,15 @@ func NewClientHandler(repo *repository.Repository) *ClientHandler {
 }
 
 func (h *ClientHandler) GetVersion(c *gin.Context) {
-	if !h.isAuthorized(c.GetHeader("X-HL6-Client-Key")) {
-		response.ErrorWithKey(c, http.StatusUnauthorized, "invalid client key", "error.invalidToken")
-		return
-	}
 	configs, err := h.repo.GetSystemConfigsByKeys(clientConfigKeys())
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to get client version", "error.databaseError")
+		return
+	}
+	if !h.isAuthorized(c.GetHeader("X-HL6-Client-Key")) {
+		// This intentionally limited recovery response lets a revoked client
+		// reach the configured replacement APK without granting any API access.
+		response.OK(c, clientRecoveryConfigResponse(configs))
 		return
 	}
 	currentVersion := strings.TrimSpace(c.Query("current_version"))
@@ -56,6 +58,10 @@ func (h *ClientHandler) GetVersion(c *gin.Context) {
 
 func (h *ClientHandler) ValidatePresentedKey() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if c.Request.Method == http.MethodGet && c.Request.URL.Path == "/api/v1/client/version" {
+			c.Next()
+			return
+		}
 		key := c.GetHeader("X-HL6-Client-Key")
 		if key != "" && !h.isAuthorized(key) {
 			response.ErrorWithKey(c, http.StatusUnauthorized, "invalid client key", "error.invalidToken")
@@ -158,6 +164,21 @@ func (h *ClientHandler) UpdateAdminConfig(c *gin.Context) {
 }
 
 func (h *ClientHandler) GenerateCommunicationKey(c *gin.Context) {
+	configs, err := h.repo.GetSystemConfigsByKeys(clientConfigKeys())
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load client update configuration", "error.databaseError")
+		return
+	}
+	if configs[clientauth.CommunicationKeyHashConfigKey] != "" {
+		if !clientRecoveryConfigured(configs) {
+			response.ErrorWithKey(c, http.StatusBadRequest, "configure a latest version and https update url before rotating the client key", "error.invalidRequestBody")
+			return
+		}
+		if err := h.repo.SetSystemConfig(clientForceUpdateConfigKey, "true"); err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to enable client update recovery", "error.databaseError")
+			return
+		}
+	}
 	keyBytes := make([]byte, 32)
 	if _, err := rand.Read(keyBytes); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to generate client key", "error.databaseError")
@@ -175,6 +196,21 @@ func (h *ClientHandler) GenerateCommunicationKey(c *gin.Context) {
 }
 
 func (h *ClientHandler) RevokeCommunicationKey(c *gin.Context) {
+	configs, err := h.repo.GetSystemConfigsByKeys(clientConfigKeys())
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load client update configuration", "error.databaseError")
+		return
+	}
+	if configs[clientauth.CommunicationKeyHashConfigKey] != "" {
+		if !clientRecoveryConfigured(configs) {
+			response.ErrorWithKey(c, http.StatusBadRequest, "configure a latest version and https update url before revoking the client key", "error.invalidRequestBody")
+			return
+		}
+		if err := h.repo.SetSystemConfig(clientForceUpdateConfigKey, "true"); err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to enable client update recovery", "error.databaseError")
+			return
+		}
+	}
 	if err := h.repo.SetSystemConfig(clientauth.CommunicationKeyHashConfigKey, ""); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to revoke client key", "error.databaseError")
 		return
@@ -207,16 +243,27 @@ func clientConfigKeys() []string {
 
 func clientConfigResponse(configs map[string]string, includeKeyStatus, updateAvailable bool) gin.H {
 	data := gin.H{
-		"latest_version": configs[clientLatestVersionConfigKey],
-		"force_update":   configs[clientForceUpdateConfigKey] == "true",
-		"update_notice":  configs[clientUpdateNoticeConfigKey],
-		"update_url":     configs[clientUpdateURLConfigKey],
+		"latest_version":   configs[clientLatestVersionConfigKey],
+		"force_update":     configs[clientForceUpdateConfigKey] == "true",
+		"update_notice":    configs[clientUpdateNoticeConfigKey],
+		"update_url":       configs[clientUpdateURLConfigKey],
 		"update_available": updateAvailable,
 	}
 	if includeKeyStatus {
 		data["communication_key_configured"] = configs[clientauth.CommunicationKeyHashConfigKey] != ""
 	}
 	return data
+}
+
+func clientRecoveryConfigResponse(configs map[string]string) gin.H {
+	data := clientConfigResponse(configs, false, true)
+	data["force_update"] = true
+	data["communication_key_invalid"] = true
+	return data
+}
+
+func clientRecoveryConfigured(configs map[string]string) bool {
+	return clientVersionPattern.MatchString(strings.TrimSpace(configs[clientLatestVersionConfigKey])) && isHTTPSURL(strings.TrimSpace(configs[clientUpdateURLConfigKey]))
 }
 
 func isHTTPSURL(rawURL string) bool {

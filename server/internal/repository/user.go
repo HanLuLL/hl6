@@ -7,12 +7,6 @@ type UserWithCredits struct {
 	Credits model.Credit `json:"credits" gorm:"column:credits"`
 }
 
-func (r *Repository) FindUserByExternalID(externalID string) (*model.User, error) {
-	var user model.User
-	err := r.DB.Preload("Group").Where("external_id = ?", externalID).First(&user).Error
-	return &user, err
-}
-
 func (r *Repository) FindUserByID(id uint) (*model.User, error) {
 	var user model.User
 	err := r.DB.Preload("Group").First(&user, id).Error
