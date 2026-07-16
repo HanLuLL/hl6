@@ -190,7 +190,23 @@ jobs:
 
           keystore_path="$RUNNER_TEMP/release-verification.keystore"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
-          expected_certificate="$(keytool -exportcert -rfc -alias "$ANDROID_KEY_ALIAS" -keystore "$keystore_path" -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>/dev/null | openssl x509 -noout -fingerprint -sha256 | awk -F= '{print $2}' | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+
+          if ! keystore_metadata="$(keytool -list -v -keystore "$keystore_path" -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>&1)"; then
+            echo "::error title=Invalid Android signing configuration::Unable to read the configured release keystore."
+            exit 1
+          fi
+          mapfile -t private_key_aliases < <(
+            printf '%s\n' "$keystore_metadata" | awk -F ': ' '
+              /^Alias name: / { alias = $2 }
+              /^Entry type: PrivateKeyEntry$/ && alias != "" { print alias }
+            '
+          )
+          if [ "${#private_key_aliases[@]}" -ne 1 ]; then
+            echo "::error title=Unsupported Android keystore::The release keystore must contain exactly one private-key entry."
+            exit 1
+          fi
+          release_key_alias="${private_key_aliases[0]}"
+          expected_certificate="$(keytool -exportcert -rfc -alias "$release_key_alias" -keystore "$keystore_path" -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>/dev/null | openssl x509 -noout -fingerprint -sha256 | awk -F= '{print $2}' | tr -d ':' | tr '[:lower:]' '[:upper:]')"
           if [ -z "$expected_certificate" ]; then
             echo "::error title=Invalid Android signing configuration::Unable to read the configured release certificate."
             exit 1
