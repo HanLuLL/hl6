@@ -988,7 +988,6 @@
     "failedToUpdateConfig": "更新設定失敗",
     "encryptionFailed": "加密失敗",
     "failedToCreateUser": "建立使用者失敗",
-    "failedToFetchJWKS": "驗證身分失敗",
     "networkRequestFailed": "無法連線至伺服器，請檢查客戶端網域、網路連線及伺服器 CORS 設定。",
     "migrateToRequired": "需要指定遷移目標",
     "invalidMigrateTo": "無效的遷移目標",

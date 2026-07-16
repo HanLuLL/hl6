@@ -988,7 +988,6 @@
     "failedToUpdateConfig": "Error al actualizar configuración",
     "encryptionFailed": "Error de cifrado",
     "failedToCreateUser": "Error al crear usuario",
-    "failedToFetchJWKS": "Error al verificar autenticación",
     "networkRequestFailed": "No se pudo conectar al servidor. Compruebe el dominio del cliente, la red y la configuración CORS del servidor.",
     "migrateToRequired": "Se requiere destino de migración",
     "invalidMigrateTo": "Destino de migración inválido",

@@ -988,7 +988,6 @@
     "failedToUpdateConfig": "Не удалось обновить конфигурацию",
     "encryptionFailed": "Ошибка шифрования",
     "failedToCreateUser": "Не удалось создать пользователя",
-    "failedToFetchJWKS": "Не удалось проверить аутентификацию",
     "networkRequestFailed": "Не удалось подключиться к серверу. Проверьте домен клиента, сеть и настройки CORS сервера.",
     "migrateToRequired": "Необходимо указать цель миграции",
     "invalidMigrateTo": "Недопустимая цель миграции",

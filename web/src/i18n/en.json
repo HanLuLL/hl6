@@ -988,7 +988,6 @@
     "failedToUpdateConfig": "Failed to update config",
     "encryptionFailed": "Encryption failed",
     "failedToCreateUser": "Failed to create user",
-    "failedToFetchJWKS": "Failed to verify authentication",
     "networkRequestFailed": "Unable to connect to the server. Check the client domain, network connection, and server CORS configuration.",
     "migrateToRequired": "Migration target is required",
     "invalidMigrateTo": "Invalid migration target",
