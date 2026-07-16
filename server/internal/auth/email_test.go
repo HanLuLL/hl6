@@ -81,6 +81,14 @@ func TestValidateRegistrationDomainRejectsInvalidPolicyInputs(t *testing.T) {
 	}
 }
 
+func TestValidateRegistrationDomainRejectsMalformedEmailDomainSpelling(t *testing.T) {
+	for _, email := range []string{"123456@ qq.com", "123456@qq.com."} {
+		if err := ValidateRegistrationDomain(email, DomainPolicy{}); err == nil {
+			t.Fatalf("registration accepted malformed email domain spelling %q", email)
+		}
+	}
+}
+
 func TestQQAvatarURLUsesHTTPSForNumericQQEmail(t *testing.T) {
 	got := QQAvatarURL(" 123456@qq.com ")
 	want := "https://q.qlogo.cn/headimg_dl?dst_uin=123456&spec=640&img_type=jpg"
@@ -91,6 +99,14 @@ func TestQQAvatarURLUsesHTTPSForNumericQQEmail(t *testing.T) {
 	for _, email := range []string{"name@qq.com", "1234@qq.com", "1234567890123@qq.com", "123456@qq.cn", "123456@foxmail.com", "12345@qq.com.evil"} {
 		if got := QQAvatarURL(email); got != "" {
 			t.Fatalf("unexpected QQ avatar for %q: %q", email, got)
+		}
+	}
+}
+
+func TestQQAvatarURLRejectsMalformedQQDomainSpelling(t *testing.T) {
+	for _, email := range []string{"123456@ qq.com", "123456@qq.com."} {
+		if got := QQAvatarURL(email); got != "" {
+			t.Fatalf("got QQ avatar for malformed email domain spelling %q: %q", email, got)
 		}
 	}
 }

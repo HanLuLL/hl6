@@ -126,7 +126,11 @@ func validLocalPart(local string) bool {
 }
 
 func normalizeDomain(raw string) (string, error) {
-	domain := strings.TrimSpace(strings.TrimSuffix(raw, "."))
+	if raw == "" || raw != strings.TrimSpace(raw) || strings.HasSuffix(raw, ".") {
+		return "", ErrInvalidEmail
+	}
+
+	domain := raw
 	if domain == "" || len(domain) > 253 || strings.ContainsAny(domain, "@/\\") || strings.Contains(domain, "*") {
 		return "", ErrInvalidEmail
 	}
