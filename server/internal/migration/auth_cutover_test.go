@@ -147,6 +147,7 @@ func TestCutoverCreatesActivationCredentialsWithoutChangingUserRecords(t *testin
 		"smtp_from_addr":            "noreply@example.test",
 		"email.smtp.last_tested_at": time.Now().UTC().Format(time.RFC3339),
 		"oidc_issuer":               "https://issuer.example.test",
+		"oidcX_not_legacy":          "retain",
 		"auth.local.enabled":        "false",
 	} {
 		if err := db.Create(&model.SystemConfig{Key: key, Value: value}).Error; err != nil {
@@ -189,7 +190,11 @@ func TestCutoverCreatesActivationCredentialsWithoutChangingUserRecords(t *testin
 	}
 	var oidcConfig model.SystemConfig
 	if err := db.Where("\"key\" = ?", "oidc_issuer").First(&oidcConfig).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
-		t.Fatalf("OIDC configuration remains after cutover: %v", err)
+		t.Fatalf("legacy external-authentication configuration remains after cutover: %v", err)
+	}
+	var unrelatedConfig model.SystemConfig
+	if err := db.Where("\"key\" = ?", "oidcX_not_legacy").First(&unrelatedConfig).Error; err != nil || unrelatedConfig.Value != "retain" {
+		t.Fatalf("non-legacy configuration was removed by cutover: %#v err=%v", unrelatedConfig, err)
 	}
 	var enabledConfig model.SystemConfig
 	if err := db.Where("\"key\" = ?", "auth.local.enabled").First(&enabledConfig).Error; err != nil || enabledConfig.Value != "true" {

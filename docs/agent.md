@@ -68,3 +68,5 @@ The web administration console controls latest version, forced-update flag, upda
 | 2026-07-16 | Removed static Android application-ID and version defaults. Capacitor and Gradle now fail unless the workflow injects build configuration. |
 | 2026-07-16 | Persisted the active communication-key build identifier with Android Keystore-backed storage and replace it on upgraded client builds. |
 | 2026-07-16 | Hardened password-link concurrency, independent email/IP throttling, restore-gate startup handling, and formal Android release validation. Android releases now accept only the repository-controlled GitHub Pages `latest.apk` and `manifest.json` paths without redirects. |
+| 2026-07-16 | Standardized system-setting sections as shared horizontal tabs and moved access, client, communication-key, payment, and data-maintenance copy into all six shared web/Android translation catalogs. |
+| 2026-07-16 | Audited the hard authentication cutover: runtime routes, configuration, and Android build inputs use first-party email/password authentication only; the irreversible migration removes legacy external-provider data during cutover. |

@@ -765,7 +765,60 @@
     "smtpUseTLS": "TLS暗号化を使用",
     "saveSMTP": "SMTP設定を保存",
     "testSMTP": "テストメールを送信",
-    "smtpTestSent": "テストメールを {{recipient}} に送信しました"
+    "smtpTestSent": "テストメールを送信しました",
+    "save": "保存",
+    "sections": {
+      "navigation": "設定セクション",
+      "access": "アクセスと登録",
+      "site": "サイトと外観",
+      "mail": "メール通知",
+      "integrations": "決済と連携",
+      "android": "Android クライアント",
+      "maintenance": "データメンテナンス"
+    },
+    "access": {
+      "registrationEnabled": "新規ユーザー登録を許可",
+      "emailDomainPolicy": "メールドメインポリシー",
+      "emailDomains": "メールドメイン",
+      "unrestricted": "制限なし",
+      "allowlist": "許可リストのみ",
+      "blocklist": "ブロックリスト"
+    },
+    "payment": {
+      "epay": "Epay",
+      "codepay": "CodePay",
+      "alipay": "Alipay",
+      "wechat": "WeChat",
+      "gatewayUrl": "ゲートウェイ URL",
+      "merchantId": "加盟店 ID",
+      "merchantKey": "加盟店キー"
+    },
+    "client": {
+      "latestVersion": "最新バージョン",
+      "forceUpdate": "強制更新",
+      "updateNotice": "更新のお知らせ",
+      "updateUrl": "更新リンク",
+      "generateKey": "通信キーを生成",
+      "revokeKey": "通信キーを無効化",
+      "keyGenerated": "通信キーを生成しました",
+      "keyRevoked": "通信キーを無効化しました",
+      "copyKey": "コピー",
+      "keyCopied": "通信キーをコピーしました"
+    },
+    "maintenance": {
+      "exportDatabase": "データベースをエクスポート",
+      "exporting": "エクスポート中",
+      "exportReady": "データベースのバックアップを作成しました",
+      "restoreDatabase": "データベースを復元",
+      "latestRestore": "最新の復元ジョブ #{{id}}",
+      "restoreDescription": "この操作により現在のデータベースが上書きされます。",
+      "databaseBackup": "データベースバックアップ ZIP",
+      "currentPassword": "現在のパスワード",
+      "confirmationPhrase": "確認フレーズ",
+      "restoring": "復元中",
+      "restoreComplete": "データベースの復元が完了しました。サービスはメンテナンスモードです。",
+      "restoreFileRequired": "データベースバックアップ ZIP を選択してください。"
+    }
   },
   "referral": {
     "title": "紹介プログラム",
@@ -1003,7 +1056,9 @@
     "dnsBulkJobQueuedBan": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に BAN を再試行してください。",
     "dnsBulkJobQueuedDelete": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に削除を再試行してください。",
     "dnsBulkJobQueuedRelease": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に解放を再試行してください。",
-    "dnsBulkJobQueuedOperation": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に操作を再試行してください。"
+    "dnsBulkJobQueuedOperation": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に操作を再試行してください。",
+    "nameCannotBeEmpty": "名前を空にすることはできません",
+    "failedToUpdateProfile": "プロフィールを更新できませんでした"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

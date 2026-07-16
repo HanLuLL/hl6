@@ -765,7 +765,60 @@
     "smtpUseTLS": "使用 TLS 加密",
     "saveSMTP": "保存邮件配置",
     "testSMTP": "发送测试邮件",
-    "smtpTestSent": "测试邮件已发送至 {{recipient}}"
+    "smtpTestSent": "测试邮件已发送",
+    "save": "保存",
+    "sections": {
+      "navigation": "系统设置子项",
+      "access": "访问与注册",
+      "site": "站点与外观",
+      "mail": "邮件通知",
+      "integrations": "支付与集成",
+      "android": "Android 客户端",
+      "maintenance": "数据维护"
+    },
+    "access": {
+      "registrationEnabled": "允许新用户注册",
+      "emailDomainPolicy": "邮箱后缀策略",
+      "emailDomains": "邮箱后缀",
+      "unrestricted": "不限制",
+      "allowlist": "仅白名单",
+      "blocklist": "黑名单"
+    },
+    "payment": {
+      "epay": "易支付",
+      "codepay": "码支付",
+      "alipay": "支付宝",
+      "wechat": "微信",
+      "gatewayUrl": "网关地址",
+      "merchantId": "商户标识",
+      "merchantKey": "商户密钥"
+    },
+    "client": {
+      "latestVersion": "最新版本",
+      "forceUpdate": "强制更新",
+      "updateNotice": "更新公告",
+      "updateUrl": "更新链接",
+      "generateKey": "生成通讯密钥",
+      "revokeKey": "作废通讯密钥",
+      "keyGenerated": "通讯密钥已生成",
+      "keyRevoked": "通讯密钥已作废",
+      "copyKey": "复制",
+      "keyCopied": "通讯密钥已复制"
+    },
+    "maintenance": {
+      "exportDatabase": "导出数据库",
+      "exporting": "正在导出",
+      "exportReady": "数据库备份已生成",
+      "restoreDatabase": "恢复数据库",
+      "latestRestore": "最近恢复任务 #{{id}}",
+      "restoreDescription": "此操作会覆盖当前数据库。",
+      "databaseBackup": "数据库备份 ZIP",
+      "currentPassword": "当前密码",
+      "confirmationPhrase": "确认短语",
+      "restoring": "正在恢复",
+      "restoreComplete": "数据库恢复已完成，服务正在维护模式中。",
+      "restoreFileRequired": "请选择数据库备份 ZIP 文件。"
+    }
   },
   "referral": {
     "title": "邀请注册",

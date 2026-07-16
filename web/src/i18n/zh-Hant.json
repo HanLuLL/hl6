@@ -765,7 +765,60 @@
     "smtpUseTLS": "使用 TLS 加密",
     "saveSMTP": "儲存郵件設定",
     "testSMTP": "發送測試郵件",
-    "smtpTestSent": "測試郵件已發送至 {{recipient}}"
+    "smtpTestSent": "測試郵件已發送",
+    "save": "儲存",
+    "sections": {
+      "navigation": "系統設定子項",
+      "access": "存取與註冊",
+      "site": "網站與外觀",
+      "mail": "郵件通知",
+      "integrations": "付款與整合",
+      "android": "Android 用戶端",
+      "maintenance": "資料維護"
+    },
+    "access": {
+      "registrationEnabled": "允許新使用者註冊",
+      "emailDomainPolicy": "電子郵件網域規則",
+      "emailDomains": "電子郵件網域",
+      "unrestricted": "不限制",
+      "allowlist": "僅允許清單",
+      "blocklist": "封鎖清單"
+    },
+    "payment": {
+      "epay": "易支付",
+      "codepay": "碼支付",
+      "alipay": "支付寶",
+      "wechat": "微信",
+      "gatewayUrl": "閘道位址",
+      "merchantId": "商戶識別碼",
+      "merchantKey": "商戶金鑰"
+    },
+    "client": {
+      "latestVersion": "最新版本",
+      "forceUpdate": "強制更新",
+      "updateNotice": "更新公告",
+      "updateUrl": "更新連結",
+      "generateKey": "產生通訊金鑰",
+      "revokeKey": "作廢通訊金鑰",
+      "keyGenerated": "通訊金鑰已產生",
+      "keyRevoked": "通訊金鑰已作廢",
+      "copyKey": "複製",
+      "keyCopied": "通訊金鑰已複製"
+    },
+    "maintenance": {
+      "exportDatabase": "匯出資料庫",
+      "exporting": "正在匯出",
+      "exportReady": "資料庫備份已產生",
+      "restoreDatabase": "還原資料庫",
+      "latestRestore": "最近還原工作 #{{id}}",
+      "restoreDescription": "此操作會覆寫目前資料庫。",
+      "databaseBackup": "資料庫備份 ZIP",
+      "currentPassword": "目前密碼",
+      "confirmationPhrase": "確認片語",
+      "restoring": "正在還原",
+      "restoreComplete": "資料庫已還原，服務正在維護模式中。",
+      "restoreFileRequired": "請選擇資料庫備份 ZIP 檔案。"
+    }
   },
   "referral": {
     "title": "邀請註冊",
@@ -1003,7 +1056,9 @@
     "dnsBulkJobQueuedBan": "DNS 批次任務已排隊（Job #{{jobID}}），請等待完成後重試封禁",
     "dnsBulkJobQueuedDelete": "DNS 批次任務已排隊（Job #{{jobID}}），請等待完成後重試刪除",
     "dnsBulkJobQueuedRelease": "DNS 批次任務已排隊（Job #{{jobID}}），請等待完成後重試釋放",
-    "dnsBulkJobQueuedOperation": "DNS 批次任務已排隊（Job #{{jobID}}），請等待完成後重試操作"
+    "dnsBulkJobQueuedOperation": "DNS 批次任務已排隊（Job #{{jobID}}），請等待完成後重試操作",
+    "nameCannotBeEmpty": "姓名不可為空",
+    "failedToUpdateProfile": "更新個人資料失敗"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

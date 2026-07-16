@@ -765,7 +765,60 @@
     "smtpUseTLS": "Использовать TLS",
     "saveSMTP": "Сохранить SMTP",
     "testSMTP": "Отправить тестовое письмо",
-    "smtpTestSent": "Тестовое письмо отправлено на {{recipient}}"
+    "smtpTestSent": "Тестовое письмо отправлено",
+    "save": "Сохранить",
+    "sections": {
+      "navigation": "Разделы настроек",
+      "access": "Доступ и регистрация",
+      "site": "Сайт и оформление",
+      "mail": "Почтовые уведомления",
+      "integrations": "Платежи и интеграции",
+      "android": "Клиент Android",
+      "maintenance": "Обслуживание данных"
+    },
+    "access": {
+      "registrationEnabled": "Разрешить регистрацию новых пользователей",
+      "emailDomainPolicy": "Политика доменов электронной почты",
+      "emailDomains": "Домены электронной почты",
+      "unrestricted": "Без ограничений",
+      "allowlist": "Только список разрешенных",
+      "blocklist": "Список блокировки"
+    },
+    "payment": {
+      "epay": "Epay",
+      "codepay": "CodePay",
+      "alipay": "Alipay",
+      "wechat": "WeChat",
+      "gatewayUrl": "URL платежного шлюза",
+      "merchantId": "Идентификатор продавца",
+      "merchantKey": "Ключ продавца"
+    },
+    "client": {
+      "latestVersion": "Последняя версия",
+      "forceUpdate": "Принудительное обновление",
+      "updateNotice": "Объявление об обновлении",
+      "updateUrl": "Ссылка для обновления",
+      "generateKey": "Создать ключ связи",
+      "revokeKey": "Отозвать ключ связи",
+      "keyGenerated": "Ключ связи создан",
+      "keyRevoked": "Ключ связи отозван",
+      "copyKey": "Копировать",
+      "keyCopied": "Ключ связи скопирован"
+    },
+    "maintenance": {
+      "exportDatabase": "Экспортировать базу данных",
+      "exporting": "Экспорт",
+      "exportReady": "Резервная копия базы данных создана",
+      "restoreDatabase": "Восстановить базу данных",
+      "latestRestore": "Последняя задача восстановления #{{id}}",
+      "restoreDescription": "Эта операция перезапишет текущую базу данных.",
+      "databaseBackup": "ZIP-архив резервной копии базы данных",
+      "currentPassword": "Текущий пароль",
+      "confirmationPhrase": "Фраза подтверждения",
+      "restoring": "Восстановление",
+      "restoreComplete": "Восстановление базы данных завершено. Сервис находится в режиме обслуживания.",
+      "restoreFileRequired": "Выберите ZIP-архив резервной копии базы данных."
+    }
   },
   "referral": {
     "title": "Реферальная программа",
@@ -1003,7 +1056,9 @@
     "dnsBulkJobQueuedBan": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите блокировку после завершения.",
     "dnsBulkJobQueuedDelete": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите удаление после завершения.",
     "dnsBulkJobQueuedRelease": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите освобождение после завершения.",
-    "dnsBulkJobQueuedOperation": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите операцию после завершения."
+    "dnsBulkJobQueuedOperation": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите операцию после завершения.",
+    "nameCannotBeEmpty": "Имя не может быть пустым",
+    "failedToUpdateProfile": "Не удалось обновить профиль"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

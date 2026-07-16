@@ -3,7 +3,7 @@ package middleware
 import "testing"
 
 func TestParseSessionSubjectAcceptsOnlyPositiveNumericUserIDs(t *testing.T) {
-	for _, subject := range []string{"", "0", "oidc-subject", "1.2", "-1", " 1"} {
+	for _, subject := range []string{"", "0", "external-subject", "1.2", "-1", " 1"} {
 		if _, err := parseSessionSubject(subject); err == nil {
 			t.Fatalf("invalid subject accepted: %q", subject)
 		}

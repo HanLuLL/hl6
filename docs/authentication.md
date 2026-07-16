@@ -58,7 +58,7 @@ To rotate, set a new current ID/value and place the former pair in the previous 
 The cutover is deliberately console-only. It will not run from the browser or Android client.
 
 1. Deploy the v2 image with `AUTH_PASSWORD_PEPPER`, a public `FRONTEND_URL`, and the `SMTP_BOOTSTRAP_*` values required for a working sender. The bootstrap values populate only missing SMTP database settings. Existing-user databases remain intentionally disabled for local login until the explicit switch completes.
-2. Send and verify an SMTP test from the v2 container. This records the timestamp required by preflight without needing an OIDC session:
+2. Send and verify an SMTP test from the v2 container. This records the timestamp required by preflight without requiring a browser session:
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml exec app \

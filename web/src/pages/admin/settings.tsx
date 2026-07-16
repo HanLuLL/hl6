@@ -30,13 +30,13 @@ const maskedSecret = "********";
 
 type SettingsSection = "access" | "site" | "mail" | "integrations" | "android" | "maintenance";
 
-const sections: Array<{ value: SettingsSection; label: string; icon: typeof ShieldCheck }> = [
-  { value: "access", label: "访问与注册", icon: ShieldCheck },
-  { value: "site", label: "站点与外观", icon: Palette },
-  { value: "mail", label: "邮件通知", icon: Mail },
-  { value: "integrations", label: "支付与集成", icon: PlugZap },
-  { value: "android", label: "Android 客户端", icon: Smartphone },
-  { value: "maintenance", label: "数据维护", icon: Database },
+const sections: Array<{ value: SettingsSection; labelKey: string; icon: typeof ShieldCheck }> = [
+  { value: "access", labelKey: "adminSettings.sections.access", icon: ShieldCheck },
+  { value: "site", labelKey: "adminSettings.sections.site", icon: Palette },
+  { value: "mail", labelKey: "adminSettings.sections.mail", icon: Mail },
+  { value: "integrations", labelKey: "adminSettings.sections.integrations", icon: PlugZap },
+  { value: "android", labelKey: "adminSettings.sections.android", icon: Smartphone },
+  { value: "maintenance", labelKey: "adminSettings.sections.maintenance", icon: Database },
 ];
 
 function splitDomains(value: string) {
@@ -205,7 +205,7 @@ export default function AdminSettingsPage() {
     onSuccess: (result) => {
       setCommunicationKey(result.data.communication_key);
       queryClient.invalidateQueries({ queryKey: ["admin-client-config"] });
-      toast.success("通讯密钥已生成");
+      toast.success(t("adminSettings.client.keyGenerated"));
     },
     onError: (error) => toast.error(getErrorMessage(error, t)),
   });
@@ -214,7 +214,7 @@ export default function AdminSettingsPage() {
     onSuccess: () => {
       setCommunicationKey("");
       queryClient.invalidateQueries({ queryKey: ["admin-client-config"] });
-      toast.success("通讯密钥已作废");
+      toast.success(t("adminSettings.client.keyRevoked"));
     },
     onError: (error) => toast.error(getErrorMessage(error, t)),
   });
@@ -222,13 +222,13 @@ export default function AdminSettingsPage() {
     mutationFn: api.adminDownloadDatabaseExport,
     onSuccess: ({ blob, filename }) => {
       downloadBlob(blob, filename);
-      toast.success("数据库备份已生成");
+      toast.success(t("adminSettings.maintenance.exportReady"));
     },
     onError: (error) => toast.error(getErrorMessage(error, t)),
   });
   const restoreDatabase = useMutation({
     mutationFn: async () => {
-      if (!restoreFile) throw new Error("请选择数据库备份文件");
+      if (!restoreFile) throw new Error(t("adminSettings.maintenance.restoreFileRequired"));
       const challenge = await api.adminCreateRestoreChallenge(restorePassword);
       return api.adminRestoreDatabase({
         archive: restoreFile,
@@ -243,7 +243,7 @@ export default function AdminSettingsPage() {
       setRestoreFile(null);
       setRestorePassword("");
       setRestoreConfirmation("");
-      toast.success("数据库恢复已完成，服务正在维护模式中");
+      toast.success(t("adminSettings.maintenance.restoreComplete"));
     },
     onError: (error) => toast.error(getErrorMessage(error, t)),
   });
@@ -263,84 +263,93 @@ export default function AdminSettingsPage() {
         <h1 className="text-2xl font-bold">{t("adminSettings.title")}</h1>
       </div>
 
-      <Tabs defaultValue="access" orientation="vertical" className="gap-6 lg:flex-row">
-        <TabsList variant="line" className="w-full overflow-x-auto lg:w-52 lg:shrink-0">
+      <Tabs defaultValue="access">
+        <TabsList
+          variant="line"
+          className="max-w-full justify-start overflow-x-auto"
+          aria-label={t("adminSettings.sections.navigation")}
+        >
           {sections.map((section) => {
             const Icon = section.icon;
-            return <TabsTrigger key={section.value} value={section.value} className="shrink-0 lg:justify-start"><Icon />{section.label}</TabsTrigger>;
+            return (
+              <TabsTrigger key={section.value} value={section.value} className="flex-none px-3">
+                <Icon />
+                {t(section.labelKey)}
+              </TabsTrigger>
+            );
           })}
         </TabsList>
 
-        <TabsContent value="access" className="mt-0">
+        <TabsContent value="access" className="mt-4">
           <Card>
-            <CardHeader><CardTitle>访问与注册</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("adminSettings.sections.access")}</CardTitle></CardHeader>
             <CardContent className="space-y-5">
-              <div className="flex items-center justify-between gap-4"><Label>允许新用户注册</Label><Switch checked={registrationEnabled} onCheckedChange={setRegistrationEnabled} /></div>
-              <div className="space-y-2"><Label>邮箱后缀策略</Label><select className="h-9 w-full rounded-md border bg-background px-3 text-sm" value={domainPolicyMode} onChange={(event) => setDomainPolicyMode(event.target.value as typeof domainPolicyMode)}><option value="unrestricted">不限制</option><option value="allowlist">仅白名单</option><option value="blocklist">黑名单</option></select></div>
-              <div className="space-y-2"><Label>邮箱后缀</Label><Textarea value={domainPolicyDomains} onChange={(event) => setDomainPolicyDomains(event.target.value)} rows={7} /></div>
+              <div className="flex items-center justify-between gap-4"><Label>{t("adminSettings.access.registrationEnabled")}</Label><Switch checked={registrationEnabled} onCheckedChange={setRegistrationEnabled} /></div>
+              <div className="space-y-2"><Label>{t("adminSettings.access.emailDomainPolicy")}</Label><select className="h-9 w-full rounded-md border bg-background px-3 text-sm" value={domainPolicyMode} onChange={(event) => setDomainPolicyMode(event.target.value as typeof domainPolicyMode)}><option value="unrestricted">{t("adminSettings.access.unrestricted")}</option><option value="allowlist">{t("adminSettings.access.allowlist")}</option><option value="blocklist">{t("adminSettings.access.blocklist")}</option></select></div>
+              <div className="space-y-2"><Label>{t("adminSettings.access.emailDomains")}</Label><Textarea value={domainPolicyDomains} onChange={(event) => setDomainPolicyDomains(event.target.value)} rows={7} /></div>
               <Button onClick={() => updateAccess.mutate({ registration_enabled: registrationEnabled, domain_policy_mode: domainPolicyMode, domain_policy_domains: splitDomains(domainPolicyDomains) })} disabled={updateAccess.isPending}><Save />{updateAccess.isPending ? t("common.saving") : t("adminSettings.save")}</Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="site" className="mt-0">
+        <TabsContent value="site" className="mt-4">
           <Card>
-            <CardHeader><CardTitle>站点与外观</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("adminSettings.sections.site")}</CardTitle></CardHeader>
             <CardContent className="space-y-5">
-              <div className="grid gap-4 lg:grid-cols-2"><div className="space-y-2"><Label>前端地址</Label><Textarea value={frontendUrls} disabled={frontendLocked} onChange={(event) => setFrontendUrls(event.target.value)} rows={4} /></div><div className="space-y-2"><Label>后端地址</Label><Textarea value={backendUrls} disabled={backendLocked} onChange={(event) => setBackendUrls(event.target.value)} rows={4} /></div></div>
-              <div className="flex items-center justify-between gap-4"><Label>站点公告</Label><Switch checked={announcementEnabled} onCheckedChange={setAnnouncementEnabled} /></div>
+              <div className="grid gap-4 lg:grid-cols-2"><div className="space-y-2"><Label>{t("adminSettings.frontendUrl")}</Label><Textarea value={frontendUrls} disabled={frontendLocked} onChange={(event) => setFrontendUrls(event.target.value)} rows={4} /></div><div className="space-y-2"><Label>{t("adminSettings.backendUrl")}</Label><Textarea value={backendUrls} disabled={backendLocked} onChange={(event) => setBackendUrls(event.target.value)} rows={4} /></div></div>
+              <div className="flex items-center justify-between gap-4"><Label>{t("adminSettings.announcementEnabled")}</Label><Switch checked={announcementEnabled} onCheckedChange={setAnnouncementEnabled} /></div>
               <Textarea value={announcementContent} onChange={(event) => setAnnouncementContent(event.target.value)} rows={4} />
-              <div className="grid gap-4 lg:grid-cols-2"><div className="space-y-2"><Label>ICP备案号</Label><Input value={footerIcp} onChange={(event) => setFooterIcp(event.target.value)} /></div><div className="space-y-2"><Label>备案链接</Label><Input value={footerIcpLink} onChange={(event) => setFooterIcpLink(event.target.value)} /></div></div>
-              <div className="space-y-2"><Label>页脚内容</Label><Textarea value={footerContent} onChange={(event) => setFooterContent(event.target.value)} rows={3} /></div>
-              <div className="space-y-2"><Label>SEO 描述</Label><Textarea value={seoDescription} onChange={(event) => setSeoDescription(event.target.value)} rows={3} /></div>
-              <div className="grid gap-4 lg:grid-cols-[1fr_auto]"><div className="space-y-2"><Label>SEO 关键词</Label><Input value={seoKeywords} onChange={(event) => setSeoKeywords(event.target.value)} /></div><div className="flex items-end gap-3 pb-2"><Label>禁止索引</Label><Switch checked={seoIndexingDisabled} onCheckedChange={setSeoIndexingDisabled} /></div></div>
+              <div className="grid gap-4 lg:grid-cols-2"><div className="space-y-2"><Label>{t("adminSettings.footerIcp")}</Label><Input value={footerIcp} onChange={(event) => setFooterIcp(event.target.value)} /></div><div className="space-y-2"><Label>{t("adminSettings.footerIcpLink")}</Label><Input value={footerIcpLink} onChange={(event) => setFooterIcpLink(event.target.value)} /></div></div>
+              <div className="space-y-2"><Label>{t("adminSettings.footerContent")}</Label><Textarea value={footerContent} onChange={(event) => setFooterContent(event.target.value)} rows={3} /></div>
+              <div className="space-y-2"><Label>{t("adminSettings.seoDescription")}</Label><Textarea value={seoDescription} onChange={(event) => setSeoDescription(event.target.value)} rows={3} /></div>
+              <div className="grid gap-4 lg:grid-cols-[1fr_auto]"><div className="space-y-2"><Label>{t("adminSettings.seoKeywords")}</Label><Input value={seoKeywords} onChange={(event) => setSeoKeywords(event.target.value)} /></div><div className="flex items-end gap-3 pb-2"><Label>{t("adminSettings.seoIndexingDisabled")}</Label><Switch checked={seoIndexingDisabled} onCheckedChange={setSeoIndexingDisabled} /></div></div>
               <Button onClick={() => updateConfig.mutate({ ...(frontendLocked ? {} : { frontend_urls: frontendUrls }), ...(backendLocked ? {} : { backend_urls: backendUrls }), announcement_enabled: String(announcementEnabled), announcement_content: announcementContent, site_footer_icp: footerIcp, site_footer_icp_link: footerIcpLink, site_footer_content: footerContent, seo_description: seoDescription, seo_keywords: seoKeywords, seo_indexing_disabled: String(seoIndexingDisabled) })} disabled={updateConfig.isPending}><Save />{updateConfig.isPending ? t("common.saving") : t("adminSettings.save")}</Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="mail" className="mt-0">
+        <TabsContent value="mail" className="mt-4">
           <Card>
-            <CardHeader><CardTitle>邮件通知</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("adminSettings.sections.mail")}</CardTitle></CardHeader>
             <CardContent className="space-y-5">
-              <div className="flex items-center justify-between gap-4"><Label>启用 SMTP</Label><Switch checked={smtpEnabled} onCheckedChange={setSmtpEnabled} /></div>
-              <div className="grid gap-4 lg:grid-cols-2"><div className="space-y-2"><Label>SMTP 主机</Label><Input value={smtpHost} onChange={(event) => setSmtpHost(event.target.value)} /></div><div className="space-y-2"><Label>端口</Label><Input value={smtpPort} onChange={(event) => setSmtpPort(event.target.value)} /></div><div className="space-y-2"><Label>用户名</Label><Input value={smtpUsername} onChange={(event) => setSmtpUsername(event.target.value)} /></div><div className="space-y-2"><Label>密码</Label><Input type="password" value={smtpPassword} onChange={(event) => setSmtpPassword(event.target.value)} /></div><div className="space-y-2"><Label>发件人名称</Label><Input value={smtpFromName} onChange={(event) => setSmtpFromName(event.target.value)} /></div><div className="space-y-2"><Label>发件人地址</Label><Input value={smtpFromAddr} onChange={(event) => setSmtpFromAddr(event.target.value)} /></div></div>
-              <div className="flex items-center justify-between gap-4"><Label>使用 TLS</Label><Switch checked={smtpUseTLS} onCheckedChange={setSmtpUseTLS} /></div>
-              <div className="flex flex-wrap gap-3"><Button onClick={() => updateConfig.mutate({ smtp_host: smtpHost, smtp_port: smtpPort, smtp_username: smtpUsername, smtp_from_name: smtpFromName, smtp_from_addr: smtpFromAddr, smtp_use_tls: String(smtpUseTLS), smtp_enabled: String(smtpEnabled), ...(smtpPassword && smtpPassword !== maskedSecret ? { smtp_password: smtpPassword } : {}) })} disabled={updateConfig.isPending}><Save />{t("adminSettings.save")}</Button><Button variant="outline" disabled={!smtpEnabled} onClick={async () => { try { await api.adminTestSMTP(); toast.success(t("adminSettings.smtpTestSent")); } catch (error) { toast.error(getErrorMessage(error, t)); } }}>测试发送</Button></div>
+              <div className="flex items-center justify-between gap-4"><Label>{t("adminSettings.smtpEnabled")}</Label><Switch checked={smtpEnabled} onCheckedChange={setSmtpEnabled} /></div>
+              <div className="grid gap-4 lg:grid-cols-2"><div className="space-y-2"><Label>{t("adminSettings.smtpHost")}</Label><Input value={smtpHost} onChange={(event) => setSmtpHost(event.target.value)} /></div><div className="space-y-2"><Label>{t("adminSettings.smtpPort")}</Label><Input value={smtpPort} onChange={(event) => setSmtpPort(event.target.value)} /></div><div className="space-y-2"><Label>{t("adminSettings.smtpUsername")}</Label><Input value={smtpUsername} onChange={(event) => setSmtpUsername(event.target.value)} /></div><div className="space-y-2"><Label>{t("adminSettings.smtpPassword")}</Label><Input type="password" value={smtpPassword} onChange={(event) => setSmtpPassword(event.target.value)} /></div><div className="space-y-2"><Label>{t("adminSettings.smtpFromName")}</Label><Input value={smtpFromName} onChange={(event) => setSmtpFromName(event.target.value)} /></div><div className="space-y-2"><Label>{t("adminSettings.smtpFromAddr")}</Label><Input value={smtpFromAddr} onChange={(event) => setSmtpFromAddr(event.target.value)} /></div></div>
+              <div className="flex items-center justify-between gap-4"><Label>{t("adminSettings.smtpUseTLS")}</Label><Switch checked={smtpUseTLS} onCheckedChange={setSmtpUseTLS} /></div>
+              <div className="flex flex-wrap gap-3"><Button onClick={() => updateConfig.mutate({ smtp_host: smtpHost, smtp_port: smtpPort, smtp_username: smtpUsername, smtp_from_name: smtpFromName, smtp_from_addr: smtpFromAddr, smtp_use_tls: String(smtpUseTLS), smtp_enabled: String(smtpEnabled), ...(smtpPassword && smtpPassword !== maskedSecret ? { smtp_password: smtpPassword } : {}) })} disabled={updateConfig.isPending}><Save />{t("adminSettings.save")}</Button><Button variant="outline" disabled={!smtpEnabled} onClick={async () => { try { await api.adminTestSMTP(); toast.success(t("adminSettings.smtpTestSent")); } catch (error) { toast.error(getErrorMessage(error, t)); } }}>{t("adminSettings.testSMTP")}</Button></div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="integrations" className="mt-0">
+        <TabsContent value="integrations" className="mt-4">
           <Card>
-            <CardHeader><CardTitle>支付与集成</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("adminSettings.sections.integrations")}</CardTitle></CardHeader>
             <CardContent className="space-y-6">
-              <PaymentFields title="易支付" url={epayURL} onURL={setEpayURL} identifier={epayPID} onIdentifier={setEpayPID} secret={epayKey} onSecret={setEpayKey} labels={["支付宝", "微信", "QQ"]} enabled={[epayAlipayEnabled, epayWechatEnabled, epayQQEnabled]} onEnabled={[setEpayAlipayEnabled, setEpayWechatEnabled, setEpayQQEnabled]} />
-              <PaymentFields title="码支付" url={codepayURL} onURL={setCodepayURL} identifier={codepayID} onIdentifier={setCodepayID} secret={codepayKey} onSecret={setCodepayKey} labels={["支付宝", "微信", "QQ"]} enabled={[codepayAlipayEnabled, codepayWechatEnabled, codepayQQEnabled]} onEnabled={[setCodepayAlipayEnabled, setCodepayWechatEnabled, setCodepayQQEnabled]} />
+              <PaymentFields title={t("adminSettings.payment.epay")} url={epayURL} onURL={setEpayURL} identifier={epayPID} onIdentifier={setEpayPID} secret={epayKey} onSecret={setEpayKey} labels={[t("adminSettings.payment.alipay"), t("adminSettings.payment.wechat"), "QQ"]} enabled={[epayAlipayEnabled, epayWechatEnabled, epayQQEnabled]} onEnabled={[setEpayAlipayEnabled, setEpayWechatEnabled, setEpayQQEnabled]} />
+              <PaymentFields title={t("adminSettings.payment.codepay")} url={codepayURL} onURL={setCodepayURL} identifier={codepayID} onIdentifier={setCodepayID} secret={codepayKey} onSecret={setCodepayKey} labels={[t("adminSettings.payment.alipay"), t("adminSettings.payment.wechat"), "QQ"]} enabled={[codepayAlipayEnabled, codepayWechatEnabled, codepayQQEnabled]} onEnabled={[setCodepayAlipayEnabled, setCodepayWechatEnabled, setCodepayQQEnabled]} />
               <Button onClick={() => updateConfig.mutate({ epay_url: epayURL, epay_pid: epayPID, codepay_url: codepayURL, codepay_id: codepayID, epay_alipay_enabled: String(epayAlipayEnabled), epay_wechat_enabled: String(epayWechatEnabled), epay_qq_enabled: String(epayQQEnabled), codepay_alipay_enabled: String(codepayAlipayEnabled), codepay_wechat_enabled: String(codepayWechatEnabled), codepay_qq_enabled: String(codepayQQEnabled), ...(epayKey && epayKey !== maskedSecret ? { epay_key: epayKey } : {}), ...(codepayKey && codepayKey !== maskedSecret ? { codepay_key: codepayKey } : {}) })} disabled={updateConfig.isPending}><Save />{t("adminSettings.save")}</Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="android" className="mt-0">
+        <TabsContent value="android" className="mt-4">
           <Card>
-            <CardHeader><CardTitle>Android 客户端</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("adminSettings.sections.android")}</CardTitle></CardHeader>
             <CardContent className="space-y-5">
-              <div className="grid gap-4 lg:grid-cols-2"><div className="space-y-2"><Label>最新版本</Label><Input value={clientVersion} onChange={(event) => setClientVersion(event.target.value)} /></div><div className="flex items-end justify-between gap-4 pb-2"><Label>强制更新</Label><Switch checked={clientForceUpdate} onCheckedChange={setClientForceUpdate} /></div></div>
-              <div className="space-y-2"><Label>更新公告</Label><Textarea value={clientUpdateNotice} onChange={(event) => setClientUpdateNotice(event.target.value)} rows={4} /></div>
-              <div className="space-y-2"><Label>更新链接</Label><Input value={clientUpdateURL} onChange={(event) => setClientUpdateURL(event.target.value)} /></div>
+              <div className="grid gap-4 lg:grid-cols-2"><div className="space-y-2"><Label>{t("adminSettings.client.latestVersion")}</Label><Input value={clientVersion} onChange={(event) => setClientVersion(event.target.value)} /></div><div className="flex items-end justify-between gap-4 pb-2"><Label>{t("adminSettings.client.forceUpdate")}</Label><Switch checked={clientForceUpdate} onCheckedChange={setClientForceUpdate} /></div></div>
+              <div className="space-y-2"><Label>{t("adminSettings.client.updateNotice")}</Label><Textarea value={clientUpdateNotice} onChange={(event) => setClientUpdateNotice(event.target.value)} rows={4} /></div>
+              <div className="space-y-2"><Label>{t("adminSettings.client.updateUrl")}</Label><Input value={clientUpdateURL} onChange={(event) => setClientUpdateURL(event.target.value)} /></div>
               <Button onClick={() => updateClient.mutate({ latest_version: clientVersion.trim(), force_update: clientForceUpdate, update_notice: clientUpdateNotice, update_url: clientUpdateURL.trim() })} disabled={updateClient.isPending}><Save />{t("adminSettings.save")}</Button>
-              <div className="border-t pt-5"><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={() => generateKey.mutate()} disabled={generateKey.isPending}><KeyRound />生成通讯密钥</Button><Button variant="destructive" onClick={() => revokeKey.mutate()} disabled={revokeKey.isPending}><Trash2 />作废通讯密钥</Button></div>{communicationKey && <div className="mt-4 flex gap-2"><Input value={communicationKey} readOnly /><Button variant="outline" onClick={async () => { await navigator.clipboard.writeText(communicationKey); toast.success("通讯密钥已复制"); }}>复制</Button></div>}</div>
+              <div className="border-t pt-5"><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={() => generateKey.mutate()} disabled={generateKey.isPending}><KeyRound />{t("adminSettings.client.generateKey")}</Button><Button variant="destructive" onClick={() => revokeKey.mutate()} disabled={revokeKey.isPending}><Trash2 />{t("adminSettings.client.revokeKey")}</Button></div>{communicationKey && <div className="mt-4 flex gap-2"><Input value={communicationKey} readOnly /><Button variant="outline" onClick={async () => { await navigator.clipboard.writeText(communicationKey); toast.success(t("adminSettings.client.keyCopied")); }}>{t("adminSettings.client.copyKey")}</Button></div>}</div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="maintenance" className="mt-0">
+        <TabsContent value="maintenance" className="mt-4">
           <Card>
-            <CardHeader><CardTitle>数据维护</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("adminSettings.sections.maintenance")}</CardTitle></CardHeader>
             <CardContent className="space-y-5">
-              <div className="flex flex-wrap gap-3"><Button onClick={() => exportDatabase.mutate()} disabled={exportDatabase.isPending}><Download />{exportDatabase.isPending ? "正在导出" : "导出数据库"}</Button><Button variant="destructive" onClick={() => setRestoreOpen(true)}><Database />恢复数据库</Button></div>
-              {latestRestore && <div className="border-t pt-4 text-sm"><div>最近恢复任务 #{latestRestore.id}</div><div className="text-muted-foreground">{latestRestore.status}</div></div>}
+              <div className="flex flex-wrap gap-3"><Button onClick={() => exportDatabase.mutate()} disabled={exportDatabase.isPending}><Download />{exportDatabase.isPending ? t("adminSettings.maintenance.exporting") : t("adminSettings.maintenance.exportDatabase")}</Button><Button variant="destructive" onClick={() => setRestoreOpen(true)}><Database />{t("adminSettings.maintenance.restoreDatabase")}</Button></div>
+              {latestRestore && <div className="border-t pt-4 text-sm"><div>{t("adminSettings.maintenance.latestRestore", { id: latestRestore.id })}</div><div className="text-muted-foreground">{latestRestore.status}</div></div>}
             </CardContent>
           </Card>
         </TabsContent>
@@ -348,9 +357,9 @@ export default function AdminSettingsPage() {
 
       <Dialog open={restoreOpen} onOpenChange={setRestoreOpen}>
         <DialogContent showCloseButton={!restoreDatabase.isPending}>
-          <DialogHeader><DialogTitle>恢复数据库</DialogTitle><DialogDescription>此操作会覆盖当前数据库。</DialogDescription></DialogHeader>
-          <div className="space-y-4"><div className="space-y-2"><Label>数据库备份 ZIP</Label><Input type="file" accept=".zip,application/zip" onChange={(event) => setRestoreFile(event.target.files?.[0] ?? null)} /></div><div className="space-y-2"><Label>当前密码</Label><Input type="password" value={restorePassword} onChange={(event) => setRestorePassword(event.target.value)} /></div><div className="space-y-2"><Label>确认短语</Label><Input value={restoreConfirmation} onChange={(event) => setRestoreConfirmation(event.target.value)} /></div></div>
-          <DialogFooter><Button variant="destructive" onClick={() => restoreDatabase.mutate()} disabled={!restoreReady || restoreDatabase.isPending}><Database />{restoreDatabase.isPending ? "正在恢复" : "恢复数据库"}</Button></DialogFooter>
+          <DialogHeader><DialogTitle>{t("adminSettings.maintenance.restoreDatabase")}</DialogTitle><DialogDescription>{t("adminSettings.maintenance.restoreDescription")}</DialogDescription></DialogHeader>
+          <div className="space-y-4"><div className="space-y-2"><Label>{t("adminSettings.maintenance.databaseBackup")}</Label><Input type="file" accept=".zip,application/zip" onChange={(event) => setRestoreFile(event.target.files?.[0] ?? null)} /></div><div className="space-y-2"><Label>{t("adminSettings.maintenance.currentPassword")}</Label><Input type="password" value={restorePassword} onChange={(event) => setRestorePassword(event.target.value)} /></div><div className="space-y-2"><Label>{t("adminSettings.maintenance.confirmationPhrase")}</Label><Input value={restoreConfirmation} onChange={(event) => setRestoreConfirmation(event.target.value)} /></div></div>
+          <DialogFooter><Button variant="destructive" onClick={() => restoreDatabase.mutate()} disabled={!restoreReady || restoreDatabase.isPending}><Database />{restoreDatabase.isPending ? t("adminSettings.maintenance.restoring") : t("adminSettings.maintenance.restoreDatabase")}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -369,9 +378,11 @@ function PaymentFields(props: {
   enabled: boolean[];
   onEnabled: Array<(value: boolean) => void>;
 }) {
-  return <div className="space-y-4"><h2 className="text-base font-semibold">{props.title}</h2><div className="grid gap-4 lg:grid-cols-3"><div className="space-y-2"><Label>网关地址</Label><Input value={props.url} onChange={(event) => props.onURL(event.target.value)} /></div><div className="space-y-2"><Label>商户标识</Label><Input value={props.identifier} onChange={(event) => props.onIdentifier(event.target.value)} /></div><div className="space-y-2"><Label>商户密钥</Label><Input type="password" value={props.secret} onChange={(event) => props.onSecret(event.target.value)} /></div></div><div className="flex flex-wrap gap-5">{props.labels.map((label, index) => <label key={label} className="flex items-center gap-2 text-sm"><Switch checked={props.enabled[index]} onCheckedChange={props.onEnabled[index]} />{label}</label>)}</div></div>;
+  const { t } = useTranslation();
+
+  return <div className="space-y-4"><h2 className="text-base font-semibold">{props.title}</h2><div className="grid gap-4 lg:grid-cols-3"><div className="space-y-2"><Label>{t("adminSettings.payment.gatewayUrl")}</Label><Input value={props.url} onChange={(event) => props.onURL(event.target.value)} /></div><div className="space-y-2"><Label>{t("adminSettings.payment.merchantId")}</Label><Input value={props.identifier} onChange={(event) => props.onIdentifier(event.target.value)} /></div><div className="space-y-2"><Label>{t("adminSettings.payment.merchantKey")}</Label><Input type="password" value={props.secret} onChange={(event) => props.onSecret(event.target.value)} /></div></div><div className="flex flex-wrap gap-5">{props.labels.map((label, index) => <label key={label} className="flex items-center gap-2 text-sm"><Switch checked={props.enabled[index]} onCheckedChange={props.onEnabled[index]} />{label}</label>)}</div></div>;
 }
 
 function SettingsSkeleton() {
-  return <div className="space-y-6"><Skeleton className="h-8 w-44" /><div className="grid gap-6 lg:grid-cols-[13rem_1fr]"><Skeleton className="h-44" /><Skeleton className="h-96" /></div></div>;
+  return <div className="space-y-6"><Skeleton className="h-8 w-44" /><Skeleton className="h-9 w-full" /><Skeleton className="h-96 w-full" /></div>;
 }

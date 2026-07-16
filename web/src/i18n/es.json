@@ -765,7 +765,60 @@
     "smtpUseTLS": "Usar Cifrado TLS",
     "saveSMTP": "Guardar Config SMTP",
     "testSMTP": "Enviar Correo de Prueba",
-    "smtpTestSent": "Correo de prueba enviado a {{recipient}}"
+    "smtpTestSent": "Correo de prueba enviado",
+    "save": "Guardar",
+    "sections": {
+      "navigation": "Secciones de configuración",
+      "access": "Acceso y registro",
+      "site": "Sitio y apariencia",
+      "mail": "Notificaciones por correo",
+      "integrations": "Pagos e integraciones",
+      "android": "Cliente Android",
+      "maintenance": "Mantenimiento de datos"
+    },
+    "access": {
+      "registrationEnabled": "Permitir el registro de nuevos usuarios",
+      "emailDomainPolicy": "Política de dominio de correo",
+      "emailDomains": "Dominios de correo",
+      "unrestricted": "Sin restricciones",
+      "allowlist": "Solo lista permitida",
+      "blocklist": "Lista de bloqueo"
+    },
+    "payment": {
+      "epay": "Epay",
+      "codepay": "CodePay",
+      "alipay": "Alipay",
+      "wechat": "WeChat",
+      "gatewayUrl": "URL de la pasarela",
+      "merchantId": "ID de comerciante",
+      "merchantKey": "Clave de comerciante"
+    },
+    "client": {
+      "latestVersion": "Última versión",
+      "forceUpdate": "Forzar actualización",
+      "updateNotice": "Aviso de actualización",
+      "updateUrl": "Enlace de actualización",
+      "generateKey": "Generar clave de comunicación",
+      "revokeKey": "Revocar clave de comunicación",
+      "keyGenerated": "Clave de comunicación generada",
+      "keyRevoked": "Clave de comunicación revocada",
+      "copyKey": "Copiar",
+      "keyCopied": "Clave de comunicación copiada"
+    },
+    "maintenance": {
+      "exportDatabase": "Exportar base de datos",
+      "exporting": "Exportando",
+      "exportReady": "Copia de seguridad de la base de datos creada",
+      "restoreDatabase": "Restaurar base de datos",
+      "latestRestore": "Última tarea de restauración #{{id}}",
+      "restoreDescription": "Esta operación sobrescribe la base de datos actual.",
+      "databaseBackup": "Copia de seguridad ZIP de la base de datos",
+      "currentPassword": "Contraseña actual",
+      "confirmationPhrase": "Frase de confirmación",
+      "restoring": "Restaurando",
+      "restoreComplete": "La restauración de la base de datos se completó. El servicio está en modo de mantenimiento.",
+      "restoreFileRequired": "Seleccione un archivo ZIP de copia de seguridad de la base de datos."
+    }
   },
   "referral": {
     "title": "Programa de referidos",
@@ -1003,7 +1056,9 @@
     "dnsBulkJobQueuedBan": "Tarea DNS en cola (Job #{{jobID}}). Reintente el bloqueo cuando finalice.",
     "dnsBulkJobQueuedDelete": "Tarea DNS en cola (Job #{{jobID}}). Reintente la eliminación cuando finalice.",
     "dnsBulkJobQueuedRelease": "Tarea DNS en cola (Job #{{jobID}}). Reintente la liberación cuando finalice.",
-    "dnsBulkJobQueuedOperation": "Tarea DNS en cola (Job #{{jobID}}). Reintente la operación cuando finalice."
+    "dnsBulkJobQueuedOperation": "Tarea DNS en cola (Job #{{jobID}}). Reintente la operación cuando finalice.",
+    "nameCannotBeEmpty": "El nombre no puede estar vacío",
+    "failedToUpdateProfile": "No se pudo actualizar el perfil"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

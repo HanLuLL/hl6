@@ -11,8 +11,8 @@ import (
 
 const localAuthEnabledConfigKey = "auth.local.enabled"
 
-// InstallAuthSchema is deliberately additive. The destructive removal of
-// legacy OIDC schema happens only through the explicit cutover command.
+// InstallAuthSchema is deliberately additive. Destructive removal of the
+// legacy external-authentication schema happens only through the explicit cutover command.
 func InstallAuthSchema(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("auth schema database is nil")

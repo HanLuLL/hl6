@@ -765,7 +765,60 @@
     "smtpUseTLS": "Use TLS Encryption",
     "saveSMTP": "Save SMTP Config",
     "testSMTP": "Send Test Email",
-    "smtpTestSent": "Test email sent to {{recipient}}"
+    "smtpTestSent": "Test email sent",
+    "save": "Save",
+    "sections": {
+      "navigation": "Settings sections",
+      "access": "Access & Registration",
+      "site": "Site & Appearance",
+      "mail": "Email Notifications",
+      "integrations": "Payments & Integrations",
+      "android": "Android Client",
+      "maintenance": "Data Maintenance"
+    },
+    "access": {
+      "registrationEnabled": "Allow new user registration",
+      "emailDomainPolicy": "Email domain policy",
+      "emailDomains": "Email domains",
+      "unrestricted": "Unrestricted",
+      "allowlist": "Allowlist only",
+      "blocklist": "Blocklist"
+    },
+    "payment": {
+      "epay": "Epay",
+      "codepay": "CodePay",
+      "alipay": "Alipay",
+      "wechat": "WeChat",
+      "gatewayUrl": "Gateway URL",
+      "merchantId": "Merchant ID",
+      "merchantKey": "Merchant key"
+    },
+    "client": {
+      "latestVersion": "Latest version",
+      "forceUpdate": "Force update",
+      "updateNotice": "Update notice",
+      "updateUrl": "Update URL",
+      "generateKey": "Generate communication key",
+      "revokeKey": "Revoke communication key",
+      "keyGenerated": "Communication key generated",
+      "keyRevoked": "Communication key revoked",
+      "copyKey": "Copy",
+      "keyCopied": "Communication key copied"
+    },
+    "maintenance": {
+      "exportDatabase": "Export database",
+      "exporting": "Exporting",
+      "exportReady": "Database backup created",
+      "restoreDatabase": "Restore database",
+      "latestRestore": "Latest restore job #{{id}}",
+      "restoreDescription": "This operation overwrites the current database.",
+      "databaseBackup": "Database backup ZIP",
+      "currentPassword": "Current password",
+      "confirmationPhrase": "Confirmation phrase",
+      "restoring": "Restoring",
+      "restoreComplete": "Database restore completed. The service is in maintenance mode.",
+      "restoreFileRequired": "Select a database backup ZIP file."
+    }
   },
   "referral": {
     "title": "Referral Program",
@@ -1003,7 +1056,9 @@
     "dnsBulkJobQueuedBan": "DNS bulk job queued (Job #{{jobID}}). Please retry the ban after it completes.",
     "dnsBulkJobQueuedDelete": "DNS bulk job queued (Job #{{jobID}}). Please retry the delete after it completes.",
     "dnsBulkJobQueuedRelease": "DNS bulk job queued (Job #{{jobID}}). Please retry the release after it completes.",
-    "dnsBulkJobQueuedOperation": "DNS bulk job queued (Job #{{jobID}}). Please retry the operation after it completes."
+    "dnsBulkJobQueuedOperation": "DNS bulk job queued (Job #{{jobID}}). Please retry the operation after it completes.",
+    "nameCannotBeEmpty": "Name cannot be empty",
+    "failedToUpdateProfile": "Failed to update profile"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
