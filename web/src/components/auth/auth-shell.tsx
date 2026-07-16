@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Globe2, ShieldCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useBranding } from "@/hooks/use-branding";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
@@ -14,6 +15,7 @@ type AuthShellProps = {
 
 export function AuthShell({ title, description, children, footer }: AuthShellProps) {
   const branding = useBranding();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -39,7 +41,7 @@ export function AuthShell({ title, description, children, footer }: AuthShellPro
               <ShieldCheck className="h-5 w-5" />
             </div>
             <h1 className="text-3xl font-semibold leading-tight text-foreground">{branding.name}</h1>
-            <p className="mt-4 text-sm leading-6 text-muted-foreground">Manage your subdomains and DNS records from one secure account.</p>
+            <p className="mt-4 text-sm leading-6 text-muted-foreground">{t("auth.shellTagline")}</p>
           </div>
           <p className="text-xs text-muted-foreground">{branding.name}</p>
         </section>
