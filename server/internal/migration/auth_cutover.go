@@ -255,7 +255,7 @@ func AuthCutover(ctx context.Context, db *gorm.DB, options AuthCutoverOptions) (
 					"email_verified_at":      nil,
 					"password_set_at":        nil,
 					"activation_required_at": &now,
-					"session_version":        gorm.Expr("session_version + 1"),
+					"session_version":        gorm.Expr(quotedIdentifier(tx.NamingStrategy.TableName("UserCredential")) + ".\"session_version\" + 1"),
 				}),
 			}).Create(&credential)
 			if resultWrite.Error != nil {
