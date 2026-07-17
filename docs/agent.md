@@ -76,3 +76,4 @@ The web administration console controls latest version, forced-update flag, upda
 | 2026-07-17 | Added safe formal-release certificate-mismatch diagnostics using only public SHA-256 fingerprints; private keys, passwords, aliases, and communication keys remain masked. |
 | 2026-07-17 | Added the verified LinYu icon as a repository-relative Android build resource so official release builds do not depend on external icon-host reachability; external HTTPS icon inputs remain supported with bounded retries. |
 | 2026-07-17 | Corrected formal-release APK certificate parsing to capture both `apksigner` output streams before extracting the public signer fingerprint, preserving strict certificate comparison. |
+| 2026-07-17 | Hardened formal-release APK certificate parsing against build-tools output-format differences; the workflow now validates a full 64-character SHA-256 fingerprint and prints only non-sensitive certificate diagnostics on parse failure. |

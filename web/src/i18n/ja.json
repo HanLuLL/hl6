@@ -39,6 +39,53 @@
     "collapse": "折りたたむ",
     "toggleTheme": "テーマを切り替え"
   },
+  "auth": {
+    "shellTagline": "安全なアカウントからサブドメインと DNS レコードを管理できます。",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "confirmPassword": "パスワードを確認",
+    "passwordMismatch": "パスワードが一致しません。",
+    "invalidLink": "このリンクは無効か、有効期限が切れています。",
+    "login": {
+      "title": "おかえりなさい",
+      "description": "ダッシュボードを続けて利用するにはログインしてください。",
+      "newHere": "初めてですか？",
+      "createAccount": "アカウントを作成",
+      "forgotPassword": "パスワードをお忘れですか？",
+      "activate": "既存のアカウントを有効化"
+    },
+    "register": {
+      "title": "アカウントを作成",
+      "description": "パスワードを設定する前に、メール確認リンクを送信します。",
+      "signIn": "すでにアカウントがありますか？ログイン",
+      "continue": "続行"
+    },
+    "activate": {
+      "title": "アカウントを有効化",
+      "description": "既存のアカウントに登録されているメールアドレスを入力してください。",
+      "continue": "有効化リンクを送信"
+    },
+    "forgot": {
+      "title": "パスワードをリセット",
+      "description": "メールアドレスを入力すると、リセットリンクを送信します。",
+      "continue": "リセットリンクを送信"
+    },
+    "verify": {
+      "activationTitle": "受信トレイを確認してください",
+      "activationDescription": "メールアドレスに有効化リンクを送信しました。",
+      "title": "メールアドレスを確認",
+      "description": "メールアドレスに一度だけ使用できる確認リンクを送信しました。",
+      "back": "ログインに戻る"
+    },
+    "setPassword": {
+      "title": "パスワードを設定",
+      "description": "12文字以上のパスワードを設定してください。",
+      "continue": "続行"
+    },
+    "reset": {
+      "title": "新しいパスワードを設定"
+    }
+  },
   "footer": {
     "openSource": "Open Source",
     "branch": "ブランチ",

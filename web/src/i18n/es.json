@@ -39,6 +39,53 @@
     "collapse": "Contraer",
     "toggleTheme": "Cambiar tema"
   },
+  "auth": {
+    "shellTagline": "Administra tus subdominios y registros DNS desde una cuenta segura.",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "passwordMismatch": "Las contraseñas no coinciden.",
+    "invalidLink": "Este enlace no es válido o ha caducado.",
+    "login": {
+      "title": "Bienvenido de nuevo",
+      "description": "Inicia sesión para continuar al panel de control.",
+      "newHere": "¿Eres nuevo?",
+      "createAccount": "Crear una cuenta",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "activate": "Activar una cuenta existente"
+    },
+    "register": {
+      "title": "Crea tu cuenta",
+      "description": "Enviaremos un enlace para verificar tu correo antes de que elijas una contraseña.",
+      "signIn": "¿Ya tienes una cuenta? Inicia sesión",
+      "continue": "Continuar"
+    },
+    "activate": {
+      "title": "Activa tu cuenta",
+      "description": "Usa la dirección de correo asociada a tu cuenta existente.",
+      "continue": "Enviar enlace de activación"
+    },
+    "forgot": {
+      "title": "Restablece tu contraseña",
+      "description": "Introduce tu correo y te enviaremos un enlace para restablecer la contraseña.",
+      "continue": "Enviar enlace de restablecimiento"
+    },
+    "verify": {
+      "activationTitle": "Revisa tu bandeja de entrada",
+      "activationDescription": "Enviamos un enlace de activación a tu dirección de correo.",
+      "title": "Verifica tu correo",
+      "description": "Enviamos un enlace de verificación de un solo uso a tu dirección de correo.",
+      "back": "Volver a iniciar sesión"
+    },
+    "setPassword": {
+      "title": "Establece tu contraseña",
+      "description": "Elige una contraseña de al menos 12 caracteres.",
+      "continue": "Continuar"
+    },
+    "reset": {
+      "title": "Establece una nueva contraseña"
+    }
+  },
   "footer": {
     "openSource": "Open Source",
     "branch": "Rama",

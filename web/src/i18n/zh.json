@@ -39,6 +39,53 @@
     "collapse": "收起",
     "toggleTheme": "切换主题"
   },
+  "auth": {
+    "shellTagline": "在一个安全的账户中管理你的子域名和 DNS 记录。",
+    "email": "邮箱",
+    "password": "密码",
+    "confirmPassword": "确认密码",
+    "passwordMismatch": "两次输入的密码不一致。",
+    "invalidLink": "此链接无效或已过期。",
+    "login": {
+      "title": "欢迎回来",
+      "description": "登录以继续访问控制台。",
+      "newHere": "还没有账户？",
+      "createAccount": "创建账户",
+      "forgotPassword": "忘记密码？",
+      "activate": "激活已有账户"
+    },
+    "register": {
+      "title": "创建账户",
+      "description": "我们会先发送邮箱验证链接，验证后即可设置密码。",
+      "signIn": "已有账户？立即登录",
+      "continue": "继续"
+    },
+    "activate": {
+      "title": "激活账户",
+      "description": "请输入与你现有账户关联的邮箱地址。",
+      "continue": "发送激活链接"
+    },
+    "forgot": {
+      "title": "重置密码",
+      "description": "输入邮箱，我们会发送密码重置链接。",
+      "continue": "发送重置链接"
+    },
+    "verify": {
+      "activationTitle": "请查收邮件",
+      "activationDescription": "激活链接已发送到你的邮箱。",
+      "title": "请验证邮箱",
+      "description": "一次性验证链接已发送到你的邮箱。",
+      "back": "返回登录"
+    },
+    "setPassword": {
+      "title": "设置密码",
+      "description": "请设置至少 12 个字符的密码。",
+      "continue": "继续"
+    },
+    "reset": {
+      "title": "设置新密码"
+    }
+  },
   "footer": {
     "openSource": "开源地址",
     "branch": "分支",

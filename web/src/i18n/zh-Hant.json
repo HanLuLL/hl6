@@ -39,6 +39,53 @@
     "collapse": "收起",
     "toggleTheme": "切換主題"
   },
+  "auth": {
+    "shellTagline": "在安全的帳戶中管理你的子網域與 DNS 記錄。",
+    "email": "電子郵件",
+    "password": "密碼",
+    "confirmPassword": "確認密碼",
+    "passwordMismatch": "兩次輸入的密碼不一致。",
+    "invalidLink": "此連結無效或已過期。",
+    "login": {
+      "title": "歡迎回來",
+      "description": "登入以繼續前往控制台。",
+      "newHere": "還沒有帳戶？",
+      "createAccount": "建立帳戶",
+      "forgotPassword": "忘記密碼？",
+      "activate": "啟用既有帳戶"
+    },
+    "register": {
+      "title": "建立帳戶",
+      "description": "我們會先寄送電子郵件驗證連結，驗證後即可設定密碼。",
+      "signIn": "已有帳戶？立即登入",
+      "continue": "繼續"
+    },
+    "activate": {
+      "title": "啟用帳戶",
+      "description": "請輸入與既有帳戶關聯的電子郵件地址。",
+      "continue": "寄送啟用連結"
+    },
+    "forgot": {
+      "title": "重設密碼",
+      "description": "輸入電子郵件，我們會寄送密碼重設連結。",
+      "continue": "寄送重設連結"
+    },
+    "verify": {
+      "activationTitle": "請查收郵件",
+      "activationDescription": "啟用連結已寄送到你的電子郵件。",
+      "title": "請驗證電子郵件",
+      "description": "一次性驗證連結已寄送到你的電子郵件。",
+      "back": "返回登入"
+    },
+    "setPassword": {
+      "title": "設定密碼",
+      "description": "請設定至少 12 個字元的密碼。",
+      "continue": "繼續"
+    },
+    "reset": {
+      "title": "設定新密碼"
+    }
+  },
   "footer": {
     "openSource": "開源地址",
     "branch": "分支",

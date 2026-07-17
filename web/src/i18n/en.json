@@ -39,6 +39,53 @@
     "collapse": "Collapse",
     "toggleTheme": "Toggle theme"
   },
+  "auth": {
+    "shellTagline": "Manage your subdomains and DNS records from one secure account.",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "passwordMismatch": "Passwords do not match.",
+    "invalidLink": "This link is invalid or has expired.",
+    "login": {
+      "title": "Welcome back",
+      "description": "Sign in to continue to your dashboard.",
+      "newHere": "New here?",
+      "createAccount": "Create an account",
+      "forgotPassword": "Forgot password?",
+      "activate": "Activate an existing account"
+    },
+    "register": {
+      "title": "Create your account",
+      "description": "We will send a link to verify your email before you choose a password.",
+      "signIn": "Already have an account? Sign in",
+      "continue": "Continue"
+    },
+    "activate": {
+      "title": "Activate your account",
+      "description": "Use the email address associated with your existing account.",
+      "continue": "Send activation link"
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "description": "Enter your email and we will send a password reset link.",
+      "continue": "Send reset link"
+    },
+    "verify": {
+      "activationTitle": "Check your inbox",
+      "activationDescription": "We sent an activation link to your email address.",
+      "title": "Verify your email",
+      "description": "We sent a one-time verification link to your email address.",
+      "back": "Back to sign in"
+    },
+    "setPassword": {
+      "title": "Set your password",
+      "description": "Choose a password with at least 12 characters.",
+      "continue": "Continue"
+    },
+    "reset": {
+      "title": "Set a new password"
+    }
+  },
   "footer": {
     "openSource": "Open Source",
     "branch": "Branch",
