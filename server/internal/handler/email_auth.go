@@ -54,6 +54,7 @@ type EmailAuthHandler struct {
 type emailRequest struct {
 	Email        string `json:"email"`
 	ReferralCode string `json:"referral_code"`
+	Locale       string `json:"locale"`
 }
 
 type passwordCompleteRequest struct {
@@ -138,7 +139,7 @@ func (h *EmailAuthHandler) RegistrationRequest(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to prepare registration", "error.databaseError")
 		return
 	}
-	if err := h.createAndSendAuthToken(c, model.AuthTokenPurposeRegistrationVerify, nil, emailNormalized, payload); err != nil {
+	if err := h.createAndSendAuthToken(c, model.AuthTokenPurposeRegistrationVerify, nil, emailNormalized, requestedAuthEmailLocale(c, body.Locale), payload); err != nil {
 		response.ErrorWithKey(c, http.StatusBadGateway, "failed to send verification email", "error.emailUnavailable")
 		return
 	}
@@ -152,7 +153,7 @@ func (h *EmailAuthHandler) ActivationRequest(c *gin.Context) {
 		return
 	}
 
-	emailNormalized, ok := h.parseEmailRequest(c)
+	emailNormalized, emailLocale, ok := h.parseEmailRequest(c)
 	if !ok {
 		return
 	}
@@ -168,7 +169,7 @@ func (h *EmailAuthHandler) ActivationRequest(c *gin.Context) {
 	}
 	user, err := h.repo.FindUserByID(credential.UserID)
 	if err == nil && h.emailSvc != nil && h.emailSvc.IsEnabled() {
-		if err := h.createAndSendAuthToken(c, model.AuthTokenPurposeAccountActivation, &user.ID, credential.EmailNormalized, nil); err != nil {
+		if err := h.createAndSendAuthToken(c, model.AuthTokenPurposeAccountActivation, &user.ID, credential.EmailNormalized, emailLocale, nil); err != nil {
 			h.recordSecurityEvent(c, &user.ID, "activation_request", model.AuthSecurityOutcomeFailure, emailNormalized)
 			h.accepted(c)
 			return
@@ -187,7 +188,7 @@ func (h *EmailAuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	emailNormalized, ok := h.parseEmailRequest(c)
+	emailNormalized, emailLocale, ok := h.parseEmailRequest(c)
 	if !ok {
 		return
 	}
@@ -207,7 +208,7 @@ func (h *EmailAuthHandler) ForgotPassword(c *gin.Context) {
 		h.accepted(c)
 		return
 	}
-	if err := h.createAndSendAuthToken(c, model.AuthTokenPurposePasswordReset, &user.ID, credential.EmailNormalized, nil); err != nil {
+	if err := h.createAndSendAuthToken(c, model.AuthTokenPurposePasswordReset, &user.ID, credential.EmailNormalized, emailLocale, nil); err != nil {
 		h.recordSecurityEvent(c, &user.ID, "password_forgot", model.AuthSecurityOutcomeFailure, emailNormalized)
 		h.accepted(c)
 		return
@@ -233,7 +234,7 @@ func (h *EmailAuthHandler) CompletePassword(c *gin.Context) {
 		return
 	}
 	if err := auth.ValidatePassword(body.Password); err != nil {
-		response.ErrorWithKey(c, http.StatusBadRequest, "invalid password", "error.invalidRequestBody")
+		response.ErrorWithKey(c, http.StatusBadRequest, "password must contain 8 to 128 characters", "error.invalidPassword")
 		return
 	}
 
@@ -381,7 +382,7 @@ func (h *EmailAuthHandler) completePassword(c *gin.Context, token *model.AuthTok
 	}
 }
 
-func (h *EmailAuthHandler) createAndSendAuthToken(c *gin.Context, purpose string, userID *uint, emailNormalized string, payload json.RawMessage) error {
+func (h *EmailAuthHandler) createAndSendAuthToken(c *gin.Context, purpose string, userID *uint, emailNormalized, locale string, payload json.RawMessage) error {
 	rawToken, err := auth.NewRawToken()
 	if err != nil {
 		return err
@@ -401,7 +402,7 @@ func (h *EmailAuthHandler) createAndSendAuthToken(c *gin.Context, purpose string
 	if err := h.repo.CreateAuthToken(token); err != nil {
 		return err
 	}
-	return h.emailSvc.SendAuthenticationLink(emailNormalized, purpose, link, userID)
+	return h.emailSvc.SendAuthenticationLink(emailNormalized, purpose, link, locale, userID)
 }
 
 func (h *EmailAuthHandler) authenticationLink(c *gin.Context, purpose, rawToken string) (string, error) {
@@ -518,18 +519,29 @@ func (h *EmailAuthHandler) nativeRequest(c *gin.Context) (bool, string, error) {
 	return true, storedHash, nil
 }
 
-func (h *EmailAuthHandler) parseEmailRequest(c *gin.Context) (string, bool) {
+func (h *EmailAuthHandler) parseEmailRequest(c *gin.Context) (string, string, bool) {
 	var body emailRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
-		return "", false
+		return "", "", false
 	}
 	emailNormalized, err := auth.NormalizeEmail(body.Email)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid email address", "error.invalidRequestBody")
-		return "", false
+		return "", "", false
 	}
-	return emailNormalized, true
+	return emailNormalized, requestedAuthEmailLocale(c, body.Locale), true
+}
+
+func requestedAuthEmailLocale(c *gin.Context, requested string) string {
+	locale := strings.TrimSpace(requested)
+	if locale == "" && c != nil {
+		locale = strings.TrimSpace(c.GetHeader("Accept-Language"))
+	}
+	if len(locale) > 128 {
+		return ""
+	}
+	return locale
 }
 
 func (h *EmailAuthHandler) requireLocalAuthEnabled(c *gin.Context) bool {

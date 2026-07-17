@@ -279,11 +279,11 @@ export const api = {
     sessionStorage.removeItem("hl6_401_time");
     return res;
   },
-  requestRegistration: (data: { email: string; referral_code?: string }) =>
+  requestRegistration: (data: { email: string; referral_code?: string; locale?: string }) =>
     request<ApiResponse<undefined>>("/auth/registration/request", { method: "POST", body: JSON.stringify(data) }),
-  requestActivation: (data: { email: string }) =>
+  requestActivation: (data: { email: string; locale?: string }) =>
     request<ApiResponse<undefined>>("/auth/activation/request", { method: "POST", body: JSON.stringify(data) }),
-  requestPasswordReset: (data: { email: string }) =>
+  requestPasswordReset: (data: { email: string; locale?: string }) =>
     request<ApiResponse<undefined>>("/auth/password/forgot", { method: "POST", body: JSON.stringify(data) }),
   completePassword: (data: { token: string; password: string }) =>
     request<ApiResponse<AuthSessionPayload>>("/auth/password/complete", { method: "POST", body: JSON.stringify(data) }),

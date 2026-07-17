@@ -14,6 +14,9 @@ import { SecureStoragePlugin } from "capacitor-secure-storage-plugin";
 
 type SetPasswordPageProps = { reset?: boolean };
 
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 128;
+
 export default function SetPasswordPage({ reset = false }: SetPasswordPageProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -31,6 +34,11 @@ export default function SetPasswordPage({ reset = false }: SetPasswordPageProps)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    const passwordLength = Array.from(password).length;
+    if (passwordLength < PASSWORD_MIN_LENGTH || passwordLength > PASSWORD_MAX_LENGTH) {
+      setError(t("auth.setPassword.description", { defaultValue: "Choose a password with 8 to 128 characters." }));
+      return;
+    }
     if (password !== confirmation) {
       setError(t("auth.passwordMismatch", { defaultValue: "Passwords do not match." }));
       return;
@@ -56,12 +64,12 @@ export default function SetPasswordPage({ reset = false }: SetPasswordPageProps)
   return (
     <AuthShell
       title={reset ? t("auth.reset.title", { defaultValue: "Set a new password" }) : t("auth.setPassword.title", { defaultValue: "Set your password" })}
-      description={t("auth.setPassword.description", { defaultValue: "Choose a password with at least 12 characters." })}
+      description={t("auth.setPassword.description", { defaultValue: "Choose a password with 8 to 128 characters." })}
     >
       <form className="space-y-4" onSubmit={submit} noValidate>
         <div className="space-y-2">
           <Label htmlFor="new-password">{t("auth.password", { defaultValue: "Password" })}</Label>
-          <PasswordField id="new-password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+          <PasswordField id="new-password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={PASSWORD_MIN_LENGTH} required />
         </div>
         <div className="space-y-2">
           <Label htmlFor="confirm-password">{t("auth.confirmPassword", { defaultValue: "Confirm password" })}</Label>

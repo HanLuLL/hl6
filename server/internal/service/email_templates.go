@@ -9,8 +9,18 @@ import (
 // emailBaseHTML 构建邮件 HTML 外壳，所有邮件模板共用此基础结构。
 // 支持 Gmail、Outlook、Apple Mail 等主流客户端，内联样式确保兼容性。
 func emailBaseHTML(siteName, title, contentHTML string) string {
+	footer := fmt.Sprintf("此邮件由 %s 系统自动发送，请勿直接回复。", html.EscapeString(siteName))
+	return emailBaseHTMLLocalized(siteName, title, contentHTML, "zh-CN", footer)
+}
+
+func emailBaseHTMLLocalized(siteName, title, contentHTML, language, footerHTML string) string {
+	language = strings.TrimSpace(language)
+	if language == "" {
+		language = "en"
+	}
+	language = html.EscapeString(language)
 	return fmt.Sprintf(`<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="%s">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -43,7 +53,7 @@ func emailBaseHTML(siteName, title, contentHTML string) string {
 					<tr>
 						<td style="padding:24px 40px;background-color:#f8f9fa;border-top:1px solid #e9ecef;">
 							<p style="margin:0;color:#6c757d;font-size:13px;line-height:1.6;text-align:center;">
-								此邮件由 %s 系统自动发送，请勿直接回复。<br/>
+								%s<br/>
 								&copy; 2026 %s. All rights reserved.
 							</p>
 						</td>
@@ -53,7 +63,7 @@ func emailBaseHTML(siteName, title, contentHTML string) string {
 		</tr>
 	</table>
 </body>
-</html>`, title, siteName, title, contentHTML, siteName, siteName)
+</html>`, language, title, siteName, title, contentHTML, footerHTML, siteName)
 }
 
 // buildBanEmailHTML 构建封禁通知邮件的 HTML 内容。

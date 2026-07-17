@@ -79,7 +79,7 @@
     },
     "setPassword": {
       "title": "Establece tu contraseña",
-      "description": "Elige una contraseña de al menos 12 caracteres.",
+      "description": "Elige una contraseña de entre 8 y 128 caracteres.",
       "continue": "Continuar"
     },
     "reset": {
@@ -965,6 +965,7 @@
     "userBannedWithReason": "La cuenta está bloqueada. Motivo: {{reason}}",
     "userNotFoundPleaseSync": "Usuario no encontrado, sincronice primero",
     "invalidRequestBody": "Contenido de solicitud inválido",
+    "invalidPassword": "La contraseña debe tener entre 8 y 128 caracteres.",
     "insufficientCredits": "Créditos insuficientes",
     "subdomainAlreadyTaken": "El subdominio ya está ocupado",
     "domainNotFoundOrInactive": "Dominio no encontrado o inactivo",

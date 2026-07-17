@@ -79,7 +79,7 @@
     },
     "setPassword": {
       "title": "パスワードを設定",
-      "description": "12文字以上のパスワードを設定してください。",
+      "description": "8文字以上128文字以下のパスワードを設定してください。",
       "continue": "続行"
     },
     "reset": {
@@ -965,6 +965,7 @@
     "userBannedWithReason": "アカウントは封禁されています。理由：{{reason}}",
     "userNotFoundPleaseSync": "ユーザーが見つかりません。先に同期してください",
     "invalidRequestBody": "無効なリクエスト内容",
+    "invalidPassword": "パスワードは8文字以上128文字以下で入力してください。",
     "insufficientCredits": "クレジットが不足しています",
     "subdomainAlreadyTaken": "サブドメインは既に使用されています",
     "domainNotFoundOrInactive": "ドメインが見つからないか無効です",

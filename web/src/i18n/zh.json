@@ -79,7 +79,7 @@
     },
     "setPassword": {
       "title": "设置密码",
-      "description": "请设置至少 12 个字符的密码。",
+      "description": "请设置 8 到 128 个字符的密码。",
       "continue": "继续"
     },
     "reset": {
@@ -965,6 +965,7 @@
     "userBannedWithReason": "账号已封禁，原因：{{reason}}",
     "userNotFoundPleaseSync": "用户未找到，请先同步",
     "invalidRequestBody": "无效的请求内容",
+    "invalidPassword": "密码长度必须为 8 到 128 个字符",
     "insufficientCredits": "积分不足",
     "subdomainAlreadyTaken": "子域名已被占用，请更换前缀重试",
     "domainNotFoundOrInactive": "域名未找到或已停用",

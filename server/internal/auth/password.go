@@ -23,6 +23,8 @@ const (
 	passwordParallelism = 4
 	passwordKeyLength   = 32
 	passwordSaltLength  = 16
+	passwordMinLength   = 8
+	passwordMaxLength   = 128
 )
 
 var (
@@ -128,7 +130,7 @@ func ValidatePassword(password string) error {
 		return ErrInvalidPassword
 	}
 	length := utf8.RuneCountInString(password)
-	if length < 12 || length > 128 {
+	if length < passwordMinLength || length > passwordMaxLength {
 		return ErrInvalidPassword
 	}
 	return nil

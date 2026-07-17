@@ -79,7 +79,7 @@
     },
     "setPassword": {
       "title": "Задайте пароль",
-      "description": "Выберите пароль длиной не менее 12 символов.",
+      "description": "Выберите пароль длиной от 8 до 128 символов.",
       "continue": "Продолжить"
     },
     "reset": {
@@ -965,6 +965,7 @@
     "userBannedWithReason": "Аккаунт заблокирован. Причина: {{reason}}",
     "userNotFoundPleaseSync": "Пользователь не найден, сначала синхронизируйтесь",
     "invalidRequestBody": "Некорректное тело запроса",
+    "invalidPassword": "Пароль должен содержать от 8 до 128 символов.",
     "insufficientCredits": "Недостаточно кредитов",
     "subdomainAlreadyTaken": "Поддомен уже занят",
     "domainNotFoundOrInactive": "Домен не найден или неактивен",

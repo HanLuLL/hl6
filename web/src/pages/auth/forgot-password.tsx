@@ -9,7 +9,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { api, getErrorMessage } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
     setError("");
     setSubmitting(true);
     try {
-      await api.requestPasswordReset({ email });
+      await api.requestPasswordReset({ email, locale: i18n.resolvedLanguage ?? i18n.language });
       navigate(`/verify-email?mode=reset&email=${encodeURIComponent(email)}`, { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, t));

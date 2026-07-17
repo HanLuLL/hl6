@@ -9,7 +9,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { api, getErrorMessage } from "@/lib/api";
 
 export default function RegisterPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
@@ -21,7 +21,7 @@ export default function RegisterPage() {
     setError("");
     setSubmitting(true);
     try {
-      await api.requestRegistration({ email, referral_code: searchParams.get("ref") ?? undefined });
+      await api.requestRegistration({ email, referral_code: searchParams.get("ref") ?? undefined, locale: i18n.resolvedLanguage ?? i18n.language });
       navigate(`/verify-email?email=${encodeURIComponent(email)}`, { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, t));

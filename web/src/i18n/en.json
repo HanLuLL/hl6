@@ -79,7 +79,7 @@
     },
     "setPassword": {
       "title": "Set your password",
-      "description": "Choose a password with at least 12 characters.",
+      "description": "Choose a password with 8 to 128 characters.",
       "continue": "Continue"
     },
     "reset": {
@@ -965,6 +965,7 @@
     "userBannedWithReason": "Account is banned. Reason: {{reason}}",
     "userNotFoundPleaseSync": "User not found, please sync first",
     "invalidRequestBody": "Invalid request body",
+    "invalidPassword": "Password must contain 8 to 128 characters.",
     "insufficientCredits": "Insufficient credits",
     "subdomainAlreadyTaken": "Subdomain already taken. Please try a different prefix.",
     "domainNotFoundOrInactive": "Domain not found or inactive",

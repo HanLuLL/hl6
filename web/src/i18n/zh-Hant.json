@@ -79,7 +79,7 @@
     },
     "setPassword": {
       "title": "設定密碼",
-      "description": "請設定至少 12 個字元的密碼。",
+      "description": "請設定 8 到 128 個字元的密碼。",
       "continue": "繼續"
     },
     "reset": {
@@ -965,6 +965,7 @@
     "userBannedWithReason": "帳號已封禁，原因：{{reason}}",
     "userNotFoundPleaseSync": "使用者未找到，請先同步",
     "invalidRequestBody": "無效的請求內容",
+    "invalidPassword": "密碼長度必須為 8 到 128 個字元",
     "insufficientCredits": "積分不足",
     "subdomainAlreadyTaken": "子網域已被佔用",
     "domainNotFoundOrInactive": "網域未找到或已停用",
