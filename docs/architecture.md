@@ -1,39 +1,39 @@
-# Architecture
+# 架构
 
-## Components
+## 组件
 
 ```text
-React/Vite web UI and packaged Android UI
+React/Vite Web UI 和打包的 Android UI
              |
              | HTTPS JSON API
              v
 Gin handlers -> middleware -> repository -> PostgreSQL
              |                    |
-             |                    +-> system configuration, audit records, credentials
-             +-> DNS providers, SMTP, payment gateways, AI services
+             |                    +-> 系统配置、审核记录、凭证
+             +-> DNS 提供商、SMTP、支付网关、AI 服务
 ```
 
-The Android package is built from the same local React source as the web UI. It does not fetch a remote web application for rendering. The package only supplies platform lifecycle, secure session storage, API transport, and update-link handling.
+Android 包从与 Web UI 相同的本地 React 源构建。它不会获取远程 Web 应用进行渲染。包仅提供平台生命周期、安全会话存储、API 传输和更新链接处理。
 
-## Data Ownership
+## 数据所有权
 
-- `User` owns profile, custom name, avatar URL, role, group, ban state, and user-linked business records.
-- `UserCredential` owns normalized email, Argon2id hash metadata, verification state, activation state, and session version.
-- `AuthToken` owns one-time token hashes and expiry. Raw tokens never persist.
-- `AuthSecurityEvent` records privacy-preserving authentication events and keyed IP hashes.
-- `DatabaseBackup` and `DatabaseRestoreJob` record server-generated archive metadata and destructive restore state.
-- `SystemConfig` owns dynamic settings including registration policy, SMTP, Android version policy, and communication-key hash.
+- `User` 拥有资料、自定义姓名、头像 URL、角色、组、封禁状态和用户关联的业务记录
+- `UserCredential` 拥有规范化邮箱、Argon2id 哈希元数据、验证状态、激活状态和会话版本
+- `AuthToken` 拥有一次性格令牌哈希和过期时间。原始令牌永不持久化
+- `AuthSecurityEvent` 记录隐私保护的认证事件和键控 IP 哈希
+- `DatabaseBackup` 和 `DatabaseRestoreJob` 记录服务器生成的存档元数据和破坏性恢复状态
+- `SystemConfig` 拥有动态设置，包括注册策略、SMTP、Android 版本策略和通讯密钥哈希
 
-## Session Boundary
+## 会话边界
 
-Browser sessions use signed JWT cookies. Native sessions use signed JWT bearer tokens with numeric user IDs, session version, native-client marker, and communication-key hash. Middleware checks the credential session version on every request, so password changes and session invalidation revoke older tokens.
+浏览器会话使用签名 JWT Cookie。原生会话使用签名 JWT Bearer 令牌，带有数字用户 ID、会话版本、原生客户端标记和通讯密钥哈希。中间件在每个请求上检查凭证会话版本，因此密码更改和会话失效会撤销旧令牌。
 
-Authorization remains server-side. A client key does not grant administrator access, resource ownership, or permission bypass.
+授权保留在服务端。客户端密钥不授予管理员访问、资源所有权或权限绕过。
 
-## Authentication Cutover
+## 认证切换
 
-The running application performs additive schema migration only. The destructive v1-to-v2 migration is a console-only command guarded by a verified export, SMTP test, public URL, normalized email validation, duplicate detection, default group check, and explicit confirmation. It creates activation-required credentials without changing user IDs, then removes retired identity columns/configuration only within the successful transaction.
+运行中的应用仅执行增量模式迁移。破坏性的 v1 到 v2 迁移是仅控制台命令，由已验证的导出、SMTP 测试、公共 URL、规范化邮箱验证、重复检测、默认组检查和显式确认保护。它创建需要激活的凭证而不更改用户 ID，然后仅在成功的事务中移除退役的身份列/配置。
 
-## Maintenance Boundary
+## 维护边界
 
-Database export and restore never execute browser-provided commands. The service constructs fixed `pg_dump` and `pg_restore` arguments from deployment configuration, stores archive files in a server-only directory, validates ZIP content and recorded checksums before extraction, creates a pre-restore backup, and keeps API traffic blocked after any destructive restore attempt until restart and operator review.
+数据库导出和恢复永不执行浏览器提供的命令。服务从部署配置构建固定的 `pg_dump` 和 `pg_restore` 参数，将存档文件存储在仅服务器目录中，在解压前验证 ZIP 内容和记录的校验和，创建恢复前备份，并在任何破坏性恢复尝试后保持 API 流量阻塞直到重启和操作员审查。

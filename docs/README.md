@@ -1,22 +1,22 @@
-# HL6 Documentation
+# HL6 文档
 
-## Start Here
+## 从这里开始
 
-1. [Deployment](deployment.md): production environment, Docker images, reverse proxy, SMTP, v1 cutover, and rollback.
-2. [Authentication](authentication.md): registration, activation, password reset, domain policies, sessions, and password-pepper rotation.
-3. [Administration](administration.md): grouped administration areas, Android controls, export, and restore.
-4. [Android Client](android-client.md): local UI package model, communication key, signing secrets, and workflow inputs.
+1. [部署](deployment.md)：生产环境、Docker 镜像、反向代理、SMTP、v1 切换和回滚
+2. [认证](authentication.md)：注册、激活、密码重置、域名策略、会话和密码胡椒轮换
+3. [管理后台](administration.md)：分组管理区域、Android 控制、导出和恢复
+4. [Android 客户端](android-client.md)：本地 UI 包模型、通讯密钥、签名密钥和工作流输入
 
-## Reference
+## 参考
 
-| Need | Document |
+| 需求 | 文档 |
 | --- | --- |
-| Endpoints, payloads, and error behavior | [API](api.md) |
-| Components, data ownership, and security boundaries | [Architecture](architecture.md) |
-| Monitoring, backup recovery, and incident response | [Operations](operations.md) |
-| Local development and test commands | [Development](development.md) |
-| Mandatory Android adaptation process | [Agent Contract](agent.md) |
+| 端点、负载和错误行为 | [API](api.md) |
+| 组件、数据所有权和安全边界 | [架构](architecture.md) |
+| 监控、备份恢复和事件响应 | [运维](operations.md) |
+| 本地开发和测试命令 | [开发](development.md) |
+| 强制 Android 适配流程 | [Agent 约定](agent.md) |
 
-## Version Scope
+## 版本范围
 
-These documents describe `v2.0.0`. The authentication model is HL6-owned email/password authentication; provider login endpoints and callback configuration are not part of this release.
+本文档描述 `v2.0.0`。认证模型为 HL6 自主邮箱/密码认证；提供商登录端点和回调配置不属于此版本。

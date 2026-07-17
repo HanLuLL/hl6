@@ -1,6 +1,6 @@
-# Development
+# 开发
 
-## Local Stack
+## 本地环境
 
 ```bash
 make db-up
@@ -8,9 +8,9 @@ make dev-server
 make dev-web
 ```
 
-The web development server proxies `/api` to the Go server. Root `.env` is read by Vite through `envDir: ".."`.
+Web 开发服务器将 `/api` 代理到 Go 服务器。Vite 通过 `envDir: ".."` 读取根目录 `.env`。
 
-## Required Local Variables
+## 必需的本地变量
 
 ```dotenv
 DATABASE_URL=postgres://hl6:hl6dev@localhost:5433/hl6?sslmode=disable
@@ -21,9 +21,9 @@ BACKEND_URL=http://localhost:8081
 ALLOWED_ORIGINS=http://localhost:5174,https://localhost
 ```
 
-Do not use production password peppers, SMTP credentials, payment secrets, DNS keys, signing keys, or communication keys in local development.
+不要在本地开发中使用生产密码胡椒、SMTP 凭证、支付密钥、DNS 密钥、签名密钥或通讯密钥。
 
-## Checks
+## 检查
 
 ```bash
 cd web
@@ -36,7 +36,7 @@ go build ./cmd/server
 go build ./cmd/hl6-admin
 ```
 
-Handler integration tests requiring PostgreSQL use `HL6_TEST_DATABASE_URL`. Use an isolated database. The maintenance restore test must never target a shared or production database.
+需要 PostgreSQL 的 Handler 集成测试使用 `HL6_TEST_DATABASE_URL`。使用隔离的数据库。维护恢复测试绝不能以共享或生产数据库为目标。
 
 ## Android
 
@@ -48,4 +48,4 @@ cd android
 ./gradlew :app:assembleDebug --no-daemon
 ```
 
-Review [agent.md](agent.md) before any UI, auth, API, client version, or packaging change.
+在任何 UI、认证、API、客户端版本或打包更改之前查看 [agent.md](agent.md)。

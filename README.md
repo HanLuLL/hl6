@@ -1,29 +1,29 @@
 # HL6
 
-HL6 is a domain, subdomain, and DNS management platform. It provides user-owned subdomain claims, DNS records, credits, content governance, administration, and an Android package built from the same local React UI as the web application.
+HL6 是一个域名、子域名和 DNS 管理平台。提供用户子域名认领、DNS 记录管理、积分系统、内容治理、管理后台，以及基于本地 React UI 构建的 Android 客户端。
 
 ## v2.0.0
 
-- First-party email authentication with verified registration, password setup, existing-account activation, password reset, Argon2id hashes, session invalidation, and exact email-domain allowlist/blocklist rules.
-- Existing v1 users keep the same user IDs, profiles, avatars, credits, domains, DNS records, bans, notifications, and other linked data. They activate a new password through their existing email address after the one-time cutover.
-- User profile updates are owned by HL6. A custom name or avatar is never replaced during sign-in. Numeric `@qq.com` addresses receive an HTTPS QQ avatar fallback only when no custom avatar is configured.
-- Ban mail and the ban screen show the ban start time and expected unban time.
-- The Android client packages the locally built web UI, calls HL6 APIs directly, stores native sessions in Android Keystore-backed storage, and requires the server-managed communication key on native requests.
-- Administrators control Android version, force-update policy, update notice, update URL, communication-key lifecycle, and guarded PostgreSQL ZIP export/restore.
+- 自主邮箱认证：支持注册验证、密码设置、旧账户激活、密码重置、Argon2id 哈希、会话失效、精确邮箱域名白名单/黑名单规则
+- 现有 v1 用户保留相同的用户 ID、资料、头像、积分、域名、DNS 记录、封禁状态、通知和其他关联数据，只需通过现有邮箱一次性激活新密码
+- 用户资料由 HL6 管理：自定义姓名或头像在登录时不会被覆盖。数字 `@qq.com` 邮箱在没有自定义头像时使用 HTTPS QQ 头像回退
+- 封禁邮件和封禁界面显示封禁开始时间和预计解封时间
+- Android 客户端打包本地构建的 Web UI，直接调用 HL6 API，使用 Android Keystore 存储会话，请求时携带服务端通讯密钥
+- 管理员可控制 Android 版本、强制更新策略、更新公告、更新链接、通讯密钥生命周期，以及受保护的 PostgreSQL ZIP 导出/恢复
 
-## Images
+## 镜像
 
 ```bash
-# Global GHCR image
+# 全球 GHCR 镜像
 docker pull ghcr.io/hanlull/hl6:v2.0.0
 
-# Mainland China proxy
+# 国内代理
 docker pull ghcr.milu.moe/hanlull/hl6:v2.0.0
 ```
 
-Use `latest` for the most recent stable image. The proxy address mirrors the same image content and is useful where direct GHCR access is unavailable.
+使用 `latest` 获取最新稳定镜像。代理地址镜像内容相同，适用于无法直接访问 GHCR 的环境。
 
-## Quick Start
+## 快速开始
 
 ```bash
 git clone https://github.com/HanLuLL/hl6.git
@@ -31,47 +31,47 @@ cd hl6
 cp .env.example .env
 ```
 
-Set at least these production values in `.env`:
+在 `.env` 中至少设置以下生产环境配置：
 
 ```dotenv
 POSTGRES_DB=hl6
 POSTGRES_USER=hl6
-POSTGRES_PASSWORD=replace-with-a-strong-random-password
+POSTGRES_PASSWORD=替换为强随机密码
 APP_URL=https://domain.example.com
 AUTH_PASSWORD_PEPPER_ID=v1
-AUTH_PASSWORD_PEPPER=replace-with-a-long-random-secret
+AUTH_PASSWORD_PEPPER=替换为长随机密钥
 SMTP_BOOTSTRAP_HOST=smtp.example.com
 SMTP_BOOTSTRAP_USERNAME=mailer@example.com
-SMTP_BOOTSTRAP_PASSWORD=replace-with-the-smtp-password
+SMTP_BOOTSTRAP_PASSWORD=替换为SMTP密码
 SMTP_BOOTSTRAP_FROM_ADDR=mailer@example.com
 SMTP_BOOTSTRAP_ENABLED=true
 ```
 
-Start the production stack:
+启动生产环境：
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml up -d
 docker compose --env-file .env -f docker-compose.prod.yml ps
 ```
 
-For a new installation, SMTP bootstrap values seed only missing server settings so the first email/password registration can complete before an administrator exists. After that, manage SMTP in the administration console. Before migrating an existing v1 installation, follow the cutover procedure in [Deployment](docs/deployment.md).
+对于新安装，SMTP 启动配置仅用于补全缺失的服务器设置，以便在管理员存在之前完成首次邮箱/密码注册。之后请在管理后台管理 SMTP。在迁移现有 v1 安装之前，请遵循 [部署文档](docs/deployment.md) 中的切换流程。
 
-## Documentation
+## 文档
 
-| Topic | Document |
+| 主题 | 文档 |
 | --- | --- |
-| Documentation index | [docs/README.md](docs/README.md) |
-| Email authentication and v1 migration | [docs/authentication.md](docs/authentication.md) |
-| Deployment, upgrade, backup, and rollback | [docs/deployment.md](docs/deployment.md) |
-| Administration console | [docs/administration.md](docs/administration.md) |
-| Android client and GitHub Actions build | [docs/android-client.md](docs/android-client.md) |
-| API integration | [docs/api.md](docs/api.md) |
-| Architecture | [docs/architecture.md](docs/architecture.md) |
-| Operations and recovery | [docs/operations.md](docs/operations.md) |
-| Development | [docs/development.md](docs/development.md) |
-| Android compatibility contract | [docs/agent.md](docs/agent.md) |
+| 文档索引 | [docs/README.md](docs/README.md) |
+| 邮箱认证和 v1 迁移 | [docs/authentication.md](docs/authentication.md) |
+| 部署、升级、备份和回滚 | [docs/deployment.md](docs/deployment.md) |
+| 管理后台 | [docs/administration.md](docs/administration.md) |
+| Android 客户端和 GitHub Actions 构建 | [docs/android-client.md](docs/android-client.md) |
+| API 集成 | [docs/api.md](docs/api.md) |
+| 架构 | [docs/architecture.md](docs/architecture.md) |
+| 运维和恢复 | [docs/operations.md](docs/operations.md) |
+| 开发 | [docs/development.md](docs/development.md) |
+| Android 兼容性约定 | [docs/agent.md](docs/agent.md) |
 
-## Development
+## 开发
 
 ```bash
 make dev
@@ -81,4 +81,4 @@ make db-up
 make db-down
 ```
 
-Client-affecting changes must follow [docs/agent.md](docs/agent.md) in the same change set.
+影响客户端的更改必须在同一变更集中遵循 [docs/agent.md](docs/agent.md)。

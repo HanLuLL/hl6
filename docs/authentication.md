@@ -1,48 +1,48 @@
-# Email Authentication
+# 邮箱认证
 
-## Overview
+## 概述
 
-HL6 v2 uses first-party email/password authentication. Passwords are validated by the server, hashed with Argon2id plus a server-side pepper, and never returned, logged, emailed, or stored in reversible form.
+HL6 v2 使用自主邮箱/密码认证。密码由服务端验证，使用 Argon2id 加上服务端胡椒进行哈希，永不返回、记录、邮件发送或以可逆形式存储。
 
-The web application uses secure, HttpOnly, SameSite=Lax session cookies. The packaged Android client receives a short-lived bearer session only after presenting its communication key and stores that session with Android Keystore-backed secure storage.
+Web 应用使用安全的 HttpOnly、SameSite=Lax 会话 Cookie。打包的 Android 客户端在提供通讯密钥后接收短期 Bearer 会话，并使用 Android Keystore 安全存储保存该会话。
 
-## New Registration
+## 新注册
 
-1. Open `/register` and submit an email address.
-2. HL6 evaluates registration availability and the administrator's exact-domain policy, then sends a one-time verification link without exposing whether an account already exists.
-3. The verification link opens `/set-password`.
-4. Set a password between 12 and 128 Unicode code points.
-5. HL6 atomically creates the user, local credential, default group, credit balance, referral state, and session.
+1. 打开 `/register` 并提交邮箱地址
+2. HL6 评估注册可用性和管理员的精确域名策略，然后发送一次性验证链接，不暴露账户是否已存在
+3. 验证链接打开 `/set-password`
+4. 设置 12 到 128 个 Unicode 码点的密码
+5. HL6 原子化创建用户、本地凭证、默认组、积分余额、推荐状态和会话
 
-The raw verification token is URL-safe, random, short-lived, single-use, stored only as a SHA-256 hash, and removed from the browser address bar immediately after the page reads it.
+原始验证令牌是 URL 安全、随机、短期、单次使用、仅存储为 SHA-256 哈希，并在页面读取后立即从浏览器地址栏移除。
 
-## Existing v1 Accounts
+## 现有 v1 账户
 
-After the hard cutover, an existing user opens `/activate-account` or `/login`, submits the historic email address, follows the activation link, and sets a new password. The linked `users.id` does not change. Existing profile fields, custom avatar, credit balance, domains, DNS records, bans, appeals, notifications, payments, and audit links remain intact.
+硬切换后，现有用户打开 `/activate-account` 或 `/login`，提交历史邮箱地址，按照激活链接并设置新密码。关联的 `users.id` 不变。现有的资料字段、自定义头像、积分余额、域名、DNS 记录、封禁、申诉、通知、支付和审核链接保持完整。
 
-No old session is accepted after cutover. Each existing user must establish a local password once.
+切换后不接受任何旧会话。每个现有用户必须一次性建立本地密码。
 
-## Password Recovery
+## 密码恢复
 
-`/forgot-password` always returns a neutral response. Activated accounts receive a one-time reset link. Completing a reset updates the Argon2id hash and increments the credential session version, invalidating other sessions.
+`/forgot-password` 始终返回中性响应。已激活的账户收到一次性重置链接。完成重置会更新 Argon2id 哈希并递增凭证会话版本，使其他会话失效。
 
-Password setup consumes its one-time link before starting the expensive hash derivation. A successful password change also consumes every other outstanding activation, reset, and restore link for that user. If two different links are consumed concurrently, the credential lock rejects the older sibling after the first password change, so it cannot overwrite the new password. Logging out increments the same session version, so copied browser or Android bearer tokens cannot remain usable after logout.
+密码设置在开始昂贵的哈希推导之前消耗其一次性链接。成功的密码更改也会消耗该用户所有其他未完成的激活、重置和恢复链接。如果两个不同的链接被并发消耗，凭证锁会在第一次密码更改后拒绝较旧的兄弟链接，因此它无法覆盖新密码。登出会递增相同的会话版本，因此复制的浏览器或 Android Bearer 令牌在登出后无法继续使用。
 
-Authentication requests are independently rate-limited by normalized email address and privacy-preserving client IP hash. Changing either value does not bypass the other limit.
+认证请求按规范化邮箱地址和隐私保护的客户端 IP 哈希独立限速。更改任一值不会绕过另一个限制。
 
-## Email Domain Policy
+## 邮箱域名策略
 
-Administrators configure this at **Administration -> Access and Registration**:
+管理员在 **管理后台 -> 访问与注册** 配置：
 
-- `unrestricted`: any syntactically valid address may register.
-- `allowlist`: only exact normalized domains in the list may register.
-- `blocklist`: valid addresses except exact normalized domains in the list may register.
+- `unrestricted`：任何语法有效的地址都可以注册
+- `allowlist`：只有列表中的精确规范化域名可以注册
+- `blocklist`：除了列表中的精确规范化域名外，有效地址都可以注册
 
-Wildcard domains, partial suffixes, malformed IDNs, duplicate entries, and ambiguous domain spelling are rejected. This policy applies to new registration only. Existing users remain able to activate and reset their password.
+通配符域名、部分后缀、格式错误的 IDN、重复条目和模糊的域名拼写会被拒绝。此策略仅适用于新注册。现有用户仍然可以激活和重置密码。
 
-## Password Pepper
+## 密码胡椒
 
-Set these deployment secrets outside PostgreSQL:
+在 PostgreSQL 之外设置这些部署密钥：
 
 ```dotenv
 AUTH_PASSWORD_PEPPER_ID=v1
@@ -51,21 +51,21 @@ AUTH_PREVIOUS_PASSWORD_PEPPER_ID=
 AUTH_PREVIOUS_PASSWORD_PEPPER=
 ```
 
-To rotate, set a new current ID/value and place the former pair in the previous variables. A successful login using the previous pepper transparently rehashes the password with the current pepper. Remove the previous pair only after users have had sufficient time to sign in.
+要轮换，设置新的当前 ID/值并将之前的对放入 previous 变量。使用之前胡椒成功登录会透明地用当前胡椒重新哈希密码。仅在用户有足够时间登录后移除之前的对。
 
-## v1 Cutover
+## v1 切换
 
-The cutover is deliberately console-only. It will not run from the browser or Android client.
+切换特意设计为仅控制台操作。不会从浏览器或 Android 客户端运行。
 
-1. Deploy the v2 image with `AUTH_PASSWORD_PEPPER`, a public `FRONTEND_URL`, and the `SMTP_BOOTSTRAP_*` values required for a working sender. The bootstrap values populate only missing SMTP database settings. Existing-user databases remain intentionally disabled for local login until the explicit switch completes.
-2. Send and verify an SMTP test from the v2 container. This records the timestamp required by preflight without requiring a browser session:
+1. 部署带有 `AUTH_PASSWORD_PEPPER`、公共 `FRONTEND_URL` 和工作发件人所需的 `SMTP_BOOTSTRAP_*` 值的 v2 镜像。启动配置仅填充缺失的 SMTP 数据库设置。现有用户数据库在显式切换完成之前仍然故意禁用本地登录
+2. 从 v2 容器发送并验证 SMTP 测试。这记录了预检所需的时间戳，无需浏览器会话：
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml exec app \
   /app/hl6-admin mail test --recipient administrator@example.com
 ```
 
-3. Identify an existing administrator ID from PostgreSQL, then create and retain the server-recorded export through the v2 console command:
+3. 从 PostgreSQL 识别现有管理员 ID，然后通过 v2 控制台命令创建并保留服务器记录的导出：
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml exec postgres \
@@ -76,39 +76,39 @@ docker compose --env-file .env -f docker-compose.prod.yml exec app \
   /app/hl6-admin maintenance export --created-by-user-id 1
 ```
 
-The export command prints the verified backup record. Copy its `id`, download or retain the archive from the maintenance volume, and keep an independent encrypted copy before continuing.
+导出命令打印已验证的备份记录。复制其 `id`，从维护卷下载或保留存档，并在继续之前保留独立的加密副本。
 
-4. Run the preflight command:
+4. 运行预检命令：
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml exec app /app/hl6-admin auth preflight
 ```
 
-5. Resolve every blocker, especially blank/invalid emails, normalized duplicate emails, missing default group, SMTP test status, public HTTPS frontend URL, and verified backup.
-6. Execute the irreversible switch with the exported backup ID:
+5. 解决每个阻碍项，特别是空白/无效邮箱、规范化的重复邮箱、缺失的默认组、SMTP 测试状态、公共 HTTPS 前端 URL 和已验证的备份
+6. 使用导出的备份 ID 执行不可逆切换：
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml exec app \
   /app/hl6-admin auth cutover --confirm --backup-id 123
 ```
 
-7. Restart the application. Existing users then use the activation flow.
+7. 重启应用。现有用户随后使用激活流程。
 
-For mail-delivery recovery, a deployment operator can create a new one-time activation link without writing it to the database or logs:
+对于邮件投递恢复，部署操作员可以创建新的一次性激活链接，而不将其写入数据库或日志：
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml exec app \
   /app/hl6-admin auth issue-activation --email user@example.com
 ```
 
-Deliver that output only through a secure channel.
+仅通过安全渠道传递该输出。
 
-## QQ Avatar Fallback
+## QQ 头像回退
 
-If a user has no custom avatar and their normalized address matches numeric `@qq.com`, clients render:
+如果用户没有自定义头像且其规范化地址匹配数字 `@qq.com`，客户端渲染：
 
 ```text
 https://q.qlogo.cn/headimg_dl?dst_uin=<QQ_NUMBER>&spec=640&img_type=jpg
 ```
 
-The URL is HTTPS to avoid mixed-content failures. A custom `avatar_url` always wins, and sign-in never overwrites it.
+该 URL 是 HTTPS 以避免混合内容失败。自定义 `avatar_url` 始终优先，登录时永不覆盖它。

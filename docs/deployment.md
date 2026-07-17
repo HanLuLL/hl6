@@ -1,27 +1,27 @@
-# Deployment and Upgrade
+# 部署与升级
 
-## Prerequisites
+## 前置条件
 
-- Docker Engine 24+ and Docker Compose v2.
-- PostgreSQL 16, supplied by `docker-compose.prod.yml` unless an external database is used.
-- A public HTTPS hostname for the web application and email links.
-- A working SMTP account before enabling registration or migrating existing users.
+- Docker Engine 24+ 和 Docker Compose v2
+- PostgreSQL 16，由 `docker-compose.prod.yml` 提供，除非使用外部数据库
+- Web 应用和邮件链接的公共 HTTPS 主机名
+- 启用注册或迁移现有用户之前需要工作的 SMTP 账户
 
-## Images
+## 镜像
 
 ```bash
-# Global registry
+# 全球注册表
 ghcr.io/hanlull/hl6:v2.0.0
 
-# Mainland China proxy
+# 国内代理
 ghcr.milu.moe/hanlull/hl6:v2.0.0
 ```
 
-Set `HL6_IMAGE` to either address. The proxy is only a pull-path alternative; it must not be used as an image build source.
+将 `HL6_IMAGE` 设置为任一地址。代理仅是拉取路径替代；不得用作镜像构建源。
 
-## Environment
+## 环境
 
-Create `.env` from `.env.example` and set production values:
+从 `.env.example` 创建 `.env` 并设置生产值：
 
 ```dotenv
 POSTGRES_DB=hl6
@@ -45,13 +45,13 @@ SMTP_BOOTSTRAP_ENABLED=true
 MAINTENANCE_DATA_DIR=/var/lib/hl6/maintenance
 ```
 
-`AUTH_PASSWORD_PEPPER` is mandatory before local authentication can be enabled. Do not place it in the repository, release notes, APK inputs, or database export.
+`AUTH_PASSWORD_PEPPER` 在启用本地认证之前是必需的。不要将其放入仓库、发布说明、APK 输入或数据库导出中。
 
-`MAINTENANCE_DATA_DIR` is mounted as the `maintenance-data` Docker volume. It stores server-generated backup archives temporarily; copy a production backup to independent encrypted storage immediately after downloading it.
+`MAINTENANCE_DATA_DIR` 作为 `maintenance-data` Docker 卷挂载。它临时存储服务器生成的备份存档；下载后立即将生产备份复制到独立的加密存储。
 
-`SMTP_BOOTSTRAP_*` values are copied into database settings only when the corresponding SMTP value is missing. This is the secure first-start path for email verification before any administrator exists. Set `ENCRYPTION_KEY` in production so the copied password is encrypted, then manage SMTP through the administration console after the first administrator signs in.
+`SMTP_BOOTSTRAP_*` 值仅在相应 SMTP 值缺失时复制到数据库设置。这是任何管理员存在之前邮箱验证的安全首次启动路径。在生产中设置 `ENCRYPTION_KEY` 以便复制的密码被加密，然后在第一个管理员登录后通过管理控制台管理 SMTP。
 
-## Start
+## 启动
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml pull
@@ -60,29 +60,29 @@ docker compose --env-file .env -f docker-compose.prod.yml ps
 curl -fsS https://domain.example.com/health
 ```
 
-The service migrates additive schema on startup. It does not automatically delete legacy identity columns or enable the new authentication system.
+服务在启动时迁移增量模式。不会自动删除遗留身份列或启用新认证系统。
 
-## SMTP and First Registration
+## SMTP 和首次注册
 
-1. Set working `SMTP_BOOTSTRAP_*` values before the first startup.
-2. Register through the public email-verification page and set the first password.
-3. The first locally registered user on an empty installation becomes the administrator.
-4. After signing in, open **Administration -> Email Notifications** to confirm or change SMTP, then use **Test Send**.
-5. Configure the registration policy in **Administration -> Access and Registration**.
+1. 在首次启动之前设置工作的 `SMTP_BOOTSTRAP_*` 值
+2. 通过公共邮箱验证页面注册并设置第一个密码
+3. 空安装上的第一个本地注册用户成为管理员
+4. 登录后，打开 **管理后台 -> 邮件通知** 确认或更改 SMTP，然后使用 **测试发送**
+5. 在 **管理后台 -> 访问与注册** 配置注册策略
 
-## v1 to v2 Upgrade
+## v1 到 v2 升级
 
-The hard cutover is required only for installations with existing users from v1.
+硬切换仅适用于有 v1 现有用户的安装。
 
-1. Deploy the v2 image with `AUTH_PASSWORD_PEPPER` and working `SMTP_BOOTSTRAP_*` values. Existing-user databases remain intentionally unavailable for local login before the explicit cutover.
-2. Send a verified SMTP test from the container:
+1. 部署带有 `AUTH_PASSWORD_PEPPER` 和工作的 `SMTP_BOOTSTRAP_*` 值的 v2 镜像。现有用户数据库在显式切换之前仍然故意禁用本地登录
+2. 从容器发送已验证的 SMTP 测试：
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml exec app \
   /app/hl6-admin mail test --recipient administrator@example.com
 ```
 
-3. Find an administrator ID and create the required verified database archive:
+3. 找到管理员 ID 并创建所需的已验证数据库存档：
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml exec postgres \
@@ -93,41 +93,41 @@ docker compose --env-file .env -f docker-compose.prod.yml exec app \
   /app/hl6-admin maintenance export --created-by-user-id 1
 ```
 
-Record the returned backup `id` and retain the ZIP outside the host.
+记录返回的备份 `id` 并在主机外保留 ZIP。
 
-4. Run preflight:
+4. 运行预检：
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml exec app \
   /app/hl6-admin auth preflight
 ```
 
-5. Resolve every reported blocker. Do not proceed around duplicate normalized emails or a missing backup.
-6. Run the cutover:
+5. 解决每个报告的阻碍项。不要绕过规范化的重复邮箱或缺失的备份继续
+6. 运行切换：
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml exec app \
   /app/hl6-admin auth cutover --confirm --backup-id 123
 ```
 
-7. Restart the application:
+7. 重启应用：
 
 ```bash
 docker compose --env-file .env -f docker-compose.prod.yml restart app
 ```
 
-Existing users now activate a local password through their historic email. Their business data remains linked to the same user ID.
+现有用户现在通过其历史邮箱激活本地密码。其业务数据仍然链接到相同的用户 ID。
 
-## Rollback
+## 回滚
 
-The pre-cutover database archive is the rollback path. Do not start an older binary against a partly cut-over database.
+切换前的数据库存档是回滚路径。不要对部分切换的数据库启动旧版二进制文件。
 
-1. Stop the application.
-2. Restore the verified pre-cutover archive through **Data Maintenance** or an isolated recovery environment.
-3. Validate the restored database and restart the matching application image.
+1. 停止应用
+2. 通过 **数据维护** 或隔离的恢复环境恢复已验证的切换前存档
+3. 验证恢复的数据库并重启匹配的应用镜像
 
-## Reverse Proxy
+## 反向代理
 
-Proxy HTTPS to the application port. Preserve `Host`, `X-Forwarded-Proto`, `X-Forwarded-Host`, `Origin`, `Authorization`, `X-HL6-Client-Key`, and `X-Idempotency-Key`. Do not cache API mutations, email-link pages, or server-sent events.
+将 HTTPS 代理到应用端口。保留 `Host`、`X-Forwarded-Proto`、`X-Forwarded-Host`、`Origin`、`Authorization`、`X-HL6-Client-Key` 和 `X-Idempotency-Key`。不要缓存 API 变更、邮件链接页面或服务器发送事件。
 
-The server accepts Capacitor's `https://localhost` origin for the packaged Android client. `ALLOWED_ORIGINS` is for additional browser origins; the reverse proxy must still preserve the Android request headers listed above.
+服务器接受 Capacitor 的 `https://localhost` 来源用于打包的 Android 客户端。`ALLOWED_ORIGINS` 用于额外的浏览器来源；反向代理仍必须保留上面列出的 Android 请求头。

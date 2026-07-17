@@ -1,79 +1,79 @@
-# Android Client Adaptation Contract
+# Android 客户端适配约定
 
-This document is mandatory for every change that affects Android-visible behavior. A server, API, web UI, route, field, error, state, authentication, version, or release change is incomplete until this contract is checked and the Android adaptation is included in the same change set.
+本文档对每个影响 Android 可见行为的更改都是强制性的。服务器、API、Web UI、路由、字段、错误、状态、认证、版本或发布更改在此约定被检查且 Android 适配包含在同一变更集之前都是不完整的。
 
-## 1. Delivery Boundary
+## 1. 交付边界
 
-1. Android packages the repository's local `web/` production build through Capacitor.
-2. Android must not load a remote website as its main UI source.
-3. Android must not duplicate business rules, permission decisions, DNS behavior, payment logic, data validation, or administration decisions.
-4. The server remains authoritative; Android renders state returned by APIs and stores only the native session and build configuration needed for transport.
+1. Android 通过 Capacitor 打包仓库本地 `web/` 生产构建
+2. Android 不得加载远程网站作为其主 UI 源
+3. Android 不得复制业务规则、权限决策、DNS 行为、支付逻辑、数据验证或管理决策
+4. 服务器保持权威；Android 渲染 API 返回的状态，仅存储传输所需的原生会话和构建配置
 
-## 2. UI Parity
+## 2. UI 一致性
 
-1. Web and Android use the same React routes, components, styles, design tokens, icons, translations, validation copy, dialogs, loading states, and error states.
-2. Web UI changes must be checked on Android viewport sizes in the same iteration.
-3. No Android-only reduced layout, alternate component system, stale text, or divergent interaction flow may be introduced.
-4. Custom user names and avatars remain server-owned and must not be overwritten by sign-in or client initialization.
-5. Ban views and ban email must show ban start time and expected unban time or explicit permanent-ban state.
+1. Web 和 Android 使用相同的 React 路由、组件、样式、设计令牌、图标、翻译、验证文案、对话框、加载状态和错误状态
+2. Web UI 更改必须在同一迭代中在 Android 视口尺寸上检查
+3. 不得引入仅 Android 的缩减布局、替代组件系统、陈旧文本或分歧的交互流程
+4. 自定义用户姓名和头像保持服务器所有，不得被登录或客户端初始化覆盖
+5. 封禁视图和封禁邮件必须显示封禁开始时间和预计解封时间或显式的永久封禁状态
 
-## 3. API and Session Compatibility
+## 3. API 和会话兼容性
 
-1. Any endpoint, payload, field, validation rule, status code, permission rule, or error-key change must update the Android API client and UI in the same change.
-2. Native sign-in uses email/password endpoints directly. Registration, activation, reset, logout, ban state, profile, and update gate must work in the packaged client.
-3. Native sessions are stored only with Android Keystore-backed secure storage.
-4. Every native request carries `X-HL6-Client-Key`; protected native requests also carry a valid bearer session.
-5. The communication key is a server-managed build identifier, not a user authorization substitute.
-6. The raw key must never enter Git, application logs, URLs, database records, release notes, or screenshots.
+1. 任何端点、负载、字段、验证规则、状态码、权限规则或错误键更改必须在同一变更中更新 Android API 客户端和 UI
+2. 原生登录直接使用邮箱/密码端点。注册、激活、重置、登出、封禁状态、资料和更新门必须在打包客户端中工作
+3. 原生会话仅使用 Android Keystore 支持的安全存储存储
+4. 每个原生请求携带 `X-HL6-Client-Key`；受保护的原生请求还携带有效的 Bearer 会话
+5. 通讯密钥是服务器管理的构建标识符，不是用户授权替代品
+6. 原始密钥绝不得进入 Git、应用日志、URL、数据库记录、发布说明或截图
 
-## 4. Communication Key Lifecycle
+## 4. 通讯密钥生命周期
 
-1. Only the web administration console generates, rotates, and revokes a communication key.
-2. The server stores only a SHA-256 hash and returns raw key material once at generation time.
-3. Build a and verify a new APK before revoking the previous key.
-4. Server authorization must still verify user session, role, ownership, ban state, and resource permission.
+1. 仅 Web 管理控制台生成、轮换和撤销通讯密钥
+2. 服务器仅存储 SHA-256 哈希并在生成时返回原始密钥材料一次
+3. 在撤销之前构建并验证新 APK
+4. 服务器授权仍必须验证用户会话、角色、所有权、封禁状态和资源权限
 
-## 5. Build and Release
+## 5. 构建与发布
 
-`.github/workflows/client-build.yml` is the Android build workflow. It must validate and dynamically inject:
+`.github/workflows/client-build.yml` 是 Android 构建工作流。它必须验证并动态注入：
 
-- Backend HTTPS domain.
-- Communication key.
-- Client display name.
-- Client icon.
-- Semantic version.
-- Android package name.
+- 后端 HTTPS 域名
+- 通讯密钥
+- 客户端显示名称
+- 客户端图标
+- 语义版本
+- Android 包名
 
-The workflow must validate signing secrets, build the local UI, synchronize Capacitor, sign the release APK, verify it with `apksigner`, and publish a direct APK plus SHA-256. Do not wrap the output APK in a ZIP.
+工作流必须验证签名密钥、构建本地 UI、同步 Capacitor、签名发布 APK、使用 `apksigner` 验证，并发布直接 APK 加 SHA-256。不要将输出 APK 包装在 ZIP 中。
 
-The web administration console controls latest version, forced-update flag, update notice, and HTTPS update URL. A forced update may only be enabled after a verified installable APK is available.
+Web 管理控制台控制最新版本、强制更新标志、更新公告和 HTTPS 更新 URL。强制更新仅在验证可安装 APK 可用后才可启用。
 
-## 6. Required Change Checklist
+## 6. 必需更改检查清单
 
-- [ ] Shared web UI and Android viewport behavior match.
-- [ ] API contracts, TypeScript types, error handling, and client storage are updated.
-- [ ] Login, registration, activation, reset, profile, ban view, and logout are checked when authentication changes.
-- [ ] Communication-key handling and Android headers remain intact.
-- [ ] Version gate, update notice, force-update behavior, and direct APK link are checked when release behavior changes.
-- [ ] Android build workflow inputs, signing validation, and documentation are updated when packaging changes.
-- [ ] This document's change record is updated for a client-visible architecture, protocol, or release-rule change.
+- [ ] 共享 Web UI 和 Android 视口行为匹配
+- [ ] API 约定、TypeScript 类型、错误处理和客户端存储已更新
+- [ ] 认证更改时检查登录、注册、激活、重置、资料、封禁视图和登出
+- [ ] 通讯密钥处理和 Android 头保持完整
+- [ ] 发布行为更改时检查版本门、更新公告、强制更新行为和直接 APK 链接
+- [ ] 打包更改时更新 Android 构建工作流输入、签名验证和文档
+- [ ] 客户端可见的架构、协议或发布规则更改更新本文档的更改记录
 
-## 7. Change Record
+## 7. 更改记录
 
-| Date | Change |
+| 日期 | 更改 |
 | --- | --- |
-| 2026-07-16 | Replaced provider login handoff with direct email/password authentication, secure native bearer sessions, activation, registration, and recovery pages. |
-| 2026-07-16 | Removed login deep-link build metadata; retained local shared UI, communication-key transport, Keystore session storage, direct APK workflow, and update gate. |
-| 2026-07-16 | Added Android-visible access-policy, client-version, communication-key, and data-maintenance administration surfaces. |
-| 2026-07-16 | Removed static Android application-ID and version defaults. Capacitor and Gradle now fail unless the workflow injects build configuration. |
-| 2026-07-16 | Persisted the active communication-key build identifier with Android Keystore-backed storage and replace it on upgraded client builds. |
-| 2026-07-16 | Hardened password-link concurrency, independent email/IP throttling, restore-gate startup handling, and formal Android release validation. Android releases now accept only the repository-controlled GitHub Pages `latest.apk` and `manifest.json` paths without redirects. |
-| 2026-07-16 | Standardized system-setting sections as shared horizontal tabs and moved access, client, communication-key, payment, and data-maintenance copy into all six shared web/Android translation catalogs. |
-| 2026-07-16 | Audited the hard authentication cutover: runtime routes, configuration, and Android build inputs use first-party email/password authentication only; the irreversible migration removes legacy external-provider data during cutover. |
-| 2026-07-16 | Removed obsolete identity-provider error translations from the shared web and Android UI; the packaged client now exposes only the email/password authentication flow. |
-| 2026-07-16 | Hardened Android delivery against transient remote-icon failures, upgraded SDK setup to the supported workflow action with only required SDK packages, and added shared expected-unban translations for every packaged-client locale. |
-| 2026-07-16 | Matched formal-release APK certificate verification to the client build's unique private-key alias detection, so an outdated alias secret cannot block release validation when the keystore itself is valid. |
-| 2026-07-17 | Added safe formal-release certificate-mismatch diagnostics using only public SHA-256 fingerprints; private keys, passwords, aliases, and communication keys remain masked. |
-| 2026-07-17 | Added the verified LinYu icon as a repository-relative Android build resource so official release builds do not depend on external icon-host reachability; external HTTPS icon inputs remain supported with bounded retries. |
-| 2026-07-17 | Corrected formal-release APK certificate parsing to capture both `apksigner` output streams before extracting the public signer fingerprint, preserving strict certificate comparison. |
-| 2026-07-17 | Hardened formal-release APK certificate parsing against build-tools output-format differences; the workflow now validates a full 64-character SHA-256 fingerprint and prints only non-sensitive certificate diagnostics on parse failure. |
+| 2026-07-16 | 用直接邮箱/密码认证、安全原生 Bearer 会话、激活、注册和恢复页面替换提供商登录移交 |
+| 2026-07-16 | 移除登录深度链接构建元数据；保留本地共享 UI、通讯密钥传输、Keystore 会话存储、直接 APK 工作流和更新门 |
+| 2026-07-16 | 添加 Android 可见的访问策略、客户端版本、通讯密钥和数据维护管理界面 |
+| 2026-07-16 | 移除静态 Android 应用 ID 和版本默认值。Capacitor 和 Gradle 现在在工作流注入构建配置之前失败 |
+| 2026-07-16 | 使用 Android Keystore 支持的存储持久化活动通讯密钥构建标识符，并在升级客户端构建时替换它 |
+| 2026-07-16 | 加固密码链接并发、独立邮箱/IP 限流、恢复门启动处理和正式 Android 发布验证。Android 发布现在仅接受仓库控制的 GitHub Pages `latest.apk` 和 `manifest.json` 路径，无重定向 |
+| 2026-07-16 | 将系统设置部分标准化为共享水平标签页，并将访问、客户端、通讯密钥、支付和数据维护文案移入所有六个共享 Web/Android 翻译目录 |
+| 2026-07-16 | 审计硬认证切换：运行时路由、配置和 Android 构建输入仅使用自主邮箱/密码认证；不可逆迁移在切换期间移除遗留外部提供商数据 |
+| 2026-07-16 | 从共享 Web 和 Android UI 移除过时的身份提供商错误翻译；打包客户端现在仅公开邮箱/密码认证流程 |
+| 2026-07-16 | 针对瞬态远程图标故障加固 Android 交付，将 SDK 设置升级为支持的工作流操作且仅包含所需的 SDK 包，并为每个打包客户端语言环境添加共享的预计解封翻译 |
+| 2026-07-16 | 将正式发布 APK 证书验证匹配到客户端构建的唯一私钥别名检测，因此过时的别名密钥不会在密钥库本身有效时阻止发布验证 |
+| 2026-07-17 | 使用仅公共 SHA-256 指纹添加安全的正式发布证书不匹配诊断；私钥、密码、别名和通讯密钥保持掩码 |
+| 2026-07-17 | 添加已验证的 LinYu 图标作为仓库相对 Android 构建资源，因此官方发布构建不依赖外部图标托管可达性；外部 HTTPS 图标输入仍受支持且有界重试 |
+| 2026-07-17 | 更正正式发布 APK 证书解析以在提取公共签名者指纹之前捕获两个 `apksigner` 输出流，保留严格的证书比较 |
+| 2026-07-17 | 针对构建工具输出格式差异加固正式发布 APK 证书解析；工作流现在验证完整的 64 字符 SHA-256 指纹并在解析失败时仅打印非敏感证书诊断 |

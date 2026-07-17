@@ -1,66 +1,66 @@
-# Administration
+# 管理后台
 
-## Access and Registration
+## 访问与注册
 
-This area controls new registration only:
+此区域仅控制新注册：
 
-- Enable or disable registration.
-- Select unrestricted registration, exact-domain allowlist, or exact-domain blocklist.
-- Manage normalized domain entries.
-- Check whether local authentication is active after production cutover.
+- 启用或禁用注册
+- 选择无限制注册、精确域名白名单或精确域名黑名单
+- 管理规范化的域名条目
+- 检查生产切换后本地认证是否激活
 
-Invalid wildcard entries are rejected. Existing users can still activate or reset a password when registration is disabled.
+无效的通配符条目会被拒绝。禁用注册时，现有用户仍可激活或重置密码。
 
-## Site and Appearance
+## 站点与外观
 
-This area owns public frontend/backend addresses, announcement, footer, and SEO fields. Environment-supplied URLs are read-only in the UI. Confirm the current external URL before sending authentication links.
+此区域管理公共前端/后端地址、公告、页脚和 SEO 字段。环境提供的 URL 在 UI 中只读。发送认证链接之前确认当前外部 URL。
 
-## Email Notifications
+## 邮件通知
 
-Configure SMTP host, port, credentials, sender name, sender address, TLS, and enabled state. Secrets are masked on read and encrypted when an `ENCRYPTION_KEY` is configured. A successful test send records the SMTP test time required by the authentication cutover preflight.
+配置 SMTP 主机、端口、凭证、发件人名称、发件人地址、TLS 和启用状态。配置 `ENCRYPTION_KEY` 时，密钥在读取时掩码并加密存储。成功的测试发送记录认证切换预检所需的 SMTP 测试时间。
 
-Ban notifications include the ban reason, start time, and expected unban time. A permanent ban is represented explicitly rather than an invented date.
+封禁通知包含封禁原因、开始时间和预计解封时间。永久封禁被显式表示，而非虚构的日期。
 
-## Payment and Integrations
+## 支付与集成
 
-Payment gateway URL, merchant identifier, merchant secret, and per-channel switches belong here. Existing DNS provider accounts, content review models, and external service credentials retain their dedicated administration pages.
+支付网关 URL、商户标识符、商户密钥和各渠道开关属于此处。现有 DNS 提供商账户、内容审核模型和外部服务凭证保留其专用管理页面。
 
-## Android Client
+## Android 客户端
 
-The Android section controls:
+Android 部分控制：
 
-- Latest semantic version.
-- Optional or force-update behavior.
-- Update announcement and HTTPS update URL.
-- Communication key generation and revocation.
+- 最新语义版本
+- 可选或强制更新行为
+- 更新公告和 HTTPS 更新 URL
+- 通讯密钥生成和撤销
 
-The communication key is shown only once when generated. The server stores only its SHA-256 hash. A key inside an APK identifies a configured client build; it never grants a user role or bypasses ownership, ban, or permission checks.
+通讯密钥仅在生成时显示一次。服务器仅存储其 SHA-256 哈希。APK 内的密钥标识已配置的客户端构建；它永不授予用户角色或绕过所有权、封禁或权限检查。
 
-Before rotating or revoking an existing key, configure a newer semantic version and a valid HTTPS update URL. The server enables forced update recovery, so a client with an invalidated key can retrieve only the replacement-update response and cannot use normal APIs. Generate, install, and verify the new APK before revoking the old key.
+在轮换或撤销现有密钥之前，配置更新的语义版本和有效的 HTTPS 更新 URL。服务器启用强制更新恢复，因此密钥失效的客户端只能获取替换更新响应，无法使用正常 API。在撤销旧密钥之前生成、安装并验证新 APK。
 
-## Data Maintenance
+## 数据维护
 
-Only administrators can export or overwrite the database.
+只有管理员可以导出或覆盖数据库。
 
-### Export
+### 导出
 
-**Export Database** runs a fixed `pg_dump` command and downloads a ZIP containing:
+**导出数据库** 运行固定的 `pg_dump` 命令并下载包含以下内容的 ZIP：
 
-- `database.dump` in PostgreSQL custom format.
-- `manifest.json` with version and source metadata.
-- `SHA256SUMS` for the dump and manifest.
+- PostgreSQL 自定义格式的 `database.dump`
+- 带有版本和源元数据的 `manifest.json`
+- 用于转储和清单的 `SHA256SUMS`
 
-No browser-provided command, SQL, host, path, or database URI is accepted.
+不接受浏览器提供的命令、SQL、主机、路径或数据库 URI。
 
-### Restore
+### 恢复
 
-Restore requires all of the following in one administrator session:
+恢复需要在同一管理员会话中满足以下所有条件：
 
-1. A ZIP generated in the accepted archive format.
-2. The current password.
-3. A server-issued, short-lived, single-use restore challenge.
-4. The exact confirmation phrase `RESTORE DATABASE`.
+1. 以接受的存档格式生成的 ZIP
+2. 当前密码
+3. 服务器发行的短期单次使用恢复挑战
+4. 确切的确认短语 `RESTORE DATABASE`
 
-The server validates ZIP paths, file count, sizes, manifest, checksums, and custom-dump header before extracting. It creates a mandatory pre-restore backup, enters maintenance mode, runs fixed `pg_restore` arguments, validates health and required tables, records the restore job, and keeps the API in maintenance mode until the application is restarted.
+服务器在解压前验证 ZIP 路径、文件数量、大小、清单、校验和和自定义转储头。它创建强制性的恢复前备份，进入维护模式，运行固定的 `pg_restore` 参数，验证健康状态和必需表，记录恢复作业，并保持 API 在维护模式直到应用重启。
 
-Do not close the maintenance incident until the post-restart health check succeeds.
+重启后健康检查成功之前不要关闭维护事件。
