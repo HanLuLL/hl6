@@ -13,3 +13,4 @@ interface ImportMeta {
 
 declare const __APP_GIT_BRANCH__: string
 declare const __APP_GIT_COMMIT__: string
+declare const __APP_VERSION__: string

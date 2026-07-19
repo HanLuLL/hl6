@@ -1109,7 +1109,27 @@
     "nameCannotBeEmpty": "Имя не может быть пустым",
     "failedToUpdateProfile": "Не удалось обновить профиль",
     "registrationDomainDenied": "Этот домен электронной почты не принимается для регистрации",
-    "registrationDisabled": "Регистрация в настоящее время отключена"
+    "registrationDisabled": "Регистрация в настоящее время отключена",
+    "databaseMaintenance": "Идёт обслуживание базы данных",
+    "untrustedOrigin": "Недоверенный источник браузера",
+    "appealAlreadyPending": "У вас уже есть ожидающая апелляция",
+    "providerAccountDisabled": "Аккаунт провайдера отключён",
+    "failedToCreateDNSProviderAccount": "Не удалось создать аккаунт провайдера",
+    "failedToUpdateDNSProviderAccount": "Не удалось обновить аккаунт провайдера",
+    "failedToDeleteDNSProviderAccount": "Не удалось удалить аккаунт провайдера",
+    "failedToListDNSProviderAccounts": "Не удалось получить список аккаунтов провайдера",
+    "invalidAuditRuleTargets": "Недопустимые цели правила аудита",
+    "invalidAuditRuleAction": "Недопустимое действие правила аудита",
+    "invalidAuditRuleKeywords": "Недопустимые ключевые слова правила аудита",
+    "dnsOperationInProgress": "Операция DNS выполняется",
+    "dnsDeleteFailed": "Не удалось удалить запись DNS",
+    "invalidPaymentGateway": "Недопустимый платёжный шлюз",
+    "invalidPaymentMethod": "Недопустимый способ оплаты",
+    "paymentMethodNotEnabled": "Способ оплаты не включён",
+    "invalidPaymentAmount": "Недопустимая сумма оплаты",
+    "paymentGatewayNotConfigured": "Платёжный шлюз не настроен",
+    "failedToCreateOrder": "Не удалось создать заказ",
+    "notFound": "Не найдено"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -1215,107 +1235,107 @@
     "unknown": "Неизвестная ошибка"
   },
   "audit": {
-    "title": "Content Audit",
+    "title": "Модерация контента",
     "description": "Управление проверкой поддоменов, правилами и историей сканирования в одном месте",
     "tabs": {
       "domains": "Поддомены",
-      "rules": "Rules",
-      "history": "History"
+      "rules": "Правила",
+      "history": "История"
     },
     "summary": {
-      "deleted": "Deleted",
-      "currentViolation": "Current violations",
-      "neverScanned": "Never scanned",
-      "enabledRules": "Enabled rules"
+      "deleted": "Удалено",
+      "currentViolation": "Текущие нарушения",
+      "neverScanned": "Никогда не сканировались",
+      "enabledRules": "Включённые правила"
     },
     "filters": {
-      "fqdn": "Search FQDN…",
-      "search": "Search FQDN or email…",
-      "claimsSearch": "Search FQDN or email…",
-      "scanStatusAll": "Scan status",
-      "recordTypeAll": "All record types",
+      "fqdn": "Поиск FQDN…",
+      "search": "Поиск FQDN или email…",
+      "claimsSearch": "Поиск FQDN или email…",
+      "scanStatusAll": "Статус сканирования",
+      "recordTypeAll": "Все типы записей",
       "scanStatus": {
-        "all": "All",
-        "scanned": "Scanned",
-        "never": "Not scanned",
-        "violation": "Violation",
-        "compliant": "Compliant"
+        "all": "Все",
+        "scanned": "Отсканировано",
+        "never": "Не сканировался",
+        "violation": "Нарушение",
+        "compliant": "Чисто"
       }
     },
     "columns": {
       "subdomain": "Поддомен",
       "fqdn": "FQDN",
-      "user": "User",
+      "user": "Пользователь",
       "violation": "Нарушение",
-      "dnsRecordCount": "DNS records",
-      "status": "Status",
-      "latestViolation": "Latest violation",
-      "violations7d": "7d violations",
-      "actions": "Actions",
-      "scanStatus": "Scan status",
-      "lastScan": "Last scan",
-      "scanTime": "Scanned at",
+      "dnsRecordCount": "DNS записи",
+      "status": "Статус",
+      "latestViolation": "Последнее нарушение",
+      "violations7d": "Нарушения за 7д",
+      "actions": "Действия",
+      "scanStatus": "Статус сканирования",
+      "lastScan": "Последнее сканирование",
+      "scanTime": "Отсканировано",
       "httpStatus": "HTTP",
-      "evidence": "Evidence"
+      "evidence": "Доказательства"
     },
     "status": {
-      "active": "Active",
-      "suspended": "Suspended"
+      "active": "Активен",
+      "suspended": "Заблокирован"
     },
     "scanStatus": {
-      "never": "Never scanned",
-      "clean": "Clean",
-      "violation": "Violation",
-      "unreachable": "Unreachable",
-      "error": "Error"
+      "never": "Не сканировался",
+      "clean": "Чисто",
+      "violation": "Нарушение",
+      "unreachable": "Недоступен",
+      "error": "Ошибка"
     },
     "targets": {
-      "body": "Body",
-      "title": "Title",
-      "final_url": "Final URL",
-      "status_code": "Status code"
+      "body": "Содержимое страницы",
+      "title": "Заголовок страницы",
+      "final_url": "Итоговый URL",
+      "status_code": "HTTP код статуса"
     },
     "matchType": {
-      "keyword": "Keyword",
-      "regex": "Regex",
-      "status_eq": "Status equals",
+      "keyword": "Ключевое слово",
+      "regex": "Регулярное выражение",
+      "status_eq": "Статус равен",
       "unreachable": "Сайт недоступен",
       "unreachableHint": "При первой недоступности выполняется повторная проверка. Срабатывает только если обе попытки недоступны; при успехе хотя бы одной попытки не срабатывает (если первая неудачна, а вторая успешна, другие правила тоже не проверяются). Цели сопоставления не требуются. Канал недоступен, если: (1) сбой соединения или таймаут (напр. ошибка DNS, отказ в соединении, сбой TLS handshake); (2) соединение установлено, но сбой при получении, например при чтении тела ответа (блокировки SSRF по приватному IP не учитываются); (3) любой HTTP 5xx; (4) большинство 4xx, кроме 401, 404 и 429."
     },
     "keywordLogic": {
-      "any": "Match any keyword",
-      "all": "Match all keywords"
+      "any": "Совпадение с любым ключевым словом",
+      "all": "Совпадение со всеми ключевыми словами"
     },
     "actions": {
-      "observe": "Notify only",
+      "observe": "Только уведомление",
       "delete_dns": "Удалить DNS-записи",
       "site": "Освободить поддомен",
-      "user": "Suspend user",
-      "detail": "Details",
-      "restore": "Restore",
+      "user": "Заблокировать пользователя",
+      "detail": "Подробности",
+      "restore": "Восстановить",
       "release": "Освободить поддомен",
-      "rescan": "Rescan now",
-      "bulkRescan": "Bulk rescan ({{count}})",
-      "bulkRescanQueued": "Queued {{count}} scans",
-      "bulkRescanPartial": "Queued {{queued}}, skipped {{skipped}}",
-      "openSite": "Open site"
+      "rescan": "Пересканировать",
+      "bulkRescan": "Массовое сканирование ({{count}})",
+      "bulkRescanQueued": "{{count}} сканирований в очереди",
+      "bulkRescanPartial": "В очереди {{queued}}, пропущено {{skipped}}",
+      "openSite": "Открыть сайт"
     },
-    "hoursSinceScan": "{{hours}}h ago",
+    "hoursSinceScan": "{{hours}}ч назад",
     "empty": {
-      "cases": "No records",
-      "sites": "No scannable sites",
-      "history": "No scan history"
+      "cases": "Нет записей",
+      "sites": "Нет сканируемых сайтов",
+      "history": "Нет истории сканирований"
     },
     "rules": {
-      "create": "New rule",
-      "edit": "Edit rule",
-      "dialogDesc": "Configure detection and enforcement tier",
-      "fromScenario": "From scenario",
-      "custom": "Custom rule",
-      "created": "Rule created",
-      "updated": "Rule updated",
-      "deleted": "Rule deleted",
-      "empty": "No rules",
+      "create": "Создать правило",
+      "edit": "Редактировать правило",
+      "dialogDesc": "Настройте критерии обнаружения и автоматические действия.",
+      "fromScenario": "Из сценария",
+      "custom": "Пользовательский",
+      "created": "Правило создано",
+      "updated": "Правило обновлено",
+      "deleted": "Правило удалено",
+      "empty": "Правила аудита не настроены.",
       "keywordPlaceholder": "Введите ключевое слово и нажмите Enter",
       "scopeHint": "Пусто = все корневые домены",
       "scopeSelected": "Выбрано корневых доменов: {{count}}",
@@ -1325,24 +1345,24 @@
         "match": "Обнаружение"
       },
       "fields": {
-        "name": "Name",
-        "targets": "Targets",
-        "matchType": "Match type",
-        "action": "Enforcement",
-        "keywords": "Keywords",
-        "pattern": "Regex",
-        "statusCode": "HTTP status",
-        "caseSensitive": "Case sensitive",
-        "scope": "Scope"
+        "name": "Название правила",
+        "targets": "Цели",
+        "matchType": "Тип совпадения",
+        "action": "Действие",
+        "keywords": "Ключевые слова",
+        "pattern": "Шаблон regex",
+        "statusCode": "HTTP статус",
+        "caseSensitive": "С учётом регистра",
+        "scope": "Область действия"
       },
       "columns": {
-        "name": "Name",
-        "targets": "Targets",
-        "match": "Match",
-        "action": "Action",
-        "hitCount": "Hit count",
-        "lastHit": "Last hit",
-        "enabled": "Enabled"
+        "name": "Название",
+        "targets": "Цели",
+        "match": "Совпадение",
+        "action": "Действие",
+        "hitCount": "Срабатываний",
+        "lastHit": "Последнее срабатывание",
+        "enabled": "Включено"
       },
       "banNotify": {
         "title": "Уведомление о блокировке",
@@ -1385,10 +1405,10 @@
       }
     },
     "ruleTest": {
-      "title": "Проверить правило",
-      "fqdnPlaceholder": "FQDN для проверки",
-      "run": "Запуск",
-      "running": "Загрузка…",
+      "title": "Тестировать правило",
+      "fqdnPlaceholder": "Введите FQDN для тестирования...",
+      "run": "Запустить тест",
+      "running": "Тестирование…",
       "noMatch": "Нет совпадений",
       "wouldSuspend": "Будет приостановка",
       "wouldRelease": "Будет освобождение поддомена",
@@ -1401,21 +1421,21 @@
       "wouldSendExemptNotify": "Будет отправлено уведомление об исключении"
     },
     "detail": {
-      "title": "Subdomain detail",
-      "subtitle": "Evidence, timeline, and related info",
-      "evidence": "Evidence",
-      "scanTimeline": "Scan timeline",
-      "siblings": "Other subdomains (same user)",
-      "dns": "DNS records",
-      "suspendedReason": "Reason: {{reason}}",
-      "restored": "Subdomain restored",
-      "released": "Claim released",
-      "rescanQueued": "Rescan queued",
+      "title": "Подробности поддомена",
+      "subtitle": "Доказательства совпадения, хронология сканирования и связанная информация",
+      "evidence": "Доказательства совпадения",
+      "scanTimeline": "Хронология сканирования",
+      "siblings": "Другие поддомены этого пользователя",
+      "dns": "DNS записи",
+      "suspendedReason": "Причина блокировки: {{reason}}",
+      "restored": "Поддомен восстановлен",
+      "released": "Притязание освобождено",
+      "rescanQueued": "Пересканирование в очереди",
       "notScannableHint": "У этого поддомена нет сканируемых DNS-записей A/AAAA/CNAME",
-      "releaseConfirm": "Release this claim and delete DNS records?",
-      "releaseQueued": "Release queued",
-      "sendNotify": "Notify user",
-      "reasonPlaceholder": "Optional reason"
+      "releaseConfirm": "Освободить притязание на этот поддомен? Его DNS записи будут удалены.",
+      "releaseQueued": "Освобождение в очереди",
+      "sendNotify": "Уведомить пользователя",
+      "reasonPlaceholder": "Необязательно: причина освобождения"
     }
   },
   "profile": {

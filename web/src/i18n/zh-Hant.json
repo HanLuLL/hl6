@@ -1109,7 +1109,27 @@
     "nameCannotBeEmpty": "姓名不可為空",
     "failedToUpdateProfile": "更新個人資料失敗",
     "registrationDomainDenied": "該郵箱域名暫不支援註冊",
-    "registrationDisabled": "註冊功能暫未開放"
+    "registrationDisabled": "註冊功能暫未開放",
+    "databaseMaintenance": "資料庫維護中",
+    "untrustedOrigin": "不受信任的來源",
+    "appealAlreadyPending": "您已有一條待處理的申訴",
+    "providerAccountDisabled": "DNS 提供商帳戶已停用",
+    "failedToCreateDNSProviderAccount": "建立提供商帳戶失敗",
+    "failedToUpdateDNSProviderAccount": "更新提供商帳戶失敗",
+    "failedToDeleteDNSProviderAccount": "刪除提供商帳戶失敗",
+    "failedToListDNSProviderAccounts": "取得提供商帳戶列表失敗",
+    "invalidAuditRuleTargets": "無效的監查規則目標",
+    "invalidAuditRuleAction": "無效的監查規則操作",
+    "invalidAuditRuleKeywords": "無效的監查規則關鍵詞",
+    "dnsOperationInProgress": "DNS 操作進行中",
+    "dnsDeleteFailed": "DNS 記錄刪除失敗",
+    "invalidPaymentGateway": "無效的支付閘道",
+    "invalidPaymentMethod": "無效的支付方式",
+    "paymentMethodNotEnabled": "支付方式未啟用",
+    "invalidPaymentAmount": "無效的金額",
+    "paymentGatewayNotConfigured": "支付閘道未設定",
+    "failedToCreateOrder": "建立訂單失敗",
+    "notFound": "未找到"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -1229,8 +1249,8 @@
       "enabledRules": "啟用規則"
     },
     "filters": {
-      "fqdn": "按 FQDN 搜索…",
-      "search": "搜索 FQDN 或邮箱…",
+      "fqdn": "按 FQDN 搜尋…",
+      "search": "搜尋 FQDN 或信箱…",
       "claimsSearch": "搜尋 FQDN 或信箱…",
       "scanStatusAll": "掃描狀態",
       "recordTypeAll": "全部記錄類型",
@@ -1243,79 +1263,79 @@
       }
     },
     "columns": {
-      "subdomain": "子域",
+      "subdomain": "子網域",
       "fqdn": "FQDN",
       "user": "用戶",
       "violation": "違規",
       "dnsRecordCount": "下屬解析數",
-      "status": "状态",
-      "latestViolation": "最近违规",
-      "violations7d": "7日违规",
+      "status": "狀態",
+      "latestViolation": "最近違規",
+      "violations7d": "7日違規",
       "actions": "操作",
-      "scanStatus": "扫描状态",
-      "lastScan": "上次扫描",
-      "scanTime": "扫描时间",
+      "scanStatus": "掃描狀態",
+      "lastScan": "上次掃描",
+      "scanTime": "掃描時間",
       "httpStatus": "HTTP",
-      "evidence": "证据"
+      "evidence": "證據"
     },
     "status": {
       "active": "正常",
       "suspended": "已封禁"
     },
     "scanStatus": {
-      "never": "从未扫描",
+      "never": "從未掃描",
       "clean": "正常",
-      "violation": "违规",
-      "unreachable": "不可达",
-      "error": "错误"
+      "violation": "違規",
+      "unreachable": "不可達",
+      "error": "錯誤"
     },
     "targets": {
-      "body": "页面正文",
-      "title": "页面标题",
-      "final_url": "最终 URL",
-      "status_code": "HTTP 状态码"
+      "body": "頁面正文",
+      "title": "頁面標題",
+      "final_url": "最終 URL",
+      "status_code": "HTTP 狀態碼"
     },
     "matchType": {
-      "keyword": "关键词",
-      "regex": "正则",
+      "keyword": "關鍵詞",
+      "regex": "正則",
       "status_eq": "狀態碼等於",
       "unreachable": "網站無法訪問",
       "unreachableHint": "首次不可達時會自動重試一次：僅當兩次均不可訪問時才命中，任一次可訪問則不命中（首次不可達但二次可訪問時，亦不觸發其他規則檢測）。無需配置匹配目標。單通道視為不可訪問的情況：① 連線失敗或逾時（如 DNS 解析失敗、連線被拒、TLS 握手失敗）；② 已成功建立連線但讀取響應體失敗等抓取過程異常（指向內網 IP 的安全攔截除外）；③ HTTP 5xx 一律視為不可訪問；④ 4xx 預設視為不可訪問，但 401、404、429 除外。"
     },
     "keywordLogic": {
-      "any": "命中任一关键词",
-      "all": "全部关键词命中"
+      "any": "命中任一關鍵詞",
+      "all": "全部關鍵詞命中"
     },
     "actions": {
       "observe": "僅通知",
       "delete_dns": "刪除解析",
-      "site": "釋放子域",
+      "site": "釋放子網域",
       "user": "封禁用戶",
       "detail": "詳情",
       "restore": "恢復",
-      "release": "釋放子域",
-      "rescan": "立即重扫",
-      "bulkRescan": "批量重扫 ({{count}})",
-      "bulkRescanQueued": "已入队 {{count}} 个扫描任务",
-      "bulkRescanPartial": "已入队 {{queued}} 个，跳过 {{skipped}} 个",
-      "openSite": "打开网站"
+      "release": "釋放子網域",
+      "rescan": "立即重掃",
+      "bulkRescan": "批量重掃 ({{count}})",
+      "bulkRescanQueued": "已入列 {{count}} 個掃描任務",
+      "bulkRescanPartial": "已入列 {{queued}} 個，跳過 {{skipped}} 個",
+      "openSite": "開啟網站"
     },
-    "hoursSinceScan": "{{hours}} 小时前",
+    "hoursSinceScan": "{{hours}} 小時前",
     "empty": {
-      "cases": "暂无记录",
-      "sites": "暂无可扫描站点",
-      "history": "暂无扫描历史"
+      "cases": "暫無記錄",
+      "sites": "暫無可掃描站點",
+      "history": "暫無掃描歷史"
     },
     "rules": {
-      "create": "新建规则",
-      "edit": "编辑规则",
-      "dialogDesc": "配置检测条件并选择处置档位",
-      "fromScenario": "从场景创建",
-      "custom": "自定义规则",
-      "created": "规则已创建",
-      "updated": "规则已更新",
-      "deleted": "规则已删除",
-      "empty": "暂无规则",
+      "create": "新建規則",
+      "edit": "編輯規則",
+      "dialogDesc": "配置檢測條件並選擇處置檔位",
+      "fromScenario": "從場景建立",
+      "custom": "自訂規則",
+      "created": "規則已建立",
+      "updated": "規則已更新",
+      "deleted": "規則已刪除",
+      "empty": "暫無規則",
       "keywordPlaceholder": "輸入關鍵詞後回車",
       "scopeHint": "不選則對所有根域名生效",
       "scopeSelected": "已選 {{count}} 個根域名",
@@ -1325,35 +1345,35 @@
         "match": "檢測條件"
       },
       "fields": {
-        "name": "规则名称",
-        "targets": "匹配目标",
-        "matchType": "匹配类型",
-        "action": "处置档位",
-        "keywords": "关键词",
-        "pattern": "正则表达式",
-        "statusCode": "HTTP 状态码",
-        "caseSensitive": "区分大小写",
-        "scope": "适用范围"
+        "name": "規則名稱",
+        "targets": "匹配目標",
+        "matchType": "匹配類型",
+        "action": "處置檔位",
+        "keywords": "關鍵詞",
+        "pattern": "正則表達式",
+        "statusCode": "HTTP 狀態碼",
+        "caseSensitive": "區分大小寫",
+        "scope": "適用範圍"
       },
       "columns": {
-        "name": "名称",
-        "targets": "目标",
+        "name": "名稱",
+        "targets": "目標",
         "match": "匹配",
-        "action": "处置",
+        "action": "處置",
         "hitCount": "命中數量",
         "lastHit": "最近命中",
-        "enabled": "启用"
+        "enabled": "啟用"
       },
       "banNotify": {
         "title": "封禁通知",
         "hint": "留空則不通知用戶。封禁/刪除解析成功後自動發送。",
-        "placeholder": "例如：您的子域 {{fqdn}} 因違反 {{rule_name}} 已被封禁。",
+        "placeholder": "例如：您的子網域 {{fqdn}} 因違反 {{rule_name}} 已被封禁。",
         "vars": "可用變數：{{fqdn}}、{{rule_name}}、{{matched_snippet}}、{{action}}"
       },
       "notifyOnly": {
         "title": "違規通知",
         "hint": "留空則不通知用戶。命中後自動發送，不封禁或刪除解析。",
-        "placeholder": "例如：您的子域 {{fqdn}} 觸發了 {{rule_name}} 審查，請及時處理。"
+        "placeholder": "例如：您的子網域 {{fqdn}} 觸發了 {{rule_name}} 審查，請及時處理。"
       },
       "exempt": {
         "title": "豁免",
@@ -1362,7 +1382,7 @@
         "recheckRange": "範圍：{{min}}–{{max}} 分鐘",
         "notifyTitle": "豁免通知",
         "notifyHint": "留空則不通知用戶。",
-        "notifyPlaceholder": "例如：子域 {{fqdn}} 暫時無法訪問，請於 {{recheck_at}} 前處理。",
+        "notifyPlaceholder": "例如：子網域 {{fqdn}} 暫時無法訪問，請於 {{recheck_at}} 前處理。",
         "vars": "可用變數：{{fqdn}}、{{rule_name}}、{{matched_snippet}}、{{action}}、{{recheck_minutes}}、{{recheck_at}}"
       }
     },
@@ -1391,7 +1411,7 @@
       "running": "抓取中…",
       "noMatch": "未命中任何規則",
       "wouldSuspend": "將觸發封禁處置",
-      "wouldRelease": "將觸發釋放子域",
+      "wouldRelease": "將觸發釋放子網域",
       "wouldDeleteDns": "將觸發刪除解析",
       "wouldNotSuspend": "不會觸發封禁或刪除解析",
       "wouldNotifyOnly": "將僅通知用戶（不封禁或刪除解析）",
@@ -1401,21 +1421,21 @@
       "wouldSendExemptNotify": "將發送豁免通知"
     },
     "detail": {
-      "title": "子域名详情",
-      "subtitle": "命中证据、扫描时间线与关联信息",
-      "evidence": "命中证据",
-      "scanTimeline": "扫描时间线",
-      "siblings": "同用户其他子域名",
-      "dns": "DNS 记录",
+      "title": "子網域詳情",
+      "subtitle": "命中證據、掃描時間線與關聯資訊",
+      "evidence": "命中證據",
+      "scanTimeline": "掃描時間線",
+      "siblings": "同用戶其他子網域",
+      "dns": "DNS 記錄",
       "suspendedReason": "封禁原因：{{reason}}",
-      "restored": "子域名已恢复",
-      "released": "认领已释放",
-      "rescanQueued": "重扫任务已入队",
+      "restored": "子網域已恢復",
+      "released": "認領已釋放",
+      "rescanQueued": "重掃任務已入列",
       "notScannableHint": "該子域沒有可掃描的 A/AAAA/CNAME 解析記錄",
-      "releaseConfirm": "确定释放该子域名的认领？将删除其 DNS 记录。",
-      "releaseQueued": "释放任务已入队",
-      "sendNotify": "通知用户",
-      "reasonPlaceholder": "可选：说明释放原因"
+      "releaseConfirm": "確定釋放該子網域的認領？將刪除其 DNS 記錄。",
+      "releaseQueued": "釋放任務已入列",
+      "sendNotify": "通知用戶",
+      "reasonPlaceholder": "選填：說明釋放原因"
     }
   },
   "profile": {

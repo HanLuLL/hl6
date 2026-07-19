@@ -1109,7 +1109,27 @@
     "nameCannotBeEmpty": "名前を空にすることはできません",
     "failedToUpdateProfile": "プロフィールを更新できませんでした",
     "registrationDomainDenied": "このメールドメインは登録に対応していません",
-    "registrationDisabled": "現在登録は停止中です"
+    "registrationDisabled": "現在登録は停止中です",
+    "databaseMaintenance": "データベースメンテナンス中",
+    "untrustedOrigin": "信頼できないオリジン",
+    "appealAlreadyPending": "保留中の申し立てが既にあります",
+    "providerAccountDisabled": "プロバイダーアカウントは無効です",
+    "failedToCreateDNSProviderAccount": "プロバイダーアカウントの作成に失敗",
+    "failedToUpdateDNSProviderAccount": "プロバイダーアカウントの更新に失敗",
+    "failedToDeleteDNSProviderAccount": "プロバイダーアカウントの削除に失敗",
+    "failedToListDNSProviderAccounts": "プロバイダーアカウント一覧の取得に失敗",
+    "invalidAuditRuleTargets": "無効な監査ルールターゲット",
+    "invalidAuditRuleAction": "無効な監査ルールアクション",
+    "invalidAuditRuleKeywords": "無効な監査ルールキーワード",
+    "dnsOperationInProgress": "DNS操作が進行中",
+    "dnsDeleteFailed": "DNSレコードの削除に失敗",
+    "invalidPaymentGateway": "無効な決済ゲートウェイ",
+    "invalidPaymentMethod": "無効な決済方法",
+    "paymentMethodNotEnabled": "決済方法が有効ではありません",
+    "invalidPaymentAmount": "無効な決済金額",
+    "paymentGatewayNotConfigured": "決済ゲートウェイが設定されていません",
+    "failedToCreateOrder": "注文の作成に失敗",
+    "notFound": "見つかりません"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -1215,31 +1235,31 @@
     "unknown": "不明なエラー"
   },
   "audit": {
-    "title": "Content Audit",
+    "title": "コンテンツ監査",
     "description": "サブドメイン審査、ルール設定、スキャン履歴を一元管理",
     "tabs": {
       "domains": "サブドメイン",
-      "rules": "Rules",
-      "history": "History"
+      "rules": "ルール",
+      "history": "履歴"
     },
     "summary": {
-      "deleted": "Deleted",
-      "currentViolation": "Current violations",
-      "neverScanned": "Never scanned",
-      "enabledRules": "Enabled rules"
+      "deleted": "削除済み",
+      "currentViolation": "現在の違反",
+      "neverScanned": "未スキャン",
+      "enabledRules": "有効なルール"
     },
     "filters": {
-      "fqdn": "Search FQDN…",
-      "search": "Search FQDN or email…",
-      "claimsSearch": "Search FQDN or email…",
-      "scanStatusAll": "Scan status",
-      "recordTypeAll": "All record types",
+      "fqdn": "FQDNで検索...",
+      "search": "FQDNまたはメールで検索...",
+      "claimsSearch": "FQDNまたはメールで検索...",
+      "scanStatusAll": "スキャン状況",
+      "recordTypeAll": "すべてのレコードタイプ",
       "scanStatus": {
-        "all": "All",
-        "scanned": "Scanned",
-        "never": "Not scanned",
-        "violation": "Violation",
-        "compliant": "Compliant"
+        "all": "すべて",
+        "scanned": "スキャン済み",
+        "never": "未スキャン",
+        "violation": "違反",
+        "compliant": "クリーン"
       }
     },
     "columns": {
@@ -1247,75 +1267,75 @@
       "fqdn": "FQDN",
       "user": "ユーザー",
       "violation": "違反",
-      "dnsRecordCount": "DNS records",
-      "status": "Status",
-      "latestViolation": "Latest violation",
-      "violations7d": "7d violations",
-      "actions": "Actions",
-      "scanStatus": "Scan status",
-      "lastScan": "Last scan",
-      "scanTime": "Scanned at",
+      "dnsRecordCount": "DNSレコード",
+      "status": "ステータス",
+      "latestViolation": "最新の違反",
+      "violations7d": "7日間の違反",
+      "actions": "操作",
+      "scanStatus": "スキャン状況",
+      "lastScan": "最終スキャン",
+      "scanTime": "スキャン日時",
       "httpStatus": "HTTP",
-      "evidence": "Evidence"
+      "evidence": "証拠"
     },
     "status": {
-      "active": "Active",
-      "suspended": "Suspended"
+      "active": "アクティブ",
+      "suspended": "停止中"
     },
     "scanStatus": {
-      "never": "Never scanned",
-      "clean": "Clean",
-      "violation": "Violation",
-      "unreachable": "Unreachable",
-      "error": "Error"
+      "never": "未スキャン",
+      "clean": "クリーン",
+      "violation": "違反",
+      "unreachable": "到達不能",
+      "error": "エラー"
     },
     "targets": {
-      "body": "Body",
-      "title": "Title",
-      "final_url": "Final URL",
-      "status_code": "Status code"
+      "body": "ページ本文",
+      "title": "ページタイトル",
+      "final_url": "最終URL",
+      "status_code": "HTTPステータスコード"
     },
     "matchType": {
-      "keyword": "Keyword",
-      "regex": "Regex",
-      "status_eq": "Status equals",
+      "keyword": "キーワード",
+      "regex": "正規表現",
+      "status_eq": "ステータス一致",
       "unreachable": "サイト到達不可",
       "unreachableHint": "初回が到達不可の場合は自動で再試行します。両方の試行が到達不可のときのみ一致し、いずれか一方でも到達可能なら一致しません（初回不可・二次可の場合は他のルールも評価しません）。マッチ対象の設定は不要です。単一チャネルが到達不可とみなされる場合：(1) 接続失敗・タイムアウト（DNS 解決失敗、接続拒否、TLS ハンドシェイク失敗など）；(2) 接続は成功したが取得に失敗（レスポンス本文の読み取り失敗など。プライベート IP への SSRF ブロックは除く）；(3) HTTP 5xx はすべて到達不可；(4) 4xx は原則到達不可だが、401・404・429 は除く。"
     },
     "keywordLogic": {
-      "any": "Match any keyword",
-      "all": "Match all keywords"
+      "any": "いずれかのキーワードに一致",
+      "all": "すべてのキーワードに一致"
     },
     "actions": {
-      "observe": "Notify only",
+      "observe": "通知のみ",
       "delete_dns": "DNS レコード削除",
       "site": "サブドメイン解放",
       "user": "ユーザー停止",
       "detail": "詳細",
       "restore": "復元",
       "release": "サブドメイン解放",
-      "rescan": "Rescan now",
-      "bulkRescan": "Bulk rescan ({{count}})",
-      "bulkRescanQueued": "Queued {{count}} scans",
-      "bulkRescanPartial": "Queued {{queued}}, skipped {{skipped}}",
-      "openSite": "Open site"
+      "rescan": "今すぐ再スキャン",
+      "bulkRescan": "一括再スキャン ({{count}})",
+      "bulkRescanQueued": "{{count}}件のスキャンをキューに追加",
+      "bulkRescanPartial": "{{queued}}件追加、{{skipped}}件スキップ",
+      "openSite": "サイトを開く"
     },
-    "hoursSinceScan": "{{hours}}h ago",
+    "hoursSinceScan": "{{hours}}時間前",
     "empty": {
-      "cases": "No records",
-      "sites": "No scannable sites",
-      "history": "No scan history"
+      "cases": "レコードがありません",
+      "sites": "スキャン可能なサイトがありません",
+      "history": "スキャン履歴がありません"
     },
     "rules": {
-      "create": "New rule",
-      "edit": "Edit rule",
-      "dialogDesc": "Configure detection and enforcement tier",
-      "fromScenario": "From scenario",
-      "custom": "Custom rule",
-      "created": "Rule created",
-      "updated": "Rule updated",
-      "deleted": "Rule deleted",
-      "empty": "No rules",
+      "create": "ルールを作成",
+      "edit": "ルールを編集",
+      "dialogDesc": "検出条件と自動アクションを設定します。",
+      "fromScenario": "シナリオから",
+      "custom": "カスタム",
+      "created": "ルールを作成しました",
+      "updated": "ルールを更新しました",
+      "deleted": "ルールを削除しました",
+      "empty": "ルールが作成されていません",
       "keywordPlaceholder": "キーワードを入力して Enter",
       "scopeHint": "未選択の場合はすべてのルートドメインに適用",
       "scopeSelected": "{{count}} 件のルートドメインを選択",
@@ -1325,24 +1345,24 @@
         "match": "検出条件"
       },
       "fields": {
-        "name": "Name",
-        "targets": "Targets",
-        "matchType": "Match type",
-        "action": "Enforcement",
-        "keywords": "Keywords",
-        "pattern": "Regex",
-        "statusCode": "HTTP status",
-        "caseSensitive": "Case sensitive",
-        "scope": "Scope"
+        "name": "ルール名",
+        "targets": "マッチ対象",
+        "matchType": "一致タイプ",
+        "action": "アクション",
+        "keywords": "キーワード",
+        "pattern": "正規表現パターン",
+        "statusCode": "HTTPステータス",
+        "caseSensitive": "大文字小文字を区別",
+        "scope": "適用範囲"
       },
       "columns": {
-        "name": "Name",
-        "targets": "Targets",
-        "match": "Match",
-        "action": "Action",
-        "hitCount": "Hit count",
-        "lastHit": "Last hit",
-        "enabled": "Enabled"
+        "name": "名前",
+        "targets": "マッチ対象",
+        "match": "一致",
+        "action": "アクション",
+        "hitCount": "ヒット数",
+        "lastHit": "最終ヒット",
+        "enabled": "有効"
       },
       "banNotify": {
         "title": "停止通知",
@@ -1385,10 +1405,10 @@
       }
     },
     "ruleTest": {
-      "title": "ルール試行",
-      "fqdnPlaceholder": "テストする FQDN",
-      "run": "実行",
-      "running": "取得中…",
+      "title": "ルールをテスト",
+      "fqdnPlaceholder": "テストするFQDNを入力...",
+      "run": "テスト実行",
+      "running": "テスト中...",
       "noMatch": "一致なし",
       "wouldSuspend": "停止が実行されます",
       "wouldRelease": "サブドメイン解放が実行されます",
@@ -1401,21 +1421,21 @@
       "wouldSendExemptNotify": "免除通知を送信します"
     },
     "detail": {
-      "title": "Subdomain detail",
-      "subtitle": "Evidence, timeline, and related info",
-      "evidence": "Evidence",
-      "scanTimeline": "Scan timeline",
-      "siblings": "Other subdomains (same user)",
-      "dns": "DNS records",
-      "suspendedReason": "Reason: {{reason}}",
-      "restored": "Subdomain restored",
-      "released": "Claim released",
-      "rescanQueued": "Rescan queued",
+      "title": "サブドメイン詳細",
+      "subtitle": "一致証拠、スキャンタイムライン、関連情報",
+      "evidence": "一致証拠",
+      "scanTimeline": "スキャンタイムライン",
+      "siblings": "同じユーザーの他のサブドメイン",
+      "dns": "DNSレコード",
+      "suspendedReason": "停止理由：{{reason}}",
+      "restored": "サブドメインを復元しました",
+      "released": "クレームを解放しました",
+      "rescanQueued": "再スキャンをキューに追加",
       "notScannableHint": "このサブドメインにはスキャン可能な A/AAAA/CNAME レコードがありません",
-      "releaseConfirm": "Release this claim and delete DNS records?",
-      "releaseQueued": "Release queued",
-      "sendNotify": "Notify user",
-      "reasonPlaceholder": "Optional reason"
+      "releaseConfirm": "このサブドメインのクレームを解放しますか？DNSレコードが削除されます。",
+      "releaseQueued": "解放をキューに追加",
+      "sendNotify": "ユーザーに通知",
+      "reasonPlaceholder": "任意：解放理由"
     }
   },
   "profile": {

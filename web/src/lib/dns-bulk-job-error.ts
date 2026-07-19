@@ -5,10 +5,10 @@ import { ApiError } from "@/lib/api";
 export type DnsBulkJobAction = "ban" | "delete" | "release" | "operation";
 
 const ERROR_KEYS: Record<DnsBulkJobAction, string> = {
-  ban: "errors.dnsBulkJobQueuedBan",
-  delete: "errors.dnsBulkJobQueuedDelete",
-  release: "errors.dnsBulkJobQueuedRelease",
-  operation: "errors.dnsBulkJobQueuedOperation",
+  ban: "error.dnsBulkJobQueuedBan",
+  delete: "error.dnsBulkJobQueuedDelete",
+  release: "error.dnsBulkJobQueuedRelease",
+  operation: "error.dnsBulkJobQueuedOperation",
 };
 
 export function toastDnsBulkJobQueued(t: TFunction, action: DnsBulkJobAction, jobID: number): void {

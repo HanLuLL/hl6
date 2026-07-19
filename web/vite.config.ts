@@ -41,6 +41,11 @@ const gitCommit =
   readGitValue("git rev-parse --short HEAD") ??
   "unknown"
 
+const appVersion =
+  readEnvValue(["APP_VERSION"]) ??
+  readGitValue("git describe --tags --abbrev=0 2>/dev/null")?.replace(/^v/, "") ??
+  "dev"
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, projectRoot, "")
   const serverPort = env.SERVER_PORT || "8081"
@@ -53,6 +58,7 @@ export default defineConfig(({ mode }) => {
     define: {
       __APP_GIT_BRANCH__: JSON.stringify(gitBranch),
       __APP_GIT_COMMIT__: JSON.stringify(gitCommit),
+      __APP_VERSION__: JSON.stringify(appVersion),
     },
     plugins: [react(), tailwindcss()],
     resolve: {

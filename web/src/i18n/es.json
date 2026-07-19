@@ -1109,7 +1109,27 @@
     "nameCannotBeEmpty": "El nombre no puede estar vacío",
     "failedToUpdateProfile": "No se pudo actualizar el perfil",
     "registrationDomainDenied": "Este dominio de correo electrónico no está aceptado para el registro",
-    "registrationDisabled": "El registro está deshabilitado actualmente"
+    "registrationDisabled": "El registro está deshabilitado actualmente",
+    "databaseMaintenance": "Mantenimiento de base de datos en progreso",
+    "untrustedOrigin": "Origen del navegador no confiable",
+    "appealAlreadyPending": "Ya tienes una apelación pendiente",
+    "providerAccountDisabled": "La cuenta del proveedor está deshabilitada",
+    "failedToCreateDNSProviderAccount": "Error al crear la cuenta del proveedor",
+    "failedToUpdateDNSProviderAccount": "Error al actualizar la cuenta del proveedor",
+    "failedToDeleteDNSProviderAccount": "Error al eliminar la cuenta del proveedor",
+    "failedToListDNSProviderAccounts": "Error al listar las cuentas del proveedor",
+    "invalidAuditRuleTargets": "Objetivos de regla de auditoría inválidos",
+    "invalidAuditRuleAction": "Acción de regla de auditoría inválida",
+    "invalidAuditRuleKeywords": "Palabras clave de regla de auditoría inválidas",
+    "dnsOperationInProgress": "Operación DNS en progreso",
+    "dnsDeleteFailed": "Error al eliminar el registro DNS",
+    "invalidPaymentGateway": "Pasarela de pago inválida",
+    "invalidPaymentMethod": "Método de pago inválido",
+    "paymentMethodNotEnabled": "El método de pago no está habilitado",
+    "invalidPaymentAmount": "Monto de pago inválido",
+    "paymentGatewayNotConfigured": "La pasarela de pago no está configurada",
+    "failedToCreateOrder": "Error al crear el pedido",
+    "notFound": "No encontrado"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -1215,137 +1235,137 @@
     "unknown": "Error desconocido"
   },
   "audit": {
-    "title": "Content Audit",
+    "title": "Auditoría de contenido",
     "description": "Gestiona revisión de subdominios, reglas e historial de escaneos en un solo lugar",
     "tabs": {
       "domains": "Subdominios",
-      "rules": "Rules",
-      "history": "History"
+      "rules": "Reglas",
+      "history": "Historial"
     },
     "summary": {
-      "deleted": "Deleted",
-      "currentViolation": "Current violations",
-      "neverScanned": "Never scanned",
-      "enabledRules": "Enabled rules"
+      "deleted": "Eliminados",
+      "currentViolation": "Violaciones actuales",
+      "neverScanned": "Nunca escaneados",
+      "enabledRules": "Reglas habilitadas"
     },
     "filters": {
-      "fqdn": "Search FQDN…",
-      "search": "Search FQDN or email…",
-      "claimsSearch": "Search FQDN or email…",
-      "scanStatusAll": "Scan status",
-      "recordTypeAll": "All record types",
+      "fqdn": "Buscar FQDN...",
+      "search": "Buscar FQDN o correo...",
+      "claimsSearch": "Buscar FQDN o correo...",
+      "scanStatusAll": "Estado de escaneo",
+      "recordTypeAll": "Todos los tipos de registro",
       "scanStatus": {
-        "all": "All",
-        "scanned": "Scanned",
-        "never": "Not scanned",
-        "violation": "Violation",
-        "compliant": "Compliant"
+        "all": "Todos",
+        "scanned": "Escaneados",
+        "never": "Nunca escaneado",
+        "violation": "Violación",
+        "compliant": "Conforme"
       }
     },
     "columns": {
       "subdomain": "Subdominio",
       "fqdn": "FQDN",
-      "user": "User",
+      "user": "Usuario",
       "violation": "Infracción",
-      "dnsRecordCount": "DNS records",
-      "status": "Status",
-      "latestViolation": "Latest violation",
-      "violations7d": "7d violations",
-      "actions": "Actions",
-      "scanStatus": "Scan status",
-      "lastScan": "Last scan",
-      "scanTime": "Scanned at",
+      "dnsRecordCount": "Registros DNS",
+      "status": "Estado",
+      "latestViolation": "Última violación",
+      "violations7d": "Violaciones 7d",
+      "actions": "Acciones",
+      "scanStatus": "Estado de escaneo",
+      "lastScan": "Último escaneo",
+      "scanTime": "Escaneado el",
       "httpStatus": "HTTP",
-      "evidence": "Evidence"
+      "evidence": "Evidencia"
     },
     "status": {
-      "active": "Active",
-      "suspended": "Suspended"
+      "active": "Activo",
+      "suspended": "Suspendido"
     },
     "scanStatus": {
-      "never": "Never scanned",
-      "clean": "Clean",
-      "violation": "Violation",
-      "unreachable": "Unreachable",
+      "never": "Nunca escaneado",
+      "clean": "Limpio",
+      "violation": "Violación",
+      "unreachable": "Inalcanzable",
       "error": "Error"
     },
     "targets": {
-      "body": "Body",
-      "title": "Title",
-      "final_url": "Final URL",
-      "status_code": "Status code"
+      "body": "Cuerpo de la página",
+      "title": "Título de la página",
+      "final_url": "URL final",
+      "status_code": "Código de estado HTTP"
     },
     "matchType": {
-      "keyword": "Keyword",
-      "regex": "Regex",
-      "status_eq": "Status equals",
+      "keyword": "Palabra clave",
+      "regex": "Expresión regular",
+      "status_eq": "Estado igual a",
       "unreachable": "Sitio inaccesible",
       "unreachableHint": "Si el primer intento es inaccesible, se reintenta automáticamente. Solo coincide cuando ambos intentos son inaccesibles; cualquier intento exitoso no coincide (si el primero falla pero el segundo tiene éxito, tampoco se evalúan otras reglas). No requiere objetivos de coincidencia. Un canal es inaccesible si: (1) la conexión falla o hay timeout (p. ej. fallo DNS, conexión rechazada, fallo en el handshake TLS); (2) la conexión se estableció pero falla la obtención, como al leer el cuerpo de la respuesta (se excluyen bloqueos SSRF por IP privada); (3) cualquier estado HTTP 5xx; (4) la mayoría de los 4xx, excepto 401, 404 y 429."
     },
     "keywordLogic": {
-      "any": "Match any keyword",
-      "all": "Match all keywords"
+      "any": "Coincidir con cualquier palabra clave",
+      "all": "Coincidir con todas las palabras clave"
     },
     "actions": {
-      "observe": "Notify only",
+      "observe": "Solo notificar",
       "delete_dns": "Eliminar registros DNS",
       "site": "Liberar subdominio",
       "user": "Suspender usuario",
-      "detail": "Details",
-      "restore": "Restore",
+      "detail": "Detalles",
+      "restore": "Restaurar",
       "release": "Liberar subdominio",
-      "rescan": "Rescan now",
-      "bulkRescan": "Bulk rescan ({{count}})",
-      "bulkRescanQueued": "Queued {{count}} scans",
-      "bulkRescanPartial": "Queued {{queued}}, skipped {{skipped}}",
-      "openSite": "Open site"
+      "rescan": "Reescanear ahora",
+      "bulkRescan": "Reescaneo masivo ({{count}})",
+      "bulkRescanQueued": "{{count}} escaneos encolados",
+      "bulkRescanPartial": "Encolados {{queued}}, omitidos {{skipped}}",
+      "openSite": "Abrir sitio"
     },
-    "hoursSinceScan": "{{hours}}h ago",
+    "hoursSinceScan": "Hace {{hours}}h",
     "empty": {
-      "cases": "No records",
-      "sites": "No scannable sites",
-      "history": "No scan history"
+      "cases": "Sin registros",
+      "sites": "No se encontraron subdominios",
+      "history": "No hay historial de escaneos"
     },
     "rules": {
-      "create": "New rule",
-      "edit": "Edit rule",
-      "dialogDesc": "Configure detection and enforcement tier",
-      "fromScenario": "From scenario",
-      "custom": "Custom rule",
-      "created": "Rule created",
-      "updated": "Rule updated",
-      "deleted": "Rule deleted",
-      "empty": "No rules",
+      "create": "Crear regla",
+      "edit": "Editar regla",
+      "dialogDesc": "Configure los criterios de detección y las acciones automáticas.",
+      "fromScenario": "Desde escenario",
+      "custom": "Personalizado",
+      "created": "Regla creada",
+      "updated": "Regla actualizada",
+      "deleted": "Regla eliminada",
+      "empty": "No hay reglas de auditoría configuradas.",
       "keywordPlaceholder": "Escribe la palabra clave y pulsa Enter",
-      "scopeHint": "Vacío = todos los dominios raíz",
-      "scopeSelected": "{{count}} dominio(s) raíz seleccionado(s)",
+      "scopeHint": "Dejar vacío para aplicar a todos los subdominios.",
+      "scopeSelected": "{{count}} subdominio(s) seleccionado(s)",
       "configured": "Configurado",
       "sections": {
         "basics": "Básico",
         "match": "Detección"
       },
       "fields": {
-        "name": "Name",
-        "targets": "Targets",
-        "matchType": "Match type",
-        "action": "Enforcement",
-        "keywords": "Keywords",
-        "pattern": "Regex",
-        "statusCode": "HTTP status",
-        "caseSensitive": "Case sensitive",
-        "scope": "Scope"
+        "name": "Nombre de la regla",
+        "targets": "Objetivos",
+        "matchType": "Tipo de coincidencia",
+        "action": "Acción",
+        "keywords": "Palabras clave",
+        "pattern": "Patrón regex",
+        "statusCode": "Estado HTTP",
+        "caseSensitive": "Distinguir mayúsculas",
+        "scope": "Alcance"
       },
       "columns": {
-        "name": "Name",
-        "targets": "Targets",
-        "match": "Match",
-        "action": "Action",
-        "hitCount": "Hit count",
-        "lastHit": "Last hit",
-        "enabled": "Enabled"
+        "name": "Nombre",
+        "targets": "Objetivos",
+        "match": "Tipo",
+        "action": "Acción",
+        "hitCount": "Coincidencias",
+        "lastHit": "Última coincidencia",
+        "enabled": "Habilitado"
       },
       "banNotify": {
-        "title": "Notificación de bloqueo",
+        "title": "Notificación de suspensión",
         "hint": "Dejar vacío para no notificar. Se envía tras bloquear o eliminar DNS.",
         "placeholder": "p. ej. Su subdominio {{fqdn}} fue suspendido por {{rule_name}}.",
         "vars": "Variables: {{fqdn}}, {{rule_name}}, {{matched_snippet}}, {{action}}"
@@ -1386,9 +1406,9 @@
     },
     "ruleTest": {
       "title": "Probar regla",
-      "fqdnPlaceholder": "FQDN a probar",
-      "run": "Ejecutar",
-      "running": "Obteniendo…",
+      "fqdnPlaceholder": "Ingrese FQDN para probar...",
+      "run": "Ejecutar prueba",
+      "running": "Probando...",
       "noMatch": "Sin coincidencias",
       "wouldSuspend": "Provocaría suspensión",
       "wouldRelease": "Provocaría liberación del subdominio",
@@ -1401,21 +1421,21 @@
       "wouldSendExemptNotify": "Enviaría notificación de exención"
     },
     "detail": {
-      "title": "Subdomain detail",
-      "subtitle": "Evidence, timeline, and related info",
-      "evidence": "Evidence",
-      "scanTimeline": "Scan timeline",
-      "siblings": "Other subdomains (same user)",
-      "dns": "DNS records",
-      "suspendedReason": "Reason: {{reason}}",
-      "restored": "Subdomain restored",
-      "released": "Claim released",
-      "rescanQueued": "Rescan queued",
+      "title": "Detalles del subdominio",
+      "subtitle": "Evidencia de coincidencia, línea de tiempo de escaneo e información relacionada",
+      "evidence": "Evidencia de coincidencia",
+      "scanTimeline": "Línea de tiempo de escaneo",
+      "siblings": "Otros subdominios del mismo usuario",
+      "dns": "Registros DNS",
+      "suspendedReason": "Motivo de suspensión: {{reason}}",
+      "restored": "Subdominio restaurado",
+      "released": "Reclamación liberada",
+      "rescanQueued": "Reescaneo encolado",
       "notScannableHint": "Este subdominio no tiene registros DNS A/AAAA/CNAME escaneables",
-      "releaseConfirm": "Release this claim and delete DNS records?",
-      "releaseQueued": "Release queued",
-      "sendNotify": "Notify user",
-      "reasonPlaceholder": "Optional reason"
+      "releaseConfirm": "¿Liberar la reclamación de este subdominio? Se eliminarán sus registros DNS.",
+      "releaseQueued": "Liberación encolada",
+      "sendNotify": "Notificar al usuario",
+      "reasonPlaceholder": "Opcional: motivo de la liberación"
     }
   },
   "profile": {

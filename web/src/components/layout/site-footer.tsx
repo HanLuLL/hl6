@@ -1,4 +1,4 @@
-import { Code2, GitBranch, GitCommitHorizontal, type LucideIcon } from "lucide-react";
+import { Code2, GitBranch, GitCommitHorizontal, Tag, type LucideIcon } from "lucide-react";
 import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -36,8 +36,10 @@ export function SiteFooter({ withBorder = true, centered = false, className }: S
   const branding = useBranding();
   const branch = __APP_GIT_BRANCH__ || "unknown";
   const commit = __APP_GIT_COMMIT__ || "unknown";
+  const version = __APP_VERSION__ || "dev";
   const showBranch = branch.toLowerCase() !== "unknown";
   const showCommit = commit.toLowerCase() !== "unknown";
+  const showVersion = version.toLowerCase() !== "dev";
   const icp = branding.footer_icp;
   const icpLink = branding.footer_icp_link;
   const footerContent = branding.footer_content;
@@ -67,6 +69,7 @@ export function SiteFooter({ withBorder = true, centered = false, className }: S
         </a>
         {showBranch && <FooterBadge icon={GitBranch} label={t("footer.branch")} value={branch} />}
         {showCommit && <FooterBadge icon={GitCommitHorizontal} label={t("footer.commit")} value={commit} />}
+        {showVersion && <FooterBadge icon={Tag} label={t("footer.version", { defaultValue: "v" })} value={version} />}
         {icp && (
           icpLink ? (
             <a href={icpLink} target="_blank" rel="noreferrer" className="transition-colors hover:text-foreground">
