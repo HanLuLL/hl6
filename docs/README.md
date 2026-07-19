@@ -6,6 +6,7 @@
 2. [认证](authentication.md)：注册、激活、密码重置、域名策略、会话和密码胡椒轮换
 3. [管理后台](administration.md)：分组管理区域、Android 控制、导出和恢复
 4. [Android 客户端](android-client.md)：本地 UI 包模型、通讯密钥、签名密钥和工作流输入
+5. [认证与 Android 自查](authentication-self-check.md)：发布前认证闭环、部署配置与故障排查清单
 
 ## 参考
 
