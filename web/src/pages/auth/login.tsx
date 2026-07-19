@@ -28,7 +28,8 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const result = isNativeClient ? await signInNative(email, password) : (await api.login({ email, password })).data;
-      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      // 直接用响应数据更新 React Query 缓存，使 isAuthenticated 立即变为 true
+      queryClient.setQueryData(["me"], { data: { user: result.user, credits: 0 } });
       navigate(result.banned ? "/banned" : "/dashboard", { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, t));

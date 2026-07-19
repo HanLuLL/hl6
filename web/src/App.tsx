@@ -66,6 +66,8 @@ function ProtectedRoute() {
     );
   }
 
+  // 如果已有缓存的用户数据（isAuthenticated=true），即使正在后台刷新也保持显示
+  // 只有在确认未登录时才重定向到登录页
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }

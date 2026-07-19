@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -22,15 +22,11 @@ export default function SetPasswordPage({ reset = false }: SetPasswordPageProps)
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const token = useMemo(() => searchParams.get("token")?.trim() ?? "", [searchParams]);
+  const token = searchParams.get("token")?.trim() ?? "";
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (token) window.history.replaceState(null, "", window.location.pathname);
-  }, [token]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -47,13 +43,17 @@ export default function SetPasswordPage({ reset = false }: SetPasswordPageProps)
     setSubmitting(true);
     try {
       const result = await api.completePassword({ token, password });
-      const accessToken = result.data.access_token?.trim();
+      const session = result.data;
+      const accessToken = session.access_token?.trim();
       if (isNativeClient && accessToken) {
         setNativeAccessToken(accessToken);
         await SecureStoragePlugin.set({ key: "hl6_native_session", value: accessToken });
       }
-      await queryClient.invalidateQueries({ queryKey: ["me"] });
-      navigate(result.data.banned ? "/banned" : "/dashboard", { replace: true });
+      // 直接用响应数据更新 React Query 缓存，使 isAuthenticated 立即变为 true
+      queryClient.setQueryData(["me"], { data: { user: session.user, credits: 0 } });
+      // 清除 URL 中的 token（安全措施，仅在成功后执行）
+      window.history.replaceState(null, "", window.location.pathname);
+      navigate(session.banned ? "/banned" : "/dashboard", { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, t));
     } finally {
