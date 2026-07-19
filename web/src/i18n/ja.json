@@ -1107,7 +1107,9 @@
     "dnsBulkJobQueuedRelease": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に解放を再試行してください。",
     "dnsBulkJobQueuedOperation": "DNS 一括ジョブをキューに追加しました（Job #{{jobID}}）。完了後に操作を再試行してください。",
     "nameCannotBeEmpty": "名前を空にすることはできません",
-    "failedToUpdateProfile": "プロフィールを更新できませんでした"
+    "failedToUpdateProfile": "プロフィールを更新できませんでした",
+    "registrationDomainDenied": "このメールドメインは登録に対応していません",
+    "registrationDisabled": "現在登録は停止中です"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

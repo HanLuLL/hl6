@@ -1107,7 +1107,9 @@
     "dnsBulkJobQueuedRelease": "DNS bulk job queued (Job #{{jobID}}). Please retry the release after it completes.",
     "dnsBulkJobQueuedOperation": "DNS bulk job queued (Job #{{jobID}}). Please retry the operation after it completes.",
     "nameCannotBeEmpty": "Name cannot be empty",
-    "failedToUpdateProfile": "Failed to update profile"
+    "failedToUpdateProfile": "Failed to update profile",
+    "registrationDomainDenied": "This email domain is not accepted for registration",
+    "registrationDisabled": "Registration is currently disabled"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

@@ -1107,7 +1107,9 @@
     "dnsBulkJobQueuedRelease": "Tarea DNS en cola (Job #{{jobID}}). Reintente la liberación cuando finalice.",
     "dnsBulkJobQueuedOperation": "Tarea DNS en cola (Job #{{jobID}}). Reintente la operación cuando finalice.",
     "nameCannotBeEmpty": "El nombre no puede estar vacío",
-    "failedToUpdateProfile": "No se pudo actualizar el perfil"
+    "failedToUpdateProfile": "No se pudo actualizar el perfil",
+    "registrationDomainDenied": "Este dominio de correo electrónico no está aceptado para el registro",
+    "registrationDisabled": "El registro está deshabilitado actualmente"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

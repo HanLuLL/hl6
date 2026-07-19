@@ -1107,7 +1107,9 @@
     "dnsBulkJobQueuedRelease": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试释放",
     "dnsBulkJobQueuedOperation": "DNS 批量任务已排队（Job #{{jobID}}），请等待完成后重试操作",
     "nameCannotBeEmpty": "姓名不能为空",
-    "failedToUpdateProfile": "更新资料失败"
+    "failedToUpdateProfile": "更新资料失败",
+    "registrationDomainDenied": "该邮箱域名暂不支持注册",
+    "registrationDisabled": "注册功能暂未开放"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

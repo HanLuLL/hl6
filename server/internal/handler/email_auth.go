@@ -110,9 +110,14 @@ func (h *EmailAuthHandler) RegistrationRequest(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to load registration settings", "error.databaseError")
 		return
 	}
-	if !settings.Enabled || auth.ValidateRegistrationDomain(emailNormalized, settings.Policy) != nil {
+	if !settings.Enabled {
 		h.recordSecurityEvent(c, nil, "registration_request", model.AuthSecurityOutcomeFailure, emailNormalized)
-		h.accepted(c)
+		response.ErrorWithKey(c, http.StatusForbidden, "registration is currently disabled", "error.registrationDisabled")
+		return
+	}
+	if err := auth.ValidateRegistrationDomain(emailNormalized, settings.Policy); err != nil {
+		h.recordSecurityEvent(c, nil, "registration_request", model.AuthSecurityOutcomeFailure, emailNormalized)
+		response.ErrorWithKey(c, http.StatusForbidden, "this email domain is not accepted for registration", "error.registrationDomainDenied")
 		return
 	}
 

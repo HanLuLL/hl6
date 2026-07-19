@@ -1107,7 +1107,9 @@
     "dnsBulkJobQueuedRelease": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите освобождение после завершения.",
     "dnsBulkJobQueuedOperation": "DNS-задача поставлена в очередь (Job #{{jobID}}). Повторите операцию после завершения.",
     "nameCannotBeEmpty": "Имя не может быть пустым",
-    "failedToUpdateProfile": "Не удалось обновить профиль"
+    "failedToUpdateProfile": "Не удалось обновить профиль",
+    "registrationDomainDenied": "Этот домен электронной почты не принимается для регистрации",
+    "registrationDisabled": "Регистрация в настоящее время отключена"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
