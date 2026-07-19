@@ -9,7 +9,7 @@ Web 应用使用安全的 HttpOnly、SameSite=Lax 会话 Cookie。打包的 Andr
 ## 新注册
 
 1. 打开 `/register` 并提交邮箱地址
-2. HL6 评估注册可用性和管理员的精确域名策略，然后发送一次性验证链接，不暴露账户是否已存在
+2. HL6 评估注册可用性和管理员的精确域名策略：如果邮箱域名被策略拒绝（黑名单拦截或不在白名单中），将返回明确的错误提示告知用户该邮箱域名不允许注册；如果通过策略检查，则发送一次性验证链接，不暴露账户是否已存在
 3. 验证链接打开 `/set-password`
 4. 设置 8 到 128 个 Unicode 码点的密码
 5. HL6 原子化创建用户、本地凭证、默认组、积分余额、推荐状态和会话
@@ -48,7 +48,7 @@ Web 应用使用安全的 HttpOnly、SameSite=Lax 会话 Cookie。打包的 Andr
 
 ```dotenv
 AUTH_PASSWORD_PEPPER_ID=v1
-AUTH_PASSWORD_PEPPER=a-high-entropy-random-secret
+AUTH_PASSWORD_PEPPER=高熵随机密钥
 AUTH_PREVIOUS_PASSWORD_PEPPER_ID=
 AUTH_PREVIOUS_PASSWORD_PEPPER=
 ```

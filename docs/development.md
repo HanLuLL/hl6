@@ -15,7 +15,7 @@ Web 开发服务器将 `/api` 代理到 Go 服务器。Vite 通过 `envDir: ".."
 ```dotenv
 DATABASE_URL=postgres://hl6:hl6dev@localhost:5433/hl6?sslmode=disable
 AUTH_PASSWORD_PEPPER_ID=dev-v1
-AUTH_PASSWORD_PEPPER=development-only-long-random-value
+AUTH_PASSWORD_PEPPER=仅开发用的长随机值
 FRONTEND_URL=http://localhost:5174
 BACKEND_URL=http://localhost:8081
 ALLOWED_ORIGINS=http://localhost:5174,https://localhost
@@ -37,6 +37,16 @@ go build ./cmd/hl6-admin
 ```
 
 需要 PostgreSQL 的 Handler 集成测试使用 `HL6_TEST_DATABASE_URL`。使用隔离的数据库。维护恢复测试绝不能以共享或生产数据库为目标。
+
+## 页脚版本号
+
+Web 端页脚会自动显示当前构建的版本号、Git 分支和提交哈希。这些信息通过 Vite 构建时注入的全局常量获取：
+
+- `__APP_VERSION__` — 来自 `package.json` 的 `version` 字段
+- `__APP_GIT_BRANCH__` — 当前 Git 分支名
+- `__APP_GIT_COMMIT__` — 当前 Git 提交的短哈希
+
+当值为 `unknown`（分支/提交）或 `dev`（版本）时，对应的徽标会自动隐藏。发布构建时应确保这些值被正确注入，以便用户在页脚看到版本信息。
 
 ## Android
 

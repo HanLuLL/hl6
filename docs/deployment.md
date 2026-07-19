@@ -11,13 +11,14 @@
 
 ```bash
 # 全球注册表
-ghcr.io/hanlull/hl6:v2.0.0
+docker pull ghcr.io/hanlull/hl6:v2.0.0
 
-# 国内代理
-ghcr.milu.moe/hanlull/hl6:v2.0.0
+# 国内镜像（需先注册并登录）
+docker login mirror.houlang.cloud
+docker pull mirror.houlang.cloud/hanlull/hl6:v2.0.0
 ```
 
-将 `HL6_IMAGE` 设置为任一地址。代理仅是拉取路径替代；不得用作镜像构建源。
+将 `HL6_IMAGE` 设置为任一地址。国内镜像需要先在 [mirror.houlang.cloud](https://mirror.houlang.cloud) 注册账号并通过 `docker login` 登录后才能拉取；仅是拉取路径替代，不得用作镜像构建源。
 
 ## 环境
 
@@ -26,18 +27,18 @@ ghcr.milu.moe/hanlull/hl6:v2.0.0
 ```dotenv
 POSTGRES_DB=hl6
 POSTGRES_USER=hl6
-POSTGRES_PASSWORD=replace-with-a-random-password
+POSTGRES_PASSWORD=替换为强随机密码
 APP_URL=https://domain.example.com
 FRONTEND_URL=https://domain.example.com
 BACKEND_URL=https://domain.example.com
 ALLOWED_ORIGINS=https://domain.example.com
 AUTH_PASSWORD_PEPPER_ID=v1
-AUTH_PASSWORD_PEPPER=replace-with-a-long-random-secret
-ENCRYPTION_KEY=optional-64-character-hex-value
+AUTH_PASSWORD_PEPPER=替换为长随机密钥
+ENCRYPTION_KEY=可选的64字符十六进制值
 SMTP_BOOTSTRAP_HOST=smtp.example.com
 SMTP_BOOTSTRAP_PORT=587
 SMTP_BOOTSTRAP_USERNAME=mailer@example.com
-SMTP_BOOTSTRAP_PASSWORD=replace-with-the-smtp-password
+SMTP_BOOTSTRAP_PASSWORD=替换为SMTP密码
 SMTP_BOOTSTRAP_FROM_NAME=HL6
 SMTP_BOOTSTRAP_FROM_ADDR=mailer@example.com
 SMTP_BOOTSTRAP_USE_TLS=true
