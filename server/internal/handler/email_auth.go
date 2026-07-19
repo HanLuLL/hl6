@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -14,11 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/lestrrat-go/jwx/v2/jwa"
-	"github.com/lestrrat-go/jwx/v2/jwk"
-	"github.com/lestrrat-go/jwx/v2/jwt"
-	"gorm.io/gorm"
 	"hl6-server/internal/auth"
 	"hl6-server/internal/clientauth"
 	"hl6-server/internal/config"
@@ -26,6 +22,12 @@ import (
 	"hl6-server/internal/repository"
 	"hl6-server/internal/service"
 	"hl6-server/pkg/response"
+
+	"github.com/gin-gonic/gin"
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v2/jwt"
+	"gorm.io/gorm"
 )
 
 const (
@@ -145,6 +147,7 @@ func (h *EmailAuthHandler) RegistrationRequest(c *gin.Context) {
 		return
 	}
 	if err := h.createAndSendAuthToken(c, model.AuthTokenPurposeRegistrationVerify, nil, emailNormalized, requestedAuthEmailLocale(c, body.Locale), payload); err != nil {
+		log.Printf("[auth] registration email failed for %s: %v", emailNormalized, err)
 		response.ErrorWithKey(c, http.StatusBadGateway, "failed to send verification email", "error.emailUnavailable")
 		return
 	}
@@ -175,6 +178,7 @@ func (h *EmailAuthHandler) ActivationRequest(c *gin.Context) {
 	user, err := h.repo.FindUserByID(credential.UserID)
 	if err == nil && h.emailSvc != nil && h.emailSvc.IsEnabled() {
 		if err := h.createAndSendAuthToken(c, model.AuthTokenPurposeAccountActivation, &user.ID, credential.EmailNormalized, emailLocale, nil); err != nil {
+			log.Printf("[auth] activation email failed for %s: %v", emailNormalized, err)
 			h.recordSecurityEvent(c, &user.ID, "activation_request", model.AuthSecurityOutcomeFailure, emailNormalized)
 			h.accepted(c)
 			return
@@ -214,6 +218,7 @@ func (h *EmailAuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 	if err := h.createAndSendAuthToken(c, model.AuthTokenPurposePasswordReset, &user.ID, credential.EmailNormalized, emailLocale, nil); err != nil {
+		log.Printf("[auth] password reset email failed for %s: %v", emailNormalized, err)
 		h.recordSecurityEvent(c, &user.ID, "password_forgot", model.AuthSecurityOutcomeFailure, emailNormalized)
 		h.accepted(c)
 		return
@@ -416,6 +421,7 @@ func (h *EmailAuthHandler) authenticationLink(c *gin.Context, purpose, rawToken 
 		return "", err
 	}
 	if !state.FrontendEnvLocked && !state.Confirmed {
+		log.Printf("[auth] frontend URL not confirmed (source=%s, url=%s), cannot send authentication links. Admin must confirm URL in Administration -> Site and Appearance.", state.FrontendSource, state.FrontendURL)
 		return "", errors.New("frontend URL must be explicitly confirmed before sending authentication links")
 	}
 	path := "/set-password"
