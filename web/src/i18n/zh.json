@@ -148,6 +148,7 @@
     "adminFriendLinks": "友链管理",
     "adminAIAudit": "AI审查",
     "emailLogs": "邮件日志",
+    "systemLogs": "系统日志",
     "profile": "个人设置"
   },
   "dashboard": {
@@ -979,6 +980,7 @@
     "unauthorized": "未授权",
     "missingToken": "缺少授权令牌",
     "invalidToken": "无效的令牌",
+    "accountAlreadyActivated": "账号已激活，请直接登录",
     "adminRequired": "需要管理员权限",
     "cnameConflictWithOther": "CNAME 记录不能与其他记录共存",
     "cnameAlreadyExists": "CNAME 记录已存在",
@@ -1464,5 +1466,28 @@
       "intro": "您的子域名 {{fqdn}} 已被管理员释放。",
       "reason": "原因：{{reason}}"
     }
+  },
+  "systemLogs": {
+    "title": "系统日志",
+    "subtitle": "查看系统运行日志",
+    "totalLogs": "总日志数",
+    "todayLogs": "今日日志",
+    "errorLogs": "错误日志",
+    "warnLogs": "警告日志",
+    "level": "级别",
+    "module": "模块",
+    "message": "消息",
+    "fields": "详细信息",
+    "time": "时间",
+    "actions": "操作",
+    "search": "搜索",
+    "searchPlaceholder": "搜索消息或模块...",
+    "from": "开始时间",
+    "to": "结束时间",
+    "export": "导出",
+    "allLevels": "全部级别",
+    "allModules": "全部模块",
+    "noLogs": "暂无日志",
+    "logId": "日志 ID"
   }
 }

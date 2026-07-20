@@ -148,6 +148,7 @@
     "adminFriendLinks": "Gestión de Enlaces",
     "adminAIAudit": "Auditoría IA",
     "emailLogs": "Registros de Correo",
+    "systemLogs": "Registros del Sistema",
     "profile": "Perfil"
   },
   "dashboard": {
@@ -979,6 +980,7 @@
     "unauthorized": "No autorizado",
     "missingToken": "Falta el token de autorización",
     "invalidToken": "Token inválido",
+    "accountAlreadyActivated": "Cuenta ya activada, inicie sesión directamente",
     "adminRequired": "Se requiere acceso de administrador",
     "cnameConflictWithOther": "El registro CNAME no puede coexistir con otros registros",
     "cnameAlreadyExists": "El registro CNAME ya existe",
@@ -1464,5 +1466,28 @@
       "intro": "Tu subdominio {{fqdn}} ha sido liberado por un administrador.",
       "reason": "Motivo: {{reason}}"
     }
+  },
+  "systemLogs": {
+    "title": "Registros del Sistema",
+    "subtitle": "Ver registros de ejecución del sistema",
+    "totalLogs": "Total de Registros",
+    "todayLogs": "Hoy",
+    "errorLogs": "Errores",
+    "warnLogs": "Advertencias",
+    "level": "Nivel",
+    "module": "Módulo",
+    "message": "Mensaje",
+    "fields": "Detalles",
+    "time": "Hora",
+    "actions": "Acciones",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar mensaje o módulo...",
+    "from": "Desde",
+    "to": "Hasta",
+    "export": "Exportar",
+    "allLevels": "Todos los Niveles",
+    "allModules": "Todos los Módulos",
+    "noLogs": "No se encontraron registros",
+    "logId": "ID de Registro"
   }
 }

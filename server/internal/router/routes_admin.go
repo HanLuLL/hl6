@@ -83,6 +83,13 @@ func registerAdminRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, 
 
 	registerAdminAuditRoutes(admin, h)
 
+	// System Logs
+	admin.GET("/logs", h.SystemLog.ListSystemLogs)
+	admin.GET("/logs/modules", h.SystemLog.GetSystemLogModules)
+	admin.GET("/logs/stats", h.SystemLog.GetSystemLogStats)
+	admin.GET("/logs/export", h.SystemLog.ExportSystemLogs)
+	admin.GET("/logs/:id", h.SystemLog.GetSystemLog)
+
 	// Branding
 	admin.PUT("/branding", h.Branding.AdminUpdateBranding)
 	admin.POST("/branding/logo", h.Branding.AdminUploadLogo)

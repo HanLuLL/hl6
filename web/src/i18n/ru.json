@@ -148,6 +148,7 @@
     "adminFriendLinks": "Упр. ссылками",
     "adminAIAudit": "АИ Аудит",
     "emailLogs": "Журнал писем",
+    "systemLogs": "Системные журналы",
     "profile": "Профиль"
   },
   "dashboard": {
@@ -979,6 +980,7 @@
     "unauthorized": "Не авторизован",
     "missingToken": "Отсутствует токен авторизации",
     "invalidToken": "Недействительный токен",
+    "accountAlreadyActivated": "Аккаунт уже активирован, войдите напрямую",
     "adminRequired": "Требуется доступ администратора",
     "cnameConflictWithOther": "Запись CNAME не может сосуществовать с другими записями",
     "cnameAlreadyExists": "Запись CNAME уже существует",
@@ -1464,5 +1466,28 @@
       "intro": "Ваш поддомен {{fqdn}} освобождён администратором.",
       "reason": "Причина: {{reason}}"
     }
+  },
+  "systemLogs": {
+    "title": "Системные журналы",
+    "subtitle": "Просмотр журналов работы системы",
+    "totalLogs": "Всего записей",
+    "todayLogs": "Сегодня",
+    "errorLogs": "Ошибки",
+    "warnLogs": "Предупреждения",
+    "level": "Уровень",
+    "module": "Модуль",
+    "message": "Сообщение",
+    "fields": "Детали",
+    "time": "Время",
+    "actions": "Действия",
+    "search": "Поиск",
+    "searchPlaceholder": "Поиск по сообщению или модулю...",
+    "from": "От",
+    "to": "До",
+    "export": "Экспорт",
+    "allLevels": "Все уровни",
+    "allModules": "Все модули",
+    "noLogs": "Записей не найдено",
+    "logId": "ID записи"
   }
 }

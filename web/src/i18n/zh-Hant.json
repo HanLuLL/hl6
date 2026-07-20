@@ -148,6 +148,7 @@
     "adminFriendLinks": "友鏈管理",
     "adminAIAudit": "AI審查",
     "emailLogs": "郵件日誌",
+    "systemLogs": "系統日誌",
     "profile": "個人設定"
   },
   "dashboard": {
@@ -979,6 +980,7 @@
     "unauthorized": "未授權",
     "missingToken": "缺少授權權杖",
     "invalidToken": "無效的權杖",
+    "accountAlreadyActivated": "帳號已啟用，請直接登入",
     "adminRequired": "需要管理員權限",
     "cnameConflictWithOther": "CNAME 記錄不能與其他記錄共存",
     "cnameAlreadyExists": "CNAME 記錄已存在",
@@ -1464,5 +1466,28 @@
       "intro": "您的子網域 {{fqdn}} 已被管理員釋放。",
       "reason": "原因：{{reason}}"
     }
+  },
+  "systemLogs": {
+    "title": "系統日誌",
+    "subtitle": "查看系統運行日誌",
+    "totalLogs": "總日誌數",
+    "todayLogs": "今日日誌",
+    "errorLogs": "錯誤日誌",
+    "warnLogs": "警告日誌",
+    "level": "級別",
+    "module": "模組",
+    "message": "訊息",
+    "fields": "詳細資訊",
+    "time": "時間",
+    "actions": "操作",
+    "search": "搜尋",
+    "searchPlaceholder": "搜尋訊息或模組...",
+    "from": "開始時間",
+    "to": "結束時間",
+    "export": "匯出",
+    "allLevels": "全部級別",
+    "allModules": "全部模組",
+    "noLogs": "暫無日誌",
+    "logId": "日誌 ID"
   }
 }

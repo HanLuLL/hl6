@@ -148,6 +148,7 @@
     "adminFriendLinks": "リンク管理",
     "adminAIAudit": "AI監査",
     "emailLogs": "メールログ",
+    "systemLogs": "システムログ",
     "profile": "プロフィール"
   },
   "dashboard": {
@@ -979,6 +980,7 @@
     "unauthorized": "認証されていません",
     "missingToken": "認証トークンがありません",
     "invalidToken": "無効なトークン",
+    "accountAlreadyActivated": "アカウントは既にアクティベート済みです。直接ログインしてください",
     "adminRequired": "管理者権限が必要です",
     "cnameConflictWithOther": "CNAMEレコードは他のレコードと共存できません",
     "cnameAlreadyExists": "CNAMEレコードは既に存在します",
@@ -1464,5 +1466,28 @@
       "intro": "サブドメイン {{fqdn}} が管理者により解放されました。",
       "reason": "理由：{{reason}}"
     }
+  },
+  "systemLogs": {
+    "title": "システムログ",
+    "subtitle": "システム実行ログの表示",
+    "totalLogs": "総ログ数",
+    "todayLogs": "今日",
+    "errorLogs": "エラー",
+    "warnLogs": "警告",
+    "level": "レベル",
+    "module": "モジュール",
+    "message": "メッセージ",
+    "fields": "詳細",
+    "time": "時刻",
+    "actions": "操作",
+    "search": "検索",
+    "searchPlaceholder": "メッセージまたはモジュールを検索...",
+    "from": "開始",
+    "to": "終了",
+    "export": "エクスポート",
+    "allLevels": "全レベル",
+    "allModules": "全モジュール",
+    "noLogs": "ログがありません",
+    "logId": "ログ ID"
   }
 }

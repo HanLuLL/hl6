@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { RootLayout } from "@/components/layout/root-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -25,11 +26,14 @@ import AdminAuditPage from "@/pages/admin/audit";
 import AdminFriendLinksPage from "@/pages/admin/friend-links";
 import AdminAIAuditPage from "@/pages/admin/ai-audit";
 import AdminEmailLogsPage from "@/pages/admin/email-logs";
+import AdminSystemLogsPage from "@/pages/admin/logs";
 import BannedPage from "@/pages/banned";
 
 import AdminSettingsPage from "@/pages/admin/settings";
 import NotFoundPage from "@/pages/not-found";
 import { NativeUpdateGate } from "@/components/client/native-update-gate";
+import { setupDeepLinkListener, removeDeepLinkListener } from "@/lib/native-client";
+import { isNativeClient } from "@/lib/client-runtime";
 
 function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -85,10 +89,47 @@ function AdminRoute() {
   return <Outlet />;
 }
 
+// Component to handle deep links in native app
+function DeepLinkHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isNativeClient) return;
+
+    setupDeepLinkListener((path, params) => {
+      // Handle deep link paths
+      switch (path) {
+        case "activate":
+          // hl6://activate?token=xxx -> /set-password?token=xxx
+          if (params.token) {
+            navigate(`/set-password?token=${encodeURIComponent(params.token)}`, { replace: true });
+          }
+          break;
+        case "reset-password":
+          // hl6://reset-password?token=xxx -> /reset-password?token=xxx
+          if (params.token) {
+            navigate(`/reset-password?token=${encodeURIComponent(params.token)}`, { replace: true });
+          }
+          break;
+        default:
+          // Unknown deep link, ignore
+          break;
+      }
+    });
+
+    return () => {
+      removeDeepLinkListener();
+    };
+  }, [navigate]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <NativeUpdateGate />
+      <DeepLinkHandler />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -122,6 +163,7 @@ export default function App() {
             <Route path="/admin/friend-links" element={<AdminFriendLinksPage />} />
             <Route path="/admin/ai-audit" element={<AdminAIAuditPage />} />
             <Route path="/admin/email-logs" element={<AdminEmailLogsPage />} />
+            <Route path="/admin/logs" element={<AdminSystemLogsPage />} />
             <Route path="/admin/notifications" element={<Navigate to="/admin/users?tab=notifications" replace />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

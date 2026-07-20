@@ -1,4 +1,5 @@
 import { Browser } from "@capacitor/browser";
+import { App } from "@capacitor/app";
 import { SecureStoragePlugin } from "capacitor-secure-storage-plugin";
 import { api } from "@/lib/api";
 import {
@@ -95,4 +96,53 @@ export async function openNativeExternalUrl(url: string) {
 
 export function hasNativeSession() {
   return Boolean(getNativeAccessToken());
+}
+
+// Deep link handling for custom scheme URLs (hl6://activate?token=xxx or hl6://reset-password?token=xxx)
+export type DeepLinkHandler = (path: string, params: Record<string, string>) => void;
+
+let deepLinkHandler: DeepLinkHandler | null = null;
+
+/**
+ * Sets up deep link listener for the native client.
+ * Handles URLs like:
+ * - hl6://activate?token=xxx
+ * - hl6://reset-password?token=xxx
+ *
+ * The handler will be called with the path (e.g., "activate") and query params.
+ */
+export function setupDeepLinkListener(handler: DeepLinkHandler) {
+  if (!isNativeClient) return;
+
+  deepLinkHandler = handler;
+
+  App.addListener("appUrlOpen", (event) => {
+    const url = event.url;
+    if (!url || !url.startsWith("hl6://")) return;
+
+    try {
+      // Parse the deep link URL
+      // Format: hl6://path?param1=value1&param2=value2
+      const urlObj = new URL(url.replace("hl6://", "http://placeholder/"));
+      const path = urlObj.pathname.replace("/", "");
+      const params: Record<string, string> = {};
+
+      urlObj.searchParams.forEach((value, key) => {
+        params[key] = value;
+      });
+
+      if (deepLinkHandler) {
+        deepLinkHandler(path, params);
+      }
+    } catch {
+      // Invalid URL format, ignore
+    }
+  });
+}
+
+/**
+ * Removes the deep link listener.
+ */
+export function removeDeepLinkListener() {
+  deepLinkHandler = null;
 }

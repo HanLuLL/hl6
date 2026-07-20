@@ -170,9 +170,15 @@ func (h *EmailAuthHandler) ActivationRequest(c *gin.Context) {
 	}
 
 	credential, err := h.repo.FindCredentialByEmail(emailNormalized)
-	if err != nil || (credential.ActivationRequiredAt == nil && credential.PasswordSetAt != nil) {
+	if err != nil {
 		h.recordSecurityEvent(c, nil, "activation_request", model.AuthSecurityOutcomeFailure, emailNormalized)
 		h.accepted(c)
+		return
+	}
+	// 账号已激活：返回明确错误提示
+	if credential.ActivationRequiredAt == nil && credential.PasswordSetAt != nil {
+		h.recordSecurityEvent(c, &credential.UserID, "activation_request", model.AuthSecurityOutcomeFailure, emailNormalized)
+		response.ErrorWithKey(c, http.StatusBadRequest, "account already activated", "error.accountAlreadyActivated")
 		return
 	}
 	user, err := h.repo.FindUserByID(credential.UserID)
@@ -415,6 +421,8 @@ func (h *EmailAuthHandler) createAndSendAuthToken(c *gin.Context, purpose string
 	if err != nil {
 		return err
 	}
+	// Generate app deep link (uses custom scheme hl6://)
+	appLink := h.appAuthenticationLink(purpose, rawToken)
 	token := &model.AuthToken{
 		Purpose:         purpose,
 		UserID:          userID,
@@ -426,7 +434,7 @@ func (h *EmailAuthHandler) createAndSendAuthToken(c *gin.Context, purpose string
 	if err := h.repo.CreateAuthToken(token); err != nil {
 		return err
 	}
-	return h.emailSvc.SendAuthenticationLink(emailNormalized, purpose, link, locale, userID)
+	return h.emailSvc.SendAuthenticationLink(emailNormalized, purpose, link, appLink, locale, userID)
 }
 
 func (h *EmailAuthHandler) authenticationLink(c *gin.Context, purpose, rawToken string) (string, error) {
@@ -451,6 +459,17 @@ func (h *EmailAuthHandler) authenticationLink(c *gin.Context, purpose, rawToken 
 	query.Set("token", rawToken)
 	target.RawQuery = query.Encode()
 	return target.String(), nil
+}
+
+// appAuthenticationLink generates a deep link URL for the mobile app.
+// Format: hl6://activate?token={token} (for registration verification and account activation)
+// or hl6://reset-password?token={token} (for password reset)
+func (h *EmailAuthHandler) appAuthenticationLink(purpose, rawToken string) string {
+	path := "activate"
+	if purpose == model.AuthTokenPurposePasswordReset {
+		path = "reset-password"
+	}
+	return fmt.Sprintf("hl6://%s?token=%s", path, rawToken)
 }
 
 func (h *EmailAuthHandler) writeSession(c *gin.Context, user *model.User, credential *model.UserCredential) {

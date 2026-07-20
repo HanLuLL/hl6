@@ -694,3 +694,23 @@ export interface EmailLog {
   created_at: string;
   updated_at: string;
 }
+
+// ---- System Log Types ----
+
+export interface SystemLog {
+  id: number;
+  level: "DEBUG" | "INFO" | "WARN" | "ERROR";
+  module: string;
+  message: string;
+  fields?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface SystemLogStats {
+  total: number;
+  today: number;
+  level_DEBUG?: number;
+  level_INFO?: number;
+  level_WARN?: number;
+  level_ERROR?: number;
+}

@@ -52,6 +52,8 @@ import type {
   ClientVersionConfig,
   AccessSettingsPayload,
   DatabaseRestoreJob,
+  SystemLog,
+  SystemLogStats,
 } from "@/types";
 import type { AIModelConfig, AIModelConfigInput, AuditPromptTemplate, PromptTemplateInput, AuditAIReview, AIAuditStats, UserAppeal, BanInfo } from "@/types/ai-audit";
 import { buildPaginatedQuery } from "@/lib/api-query";
@@ -816,4 +818,45 @@ export const api = {
     request<ApiResponse<{ retried: boolean }>>(`/admin/emails/${id}/retry`, { method: "POST" }),
   adminTestSMTP: () =>
     request<ApiResponse<{ sent: boolean; recipient: string }>>("/admin/emails/test", { method: "POST" }),
+
+  // Admin System Logs
+  adminListSystemLogs: (params: { page?: number; per_page?: number; level?: string; module?: string; search?: string; from?: string; to?: string }) => {
+    const q = new URLSearchParams();
+    if (params.page) q.set("page", String(params.page));
+    if (params.per_page) q.set("per_page", String(params.per_page));
+    if (params.level) q.set("level", params.level);
+    if (params.module) q.set("module", params.module);
+    if (params.search) q.set("search", params.search);
+    if (params.from) q.set("from", params.from);
+    if (params.to) q.set("to", params.to);
+    return request<PaginatedResponse<SystemLog[]>>(`/admin/logs?${q.toString()}`);
+  },
+  adminGetSystemLog: (id: number) =>
+    request<ApiResponse<SystemLog>>(`/admin/logs/${id}`),
+  adminGetSystemLogModules: () =>
+    request<ApiResponse<string[]>>("/admin/logs/modules"),
+  adminGetSystemLogStats: () =>
+    request<ApiResponse<SystemLogStats>>("/admin/logs/stats"),
+  adminExportSystemLogs: async (params: { format?: string; level?: string; module?: string; search?: string; from?: string; to?: string }) => {
+    const q = new URLSearchParams();
+    if (params.format) q.set("format", params.format);
+    if (params.level) q.set("level", params.level);
+    if (params.module) q.set("module", params.module);
+    if (params.search) q.set("search", params.search);
+    if (params.from) q.set("from", params.from);
+    if (params.to) q.set("to", params.to);
+    const res = await fetch(buildApiUrl(`/admin/logs/export?${q.toString()}`), {
+      headers: {
+        ...nativeRequestHeaders(),
+      },
+      credentials: isNativeClient ? "omit" : "include",
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ message: res.statusText }));
+      throw new ApiError(body.message || res.statusText, body.message_key);
+    }
+    const disposition = res.headers.get("content-disposition") ?? "";
+    const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] ?? "system_logs";
+    return { blob: await res.blob(), filename };
+  },
 };

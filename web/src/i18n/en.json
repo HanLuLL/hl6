@@ -148,6 +148,7 @@
     "adminFriendLinks": "Friend Links Mgmt",
     "adminAIAudit": "AI Audit",
     "emailLogs": "Email Logs",
+    "systemLogs": "System Logs",
     "profile": "Profile"
   },
   "dashboard": {
@@ -979,6 +980,7 @@
     "unauthorized": "Unauthorized",
     "missingToken": "Missing authorization token",
     "invalidToken": "Invalid token",
+    "accountAlreadyActivated": "Account already activated, please sign in directly",
     "adminRequired": "Admin access required",
     "cnameConflictWithOther": "CNAME record cannot coexist with other records",
     "cnameAlreadyExists": "CNAME record already exists",
@@ -1464,5 +1466,28 @@
       "intro": "Your subdomain {{fqdn}} has been released by an administrator.",
       "reason": "Reason: {{reason}}"
     }
+  },
+  "systemLogs": {
+    "title": "System Logs",
+    "subtitle": "View system runtime logs",
+    "totalLogs": "Total Logs",
+    "todayLogs": "Today",
+    "errorLogs": "Errors",
+    "warnLogs": "Warnings",
+    "level": "Level",
+    "module": "Module",
+    "message": "Message",
+    "fields": "Details",
+    "time": "Time",
+    "actions": "Actions",
+    "search": "Search",
+    "searchPlaceholder": "Search message or module...",
+    "from": "From",
+    "to": "To",
+    "export": "Export",
+    "allLevels": "All Levels",
+    "allModules": "All Modules",
+    "noLogs": "No logs found",
+    "logId": "Log ID"
   }
 }

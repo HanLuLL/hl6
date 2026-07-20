@@ -31,6 +31,7 @@ type Handlers struct {
 	Email             *handler.EmailHandler
 	Client            *handler.ClientHandler
 	Maintenance       *handler.MaintenanceHandler
+	SystemLog         *handler.SystemLogHandler
 }
 
 func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *service.DNSOperationService, migSvc *service.DomainMigrationService, maintenanceSvc *service.DatabaseMaintenanceService, sseBroker *handler.SSEBroker, audit auditStack) *Handlers {
@@ -59,5 +60,6 @@ func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *servic
 		Email:             handler.NewEmailHandler(repo, emailSvc),
 		Client:            handler.NewClientHandler(repo),
 		Maintenance:       handler.NewMaintenanceHandler(repo, cfg, maintenanceSvc),
+		SystemLog:         handler.NewSystemLogHandler(repo),
 	}
 }
