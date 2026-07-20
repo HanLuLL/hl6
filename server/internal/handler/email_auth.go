@@ -37,15 +37,19 @@ const (
 	emailDomainModeConfigKey     = "auth.email_domain.mode"
 	emailDomainDomainsConfigKey  = "auth.email_domain.domains"
 	sessionVersionClaim          = "hl6_session_version"
-	browserSessionTTL            = 7 * 24 * time.Hour
+	browserSessionTTL            = 24 * time.Hour // 1 day, more secure for production
 	nativeSessionTTL             = 24 * time.Hour
-	authTokenTTL                 = 30 * time.Minute
+	authTokenTTL                 = time.Hour // 1 hour for email link validity
 	authRequestRateLimit         = 10
 	authRequestRateLimitWindow   = 15 * time.Minute
 	maximumAuthTokenLength       = 256
 )
 
 var referralCodePattern = regexp.MustCompile(`^(?:[a-z]{5}|[0-9a-f]{16})$`)
+
+// dummyPasswordHash is a pre-computed Argon2id hash used to prevent timing attacks
+// when verifying credentials for non-existent users.
+const dummyPasswordHash = "$argon2id$v=19$m=65536,t=3,p=4,pepper=dummy$K1gS5FvjS9XlFEgNqPQZ3g$RZqHqJlWxQ5n1dMwLqGZMLVzMmRwH8dPGYF9pkhKrKA"
 
 type EmailAuthHandler struct {
 	repo        *repository.Repository
@@ -176,10 +180,10 @@ func (h *EmailAuthHandler) ActivationRequest(c *gin.Context) {
 		h.accepted(c)
 		return
 	}
-	// 账号已激活：返回明确错误提示
+	// Account already activated: return success silently (no email sent) to prevent user enumeration
 	if credential.ActivationRequiredAt == nil && credential.PasswordSetAt != nil {
 		h.recordSecurityEvent(c, &credential.UserID, "activation_request", model.AuthSecurityOutcomeFailure, emailNormalized)
-		response.ErrorWithKey(c, http.StatusBadRequest, "account already activated", "error.accountAlreadyActivated")
+		h.accepted(c)
 		return
 	}
 	user, err := h.repo.FindUserByID(credential.UserID)
@@ -307,13 +311,18 @@ func (h *EmailAuthHandler) Login(c *gin.Context) {
 
 	credential, err := h.repo.FindCredentialByEmail(emailNormalized)
 	if err != nil || credential.PasswordSetAt == nil {
+		// Prevent timing attacks: verify against dummy hash to ensure consistent response time
+		_, _, _ = auth.VerifyPassword(body.Password, dummyPasswordHash, h.peppers())
 		h.recordSecurityEvent(c, nil, "login", model.AuthSecurityOutcomeFailure, emailNormalized)
 		h.invalidLogin(c)
 		return
 	}
+	// Check if account requires activation - return same error as invalid login to prevent user enumeration
 	if credential.ActivationRequiredAt != nil {
+		// Prevent timing attacks: still verify password to maintain consistent response time
+		_, _, _ = auth.VerifyPassword(body.Password, dummyPasswordHash, h.peppers())
 		h.recordSecurityEvent(c, nil, "login", model.AuthSecurityOutcomeFailure, emailNormalized)
-		response.ErrorWithKey(c, http.StatusForbidden, "account requires activation", "error.accountActivationRequired")
+		h.invalidLogin(c)
 		return
 	}
 	valid, needsRehash, err := auth.VerifyPassword(body.Password, credential.PasswordHash, h.peppers())
@@ -339,6 +348,27 @@ func (h *EmailAuthHandler) Login(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusUnauthorized, "invalid credentials", "error.invalidToken")
 		return
 	}
+
+	// Check if user is banned - reject login before creating session
+	if user.IsBanned {
+		// Check if ban has expired (auto-unban)
+		if user.BannedUntil != nil && !user.BannedUntil.After(time.Now().UTC()) {
+			// Ban has expired, auto-unban
+			if err := h.repo.UnbanUser(user.ID); err != nil {
+				response.ErrorWithKey(c, http.StatusInternalServerError, "failed to process unban", "error.databaseError")
+				return
+			}
+			user.IsBanned = false
+			user.BannedUntil = nil
+			user.BannedReason = ""
+		} else {
+			// User is still banned, reject login
+			h.recordSecurityEvent(c, &user.ID, "login", model.AuthSecurityOutcomeFailure, credential.EmailNormalized)
+			response.ErrorWithKey(c, http.StatusForbidden, "user is banned", "error.userBanned")
+			return
+		}
+	}
+
 	// 多设备登录：不再踢掉其他设备，允许同时在多个设备登录
 	h.recordSecurityEvent(c, &user.ID, "login", model.AuthSecurityOutcomeSuccess, credential.EmailNormalized)
 	h.writeSession(c, user, credential)
@@ -526,11 +556,13 @@ func (h *EmailAuthHandler) writeSession(c *gin.Context, user *model.User, creden
 		"banned_until":  user.BannedUntil,
 	}
 	if native {
+		// Native client: return access_token for Authorization header
 		data["access_token"] = token
 		data["expires_in"] = int(nativeSessionTTL.Seconds())
 	} else {
+		// Browser: use HttpOnly cookie only (no access_token in response body)
+		// This prevents XSS from stealing the token via sessionStorage
 		h.setSessionCookie(c, token, browserSessionTTL)
-		data["access_token"] = token
 		data["expires_in"] = int(browserSessionTTL.Seconds())
 	}
 	c.Header("Cache-Control", "no-store")

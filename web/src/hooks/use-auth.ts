@@ -27,16 +27,24 @@ export function useAuth() {
         await signOutNativeClient();
         return;
       }
-      clearBrowserSessionToken();
+      // Browser mode: call logout API first, then clear local state
+      // HttpOnly cookie will be cleared by the server
       try {
         const res = await api.logout();
         const logoutUrl = res?.data?.logout_url;
+        // Clear any stale session markers
+        clearBrowserSessionToken();
+        sessionStorage.removeItem("hl6_401_count");
+        sessionStorage.removeItem("hl6_401_time");
+        sessionStorage.removeItem("hl6_kicked_out");
         if (logoutUrl) {
           window.location.href = logoutUrl;
         } else {
           window.location.href = "/";
         }
       } catch {
+        // Even if API fails, clear local state and redirect
+        clearBrowserSessionToken();
         window.location.href = "/";
       }
     },

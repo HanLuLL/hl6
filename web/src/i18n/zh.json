@@ -1509,6 +1509,14 @@
     "allLevels": "全部级别",
     "allModules": "全部模块",
     "noLogs": "暂无日志",
-    "logId": "日志 ID"
+    "logId": "日志 ID",
+    "quickTime": "快捷选择",
+    "selectTimePreset": "选择时间范围",
+    "customRange": "自定义范围",
+    "last15min": "最近 15 分钟",
+    "last1hour": "最近 1 小时",
+    "last6hours": "最近 6 小时",
+    "last24hours": "最近 24 小时",
+    "last7days": "最近 7 天"
   }
 }

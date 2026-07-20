@@ -21,6 +21,7 @@ type SessionRepository interface {
 	DeleteUserSession(userID, sessionID uint) error
 	DeleteUserSessionByJTI(userID uint, jtiHash string) error
 	DeleteAllUserSessions(userID uint) error
+	IncrementSessionVersion(userID uint) error
 }
 
 func NewSessionHandler(repo SessionRepository) *SessionHandler {
@@ -108,9 +109,18 @@ func (h *SessionHandler) LogoutAll(c *gin.Context) {
 		return
 	}
 
+	// Delete all sessions
 	if err := h.repo.DeleteAllUserSessions(user.ID); err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to logout all sessions", "error.databaseError")
 		return
+	}
+
+	// Increment session version to invalidate all existing JWTs
+	// This is critical for security - without this, old JWTs remain valid
+	if err := h.repo.IncrementSessionVersion(user.ID); err != nil {
+		// Log but don't fail - the sessions are already deleted
+		// The version increment is a safety net
+		c.Error(err)
 	}
 
 	response.OK(c, gin.H{"message": "all sessions logged out"})

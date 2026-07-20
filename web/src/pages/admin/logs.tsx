@@ -7,6 +7,7 @@ import {
   Eye,
   Search,
   AlertTriangle,
+  Clock,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,45 @@ const logLevels = [
   { value: "WARN", labelKey: "WARN" },
   { value: "ERROR", labelKey: "ERROR" },
 ];
+
+// Time presets for quick filtering
+const timePresets = [
+  { value: "15m", labelKey: "systemLogs.last15min" },
+  { value: "1h", labelKey: "systemLogs.last1hour" },
+  { value: "6h", labelKey: "systemLogs.last6hours" },
+  { value: "24h", labelKey: "systemLogs.last24hours" },
+  { value: "7d", labelKey: "systemLogs.last7days" },
+];
+
+function getTimeRangeFromPreset(preset: string): { from: string; to: string } {
+  const now = new Date();
+  let from: Date;
+
+  switch (preset) {
+    case "15m":
+      from = new Date(now.getTime() - 15 * 60 * 1000);
+      break;
+    case "1h":
+      from = new Date(now.getTime() - 60 * 60 * 1000);
+      break;
+    case "6h":
+      from = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+      break;
+    case "24h":
+      from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      break;
+    case "7d":
+      from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      return { from: "", to: "" };
+  }
+
+  return {
+    from: from.toISOString().split("T")[0],
+    to: now.toISOString().split("T")[0],
+  };
+}
 
 function LevelBadge({ level }: { level: string }) {
   const variants: Record<string, string> = {
@@ -171,9 +211,34 @@ export default function AdminSystemLogsPage() {
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [timePreset, setTimePreset] = useState("");
   const [selectedLog, setSelectedLog] = useState<SystemLog | null>(null);
   const [exportFormat, setExportFormat] = useState<"json" | "txt">("json");
   const perPage = 20;
+
+  // Handle time preset change
+  const handleTimePresetChange = (preset: string) => {
+    setTimePreset(preset);
+    if (preset) {
+      const range = getTimeRangeFromPreset(preset);
+      setFromDate(range.from);
+      setToDate(range.to);
+    } else {
+      setFromDate("");
+      setToDate("");
+    }
+  };
+
+  // Handle manual date change - clear preset
+  const handleFromDateChange = (value: string) => {
+    setFromDate(value);
+    setTimePreset("");
+  };
+
+  const handleToDateChange = (value: string) => {
+    setToDate(value);
+    setTimePreset("");
+  };
 
   // Fetch stats
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -285,7 +350,7 @@ export default function AdminSystemLogsPage() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <div className="space-y-2">
               <Label>{t("systemLogs.level")}</Label>
               <Select value={levelFilter} onValueChange={setLevelFilter}>
@@ -330,11 +395,30 @@ export default function AdminSystemLogsPage() {
               </div>
             </div>
             <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {t("systemLogs.quickTime")}
+              </Label>
+              <Select value={timePreset} onValueChange={handleTimePresetChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("systemLogs.selectTimePreset")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{t("systemLogs.customRange")}</SelectItem>
+                  {timePresets.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {t(p.labelKey)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>{t("systemLogs.from")}</Label>
               <Input
                 type="date"
                 value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
+                onChange={(e) => handleFromDateChange(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -342,7 +426,7 @@ export default function AdminSystemLogsPage() {
               <Input
                 type="date"
                 value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
+                onChange={(e) => handleToDateChange(e.target.value)}
               />
             </div>
             <div className="space-y-2">

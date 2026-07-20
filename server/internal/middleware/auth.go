@@ -146,6 +146,8 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 		if jti != "" {
 			jtiHash := hashJTI(jti)
 			c.Set("session_jti", jtiHash)
+			// Update last active time for session management
+			_ = a.repo.UpdateUserSessionLastActive(jtiHash)
 		}
 
 		if cookieSession && isUnsafeMethod(c.Request.Method) && !a.isTrustedBrowserOrigin(c) {

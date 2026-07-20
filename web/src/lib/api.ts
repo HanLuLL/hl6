@@ -123,25 +123,21 @@ let handlingBannedSession = false;
 
 const BROWSER_SESSION_KEY = "hl6_browser_session";
 
-export function setBrowserSessionToken(token: string) {
-  try { sessionStorage.setItem(BROWSER_SESSION_KEY, token); } catch { /* ignore */ }
+// setBrowserSessionToken is deprecated - browser mode now uses HttpOnly cookie only
+// Kept for backward compatibility during transition
+export function setBrowserSessionToken(_token: string) {
+  // No longer stored in sessionStorage - browser uses HttpOnly cookie
+  // This function is kept for transition period but does nothing
 }
 
 export function clearBrowserSessionToken() {
   try { sessionStorage.removeItem(BROWSER_SESSION_KEY); } catch { /* ignore */ }
 }
 
-function getBrowserSessionToken(): string | null {
-  try { return sessionStorage.getItem(BROWSER_SESSION_KEY); } catch { return null; }
-}
-
 function nativeRequestHeaders(): Record<string, string> {
   if (!isNativeClient) {
-    // 浏览器模式：使用 sessionStorage 中的 session token 作为 Bearer
-    const browserToken = getBrowserSessionToken();
-    if (browserToken) {
-      return { Authorization: `Bearer ${browserToken}` };
-    }
+    // Browser mode: rely entirely on HttpOnly cookie for authentication
+    // Do NOT send Authorization header - this prevents XSS from stealing tokens
     return {};
   }
 

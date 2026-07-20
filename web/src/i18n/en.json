@@ -1512,6 +1512,14 @@
     "allLevels": "All Levels",
     "allModules": "All Modules",
     "noLogs": "No logs found",
-    "logId": "Log ID"
+    "logId": "Log ID",
+    "quickTime": "Quick Select",
+    "selectTimePreset": "Select time range",
+    "customRange": "Custom Range",
+    "last15min": "Last 15 minutes",
+    "last1hour": "Last 1 hour",
+    "last6hours": "Last 6 hours",
+    "last24hours": "Last 24 hours",
+    "last7days": "Last 7 days"
   }
 }
