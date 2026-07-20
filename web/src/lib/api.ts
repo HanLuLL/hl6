@@ -168,6 +168,9 @@ export function getErrorMessage(err: unknown, t?: (key: string) => string): stri
     const translated = t(err.messageKey);
     if (translated !== err.messageKey) return translated;
   }
+  if (err instanceof ApiError && err.messageKey) {
+    return err.messageKey;
+  }
   if (err instanceof Error) return err.message;
   return String(err);
 }

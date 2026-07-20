@@ -980,6 +980,7 @@
     "unauthorized": "未授权",
     "missingToken": "缺少授权令牌",
     "invalidToken": "无效的令牌",
+    "invalidCredentials": "邮箱或密码错误",
     "accountAlreadyActivated": "账号已激活，请直接登录",
     "adminRequired": "需要管理员权限",
     "cnameConflictWithOther": "CNAME 记录不能与其他记录共存",
