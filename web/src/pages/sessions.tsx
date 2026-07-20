@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSessions } from "@/hooks/use-sessions";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -5,17 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Monitor, Smartphone, MoreVertical, LogOut, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,13 +14,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
 
 export default function SessionsPage() {
   const { t } = useTranslation();
   useDocumentTitle(t("sessions.title"));
   const { sessions, isLoading, terminateSession, isTerminating, terminateAll, isTerminatingAll } = useSessions();
   const [terminatingId, setTerminatingId] = useState<number | null>(null);
+  const [showLogoutAllDialog, setShowLogoutAllDialog] = useState(false);
 
   const handleTerminate = (id: number) => {
     setTerminatingId(id);
@@ -68,26 +59,10 @@ export default function SessionsPage() {
           <h1 className="text-2xl font-bold tracking-tight">{t("sessions.title")}</h1>
           <p className="text-muted-foreground">{t("sessions.subtitle")}</p>
         </div>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" disabled={isTerminatingAll}>
-              <LogOut className="mr-2 h-4 w-4" />
-              {t("sessions.logoutAll")}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t("sessions.logoutAllConfirm")}</AlertDialogTitle>
-              <AlertDialogDescription>{t("sessions.logoutAllDesc")}</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-              <AlertDialogAction onClick={() => terminateAll()} disabled={isTerminatingAll}>
-                {t("sessions.logoutAll")}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Button variant="destructive" onClick={() => setShowLogoutAllDialog(true)} disabled={isTerminatingAll}>
+          <LogOut className="mr-2 h-4 w-4" />
+          {t("sessions.logoutAll")}
+        </Button>
       </div>
 
       <Card>
@@ -162,6 +137,21 @@ export default function SessionsPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={showLogoutAllDialog}
+        onOpenChange={setShowLogoutAllDialog}
+        title={t("sessions.logoutAllConfirm")}
+        description={t("sessions.logoutAllDesc")}
+        confirmText={t("sessions.logoutAll")}
+        cancelText={t("common.cancel")}
+        onConfirm={() => {
+          terminateAll();
+          setShowLogoutAllDialog(false);
+        }}
+        destructive
+        loading={isTerminatingAll}
+      />
     </div>
   );
 }
