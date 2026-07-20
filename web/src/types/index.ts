@@ -518,6 +518,7 @@ export interface ReferralInfo {
 
 export interface UserWithInviter extends User {
   credits: number;
+  activation_required?: boolean;
   invited_by?: {
     id: number;
     name: string;

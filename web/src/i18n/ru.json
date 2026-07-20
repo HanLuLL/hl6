@@ -534,6 +534,7 @@
     "invitedBy": "Приглашён",
     "status": "Статус",
     "statusActive": "Активен",
+    "statusInactive": "Неактивен",
     "statusBanned": "Заблокирован",
     "filterAllStatus": "Все статусы",
     "filterActive": "Только активные",

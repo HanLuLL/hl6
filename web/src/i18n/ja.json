@@ -534,6 +534,7 @@
     "invitedBy": "招待者",
     "status": "状態",
     "statusActive": "通常",
+    "statusInactive": "未アクティベート",
     "statusBanned": "封禁",
     "filterAllStatus": "すべて",
     "filterActive": "通常のみ",

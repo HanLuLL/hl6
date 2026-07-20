@@ -65,9 +65,16 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		return
 	}
 
+	// Batch fetch credentials for activation status
+	credentialMap, credErr := h.repo.FindCredentialsByUserIDs(userIDs)
+	if credErr != nil {
+		credentialMap = make(map[uint]*model.UserCredential)
+	}
+
 	type userDTO struct {
 		model.User
-		Credits   model.Credit `json:"credits"`
+		Credits            model.Credit `json:"credits"`
+		ActivationRequired bool         `json:"activation_required"`
 		InvitedBy *struct {
 			ID    uint   `json:"id"`
 			Name  string `json:"name"`
@@ -78,6 +85,9 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	result := make([]userDTO, len(users))
 	for i, u := range users {
 		dto := userDTO{User: u.User, Credits: u.Credits}
+		if cred, ok := credentialMap[u.ID]; ok {
+			dto.ActivationRequired = cred.ActivationRequiredAt != nil
+		}
 		if inviter, ok := inviterMap[u.ID]; ok {
 			dto.InvitedBy = &struct {
 				ID    uint   `json:"id"`

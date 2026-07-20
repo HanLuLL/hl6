@@ -578,7 +578,11 @@ function UserDetailDialog({ user, onClose }: { user: UserWithInviter | null; onC
               <UserDetailRow label={t("adminUsers.groupId")} value={user.group_id ? String(user.group_id) : "-"} mono />
               <UserDetailRow
                 label={t("adminUsers.status")}
-                value={user.is_banned ? t("adminUsers.statusBanned") : t("adminUsers.statusActive")}
+                value={
+                  user.is_banned ? t("adminUsers.statusBanned") :
+                  user.activation_required ? t("adminUsers.statusInactive", { defaultValue: "未激活" }) :
+                  t("adminUsers.statusActive")
+                }
               />
               <UserDetailRow label={t("adminUsers.credits")} value={formatCredits(user.credits)} mono />
             </div>
@@ -590,6 +594,7 @@ function UserDetailDialog({ user, onClose }: { user: UserWithInviter | null; onC
               <UserDetailRow label={t("adminUsers.avatarUrl")} value={user.avatar_url || "-"} breakAll />
             </div>
 
+            {user.is_banned && (
             <div className="space-y-2">
               <p className="text-sm font-semibold">{t("adminUsers.banInfo")}</p>
               <UserDetailRow label={t("adminUsers.bannedReason")} value={user.banned_reason || "-"} />
@@ -597,6 +602,7 @@ function UserDetailDialog({ user, onClose }: { user: UserWithInviter | null; onC
               <UserDetailRow label="预计解封时间" value={user.banned_until ? formatDate(user.banned_until, true) : "需管理员审核"} />
               <UserDetailRow label={t("adminUsers.bannedBy")} value={user.banned_by ? String(user.banned_by) : "-"} mono />
             </div>
+            )}
 
             <div className="space-y-2">
               <p className="text-sm font-semibold">{t("adminUsers.relationInfo")}</p>

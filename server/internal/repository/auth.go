@@ -60,6 +60,21 @@ func (r *Repository) FindCredentialByUserID(userID uint) (*model.UserCredential,
 	return &credential, nil
 }
 
+func (r *Repository) FindCredentialsByUserIDs(userIDs []uint) (map[uint]*model.UserCredential, error) {
+	if len(userIDs) == 0 {
+		return make(map[uint]*model.UserCredential), nil
+	}
+	var credentials []model.UserCredential
+	if err := r.DB.Where("user_id IN ?", userIDs).Find(&credentials).Error; err != nil {
+		return nil, err
+	}
+	result := make(map[uint]*model.UserCredential, len(credentials))
+	for i := range credentials {
+		result[credentials[i].UserID] = &credentials[i]
+	}
+	return result, nil
+}
+
 func (r *Repository) CreateAuthToken(token *model.AuthToken) error {
 	if token == nil || strings.TrimSpace(token.Purpose) == "" || strings.TrimSpace(token.EmailNormalized) == "" || len(token.TokenHash) != 64 || token.ExpiresAt.IsZero() {
 		return ErrInvalidNewUserInput
@@ -207,7 +222,11 @@ func (r *Repository) updateCredentialPassword(ctx context.Context, userID uint, 
 			"email_verified_at":      now,
 			"password_set_at":        now,
 			"activation_required_at": nil,
-			"session_version":        gorm.Expr("session_version + 1"),
+		}
+		// 只有通过 auth token 设置密码时才递增 session_version（激活/重置密码需要使旧 session 失效）
+		// rehash 场景不需要递增，避免其他设备 session 失效
+		if authToken != nil {
+			updates["session_version"] = gorm.Expr("session_version + 1")
 		}
 		if err := tx.Model(&model.UserCredential{}).Where("id = ?", credential.ID).Updates(updates).Error; err != nil {
 			return err

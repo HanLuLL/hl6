@@ -11,7 +11,7 @@ export default function VerifyEmailPage() {
   return (
     <AuthShell
       title={activation ? t("auth.verify.activationTitle", { defaultValue: "Check your inbox" }) : t("auth.verify.title", { defaultValue: "Verify your email" })}
-      description={activation ? t("auth.verify.activationDescription", { defaultValue: "We sent an activation link to your email address." }) : t("auth.verify.description", { defaultValue: "We sent a one-time verification link to your email address." })}
+      description={activation ? t("auth.verify.activationDescription", { defaultValue: "If this account needs activation, a link has been sent to your email. If already activated, you can sign in directly." }) : t("auth.verify.description", { defaultValue: "We sent a one-time verification link to your email address." })}
       footer={<Link to="/login" className="font-medium text-primary hover:underline">{t("auth.verify.back", { defaultValue: "Back to sign in" })}</Link>}
     >
       <div className="flex flex-col items-center gap-4 py-5 text-center">

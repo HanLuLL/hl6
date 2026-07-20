@@ -534,6 +534,7 @@
     "invitedBy": "邀請人",
     "status": "狀態",
     "statusActive": "正常",
+    "statusInactive": "未啟用",
     "statusBanned": "已封禁",
     "filterAllStatus": "全部狀態",
     "filterActive": "僅正常",

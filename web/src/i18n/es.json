@@ -534,6 +534,7 @@
     "invitedBy": "Invitado por",
     "status": "Estado",
     "statusActive": "Activo",
+    "statusInactive": "Inactivo",
     "statusBanned": "Bloqueado",
     "filterAllStatus": "Todos",
     "filterActive": "Solo activos",
