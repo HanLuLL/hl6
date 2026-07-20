@@ -4,9 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CORS(allowedOrigins []string) gin.HandlerFunc {
-	originSet := make(map[string]bool, len(allowedOrigins))
+func CORS(allowedOrigins []string, frontendURLs ...string) gin.HandlerFunc {
+	originSet := make(map[string]bool, len(allowedOrigins)+len(frontendURLs))
 	for _, o := range allowedOrigins {
+		originSet[o] = true
+	}
+	for _, o := range frontendURLs {
 		originSet[o] = true
 	}
 	// Capacitor's local Android origin. Native requests still require the

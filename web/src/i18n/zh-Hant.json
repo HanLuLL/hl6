@@ -1129,7 +1129,8 @@
     "invalidPaymentAmount": "無效的金額",
     "paymentGatewayNotConfigured": "支付閘道未設定",
     "failedToCreateOrder": "建立訂單失敗",
-    "notFound": "未找到"
+    "notFound": "未找到",
+    "accountActivationRequired": "帳號需要啟用，請查收郵件中的啟用連結"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { PasswordField } from "@/components/auth/password-field";
-import { api, getErrorMessage } from "@/lib/api";
+import { api, getErrorMessage, ApiError } from "@/lib/api";
 import { isNativeClient } from "@/lib/client-runtime";
 import { signInNative } from "@/lib/native-client";
 
@@ -20,18 +20,23 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [needsActivation, setNeedsActivation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
+    setNeedsActivation(false);
     setSubmitting(true);
     try {
       const result = isNativeClient ? await signInNative(email, password) : (await api.login({ email, password })).data;
       // 直接用响应数据更新 React Query 缓存，使 isAuthenticated 立即变为 true
-      queryClient.setQueryData(["me"], { data: { user: result.user, credits: 0 } });
+      queryClient.setQueryData(["me"], { code: 0, message: "", data: { user: result.user, credits: 0 } });
       navigate(result.banned ? "/banned" : "/dashboard", { replace: true });
     } catch (err) {
+      if (err instanceof ApiError && err.messageKey === "error.accountActivationRequired") {
+        setNeedsActivation(true);
+      }
       setError(getErrorMessage(err, t));
     } finally {
       setSubmitting(false);
@@ -67,6 +72,13 @@ export default function LoginPage() {
           <PasswordField id="login-password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
         </div>
         {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+        {needsActivation ? (
+          <p className="text-sm text-muted-foreground">
+            <Link to="/activate-account" className="font-medium text-primary hover:underline">
+              {t("auth.login.activate", { defaultValue: "Activate an existing account" })}
+            </Link>
+          </p>
+        ) : null}
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? t("common.signingIn") : t("common.signIn")}
         </Button>

@@ -1129,7 +1129,8 @@
     "invalidPaymentAmount": "無効な決済金額",
     "paymentGatewayNotConfigured": "決済ゲートウェイが設定されていません",
     "failedToCreateOrder": "注文の作成に失敗",
-    "notFound": "見つかりません"
+    "notFound": "見つかりません",
+    "accountActivationRequired": "アカウントのアクティベーションが必要です。メールのアクティベーションリンクを確認してください"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

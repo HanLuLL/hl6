@@ -1129,7 +1129,8 @@
     "invalidPaymentAmount": "Monto de pago inválido",
     "paymentGatewayNotConfigured": "La pasarela de pago no está configurada",
     "failedToCreateOrder": "Error al crear el pedido",
-    "notFound": "No encontrado"
+    "notFound": "No encontrado",
+    "accountActivationRequired": "La cuenta requiere activación. Revisa tu correo electrónico para el enlace de activación."
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

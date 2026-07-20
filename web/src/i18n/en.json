@@ -1129,7 +1129,8 @@
     "invalidPaymentAmount": "Invalid payment amount",
     "paymentGatewayNotConfigured": "Payment gateway is not configured",
     "failedToCreateOrder": "Failed to create order",
-    "notFound": "Not found"
+    "notFound": "Not found",
+    "accountActivationRequired": "Account requires activation. Please check your email for the activation link."
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

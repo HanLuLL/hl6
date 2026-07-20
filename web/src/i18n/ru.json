@@ -1129,7 +1129,8 @@
     "invalidPaymentAmount": "Недопустимая сумма оплаты",
     "paymentGatewayNotConfigured": "Платёжный шлюз не настроен",
     "failedToCreateOrder": "Не удалось создать заказ",
-    "notFound": "Не найдено"
+    "notFound": "Не найдено",
+    "accountActivationRequired": "Аккаунт требует активации. Проверьте электронную почту для ссылки на активацию."
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

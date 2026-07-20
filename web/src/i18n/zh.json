@@ -1129,7 +1129,8 @@
     "invalidPaymentAmount": "无效的支付金额",
     "paymentGatewayNotConfigured": "支付网关未配置",
     "failedToCreateOrder": "创建订单失败",
-    "notFound": "未找到"
+    "notFound": "未找到",
+    "accountActivationRequired": "账号需要激活，请查收邮件中的激活链接"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

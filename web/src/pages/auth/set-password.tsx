@@ -50,7 +50,7 @@ export default function SetPasswordPage({ reset = false }: SetPasswordPageProps)
         await SecureStoragePlugin.set({ key: "hl6_native_session", value: accessToken });
       }
       // 直接用响应数据更新 React Query 缓存，使 isAuthenticated 立即变为 true
-      queryClient.setQueryData(["me"], { data: { user: session.user, credits: 0 } });
+      queryClient.setQueryData(["me"], { code: 0, message: "", data: { user: session.user, credits: 0 } });
       // 清除 URL 中的 token（安全措施，仅在成功后执行）
       window.history.replaceState(null, "", window.location.pathname);
       navigate(session.banned ? "/banned" : "/dashboard", { replace: true });

@@ -299,9 +299,14 @@ func (h *EmailAuthHandler) Login(c *gin.Context) {
 	}
 
 	credential, err := h.repo.FindCredentialByEmail(emailNormalized)
-	if err != nil || credential.PasswordSetAt == nil || credential.ActivationRequiredAt != nil {
+	if err != nil || credential.PasswordSetAt == nil {
 		h.recordSecurityEvent(c, nil, "login", model.AuthSecurityOutcomeFailure, emailNormalized)
 		h.invalidLogin(c)
+		return
+	}
+	if credential.ActivationRequiredAt != nil {
+		h.recordSecurityEvent(c, nil, "login", model.AuthSecurityOutcomeFailure, emailNormalized)
+		response.ErrorWithKey(c, http.StatusForbidden, "account requires activation", "error.accountActivationRequired")
 		return
 	}
 	valid, needsRehash, err := auth.VerifyPassword(body.Password, credential.PasswordHash, h.peppers())
