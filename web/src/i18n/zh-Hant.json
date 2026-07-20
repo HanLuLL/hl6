@@ -980,6 +980,7 @@
     "unauthorized": "未授權",
     "missingToken": "缺少授權權杖",
     "invalidToken": "無效的權杖",
+    "invalidCredentials": "信箱或密碼錯誤",
     "accountAlreadyActivated": "帳號已啟用，請直接登入",
     "adminRequired": "需要管理員權限",
     "cnameConflictWithOther": "CNAME 記錄不能與其他記錄共存",

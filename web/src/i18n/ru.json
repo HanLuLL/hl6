@@ -980,6 +980,7 @@
     "unauthorized": "Не авторизован",
     "missingToken": "Отсутствует токен авторизации",
     "invalidToken": "Недействительный токен",
+    "invalidCredentials": "Неверный email или пароль",
     "accountAlreadyActivated": "Аккаунт уже активирован, войдите напрямую",
     "adminRequired": "Требуется доступ администратора",
     "cnameConflictWithOther": "Запись CNAME не может сосуществовать с другими записями",

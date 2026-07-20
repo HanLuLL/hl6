@@ -980,6 +980,7 @@
     "unauthorized": "Unauthorized",
     "missingToken": "Missing authorization token",
     "invalidToken": "Invalid token",
+    "invalidCredentials": "Invalid email or password",
     "accountAlreadyActivated": "Account already activated, please sign in directly",
     "adminRequired": "Admin access required",
     "cnameConflictWithOther": "CNAME record cannot coexist with other records",

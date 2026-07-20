@@ -246,7 +246,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     const messageKey = body?.message_key;
     
     if (isNativeClient) {
-      clearNativeAccessToken();
+      // 认证端点（登录、注册等）失败时不清除 token，让调用方处理错误
+      if (!isAuthEndpoint(path)) {
+        clearNativeAccessToken();
+        // 非认证端点 401 表示 token 过期，跳转到登录页
+        if (!path.includes("/auth/me")) {
+          window.location.href = "/login";
+        }
+      }
       throw new ApiError("Not authenticated", messageKey || "error.missingToken", undefined, 401);
     }
     

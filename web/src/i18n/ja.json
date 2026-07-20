@@ -980,6 +980,7 @@
     "unauthorized": "認証されていません",
     "missingToken": "認証トークンがありません",
     "invalidToken": "無効なトークン",
+    "invalidCredentials": "メールアドレスまたはパスワードが間違っています",
     "accountAlreadyActivated": "アカウントは既にアクティベート済みです。直接ログインしてください",
     "adminRequired": "管理者権限が必要です",
     "cnameConflictWithOther": "CNAMEレコードは他のレコードと共存できません",
