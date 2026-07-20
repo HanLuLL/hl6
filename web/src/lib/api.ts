@@ -2,6 +2,7 @@ import type {
   ApiResponse,
   PaginatedResponse,
   User,
+  UserSession,
   Domain,
   Subdomain,
   DNSRecord,
