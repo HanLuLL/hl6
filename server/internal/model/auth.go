@@ -106,3 +106,24 @@ type DatabaseRestoreJob struct {
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 }
+
+// UserSession 用户会话记录，用于多设备登录管理。
+// 每个 JWT 会话对应一条记录，通过 jti (JWT ID) 唯一标识。
+type UserSession struct {
+	ID           uint       `json:"id" gorm:"primaryKey"`
+	UserID       uint       `json:"user_id" gorm:"index;not null"`
+	SessionJTI   string     `json:"-" gorm:"uniqueIndex;size:64;not null"` // JWT 的 jti (token ID) SHA-256 哈希
+	DeviceName   string     `json:"device_name" gorm:"size:128"`            // "Chrome on Windows", "Android App"
+	DeviceType   string     `json:"device_type" gorm:"size:32;not null;default:'browser'"` // browser / native
+	UserAgent    string     `json:"user_agent" gorm:"size:512"`
+	IPHash       string     `json:"-" gorm:"size:64"`
+	LastActiveAt time.Time  `json:"last_active_at" gorm:"not null"`
+	ExpiresAt    time.Time  `json:"expires_at" gorm:"index;not null"`
+	CreatedAt    time.Time  `json:"created_at"`
+}
+
+// 设备类型常量
+const (
+	DeviceTypeBrowser = "browser"
+	DeviceTypeNative  = "native"
+)

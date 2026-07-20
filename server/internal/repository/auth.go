@@ -406,3 +406,72 @@ func registrationAuditDetails(email string) json.RawMessage {
 	}
 	return details
 }
+
+// CreateUserSession 创建新的用户会话记录
+func (r *Repository) CreateUserSession(session *model.UserSession) error {
+	if session == nil || session.UserID == 0 || strings.TrimSpace(session.SessionJTI) == "" {
+		return ErrInvalidNewUserInput
+	}
+	return r.DB.Create(session).Error
+}
+
+// FindUserSessionByJTI 通过 JTI 哈希查找会话
+func (r *Repository) FindUserSessionByJTI(jtiHash string) (*model.UserSession, error) {
+	var session model.UserSession
+	err := r.DB.Where("session_jti = ?", jtiHash).First(&session).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &session, nil
+}
+
+// ListUserSessions 列出用户的所有活跃会话
+func (r *Repository) ListUserSessions(userID uint) ([]model.UserSession, error) {
+	var sessions []model.UserSession
+	err := r.DB.Where("user_id = ? AND expires_at > ?", userID, time.Now().UTC()).
+		Order("last_active_at DESC").
+		Find(&sessions).Error
+	return sessions, err
+}
+
+// DeleteUserSession 删除指定会话（踢出设备）
+func (r *Repository) DeleteUserSession(userID, sessionID uint) error {
+	result := r.DB.Where("id = ? AND user_id = ?", sessionID, userID).Delete(&model.UserSession{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+// DeleteUserSessionByJTI 通过 JTI 删除会话
+func (r *Repository) DeleteUserSessionByJTI(userID uint, jtiHash string) error {
+	result := r.DB.Where("user_id = ? AND session_jti = ?", userID, jtiHash).Delete(&model.UserSession{})
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// DeleteAllUserSessions 删除用户的所有会话（登出所有设备）
+func (r *Repository) DeleteAllUserSessions(userID uint) error {
+	return r.DB.Where("user_id = ?", userID).Delete(&model.UserSession{}).Error
+}
+
+// UpdateUserSessionLastActive 更新会话最后活跃时间
+func (r *Repository) UpdateUserSessionLastActive(jtiHash string) error {
+	return r.DB.Model(&model.UserSession{}).
+		Where("session_jti = ? AND expires_at > ?", jtiHash, time.Now().UTC()).
+		Update("last_active_at", time.Now().UTC()).Error
+}
+
+// CleanupExpiredSessions 清理过期的会话记录
+func (r *Repository) CleanupExpiredSessions() (int64, error) {
+	result := r.DB.Where("expires_at < ?", time.Now().UTC()).Delete(&model.UserSession{})
+	return result.RowsAffected, result.Error
+}

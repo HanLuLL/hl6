@@ -339,17 +339,7 @@ func (h *EmailAuthHandler) Login(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusUnauthorized, "invalid credentials", "error.invalidToken")
 		return
 	}
-	// 单设备登录：新登录踢掉其他设备
-	if err := h.repo.IncrementSessionVersion(credential.UserID); err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create session", "error.databaseError")
-		return
-	}
-	// 重新获取 credential 以获取新的 session_version
-	credential, err = h.repo.FindCredentialByEmail(emailNormalized)
-	if err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create session", "error.databaseError")
-		return
-	}
+	// 多设备登录：不再踢掉其他设备，允许同时在多个设备登录
 	h.recordSecurityEvent(c, &user.ID, "login", model.AuthSecurityOutcomeSuccess, credential.EmailNormalized)
 	h.writeSession(c, user, credential)
 }
@@ -359,8 +349,12 @@ func (h *EmailAuthHandler) Logout(c *gin.Context) {
 	if user == nil {
 		return
 	}
-	// 单设备登录：登出只清除当前设备的 session，不影响其他设备
-	// 如果其他设备已登录，它们的 session 仍然有效
+
+	// 删除当前会话记录
+	if jtiHash, exists := c.Get("session_jti"); exists && jtiHash != "" {
+		_ = h.repo.DeleteUserSessionByJTI(user.ID, jtiHash.(string))
+	}
+
 	h.clearSessionCookie(c)
 	response.OK(c, gin.H{"logout_url": h.frontendURL(c)})
 }
@@ -492,10 +486,36 @@ func (h *EmailAuthHandler) writeSession(c *gin.Context, user *model.User, creden
 		response.ErrorWithKey(c, http.StatusUnauthorized, "invalid client key", "error.invalidToken")
 		return
 	}
-	token, err := h.issueSessionJWT(user.ID, credential.SessionVersion, native, clientKeyHash)
+	ttl := browserSessionTTL
+	if native {
+		ttl = nativeSessionTTL
+	}
+	token, jti, err := h.issueSessionJWT(user.ID, credential.SessionVersion, native, clientKeyHash)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to establish session", "error.databaseError")
 		return
+	}
+
+	// 创建会话记录
+	jtiHash := auth.HashToken(jti)
+	deviceName := h.parseDeviceName(c.GetHeader("User-Agent"), native)
+	deviceType := model.DeviceTypeBrowser
+	if native {
+		deviceType = model.DeviceTypeNative
+	}
+	session := &model.UserSession{
+		UserID:       user.ID,
+		SessionJTI:   jtiHash,
+		DeviceName:   deviceName,
+		DeviceType:   deviceType,
+		UserAgent:    truncateAuthUserAgent(c.GetHeader("User-Agent")),
+		IPHash:       h.ipHash(c),
+		LastActiveAt: time.Now().UTC(),
+		ExpiresAt:    time.Now().UTC().Add(ttl),
+	}
+	if err := h.repo.CreateUserSession(session); err != nil {
+		log.Printf("[auth] failed to create session record for user %d: %v", user.ID, err)
+		// 继续执行，不阻断登录流程
 	}
 
 	data := gin.H{
@@ -517,20 +537,25 @@ func (h *EmailAuthHandler) writeSession(c *gin.Context, user *model.User, creden
 	response.OK(c, data)
 }
 
-func (h *EmailAuthHandler) issueSessionJWT(userID uint, sessionVersion uint, native bool, clientKeyHash string) (string, error) {
+func (h *EmailAuthHandler) issueSessionJWT(userID uint, sessionVersion uint, native bool, clientKeyHash string) (string, string, error) {
 	if userID == 0 || sessionVersion == 0 || h.cfg == nil || strings.TrimSpace(h.cfg.SessionSecret) == "" {
-		return "", errors.New("session signing configuration is invalid")
+		return "", "", errors.New("session signing configuration is invalid")
 	}
 	key, err := jwk.FromRaw([]byte(h.cfg.SessionSecret))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	ttl := browserSessionTTL
 	if native {
 		if clientKeyHash == "" {
-			return "", errors.New("native session requires a client key hash")
+			return "", "", errors.New("native session requires a client key hash")
 		}
 		ttl = nativeSessionTTL
+	}
+	// 生成唯一的 JTI
+	jti, err := auth.NewRawToken()
+	if err != nil {
+		return "", "", err
 	}
 	now := time.Now().UTC()
 	builder := jwt.NewBuilder().
@@ -539,19 +564,62 @@ func (h *EmailAuthHandler) issueSessionJWT(userID uint, sessionVersion uint, nat
 		Audience([]string{"hl6"}).
 		IssuedAt(now).
 		Expiration(now.Add(ttl)).
+		JwtID(jti).
 		Claim(sessionVersionClaim, sessionVersion)
 	if native {
 		builder = builder.Claim(clientauth.NativeSessionClaim, true).Claim(clientauth.NativeSessionKeyHashClaim, clientKeyHash)
 	}
 	signed, err := builder.Build()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	encoded, err := jwt.Sign(signed, jwt.WithKey(jwa.HS256, key))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return string(encoded), nil
+	return string(encoded), jti, nil
+}
+
+// parseDeviceName 解析 User-Agent 生成友好的设备名称
+func (h *EmailAuthHandler) parseDeviceName(userAgent string, native bool) string {
+	if native {
+		return "Android App"
+	}
+	ua := strings.TrimSpace(userAgent)
+	if ua == "" {
+		return "Unknown Device"
+	}
+	// 简单解析常见浏览器
+	uaLower := strings.ToLower(ua)
+	if strings.Contains(uaLower, "edg/") || strings.Contains(uaLower, "edge") {
+		if strings.Contains(uaLower, "mobile") {
+			return "Edge Mobile"
+		}
+		return "Edge Browser"
+	}
+	if strings.Contains(uaLower, "chrome/") && !strings.Contains(uaLower, "edg/") {
+		if strings.Contains(uaLower, "mobile") || strings.Contains(uaLower, "android") {
+			return "Chrome Mobile"
+		}
+		return "Chrome Browser"
+	}
+	if strings.Contains(uaLower, "firefox/") || strings.Contains(uaLower, "fxios") {
+		if strings.Contains(uaLower, "mobile") {
+			return "Firefox Mobile"
+		}
+		return "Firefox Browser"
+	}
+	if strings.Contains(uaLower, "safari/") && !strings.Contains(uaLower, "chrome") {
+		if strings.Contains(uaLower, "mobile") || strings.Contains(uaLower, "iphone") || strings.Contains(uaLower, "ipad") {
+			return "Safari Mobile"
+		}
+		return "Safari Browser"
+	}
+	// 截取前 32 个字符作为设备名
+	if len(ua) > 32 {
+		return ua[:32] + "..."
+	}
+	return ua
 }
 
 func (h *EmailAuthHandler) nativeRequest(c *gin.Context) (bool, string, error) {

@@ -16,4 +16,8 @@ func registerAuthRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, h
 	authed.GET("/auth/me", h.Auth.Me)
 	authed.PUT("/auth/profile", h.Auth.UpdateProfile)
 	authed.POST("/auth/logout", h.EmailAuth.Logout)
+	// 设备管理
+	authed.GET("/auth/sessions", h.Session.ListSessions)
+	authed.DELETE("/auth/sessions/:id", h.Session.DeleteSession)
+	authed.POST("/auth/logout-all", h.Session.LogoutAll)
 }

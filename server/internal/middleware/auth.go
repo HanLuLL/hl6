@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"math"
@@ -138,6 +140,14 @@ func (a *AuthMiddleware) Required() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+
+		// 提取 JTI 并计算哈希，用于会话管理
+		jti := parsed.JwtID()
+		if jti != "" {
+			jtiHash := hashJTI(jti)
+			c.Set("session_jti", jtiHash)
+		}
+
 		if cookieSession && isUnsafeMethod(c.Request.Method) && !a.isTrustedBrowserOrigin(c) {
 			response.ErrorWithKey(c, http.StatusForbidden, "untrusted browser origin", "error.untrustedOrigin")
 			c.Abort()
@@ -276,4 +286,13 @@ func (a *AuthMiddleware) isAuthorizedNativeClientKey(key string, sessionKeyHash 
 		return false
 	}
 	return clientauth.SameHash(claimedHash, storedHash) && clientauth.IsAuthorized(key, storedHash)
+}
+
+// hashJTI 计算 JTI 的 SHA-256 哈希
+func hashJTI(jti string) string {
+	if jti == "" {
+		return ""
+	}
+	hash := sha256.Sum256([]byte(jti))
+	return hex.EncodeToString(hash[:])
 }

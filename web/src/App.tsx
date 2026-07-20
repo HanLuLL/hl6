@@ -18,6 +18,7 @@ import SubdomainsPage from "@/pages/subdomains";
 import SubdomainDetailPage from "@/pages/subdomain-detail";
 import CreditsPage from "@/pages/credits";
 import ProfilePage from "@/pages/profile";
+import SessionsPage from "@/pages/sessions";
 import FriendLinksPage from "@/pages/friend-links";
 import AdminDomainsPage from "@/pages/admin/domains";
 import AdminUsersPage from "@/pages/admin/users";
@@ -148,6 +149,7 @@ export default function App() {
           <Route path="/friend-links" element={<FriendLinksPage />} />
           <Route path="/banned" element={<BannedPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/sessions" element={<SessionsPage />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin/domains" element={<AdminDomainsPage />} />
             <Route path="/admin/cloudflare" element={<Navigate to="/admin/domains?tab=dns-providers" replace />} />

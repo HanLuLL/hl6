@@ -11,6 +11,7 @@ import (
 type Handlers struct {
 	Auth              *handler.AuthHandler
 	EmailAuth         *handler.EmailAuthHandler
+	Session           *handler.SessionHandler
 	Domain            *handler.DomainHandler
 	Subdomain         *handler.SubdomainHandler
 	DNS               *handler.DNSHandler
@@ -40,6 +41,7 @@ func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *servic
 	return &Handlers{
 		Auth:              handler.NewAuthHandler(repo),
 		EmailAuth:         handler.NewEmailAuthHandler(repo, emailSvc, cfg),
+		Session:           handler.NewSessionHandler(repo),
 		Domain:            handler.NewDomainHandler(repo, dnsOps),
 		Subdomain:         handler.NewSubdomainHandler(repo, sseBroker, dnsOps, audit.enqueue, audit.notif, audit.subSvc, audit.auditLog),
 		DNS:               handler.NewDNSHandler(repo, sseBroker, dnsOps, audit.enqueue, emailSvc),

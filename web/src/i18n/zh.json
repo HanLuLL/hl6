@@ -1453,6 +1453,27 @@
     "website": "个人网站",
     "saved": "资料已保存"
   },
+  "sessions": {
+    "title": "设备管理",
+    "subtitle": "查看和管理你的登录设备",
+    "activeDevices": "已登录设备",
+    "noActiveDevices": "没有活跃的登录设备",
+    "currentDevice": "当前设备",
+    "lastActive": "最近活跃",
+    "expires": "有效期至",
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}} 分钟前",
+    "hoursAgo": "{{count}} 小时前",
+    "daysAgo": "{{count}} 天前",
+    "terminate": "强制下线",
+    "terminated": "设备已下线",
+    "terminateFailed": "下线失败",
+    "logoutAll": "登出所有设备",
+    "logoutAllConfirm": "确定要登出所有设备吗？",
+    "logoutAllDesc": "此操作将使所有设备（包括当前设备）退出登录，你需要重新登录。",
+    "allTerminated": "所有设备已登出",
+    "terminateAllFailed": "登出失败"
+  },
   "notification": {
     "subdomainSuspended": {
       "intro": "您的子域名 {{fqdn}} 因内容违规已被封禁。",

@@ -28,6 +28,15 @@ export interface User {
   updated_at: string;
 }
 
+export interface UserSession {
+  id: number;
+  device_name: string;
+  device_type: "browser" | "native";
+  last_active_at: string;
+  expires_at: string;
+  is_current: boolean;
+}
+
 export interface ClientVersionConfig {
   latest_version: string;
   force_update: boolean;

@@ -1453,6 +1453,30 @@
     "website": "Website",
     "saved": "Profile saved"
   },
+  "sessions": {
+    "title": "Device Management",
+    "subtitle": "View and manage your logged-in devices",
+    "activeDevices": "Active Devices",
+    "noActiveDevices": "No active devices",
+    "currentDevice": "Current Device",
+    "lastActive": "Last active",
+    "expires": "Expires",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minute ago",
+    "minutesAgo_other": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hour ago",
+    "hoursAgo_other": "{{count}} hours ago",
+    "daysAgo": "{{count}} day ago",
+    "daysAgo_other": "{{count}} days ago",
+    "terminate": "Terminate",
+    "terminated": "Device terminated",
+    "terminateFailed": "Failed to terminate device",
+    "logoutAll": "Logout All Devices",
+    "logoutAllConfirm": "Are you sure you want to logout all devices?",
+    "logoutAllDesc": "This will sign you out from all devices including this one. You will need to sign in again.",
+    "allTerminated": "All devices logged out",
+    "terminateAllFailed": "Failed to logout all devices"
+  },
   "notification": {
     "subdomainSuspended": {
       "intro": "Your subdomain {{fqdn}} has been suspended due to a content policy violation.",

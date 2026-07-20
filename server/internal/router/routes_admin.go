@@ -48,6 +48,7 @@ func registerAdminRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, 
 	admin.PUT("/users/:id/group", h.Admin.UpdateUserGroup)
 	admin.PUT("/users/:id/ban", h.Admin.BanUser)
 	admin.PUT("/users/:id/unban", h.Admin.UnbanUser)
+	admin.DELETE("/users/:id", h.Admin.DeleteUser)
 	admin.GET("/groups", h.Admin.ListGroups)
 	admin.POST("/groups", h.Admin.CreateGroup)
 	admin.PUT("/groups/:id", h.Admin.UpdateGroup)

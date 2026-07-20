@@ -332,6 +332,14 @@ export const api = {
   updateProfile: (data: { name?: string; avatar_url?: string; bio?: string; website?: string }) =>
     request<ApiResponse<{ user: User }>>("/auth/profile", { method: "PUT", body: JSON.stringify(data) }),
 
+  // Sessions (device management)
+  getSessions: () =>
+    request<ApiResponse<UserSession[]>>("/auth/sessions"),
+  deleteSession: (id: number) =>
+    request<ApiResponse<{ message: string }>>(`/auth/sessions/${id}`, { method: "DELETE" }),
+  logoutAll: () =>
+    request<ApiResponse<{ message: string }>>("/auth/logout-all", { method: "POST" }),
+
   // Domains
   listDomains: () => request<ApiResponse<Domain[]>>("/domains"),
 

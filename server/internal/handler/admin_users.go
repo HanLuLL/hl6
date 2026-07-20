@@ -500,3 +500,92 @@ func (h *AdminHandler) DeleteGroup(c *gin.Context) {
 	}
 	response.OK(c, gin.H{"message": "group deleted and users migrated"})
 }
+
+// DeleteUser 完全删除用户账号及其所有关联数据
+// DELETE /api/v1/admin/users/:id
+func (h *AdminHandler) DeleteUser(c *gin.Context) {
+	admin := mustGetUser(c)
+	if admin == nil {
+		return
+	}
+
+	userID, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+
+	// 不能删除自己
+	if admin.ID == userID {
+		response.ErrorWithKey(c, http.StatusBadRequest, "cannot delete yourself", "error.cannotDeleteSelf")
+		return
+	}
+
+	target, err := h.repo.FindUserByID(userID)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusNotFound, "user not found", "error.userNotFound")
+		return
+	}
+
+	// 检查是否是最后一个活跃管理员
+	if target.Role == "admin" || (target.Group != nil && target.Group.IsAdmin) {
+		activeAdmins, err := h.repo.CountUnbannedAdmins()
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to check admin count", "error.databaseError")
+			return
+		}
+		if activeAdmins <= 1 {
+			response.ErrorWithKey(c, http.StatusBadRequest, "cannot delete the last admin", "error.cannotDeleteLastAdmin")
+			return
+		}
+	}
+
+	key, ok := idempotencyKeyFromHeader(c)
+	if !ok {
+		return
+	}
+	scope := fmt.Sprintf("admin:delete:user:%d", target.ID)
+	opResult := h.ops.ExecuteIdempotent(c.Request.Context(), scope, key, func(ctx context.Context) (service.OperationResult, error) {
+		result, failures, asyncJobID, err := executeAdminDeleteUserWithCleanup(ctx, h.repo, h.ops, admin.ID, target)
+		if asyncJobID != nil {
+			return service.OperationResult{
+				HTTPStatus: http.StatusConflict,
+				Message:    "dns bulk delete queued, retry delete after job succeeds",
+				MessageKey: "error.dnsOperationInProgress",
+				Data:       gin.H{"bulk_job_id": *asyncJobID, "bulk_async": true},
+			}, nil
+		}
+		if len(failures) > 0 {
+			return service.OperationResult{
+				HTTPStatus: http.StatusConflict,
+				Message:    "some dns records failed to delete",
+				MessageKey: "error.dnsDeleteFailed",
+				Data:       gin.H{"failed_records": failures},
+			}, nil
+		}
+		if err != nil {
+			return service.OperationResult{HTTPStatus: http.StatusInternalServerError, Message: "failed to delete user", MessageKey: "error.failedToDeleteUser", Retryable: true}, nil
+		}
+
+		details, _ := json.Marshal(map[string]interface{}{
+			"target_user_id":     target.ID,
+			"target_user_email":  target.Email,
+			"target_user_role":   target.Role,
+			"subdomains_deleted": result.SubdomainsDeleted,
+			"deleted_dns_count":  result.DeletedDNSCount,
+		})
+		h.repo.CreateAuditLog(&model.AuditLog{
+			UserID:     admin.ID,
+			Action:     "admin_delete_user",
+			Resource:   "user",
+			ResourceID: target.ID,
+			Details:    details,
+		})
+
+		return service.OperationResult{
+			HTTPStatus: http.StatusOK,
+			Message:    "ok",
+			Data:       gin.H{"message": "user deleted", "deleted_dns_count": result.DeletedDNSCount},
+		}, nil
+	})
+	writeOperationResult(c, opResult)
+}
