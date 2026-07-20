@@ -172,6 +172,16 @@ export function getErrorMessage(err: unknown, t?: (key: string) => string): stri
   return String(err);
 }
 
+function isAuthEndpoint(path: string): boolean {
+  return (
+    path.includes("/auth/login") ||
+    path.includes("/auth/registration") ||
+    path.includes("/auth/activation") ||
+    path.includes("/auth/password/forgot") ||
+    path.includes("/auth/password/complete")
+  );
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = (options.method ?? "GET").toUpperCase();
   const headers: Record<string, string> = {
@@ -241,13 +251,15 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     if (messageKey === "error.invalidToken") {
       clearBrowserSessionToken();
       sessionStorage.setItem("hl6_kicked_out", "1");
-      if (!path.includes("/auth/me")) {
+      if (!path.includes("/auth/me") && !isAuthEndpoint(path)) {
         window.location.href = "/login";
       }
       throw new ApiError("Session invalidated", "error.sessionKicked", undefined, 401);
     }
     
-    if (!path.includes("/auth/me")) {
+    // 认证相关端点（登录、注册等）返回 401 时不触发全局重定向
+    // 让调用方自己处理错误提示
+    if (!path.includes("/auth/me") && !isAuthEndpoint(path)) {
       const key = "hl6_401_count";
       const timeKey = "hl6_401_time";
       const now = Date.now();

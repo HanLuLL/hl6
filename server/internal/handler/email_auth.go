@@ -886,7 +886,7 @@ func truncateAuthUserAgent(raw string) string {
 }
 
 func (h *EmailAuthHandler) setSessionCookie(c *gin.Context, token string, ttl time.Duration) {
-	cookie := &http.Cookie{
+	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "hl6_session",
 		Value:    token,
 		Path:     "/",
@@ -894,32 +894,15 @@ func (h *EmailAuthHandler) setSessionCookie(c *gin.Context, token string, ttl ti
 		Secure:   h.isSecureCookie(c),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-	}
-
-	// Set Domain attribute from FrontendURL for proper cross-subdomain cookie handling
-	if h.cfg != nil && h.cfg.FrontendURL != "" {
-		if u, err := url.Parse(h.cfg.FrontendURL); err == nil && u.Host != "" {
-			cookie.Domain = u.Host
-		}
-	}
-
-	http.SetCookie(c.Writer, cookie)
+	})
 }
 
 func (h *EmailAuthHandler) clearSessionCookie(c *gin.Context) {
-	var domain string
-	if h.cfg != nil && h.cfg.FrontendURL != "" {
-		if u, err := url.Parse(h.cfg.FrontendURL); err == nil && u.Host != "" {
-			domain = u.Host
-		}
-	}
-
 	for _, secure := range []bool{false, true} {
 		http.SetCookie(c.Writer, &http.Cookie{
 			Name:     "hl6_session",
 			Value:    "",
 			Path:     "/",
-			Domain:   domain,
 			MaxAge:   -1,
 			Secure:   secure,
 			HttpOnly: true,
