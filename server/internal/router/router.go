@@ -28,7 +28,7 @@ type auditStack struct {
 
 func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context) *gin.Engine {
 	r := gin.Default()
-	r.Use(middleware.CORS(cfg.AllowedOrigins, cfg.FrontendURLs))
+	r.Use(middleware.CORS(cfg.AllowedOrigins, cfg.FrontendURLs...))
 	r.GET("/health", func(c *gin.Context) {
 		status := "ok"
 		dbOK := true
