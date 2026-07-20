@@ -1,18 +1,14 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
-  Calendar,
   Download,
   Eye,
-  FileText,
-  Info,
-  Loader2,
   Search,
   AlertTriangle,
 } from "lucide-react";
-import { api, getErrorMessage } from "@/lib/api";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -62,7 +58,6 @@ const logLevels = [
 ];
 
 function LevelBadge({ level }: { level: string }) {
-  const { t } = useTranslation();
   const variants: Record<string, string> = {
     DEBUG: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
     INFO: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
@@ -168,7 +163,6 @@ function TableSkeleton() {
 
 export default function AdminSystemLogsPage() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   useDocumentTitle(t("systemLogs.title"));
 
   const [page, setPage] = useState(1);
