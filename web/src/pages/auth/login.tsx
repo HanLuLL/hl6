@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -22,6 +22,14 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [needsActivation, setNeedsActivation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [kickedOut, setKickedOut] = useState(false);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("hl6_kicked_out") === "1") {
+      sessionStorage.removeItem("hl6_kicked_out");
+      setKickedOut(true);
+    }
+  }, []);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -75,6 +83,7 @@ export default function LoginPage() {
           </div>
           <PasswordField id="login-password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
         </div>
+        {kickedOut ? <p role="alert" className="text-sm text-amber-600 dark:text-amber-500">{t("auth.login.kickedOut", { defaultValue: "您的账号已在其他设备登录，请重新登录" })}</p> : null}
         {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
         {needsActivation ? (
           <p className="text-sm text-muted-foreground">

@@ -332,6 +332,17 @@ func (h *EmailAuthHandler) Login(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusUnauthorized, "invalid credentials", "error.invalidToken")
 		return
 	}
+	// 单设备登录：新登录踢掉其他设备
+	if err := h.repo.IncrementSessionVersion(credential.UserID); err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create session", "error.databaseError")
+		return
+	}
+	// 重新获取 credential 以获取新的 session_version
+	credential, err = h.repo.FindCredentialByEmail(emailNormalized)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to create session", "error.databaseError")
+		return
+	}
 	h.recordSecurityEvent(c, &user.ID, "login", model.AuthSecurityOutcomeSuccess, credential.EmailNormalized)
 	h.writeSession(c, user, credential)
 }
@@ -341,10 +352,8 @@ func (h *EmailAuthHandler) Logout(c *gin.Context) {
 	if user == nil {
 		return
 	}
-	if err := h.repo.IncrementSessionVersion(user.ID); err != nil {
-		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to end session", "error.databaseError")
-		return
-	}
+	// 单设备登录：登出只清除当前设备的 session，不影响其他设备
+	// 如果其他设备已登录，它们的 session 仍然有效
 	h.clearSessionCookie(c)
 	response.OK(c, gin.H{"logout_url": h.frontendURL(c)})
 }

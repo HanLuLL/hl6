@@ -230,10 +230,24 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   if (res.status === 401) {
+    const body = await res.json().catch(() => ({}));
+    const messageKey = body?.message_key;
+    
     if (isNativeClient) {
       clearNativeAccessToken();
-      throw new ApiError("Not authenticated", "error.missingToken", undefined, 401);
+      throw new ApiError("Not authenticated", messageKey || "error.missingToken", undefined, 401);
     }
+    
+    // 账号在其他设备登录：session 被踢
+    if (messageKey === "error.invalidToken") {
+      clearBrowserSessionToken();
+      sessionStorage.setItem("hl6_kicked_out", "1");
+      if (!path.includes("/auth/me")) {
+        window.location.href = "/login";
+      }
+      throw new ApiError("Session invalidated", "error.sessionKicked", undefined, 401);
+    }
+    
     if (!path.includes("/auth/me")) {
       const key = "hl6_401_count";
       const timeKey = "hl6_401_time";
@@ -254,7 +268,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
         window.location.href = "/login";
       }
     }
-    throw new ApiError("Not authenticated", "error.missingToken", undefined, 401);
+    throw new ApiError("Not authenticated", messageKey || "error.missingToken", undefined, 401);
   }
 
   if (!res.ok) {
