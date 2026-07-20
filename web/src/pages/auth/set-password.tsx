@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { PasswordField } from "@/components/auth/password-field";
-import { api, getErrorMessage } from "@/lib/api";
+import { api, getErrorMessage, setBrowserSessionToken } from "@/lib/api";
 import { isNativeClient } from "@/lib/client-runtime";
 import { setNativeAccessToken } from "@/lib/client-runtime";
 import { SecureStoragePlugin } from "capacitor-secure-storage-plugin";
@@ -48,6 +48,10 @@ export default function SetPasswordPage({ reset = false }: SetPasswordPageProps)
       if (isNativeClient && accessToken) {
         setNativeAccessToken(accessToken);
         await SecureStoragePlugin.set({ key: "hl6_native_session", value: accessToken });
+      }
+      // 浏览器模式：存储 session token，确保后续 API 请求能携带认证信息
+      if (!isNativeClient && accessToken) {
+        setBrowserSessionToken(accessToken);
       }
       // 直接用响应数据更新 React Query 缓存，使 isAuthenticated 立即变为 true
       queryClient.setQueryData(["me"], { code: 0, message: "", data: { user: session.user, credits: 0 } });

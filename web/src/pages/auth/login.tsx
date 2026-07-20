@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { PasswordField } from "@/components/auth/password-field";
-import { api, getErrorMessage, ApiError } from "@/lib/api";
+import { api, getErrorMessage, ApiError, setBrowserSessionToken } from "@/lib/api";
 import { isNativeClient } from "@/lib/client-runtime";
 import { signInNative } from "@/lib/native-client";
 
@@ -30,6 +30,10 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const result = isNativeClient ? await signInNative(email, password) : (await api.login({ email, password })).data;
+      // 存储 session token，确保后续 API 请求能携带认证信息
+      if (!isNativeClient && result.access_token) {
+        setBrowserSessionToken(result.access_token);
+      }
       // 直接用响应数据更新 React Query 缓存，使 isAuthenticated 立即变为 true
       queryClient.setQueryData(["me"], { code: 0, message: "", data: { user: result.user, credits: 0 } });
       navigate(result.banned ? "/banned" : "/dashboard", { replace: true });

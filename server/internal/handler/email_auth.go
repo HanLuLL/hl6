@@ -481,6 +481,8 @@ func (h *EmailAuthHandler) writeSession(c *gin.Context, user *model.User, creden
 		data["expires_in"] = int(nativeSessionTTL.Seconds())
 	} else {
 		h.setSessionCookie(c, token, browserSessionTTL)
+		data["access_token"] = token
+		data["expires_in"] = int(browserSessionTTL.Seconds())
 	}
 	c.Header("Cache-Control", "no-store")
 	response.OK(c, data)

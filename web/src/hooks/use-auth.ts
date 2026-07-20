@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, clearBrowserSessionToken } from "@/lib/api";
 import { isNativeClient } from "@/lib/client-runtime";
 import { signOutNativeClient } from "@/lib/native-client";
 
@@ -27,6 +27,7 @@ export function useAuth() {
         await signOutNativeClient();
         return;
       }
+      clearBrowserSessionToken();
       try {
         const res = await api.logout();
         const logoutUrl = res?.data?.logout_url;

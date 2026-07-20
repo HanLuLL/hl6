@@ -118,8 +118,29 @@ type RequestOptions = RequestInit & {
 
 let handlingBannedSession = false;
 
+const BROWSER_SESSION_KEY = "hl6_browser_session";
+
+export function setBrowserSessionToken(token: string) {
+  try { sessionStorage.setItem(BROWSER_SESSION_KEY, token); } catch { /* ignore */ }
+}
+
+export function clearBrowserSessionToken() {
+  try { sessionStorage.removeItem(BROWSER_SESSION_KEY); } catch { /* ignore */ }
+}
+
+function getBrowserSessionToken(): string | null {
+  try { return sessionStorage.getItem(BROWSER_SESSION_KEY); } catch { return null; }
+}
+
 function nativeRequestHeaders(): Record<string, string> {
-  if (!isNativeClient) return {};
+  if (!isNativeClient) {
+    // 浏览器模式：使用 sessionStorage 中的 session token 作为 Bearer
+    const browserToken = getBrowserSessionToken();
+    if (browserToken) {
+      return { Authorization: `Bearer ${browserToken}` };
+    }
+    return {};
+  }
 
   const headers: Record<string, string> = {};
   const communicationKey = getClientCommunicationKey();
