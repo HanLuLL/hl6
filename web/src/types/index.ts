@@ -598,6 +598,7 @@ export interface AccessSettingsPayload {
   registration_enabled: boolean;
   domain_policy_mode: "unrestricted" | "allowlist" | "blocklist";
   domain_policy_domains: string[];
+  captcha_enabled: boolean;
   local_auth_enabled: boolean;
 }
 

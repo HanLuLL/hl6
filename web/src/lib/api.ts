@@ -335,12 +335,15 @@ export const api = {
     sessionStorage.removeItem("hl6_401_time");
     return res;
   },
-  requestRegistration: (data: { email: string; referral_code?: string; locale?: string }) =>
+  requestRegistration: (data: { email: string; referral_code?: string; locale?: string; captcha_id?: string; captcha_code?: string }) =>
     request<ApiResponse<undefined>>("/auth/registration/request", { method: "POST", body: JSON.stringify(data) }),
-  requestActivation: (data: { email: string; locale?: string }) =>
+  requestActivation: (data: { email: string; locale?: string; captcha_id?: string; captcha_code?: string }) =>
     request<ApiResponse<undefined>>("/auth/activation/request", { method: "POST", body: JSON.stringify(data) }),
-  requestPasswordReset: (data: { email: string; locale?: string }) =>
+  requestPasswordReset: (data: { email: string; locale?: string; captcha_id?: string; captcha_code?: string }) =>
     request<ApiResponse<undefined>>("/auth/password/forgot", { method: "POST", body: JSON.stringify(data) }),
+  // 获取图形验证码（启用了验证码时返回 base64 图片）
+  getCaptcha: () =>
+    request<ApiResponse<{ captcha_id: string; image: string; enabled: boolean; ttl_seconds: number }>>("/auth/captcha"),
   completePassword: (data: { token: string; password: string }) =>
     request<ApiResponse<AuthSessionPayload>>("/auth/password/complete", { method: "POST", body: JSON.stringify(data) }),
   // 校验密码重置/激活令牌是否有效

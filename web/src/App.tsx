@@ -12,6 +12,7 @@ import SetPasswordPage from "@/pages/auth/set-password";
 import ActivateAccountPage from "@/pages/auth/activate-account";
 import ForgotPasswordPage from "@/pages/auth/forgot-password";
 import ResetPasswordPage from "@/pages/auth/reset-password";
+import RedirectPage from "@/pages/redirect";
 import DashboardPage from "@/pages/dashboard";
 import DomainsPage from "@/pages/domains";
 import SubdomainsPage from "@/pages/subdomains";
@@ -140,6 +141,7 @@ export default function App() {
         <Route path="/activate-account" element={<ActivateAccountPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/redirect" element={<RedirectPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/domains" element={<DomainsPage />} />

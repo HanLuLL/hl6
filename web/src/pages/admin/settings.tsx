@@ -84,6 +84,7 @@ export default function AdminSettingsPage() {
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [domainPolicyMode, setDomainPolicyMode] = useState<"unrestricted" | "allowlist" | "blocklist">("unrestricted");
   const [domainPolicyDomains, setDomainPolicyDomains] = useState("");
+  const [captchaEnabled, setCaptchaEnabled] = useState(false);
   const [frontendUrls, setFrontendUrls] = useState("");
   const [backendUrls, setBackendUrls] = useState("");
   const [announcementEnabled, setAnnouncementEnabled] = useState(false);
@@ -130,6 +131,7 @@ export default function AdminSettingsPage() {
     setRegistrationEnabled(accessSettings.registration_enabled);
     setDomainPolicyMode(accessSettings.domain_policy_mode);
     setDomainPolicyDomains(accessSettings.domain_policy_domains.join("\n"));
+    setCaptchaEnabled(!!accessSettings.captcha_enabled);
   }, [accessSettings]);
 
   useEffect(() => {
@@ -287,7 +289,11 @@ export default function AdminSettingsPage() {
               <div className="flex items-center justify-between gap-4"><Label>{t("adminSettings.access.registrationEnabled")}</Label><Switch checked={registrationEnabled} onCheckedChange={setRegistrationEnabled} /></div>
               <div className="space-y-2"><Label>{t("adminSettings.access.emailDomainPolicy")}</Label><select className="h-9 w-full rounded-md border bg-background px-3 text-sm" value={domainPolicyMode} onChange={(event) => setDomainPolicyMode(event.target.value as typeof domainPolicyMode)}><option value="unrestricted">{t("adminSettings.access.unrestricted")}</option><option value="allowlist">{t("adminSettings.access.allowlist")}</option><option value="blocklist">{t("adminSettings.access.blocklist")}</option></select></div>
               <div className="space-y-2"><Label>{t("adminSettings.access.emailDomains")}</Label><Textarea value={domainPolicyDomains} onChange={(event) => setDomainPolicyDomains(event.target.value)} rows={7} /></div>
-              <Button onClick={() => updateAccess.mutate({ registration_enabled: registrationEnabled, domain_policy_mode: domainPolicyMode, domain_policy_domains: splitDomains(domainPolicyDomains) })} disabled={updateAccess.isPending}><Save />{updateAccess.isPending ? t("common.saving") : t("adminSettings.save")}</Button>
+              <div className="space-y-2 rounded-md border p-3">
+                <div className="flex items-center justify-between gap-4"><Label>{t("adminSettings.access.captchaEnabled")}</Label><Switch checked={captchaEnabled} onCheckedChange={setCaptchaEnabled} /></div>
+                <p className="text-xs text-muted-foreground">{t("adminSettings.captcha.desc")}</p>
+              </div>
+              <Button onClick={() => updateAccess.mutate({ registration_enabled: registrationEnabled, domain_policy_mode: domainPolicyMode, domain_policy_domains: splitDomains(domainPolicyDomains), captcha_enabled: captchaEnabled })} disabled={updateAccess.isPending}><Save />{updateAccess.isPending ? t("common.saving") : t("adminSettings.save")}</Button>
             </CardContent>
           </Card>
         </TabsContent>

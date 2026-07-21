@@ -75,7 +75,19 @@
       "activationDescription": "啟用連結已寄送到你的電子郵件。",
       "title": "請驗證電子郵件",
       "description": "一次性驗證連結已寄送到你的電子郵件。",
-      "back": "返回登入"
+      "back": "返回登入",
+      "resendHint": "若幾分鐘內未收到郵件，請檢查該郵箱是否已註冊，或前往登入。",
+      "resend": "重新發送",
+      "resending": "發送中...",
+      "resendCooldown": "{{seconds}}s 後可重發",
+      "resendDone": "已重新發送，請查收郵件"
+    },
+    "captcha": {
+      "label": "驗證碼",
+      "placeholder": "請輸入圖中驗證碼",
+      "refresh": "換一張",
+      "loading": "驗證碼載入中...",
+      "required": "請輸入驗證碼"
     },
     "setPassword": {
       "title": "設定密碼",
@@ -89,6 +101,13 @@
     "resetLinkInvalid": "該重置連結已失效",
     "resetLinkInvalidHint": "連結可能已過期、已使用或輸入不完整，請重新發起密碼重置請求",
     "resetLinkMissing": "未提供重置憑證，請透過郵件連結進入此頁面"
+  },
+  "redirect": {
+    "title": "正在開啟 APP...",
+    "description": "選擇繼續的方式：在 APP 中開啟，或在瀏覽器中繼續。",
+    "launching": "喚起中...",
+    "openApp": "在 APP 中開啟",
+    "continueWeb": "在瀏覽器中繼續"
   },
   "footer": {
     "openSource": "開源地址",
@@ -842,7 +861,12 @@
       "emailDomains": "電子郵件網域",
       "unrestricted": "不限制",
       "allowlist": "僅允許清單",
-      "blocklist": "封鎖清單"
+      "blocklist": "封鎖清單",
+      "captchaEnabled": "啟用圖形驗證碼"
+    },
+    "captcha": {
+      "title": "圖形驗證碼",
+      "desc": "啟用後，註冊、啟用帳號、忘記密碼需先通過圖形驗證碼驗證"
     },
     "payment": {
       "epay": "易支付",
@@ -992,6 +1016,7 @@
     "unauthorized": "未授權",
     "missingToken": "缺少授權權杖",
     "invalidToken": "無效的權杖",
+    "invalidCaptcha": "驗證碼錯誤",
     "invalidCredentials": "信箱或密碼錯誤",
     "accountAlreadyActivated": "帳號已啟用，請直接登入",
     "adminRequired": "需要管理員權限",

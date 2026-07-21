@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"hl6-server/internal/auth"
+	"hl6-server/internal/captcha"
 	"hl6-server/internal/clientauth"
 	"hl6-server/internal/config"
 	"hl6-server/internal/model"
@@ -56,12 +57,16 @@ type EmailAuthHandler struct {
 	emailSvc    *service.EmailService
 	cfg         *config.Config
 	urlResolver *URLResolver
+	captchaSvc  *captcha.Service
 }
 
 type emailRequest struct {
 	Email        string `json:"email"`
 	ReferralCode string `json:"referral_code"`
 	Locale       string `json:"locale"`
+	// 验证码（图形验证码启用时必填）
+	CaptchaID   string `json:"captcha_id"`
+	CaptchaCode string `json:"captcha_code"`
 }
 
 type passwordCompleteRequest struct {
@@ -83,12 +88,13 @@ type registrationSettings struct {
 	Policy  auth.DomainPolicy
 }
 
-func NewEmailAuthHandler(repo *repository.Repository, emailSvc *service.EmailService, cfg *config.Config) *EmailAuthHandler {
+func NewEmailAuthHandler(repo *repository.Repository, emailSvc *service.EmailService, cfg *config.Config, captchaSvc *captcha.Service) *EmailAuthHandler {
 	return &EmailAuthHandler{
 		repo:        repo,
 		emailSvc:    emailSvc,
 		cfg:         cfg,
 		urlResolver: NewURLResolver(repo, cfg),
+		captchaSvc:  captchaSvc,
 	}
 }
 
@@ -109,6 +115,11 @@ func (h *EmailAuthHandler) RegistrationRequest(c *gin.Context) {
 		return
 	}
 	if !h.allowAuthRequest(c, "registration_request", emailNormalized) {
+		return
+	}
+
+	// 验证码校验（启用时必填）
+	if !h.verifyCaptcha(c, body.CaptchaID, body.CaptchaCode) {
 		return
 	}
 
@@ -166,11 +177,16 @@ func (h *EmailAuthHandler) ActivationRequest(c *gin.Context) {
 		return
 	}
 
-	emailNormalized, emailLocale, ok := h.parseEmailRequest(c)
+	emailNormalized, emailLocale, captchaID, captchaCode, ok := h.parseEmailRequest(c)
 	if !ok {
 		return
 	}
 	if !h.allowAuthRequest(c, "activation_request", emailNormalized) {
+		return
+	}
+
+	// 验证码校验（启用时必填）
+	if !h.verifyCaptcha(c, captchaID, captchaCode) {
 		return
 	}
 
@@ -208,11 +224,16 @@ func (h *EmailAuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	emailNormalized, emailLocale, ok := h.parseEmailRequest(c)
+	emailNormalized, emailLocale, captchaID, captchaCode, ok := h.parseEmailRequest(c)
 	if !ok {
 		return
 	}
 	if !h.allowAuthRequest(c, "password_forgot", emailNormalized) {
+		return
+	}
+
+	// 验证码校验（启用时必填）
+	if !h.verifyCaptcha(c, captchaID, captchaCode) {
 		return
 	}
 
@@ -497,17 +518,18 @@ func (h *EmailAuthHandler) authenticationLink(c *gin.Context, purpose, rawToken 
 		log.Printf("[auth] frontend URL not confirmed (source=%s, url=%s), cannot send authentication links. Admin must confirm URL in Administration -> Site and Appearance.", state.FrontendSource, state.FrontendURL)
 		return "", errors.New("frontend URL must be explicitly confirmed before sending authentication links")
 	}
-	path := "/set-password"
-	if purpose == model.AuthTokenPurposePasswordReset {
-		path = "/reset-password"
-	}
+	// 邮件按钮统一指向 /redirect 中转页，由该页决定打开 web 还是 native APP。
+	// 这样可以解决 QQ 邮箱等邮件客户端不直接支持 linyu:// 自定义 scheme 的问题。
 	target, err := url.Parse(state.FrontendURL)
 	if err != nil {
 		return "", err
 	}
-	target.Path = strings.TrimRight(target.Path, "/") + path
+	target.Path = strings.TrimRight(target.Path, "/") + "/redirect"
 	query := target.Query()
 	query.Set("token", rawToken)
+	query.Set("purpose", purpose)
+	// app_link 参数：前端 redirect 页会尝试唤起此深链
+	query.Set("app_link", h.appAuthenticationLink(purpose, rawToken))
 	target.RawQuery = query.Encode()
 	return target.String(), nil
 }
@@ -692,18 +714,51 @@ func (h *EmailAuthHandler) nativeRequest(c *gin.Context) (bool, string, error) {
 	return true, storedHash, nil
 }
 
-func (h *EmailAuthHandler) parseEmailRequest(c *gin.Context) (string, string, bool) {
+func (h *EmailAuthHandler) parseEmailRequest(c *gin.Context) (string, string, string, string, bool) {
 	var body emailRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
-		return "", "", false
+		return "", "", "", "", false
 	}
 	emailNormalized, err := auth.NormalizeEmail(body.Email)
 	if err != nil {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid email address", "error.invalidRequestBody")
-		return "", "", false
+		return "", "", "", "", false
 	}
-	return emailNormalized, requestedAuthEmailLocale(c, body.Locale), true
+	return emailNormalized, requestedAuthEmailLocale(c, body.Locale), body.CaptchaID, body.CaptchaCode, true
+}
+
+// verifyCaptcha 校验图形验证码，校验失败返回 false 并写入响应。
+// 若验证码服务未启用，直接返回 true（放行）。
+func (h *EmailAuthHandler) verifyCaptcha(c *gin.Context, captchaID, captchaCode string) bool {
+	if h.captchaSvc == nil {
+		return true
+	}
+	if !h.captchaSvc.IsEnabled(c.Request.Context()) {
+		return true
+	}
+	if !h.captchaSvc.Verify(c.Request.Context(), captchaID, captchaCode) {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid captcha", "error.invalidCaptcha")
+		return false
+	}
+	return true
+}
+
+// GenerateCaptcha 返回一个新的图形验证码图片。
+// 前端在加载注册/忘记密码页时调用，提交时回传 captcha_id + captcha_code。
+func (h *EmailAuthHandler) GenerateCaptcha(c *gin.Context) {
+	h.setPublicAuthHeaders(c)
+	resp, err := h.captchaSvc.Generate(c.Request.Context())
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusInternalServerError, "failed to generate captcha", "error.databaseError")
+		return
+	}
+	response.OK(c, gin.H{
+		"captcha_id":  resp.CaptchaID,
+		"image":       resp.Image,
+		"enabled":     resp.Enabled,
+		"ttl_seconds": resp.TTLSeconds,
+	})
 }
 
 func requestedAuthEmailLocale(c *gin.Context, requested string) string {

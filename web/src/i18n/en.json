@@ -75,7 +75,19 @@
       "activationDescription": "We sent an activation link to your email address.",
       "title": "Verify your email",
       "description": "We sent a one-time verification link to your email address.",
-      "back": "Back to sign in"
+      "back": "Back to sign in",
+      "resendHint": "If you don't receive an email within a few minutes, the address may already be registered, or try signing in.",
+      "resend": "Resend",
+      "resending": "Sending...",
+      "resendCooldown": "Resend in {{seconds}}s",
+      "resendDone": "Email resent, please check your inbox"
+    },
+    "captcha": {
+      "label": "Captcha",
+      "placeholder": "Enter the code shown",
+      "refresh": "Refresh",
+      "loading": "Loading captcha...",
+      "required": "Please enter the captcha"
     },
     "setPassword": {
       "title": "Set your password",
@@ -89,6 +101,13 @@
     "resetLinkInvalid": "This reset link is invalid",
     "resetLinkInvalidHint": "The link may have expired, been used, or is incomplete. Please request a new password reset.",
     "resetLinkMissing": "No reset credential provided. Please access this page via the email link."
+  },
+  "redirect": {
+    "title": "Opening the app...",
+    "description": "Choose how to continue: open the native app or proceed in the web browser.",
+    "launching": "Launching...",
+    "openApp": "Open in app",
+    "continueWeb": "Continue in browser"
   },
   "footer": {
     "openSource": "Open Source",
@@ -842,7 +861,12 @@
       "emailDomains": "Email domains",
       "unrestricted": "Unrestricted",
       "allowlist": "Allowlist only",
-      "blocklist": "Blocklist"
+      "blocklist": "Blocklist",
+      "captchaEnabled": "Enable captcha"
+    },
+    "captcha": {
+      "title": "Image captcha",
+      "desc": "When enabled, registration, activation, and password reset require a captcha."
     },
     "payment": {
       "epay": "Epay",
@@ -992,6 +1016,7 @@
     "unauthorized": "Unauthorized",
     "missingToken": "Missing authorization token",
     "invalidToken": "Invalid token",
+    "invalidCaptcha": "Invalid captcha",
     "invalidCredentials": "Invalid email or password",
     "accountAlreadyActivated": "Account already activated, please sign in directly",
     "adminRequired": "Admin access required",

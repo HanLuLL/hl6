@@ -1,6 +1,7 @@
 package router
 
 import (
+	"hl6-server/internal/captcha"
 	"hl6-server/internal/config"
 	"hl6-server/internal/handler"
 	"hl6-server/internal/repository"
@@ -37,10 +38,11 @@ type Handlers struct {
 
 func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *service.DNSOperationService, migSvc *service.DomainMigrationService, maintenanceSvc *service.DatabaseMaintenanceService, sseBroker *handler.SSEBroker, audit auditStack) *Handlers {
 	emailSvc := service.NewEmailService(repo, cfg.EncryptionKey)
+	captchaSvc := captcha.NewService(repo)
 
 	return &Handlers{
 		Auth:              handler.NewAuthHandler(repo),
-		EmailAuth:         handler.NewEmailAuthHandler(repo, emailSvc, cfg),
+		EmailAuth:         handler.NewEmailAuthHandler(repo, emailSvc, cfg, captchaSvc),
 		Session:           handler.NewSessionHandler(repo),
 		Domain:            handler.NewDomainHandler(repo, dnsOps),
 		Subdomain:         handler.NewSubdomainHandler(repo, sseBroker, dnsOps, audit.enqueue, audit.notif, audit.subSvc, audit.auditLog),

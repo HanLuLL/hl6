@@ -84,7 +84,7 @@ func newEmailAuthHandlerForTest(t *testing.T) (*repository.Repository, *EmailAut
 		AuthPasswordPepperID: "test-v1",
 		AuthPasswordPepper:   "test-password-pepper",
 	}
-	return repo, NewEmailAuthHandler(repo, service.NewEmailService(repo, nil), cfg)
+	return repo, NewEmailAuthHandler(repo, service.NewEmailService(repo, nil), cfg, nil)
 }
 
 func TestForgotPasswordDoesNotExposeAccountExistence(t *testing.T) {

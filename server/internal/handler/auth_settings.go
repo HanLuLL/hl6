@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"hl6-server/internal/auth"
+	"hl6-server/internal/captcha"
 	"hl6-server/internal/ctxutil"
 	"hl6-server/internal/model"
 	"hl6-server/pkg/response"
@@ -29,6 +30,7 @@ type AccessSettingsPayload struct {
 	RegistrationEnabled bool     `json:"registration_enabled"`
 	DomainPolicyMode    string   `json:"domain_policy_mode"`
 	DomainPolicyDomains []string `json:"domain_policy_domains"`
+	CaptchaEnabled      bool     `json:"captcha_enabled"`
 }
 
 type accessSettingsResponse struct {
@@ -72,6 +74,7 @@ func (h *AdminHandler) UpdateAccessSettings(c *gin.Context) {
 			authRegistrationEnabledConfigKey: boolConfigValue(payload.RegistrationEnabled),
 			authEmailDomainModeConfigKey:     policy.Mode,
 			authEmailDomainDomainsConfigKey:  string(domainsJSON),
+			captcha.ConfigKeyEnabled:         boolConfigValue(payload.CaptchaEnabled),
 		} {
 			var existing model.SystemConfig
 			result := tx.Where("\"key\" = ?", key).First(&existing)
@@ -129,6 +132,7 @@ func (h *AdminHandler) loadAccessSettings(migrateLegacy bool) (AccessSettingsPay
 		authEmailDomainDomainsConfigKey,
 		authLocalEnabledConfigKey,
 		legacyRegistrationEnabledKey,
+		captcha.ConfigKeyEnabled,
 	})
 	if err != nil {
 		return AccessSettingsPayload{}, false, err
@@ -137,6 +141,7 @@ func (h *AdminHandler) loadAccessSettings(migrateLegacy bool) (AccessSettingsPay
 		RegistrationEnabled: true,
 		DomainPolicyMode:    auth.DomainPolicyUnrestricted,
 		DomainPolicyDomains: []string{},
+		CaptchaEnabled:      strings.EqualFold(strings.TrimSpace(configs[captcha.ConfigKeyEnabled]), "true"),
 	}
 	legacyUsed := false
 	if raw, exists := configs[authRegistrationEnabledConfigKey]; exists {

@@ -75,7 +75,19 @@
       "activationDescription": "Enviamos un enlace de activación a tu dirección de correo.",
       "title": "Verifica tu correo",
       "description": "Enviamos un enlace de verificación de un solo uso a tu dirección de correo.",
-      "back": "Volver a iniciar sesión"
+      "back": "Volver a iniciar sesión",
+      "resendHint": "Si no recibes un correo en unos minutos, la dirección podría ya estar registrada, o prueba a iniciar sesión.",
+      "resend": "Reenviar",
+      "resending": "Enviando...",
+      "resendCooldown": "Reenviar en {{seconds}}s",
+      "resendDone": "Correo reenviado, revisa tu bandeja"
+    },
+    "captcha": {
+      "label": "Captcha",
+      "placeholder": "Introduce el código mostrado",
+      "refresh": "Otro",
+      "loading": "Cargando captcha...",
+      "required": "Introduce el captcha"
     },
     "setPassword": {
       "title": "Establece tu contraseña",
@@ -89,6 +101,13 @@
     "resetLinkInvalid": "Este enlace de restablecimiento no es válido",
     "resetLinkInvalidHint": "El enlace puede haber caducado, ya haber sido usado o estar incompleto. Solicita un nuevo restablecimiento de contraseña.",
     "resetLinkMissing": "No se proporcionó credencial de restablecimiento. Accede a esta página a través del enlace del correo."
+  },
+  "redirect": {
+    "title": "Abriendo la app...",
+    "description": "Elige cómo continuar: abrir la app nativa o continuar en el navegador.",
+    "launching": "Iniciando...",
+    "openApp": "Abrir en la app",
+    "continueWeb": "Continuar en el navegador"
   },
   "footer": {
     "openSource": "Open Source",
@@ -842,7 +861,12 @@
       "emailDomains": "Dominios de correo",
       "unrestricted": "Sin restricciones",
       "allowlist": "Solo lista permitida",
-      "blocklist": "Lista de bloqueo"
+      "blocklist": "Lista de bloqueo",
+      "captchaEnabled": "Habilitar captcha"
+    },
+    "captcha": {
+      "title": "Captcha de imagen",
+      "desc": "Al habilitarlo, registro, activación y recuperación de contraseña requieren captcha."
     },
     "payment": {
       "epay": "Epay",
@@ -992,6 +1016,7 @@
     "unauthorized": "No autorizado",
     "missingToken": "Falta el token de autorización",
     "invalidToken": "Token inválido",
+    "invalidCaptcha": "Captcha inválido",
     "invalidCredentials": "Correo o contraseña inválidos",
     "accountAlreadyActivated": "Cuenta ya activada, inicie sesión directamente",
     "adminRequired": "Se requiere acceso de administrador",

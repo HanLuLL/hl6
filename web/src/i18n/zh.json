@@ -75,7 +75,19 @@
       "activationDescription": "激活链接已发送到你的邮箱。",
       "title": "请验证邮箱",
       "description": "一次性验证链接已发送到你的邮箱。",
-      "back": "返回登录"
+      "back": "返回登录",
+      "resendHint": "若几分钟内未收到邮件，请检查该邮箱是否已注册，或前往登录。",
+      "resend": "重新发送",
+      "resending": "发送中...",
+      "resendCooldown": "{{seconds}}s 后可重发",
+      "resendDone": "已重新发送，请查收邮件"
+    },
+    "captcha": {
+      "label": "验证码",
+      "placeholder": "请输入图中验证码",
+      "refresh": "换一张",
+      "loading": "验证码加载中...",
+      "required": "请输入验证码"
     },
     "setPassword": {
       "title": "设置密码",
@@ -89,6 +101,13 @@
     "resetLinkInvalid": "该重置链接已失效",
     "resetLinkInvalidHint": "链接可能已过期、已使用或输入不完整，请重新发起密码重置请求",
     "resetLinkMissing": "未提供重置凭证，请通过邮件链接进入此页面"
+  },
+  "redirect": {
+    "title": "正在打开 APP...",
+    "description": "选择继续的方式：在 APP 中打开，或在浏览器中继续。",
+    "launching": "唤起中...",
+    "openApp": "在 APP 中打开",
+    "continueWeb": "在浏览器中继续"
   },
   "footer": {
     "openSource": "开源地址",
@@ -842,7 +861,12 @@
       "emailDomains": "邮箱后缀",
       "unrestricted": "不限制",
       "allowlist": "仅白名单",
-      "blocklist": "黑名单"
+      "blocklist": "黑名单",
+      "captchaEnabled": "启用图形验证码"
+    },
+    "captcha": {
+      "title": "图形验证码",
+      "desc": "启用后，注册、激活账号、忘记密码需先通过图形验证码校验"
     },
     "payment": {
       "epay": "易支付",
@@ -992,6 +1016,7 @@
     "unauthorized": "未授权",
     "missingToken": "缺少授权令牌",
     "invalidToken": "无效的令牌",
+    "invalidCaptcha": "验证码错误",
     "invalidCredentials": "邮箱或密码错误",
     "accountAlreadyActivated": "账号已激活，请直接登录",
     "adminRequired": "需要管理员权限",

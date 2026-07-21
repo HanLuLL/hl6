@@ -75,7 +75,19 @@
       "activationDescription": "メールアドレスに有効化リンクを送信しました。",
       "title": "メールアドレスを確認",
       "description": "メールアドレスに一度だけ使用できる確認リンクを送信しました。",
-      "back": "ログインに戻る"
+      "back": "ログインに戻る",
+      "resendHint": "数分以内にメールが届かない場合、そのアドレスは既に登録されている可能性があります。ログインしてください。",
+      "resend": "再送信",
+      "resending": "送信中...",
+      "resendCooldown": "{{seconds}}秒後に再送信できます",
+      "resendDone": "メールを再送信しました。受信箱をご確認ください"
+    },
+    "captcha": {
+      "label": "認証コード",
+      "placeholder": "画像のコードを入力",
+      "refresh": "別の画像",
+      "loading": "認証コードを読み込み中...",
+      "required": "認証コードを入力してください"
     },
     "setPassword": {
       "title": "パスワードを設定",
@@ -89,6 +101,13 @@
     "resetLinkInvalid": "このリセットリンクは無効です",
     "resetLinkInvalidHint": "リンクの有効期限が切れた、すでに使用された、または不完全な可能性があります。パスワードリセットを再申請してください。",
     "resetLinkMissing": "リセット認証情報が提供されていません。メールリンクからこのページにアクセスしてください。"
+  },
+  "redirect": {
+    "title": "アプリを開いています...",
+    "description": "続行方法を選択してください：ネイティブアプリで開く、またはブラウザで続行する。",
+    "launching": "起動中...",
+    "openApp": "アプリで開く",
+    "continueWeb": "ブラウザで続行"
   },
   "footer": {
     "openSource": "Open Source",
@@ -842,7 +861,12 @@
       "emailDomains": "メールドメイン",
       "unrestricted": "制限なし",
       "allowlist": "許可リストのみ",
-      "blocklist": "ブロックリスト"
+      "blocklist": "ブロックリスト",
+      "captchaEnabled": "画像認証コードを有効化"
+    },
+    "captcha": {
+      "title": "画像認証コード",
+      "desc": "有効にすると、登録、アクティベーション、パスワードリセット時に認証コードが必要です"
     },
     "payment": {
       "epay": "Epay",
@@ -992,6 +1016,7 @@
     "unauthorized": "認証されていません",
     "missingToken": "認証トークンがありません",
     "invalidToken": "無効なトークン",
+    "invalidCaptcha": "認証コードが正しくありません",
     "invalidCredentials": "メールアドレスまたはパスワードが間違っています",
     "accountAlreadyActivated": "アカウントは既にアクティベート済みです。直接ログインしてください",
     "adminRequired": "管理者権限が必要です",

@@ -12,6 +12,8 @@ func registerAuthRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, h
 	api.GET("/auth/password/verify-token", h.EmailAuth.VerifyAuthToken)
 	api.POST("/auth/password/complete", h.EmailAuth.CompletePassword)
 	api.POST("/auth/login", h.EmailAuth.Login)
+	// 图形验证码（注册/忘记密码/激活账号使用）
+	api.GET("/auth/captcha", h.EmailAuth.GenerateCaptcha)
 
 	authed := api.Group("", auth.Required())
 	authed.GET("/auth/me", h.Auth.Me)
