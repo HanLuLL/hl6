@@ -12,7 +12,6 @@ import SetPasswordPage from "@/pages/auth/set-password";
 import ActivateAccountPage from "@/pages/auth/activate-account";
 import ForgotPasswordPage from "@/pages/auth/forgot-password";
 import ResetPasswordPage from "@/pages/auth/reset-password";
-import RedirectPage from "@/pages/redirect";
 import DashboardPage from "@/pages/dashboard";
 import DomainsPage from "@/pages/domains";
 import SubdomainsPage from "@/pages/subdomains";
@@ -91,7 +90,9 @@ function AdminRoute() {
   return <Outlet />;
 }
 
-// Component to handle deep links in native app
+// Component to handle deep links in native app.
+// 注意：认证邮件自 2026-07-21 起不再发送 linyu:// 深链，邮件按钮直接指向 web 目标。
+// 此 DeepLinkHandler 保留用于未来其他深链场景（如推送通知、分享扩展等）。
 function DeepLinkHandler() {
   const navigate = useNavigate();
 
@@ -141,7 +142,6 @@ export default function App() {
         <Route path="/activate-account" element={<ActivateAccountPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/redirect" element={<RedirectPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/domains" element={<DomainsPage />} />

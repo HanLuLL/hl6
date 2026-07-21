@@ -3,7 +3,6 @@ import { RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { api, getErrorMessage } from "@/lib/api";
 
 interface CaptchaWidgetProps {
@@ -96,56 +95,43 @@ export function CaptchaWidget({ onChange, resetSignal }: CaptchaWidgetProps) {
   return (
     <div className="space-y-2">
       <Label htmlFor="captcha-code">{t("auth.captcha.label", { defaultValue: "Captcha" })}</Label>
-      <div className="flex items-center gap-2">
-        <Input
-          id="captcha-code"
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          placeholder={t("auth.captcha.placeholder", { defaultValue: "Enter the code shown" })}
-          value={code}
-          onChange={(event) => {
-            const next = event.target.value;
-            setCode(next);
-            onChange({ captchaId: data.captchaId, captchaCode: next });
-          }}
-          required
-          className="flex-1"
-        />
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          disabled={loading}
-          className="relative h-10 shrink-0 overflow-hidden rounded-md border border-input bg-background"
-          aria-label={t("auth.captcha.refresh", { defaultValue: "Refresh" })}
-          title={t("auth.captcha.refresh", { defaultValue: "Refresh" })}
-        >
-          {loading || !data.image ? (
-            <span className="flex h-full w-[120px] items-center justify-center text-xs text-muted-foreground">
-              <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
-              {t("auth.captcha.loading", { defaultValue: "Loading..." })}
-            </span>
-          ) : (
-            <img
-              src={data.image}
-              alt={t("auth.captcha.label", { defaultValue: "Captcha" })}
-              className="h-10 w-[120px] object-contain"
-              draggable={false}
-            />
-          )}
-        </button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => void refresh()}
-          disabled={loading}
-          aria-label={t("auth.captcha.refresh", { defaultValue: "Refresh" })}
-          title={t("auth.captcha.refresh", { defaultValue: "Refresh" })}
-        >
-          <RefreshCw className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-        </Button>
-      </div>
+      <Input
+        id="captcha-code"
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        placeholder={t("auth.captcha.placeholder", { defaultValue: "Enter the code shown" })}
+        value={code}
+        onChange={(event) => {
+          const next = event.target.value;
+          setCode(next);
+          onChange({ captchaId: data.captchaId, captchaCode: next });
+        }}
+        required
+      />
+      {/* 验证码图片：点击刷新，窄屏（Android 视口）与宽屏均可用 */}
+      <button
+        type="button"
+        onClick={() => void refresh()}
+        disabled={loading}
+        className="relative h-10 w-full overflow-hidden rounded-md border border-input bg-background"
+        aria-label={t("auth.captcha.refresh", { defaultValue: "Refresh" })}
+        title={t("auth.captcha.refresh", { defaultValue: "Refresh" })}
+      >
+        {loading || !data.image ? (
+          <span className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+            <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+            {t("auth.captcha.loading", { defaultValue: "Loading..." })}
+          </span>
+        ) : (
+          <img
+            src={data.image}
+            alt={t("auth.captcha.label", { defaultValue: "Captcha" })}
+            className="h-10 w-full object-contain"
+            draggable={false}
+          />
+        )}
+      </button>
       {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
     </div>
   );
