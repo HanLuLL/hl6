@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { RootLayout } from "@/components/layout/root-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -38,7 +38,8 @@ import { setupDeepLinkListener, removeDeepLinkListener } from "@/lib/native-clie
 import { isNativeClient } from "@/lib/client-runtime";
 
 function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -76,6 +77,12 @@ function ProtectedRoute() {
   // 只有在确认未登录时才重定向到登录页
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // 主动检测封禁状态：被封禁用户只能访问 /banned 页面（提交申诉、查看封禁原因）
+  // 这样 Web 和 Android 客户端都能在进入受保护页面时立即跳转，无需等待被动 API 403 触发
+  if (user?.is_banned && location.pathname !== "/banned") {
+    return <Navigate to="/banned" replace />;
   }
 
   return <RootLayout><ErrorBoundary><Outlet /></ErrorBoundary></RootLayout>;

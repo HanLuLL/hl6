@@ -80,3 +80,4 @@ Web 管理控制台控制最新版本、强制更新标志、更新公告和 HTT
 | 2026-07-17 | Web 与 Android 共享认证界面将密码下限统一为 8 个 Unicode 字符，并随注册、激活和找回请求提交当前语言；服务端认证邮件同步支持六种语言 |
 | 2026-07-21 | 认证邮件按钮保留指向 `/redirect` 中转页（由该页决定打开 web 还是 native APP），但移除邮件模板内多余的「在 APP 中打开」按钮，避免邮件里出现两个跳转入口。Android 的 `linyu://` intent filter、`setupDeepLinkListener` 和 `/redirect` 中转页逻辑保持不变 |
 | 2026-07-21 | 共享 Web/Android 认证界面新增自托管图形验证码（mojocn/base64Captcha），注册、激活、忘记密码三处接口需先通过验证码校验。验证码 widget 采用堆叠布局（输入框在上、图片在下、点击图片刷新），适配 Android 窄屏视口；启用与否由后台 `auth.captcha.enabled` 控制，关闭时 widget 不渲染 |
+| 2026-07-21 | 共享 Web/Android `ProtectedRoute` 主动检测 `user.is_banned` 字段：被封禁用户访问受保护路由（除 `/banned` 外）时立即用 React Router `Navigate` 重定向到 `/banned`，无需等待被动 API 403 触发。`/banned` 页面在 Android 窄屏视口表现良好（`max-w-lg` 卡片 + 块级布局），无需额外适配。封禁检测完全在共享 React 层，无需 Android 原生代码改动 |
