@@ -98,6 +98,32 @@ func (r *Repository) ConsumeAnyAuthToken(ctx context.Context, hash string, purpo
 	return r.consumeAuthToken(ctx, hash, purposes)
 }
 
+// FindAnyAuthToken checks whether a non-expired, unconsumed token exists for
+// the supplied purpose set without consuming it. Used for pre-submit validation
+// on the client side (e.g. reset-password page).
+func (r *Repository) FindAnyAuthToken(ctx context.Context, hash string, purposes []string) (*model.AuthToken, error) {
+	if len(hash) != 64 {
+		return nil, ErrAuthTokenUnavailable
+	}
+	if len(purposes) == 0 {
+		return nil, ErrAuthTokenUnavailable
+	}
+	for _, purpose := range purposes {
+		if strings.TrimSpace(purpose) == "" {
+			return nil, ErrAuthTokenUnavailable
+		}
+	}
+	now := time.Now().UTC()
+	var token model.AuthToken
+	err := r.DB.WithContext(ctx).
+		Where("token_hash = ? AND purpose IN ? AND consumed_at IS NULL AND expires_at > ?", hash, purposes, now).
+		First(&token).Error
+	if err != nil {
+		return nil, ErrAuthTokenUnavailable
+	}
+	return &token, nil
+}
+
 func (r *Repository) consumeAuthToken(ctx context.Context, hash string, purposes []string) (*model.AuthToken, error) {
 	if len(hash) != 64 {
 		return nil, ErrAuthTokenUnavailable

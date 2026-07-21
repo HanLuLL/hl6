@@ -238,6 +238,32 @@ func (h *EmailAuthHandler) ForgotPassword(c *gin.Context) {
 	h.accepted(c)
 }
 
+// VerifyAuthToken 校验重置/激活令牌是否有效（未过期、未消费），不消费令牌。
+// 用于前端在进入重置密码页面前预校验，避免用户填完表单提交后才报错。
+func (h *EmailAuthHandler) VerifyAuthToken(c *gin.Context) {
+	h.setPublicAuthHeaders(c)
+	if !h.requireLocalAuthEnabled(c) {
+		return
+	}
+
+	rawToken := strings.TrimSpace(c.Query("token"))
+	if rawToken == "" || len(rawToken) > maximumAuthTokenLength {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid or expired link", "error.invalidToken")
+		return
+	}
+
+	_, err := h.repo.FindAnyAuthToken(c.Request.Context(), auth.HashToken(rawToken), []string{
+		model.AuthTokenPurposeRegistrationVerify,
+		model.AuthTokenPurposeAccountActivation,
+		model.AuthTokenPurposePasswordReset,
+	})
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid or expired link", "error.invalidToken")
+		return
+	}
+	response.Ok(c, gin.H{"valid": true})
+}
+
 func (h *EmailAuthHandler) CompletePassword(c *gin.Context) {
 	h.setPublicAuthHeaders(c)
 	if !h.requireLocalAuthEnabled(c) {
@@ -446,7 +472,7 @@ func (h *EmailAuthHandler) createAndSendAuthToken(c *gin.Context, purpose string
 	if err != nil {
 		return err
 	}
-	// Generate app deep link (uses custom scheme hl6://)
+	// Generate app deep link (uses custom scheme linyu://)
 	appLink := h.appAuthenticationLink(purpose, rawToken)
 	token := &model.AuthToken{
 		Purpose:         purpose,
@@ -487,14 +513,14 @@ func (h *EmailAuthHandler) authenticationLink(c *gin.Context, purpose, rawToken 
 }
 
 // appAuthenticationLink generates a deep link URL for the mobile app.
-// Format: hl6://activate?token={token} (for registration verification and account activation)
-// or hl6://reset-password?token={token} (for password reset)
+// Format: linyu://activate?token={token} (for registration verification and account activation)
+// or linyu://reset-password?token={token} (for password reset)
 func (h *EmailAuthHandler) appAuthenticationLink(purpose, rawToken string) string {
 	path := "activate"
 	if purpose == model.AuthTokenPurposePasswordReset {
 		path = "reset-password"
 	}
-	return fmt.Sprintf("hl6://%s?token=%s", path, rawToken)
+	return fmt.Sprintf("linyu://%s?token=%s", path, rawToken)
 }
 
 func (h *EmailAuthHandler) writeSession(c *gin.Context, user *model.User, credential *model.UserCredential) {

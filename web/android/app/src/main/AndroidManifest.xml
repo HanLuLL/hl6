@@ -23,12 +23,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep link intent filter for hl6://activate and hl6://reset-password -->
+            <!-- Deep link intent filter for linyu://activate and linyu://reset-password -->
             <intent-filter android:exported="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="hl6" />
+                <data android:scheme="linyu" />
             </intent-filter>
         </activity>
 

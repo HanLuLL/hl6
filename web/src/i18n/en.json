@@ -84,7 +84,11 @@
     },
     "reset": {
       "title": "Set a new password"
-    }
+    },
+    "tokenVerifying": "Verifying link validity...",
+    "resetLinkInvalid": "This reset link is invalid",
+    "resetLinkInvalidHint": "The link may have expired, been used, or is incomplete. Please request a new password reset.",
+    "resetLinkMissing": "No reset credential provided. Please access this page via the email link."
   },
   "footer": {
     "openSource": "Open Source",

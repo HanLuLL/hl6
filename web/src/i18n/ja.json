@@ -84,7 +84,11 @@
     },
     "reset": {
       "title": "新しいパスワードを設定"
-    }
+    },
+    "tokenVerifying": "リンクの有効性を確認中...",
+    "resetLinkInvalid": "このリセットリンクは無効です",
+    "resetLinkInvalidHint": "リンクの有効期限が切れた、すでに使用された、または不完全な可能性があります。パスワードリセットを再申請してください。",
+    "resetLinkMissing": "リセット認証情報が提供されていません。メールリンクからこのページにアクセスしてください。"
   },
   "footer": {
     "openSource": "Open Source",

@@ -84,7 +84,11 @@
     },
     "reset": {
       "title": "Establece una nueva contraseña"
-    }
+    },
+    "tokenVerifying": "Verificando la validez del enlace...",
+    "resetLinkInvalid": "Este enlace de restablecimiento no es válido",
+    "resetLinkInvalidHint": "El enlace puede haber caducado, ya haber sido usado o estar incompleto. Solicita un nuevo restablecimiento de contraseña.",
+    "resetLinkMissing": "No se proporcionó credencial de restablecimiento. Accede a esta página a través del enlace del correo."
   },
   "footer": {
     "openSource": "Open Source",

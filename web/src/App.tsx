@@ -101,13 +101,13 @@ function DeepLinkHandler() {
       // Handle deep link paths
       switch (path) {
         case "activate":
-          // hl6://activate?token=xxx -> /set-password?token=xxx
+          // linyu://activate?token=xxx -> /set-password?token=xxx
           if (params.token) {
             navigate(`/set-password?token=${encodeURIComponent(params.token)}`, { replace: true });
           }
           break;
         case "reset-password":
-          // hl6://reset-password?token=xxx -> /reset-password?token=xxx
+          // linyu://reset-password?token=xxx -> /reset-password?token=xxx
           if (params.token) {
             navigate(`/reset-password?token=${encodeURIComponent(params.token)}`, { replace: true });
           }

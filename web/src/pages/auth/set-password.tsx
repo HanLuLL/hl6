@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -17,16 +17,51 @@ type SetPasswordPageProps = { reset?: boolean };
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 128;
 
+// 令牌校验状态：verifying 校验中、valid 有效、invalid 无效
+type TokenStatus = "verifying" | "valid" | "invalid";
+
 export default function SetPasswordPage({ reset = false }: SetPasswordPageProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token")?.trim() ?? "";
+  // 无 token 时直接进入 invalid 状态，不调用 API
+  const [tokenStatus, setTokenStatus] = useState<TokenStatus>(token ? "verifying" : "invalid");
+  const [missingToken, setMissingToken] = useState(!token);
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // 组件挂载时自动校验令牌有效性
+  useEffect(() => {
+    if (!token) {
+      setTokenStatus("invalid");
+      setMissingToken(true);
+      return;
+    }
+    let cancelled = false;
+    setTokenStatus("verifying");
+    setMissingToken(false);
+    api
+      .verifyAuthToken(token)
+      .then((res) => {
+        if (cancelled) return;
+        if (res.data?.valid) {
+          setTokenStatus("valid");
+        } else {
+          setTokenStatus("invalid");
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setTokenStatus("invalid");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -65,6 +100,38 @@ export default function SetPasswordPage({ reset = false }: SetPasswordPageProps)
     }
   };
 
+  // 校验中：显示加载提示，不渲染表单
+  if (tokenStatus === "verifying") {
+    return (
+      <AuthShell
+        title={t("auth.tokenVerifying", { defaultValue: "Verifying link..." })}
+        description=""
+      >
+        <p className="text-sm text-muted-foreground">{t("auth.tokenVerifying", { defaultValue: "Verifying link..." })}</p>
+      </AuthShell>
+    );
+  }
+
+  // 校验失败：显示错误标题 + 副文案 + 返回登录链接，不渲染表单
+  if (tokenStatus === "invalid") {
+    const invalidTitle = missingToken
+      ? t("auth.resetLinkMissing", { defaultValue: "Reset link is missing." })
+      : t("auth.resetLinkInvalid", { defaultValue: "This reset link is invalid." });
+    return (
+      <AuthShell
+        title={invalidTitle}
+        description={t("auth.resetLinkInvalidHint", { defaultValue: "The link may have expired, been used, or is incomplete. Please request a new password reset." })}
+      >
+        <div className="space-y-4">
+          <Button asChild className="w-full">
+            <Link to="/login">{t("auth.verify.back", { defaultValue: "Back to login" })}</Link>
+          </Button>
+        </div>
+      </AuthShell>
+    );
+  }
+
+  // 校验通过：渲染原表单
   return (
     <AuthShell
       title={reset ? t("auth.reset.title", { defaultValue: "Set a new password" }) : t("auth.setPassword.title", { defaultValue: "Set your password" })}
@@ -79,9 +146,8 @@ export default function SetPasswordPage({ reset = false }: SetPasswordPageProps)
           <Label htmlFor="confirm-password">{t("auth.confirmPassword", { defaultValue: "Confirm password" })}</Label>
           <PasswordField id="confirm-password" autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required />
         </div>
-        {!token ? <p role="alert" className="text-sm text-destructive">{t("auth.invalidLink", { defaultValue: "This link is invalid or has expired." })}</p> : null}
         {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
-        <Button type="submit" className="w-full" disabled={!token || submitting}>{submitting ? t("common.saving") : t("auth.setPassword.continue", { defaultValue: "Continue" })}</Button>
+        <Button type="submit" className="w-full" disabled={submitting}>{submitting ? t("common.saving") : t("auth.setPassword.continue", { defaultValue: "Continue" })}</Button>
       </form>
     </AuthShell>
   );

@@ -343,6 +343,9 @@ export const api = {
     request<ApiResponse<undefined>>("/auth/password/forgot", { method: "POST", body: JSON.stringify(data) }),
   completePassword: (data: { token: string; password: string }) =>
     request<ApiResponse<AuthSessionPayload>>("/auth/password/complete", { method: "POST", body: JSON.stringify(data) }),
+  // 校验密码重置/激活令牌是否有效
+  verifyAuthToken: (token: string) =>
+    request<ApiResponse<{ valid: boolean }>>(`/auth/password/verify-token?token=${encodeURIComponent(token)}`),
   login: (data: { email: string; password: string }) =>
     request<ApiResponse<AuthSessionPayload>>("/auth/login", { method: "POST", body: JSON.stringify(data) }),
   getClientVersion: (currentVersion: string) =>

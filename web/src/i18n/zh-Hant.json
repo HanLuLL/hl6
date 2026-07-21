@@ -84,7 +84,11 @@
     },
     "reset": {
       "title": "設定新密碼"
-    }
+    },
+    "tokenVerifying": "正在驗證連結有效性...",
+    "resetLinkInvalid": "該重置連結已失效",
+    "resetLinkInvalidHint": "連結可能已過期、已使用或輸入不完整，請重新發起密碼重置請求",
+    "resetLinkMissing": "未提供重置憑證，請透過郵件連結進入此頁面"
   },
   "footer": {
     "openSource": "開源地址",

@@ -9,6 +9,7 @@ func registerAuthRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddleware, h
 	api.POST("/auth/registration/request", h.EmailAuth.RegistrationRequest)
 	api.POST("/auth/activation/request", h.EmailAuth.ActivationRequest)
 	api.POST("/auth/password/forgot", h.EmailAuth.ForgotPassword)
+	api.GET("/auth/password/verify-token", h.EmailAuth.VerifyAuthToken)
 	api.POST("/auth/password/complete", h.EmailAuth.CompletePassword)
 	api.POST("/auth/login", h.EmailAuth.Login)
 
