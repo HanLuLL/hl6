@@ -40,14 +40,12 @@ import {
   Users,
   Settings2,
   ShieldCheck,
-  ClipboardList,
   SlidersHorizontal,
   ChevronDown,
   Menu,
   Link2,
   LinkIcon,
   Brain,
-  Mail,
   FileStack,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -92,10 +90,8 @@ const adminItems: NavItem[] = [
   { labelKey: "nav.adminUsers", href: "/admin/users", icon: Users },
   { labelKey: "nav.adminDomains", href: "/admin/domains", icon: Settings2 },
   { labelKey: "nav.audit", href: "/admin/audit", icon: ShieldCheck },
-  { labelKey: "nav.auditLogs", href: "/admin/audit-logs", icon: ClipboardList },
   { labelKey: "nav.adminFriendLinks", href: "/admin/friend-links", icon: LinkIcon },
   { labelKey: "nav.adminAIAudit", href: "/admin/ai-audit", icon: Brain },
-  { labelKey: "nav.emailLogs", href: "/admin/email-logs", icon: Mail },
   { labelKey: "nav.systemLogs", href: "/admin/logs", icon: FileStack },
   { labelKey: "nav.adminSettings", href: "/admin/settings", icon: SlidersHorizontal },
 ];

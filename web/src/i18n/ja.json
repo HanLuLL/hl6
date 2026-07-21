@@ -1510,6 +1510,10 @@
       "reason": "理由：{{reason}}"
     }
   },
+  "logsCenter": {
+    "title": "ログセンター",
+    "subtitle": "システム・メール・監査ログを表示"
+  },
   "systemLogs": {
     "title": "システムログ",
     "subtitle": "システム実行ログの表示",

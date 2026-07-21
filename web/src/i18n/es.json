@@ -1510,6 +1510,10 @@
       "reason": "Motivo: {{reason}}"
     }
   },
+  "logsCenter": {
+    "title": "Centro de Registros",
+    "subtitle": "Ver registros del sistema, correo y auditoría"
+  },
   "systemLogs": {
     "title": "Registros del Sistema",
     "subtitle": "Ver registros de ejecución del sistema",

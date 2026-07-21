@@ -27,12 +27,10 @@ import SessionsPage from "@/pages/sessions";
 import FriendLinksPage from "@/pages/friend-links";
 import AdminDomainsPage from "@/pages/admin/domains";
 import AdminUsersPage from "@/pages/admin/users";
-import AdminAuditLogsPage from "@/pages/admin/audit-logs";
 import AdminAuditPage from "@/pages/admin/audit";
 import AdminFriendLinksPage from "@/pages/admin/friend-links";
 import AdminAIAuditPage from "@/pages/admin/ai-audit";
-import AdminEmailLogsPage from "@/pages/admin/email-logs";
-import AdminSystemLogsPage from "@/pages/admin/logs";
+import AdminLogsPage from "@/pages/admin/logs";
 import BannedPage from "@/pages/banned";
 
 import AdminSettingsPage from "@/pages/admin/settings";
@@ -197,13 +195,13 @@ export default function App() {
             <Route path="/admin/audit-scans" element={<Navigate to="/admin/audit?tab=history" replace />} />
             <Route path="/admin/audit-violations" element={<Navigate to="/admin/audit?tab=domains" replace />} />
             <Route path="/admin/audit-sites" element={<Navigate to="/admin/audit?tab=domains" replace />} />
-            <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
+            <Route path="/admin/audit-logs" element={<Navigate to="/admin/logs?tab=audit" replace />} />
             <Route path="/admin/groups" element={<Navigate to="/admin/users?tab=groups" replace />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
             <Route path="/admin/friend-links" element={<AdminFriendLinksPage />} />
             <Route path="/admin/ai-audit" element={<AdminAIAuditPage />} />
-            <Route path="/admin/email-logs" element={<AdminEmailLogsPage />} />
-            <Route path="/admin/logs" element={<AdminSystemLogsPage />} />
+            <Route path="/admin/email-logs" element={<Navigate to="/admin/logs?tab=email" replace />} />
+            <Route path="/admin/logs" element={<AdminLogsPage />} />
             <Route path="/admin/notifications" element={<Navigate to="/admin/users?tab=notifications" replace />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

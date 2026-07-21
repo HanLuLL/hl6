@@ -1531,6 +1531,10 @@
       "reason": "原因：{{reason}}"
     }
   },
+  "logsCenter": {
+    "title": "日志中心",
+    "subtitle": "查看系统、邮件与审计日志"
+  },
   "systemLogs": {
     "title": "系统日志",
     "subtitle": "查看系统运行日志",

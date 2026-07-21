@@ -1534,6 +1534,10 @@
       "reason": "Reason: {{reason}}"
     }
   },
+  "logsCenter": {
+    "title": "Logs Center",
+    "subtitle": "View system, email and audit logs"
+  },
   "systemLogs": {
     "title": "System Logs",
     "subtitle": "View system runtime logs",

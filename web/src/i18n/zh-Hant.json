@@ -1510,6 +1510,10 @@
       "reason": "原因：{{reason}}"
     }
   },
+  "logsCenter": {
+    "title": "日誌中心",
+    "subtitle": "查看系統、郵件與審計日誌"
+  },
   "systemLogs": {
     "title": "系統日誌",
     "subtitle": "查看系統運行日誌",
