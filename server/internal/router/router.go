@@ -7,6 +7,7 @@ import (
 
 	"hl6-server/internal/config"
 	"hl6-server/internal/handler"
+	"hl6-server/internal/logger"
 	"hl6-server/internal/middleware"
 	"hl6-server/internal/repository"
 	"hl6-server/internal/service"
@@ -26,9 +27,14 @@ type auditStack struct {
 	subSvc   *service.SubdomainService
 }
 
-func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context) *gin.Engine {
+func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context, logWriter *logger.DBWriter) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.CORS(cfg.AllowedOrigins, cfg.FrontendURLs...))
+	// access log 异步入库到 system_logs 表（module="http"），
+	// gin.Default() 的默认 Logger 仍输出到 stdout，两者互不干扰。
+	if logWriter != nil {
+		r.Use(logger.GinMiddleware(logWriter))
+	}
 	r.GET("/health", func(c *gin.Context) {
 		status := "ok"
 		dbOK := true

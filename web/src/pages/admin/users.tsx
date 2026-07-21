@@ -219,18 +219,18 @@ function UsersContent() {
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
-  // 删除账号 mutation（参考 banMutation 的幂等重试模式）
+  // 删除账号 mutation（不设短 timeout，避免删除大量 DNS 记录时被前端切断后触发 idempotent 409）
   const deleteMutation = useMutation({
     mutationFn: async ({ userId }: { userId: number }) => {
       const idempotencyKey = createIdempotencyKey();
       try {
-        return await api.adminDeleteUser(userId, { idempotencyKey, timeoutMs: 3000 });
+        return await api.adminDeleteUser(userId, { idempotencyKey });
       } catch (err) {
         if (!isRetryableMutationError(err)) {
           throw err;
         }
         setIsDeleteRetrying(true);
-        return api.adminDeleteUser(userId, { idempotencyKey, timeoutMs: 3000 });
+        return api.adminDeleteUser(userId, { idempotencyKey });
       } finally {
         setIsDeleteRetrying(false);
       }

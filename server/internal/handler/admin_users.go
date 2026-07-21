@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -522,6 +523,7 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 
 	target, err := h.repo.FindUserByID(userID)
 	if err != nil {
+		log.Printf("[admin] delete user: user %d not found: %v", userID, err)
 		response.ErrorWithKey(c, http.StatusNotFound, "user not found", "error.userNotFound")
 		return
 	}
@@ -530,10 +532,12 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 	if target.Role == "admin" || (target.Group != nil && target.Group.IsAdmin) {
 		activeAdmins, err := h.repo.CountUnbannedAdmins()
 		if err != nil {
+			log.Printf("[admin] delete user %d: count admins failed: %v", target.ID, err)
 			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to check admin count", "error.databaseError")
 			return
 		}
 		if activeAdmins <= 1 {
+			log.Printf("[admin] delete user %d: refused (last admin)", target.ID)
 			response.ErrorWithKey(c, http.StatusBadRequest, "cannot delete the last admin", "error.cannotDeleteLastAdmin")
 			return
 		}

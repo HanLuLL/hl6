@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"hl6-server/internal/model"
@@ -195,6 +196,7 @@ func executeAdminDeleteUserWithCleanup(
 	// 1. 获取用户的所有子域名和 DNS 记录
 	subdomains, err := repo.ListSubdomainsByUserWithRecords(target.ID)
 	if err != nil {
+		log.Printf("[admin] delete user %d: list subdomains failed: %v", target.ID, err)
 		return result, nil, nil, err
 	}
 
@@ -286,57 +288,69 @@ func executeAdminDeleteUserWithCleanup(
 		// 删除 DNS 记录
 		if len(subdomainIDs) > 0 {
 			if err := tx.Where("subdomain_id IN ?", subdomainIDs).Delete(&model.DNSRecord{}).Error; err != nil {
+				log.Printf("[admin] delete user %d: delete dns records failed: %v", target.ID, err)
 				return err
 			}
 			// 删除子域名
 			if err := tx.Where("id IN ?", subdomainIDs).Delete(&model.Subdomain{}).Error; err != nil {
+				log.Printf("[admin] delete user %d: delete subdomains failed: %v", target.ID, err)
 				return err
 			}
 		}
 
 		// 删除积分余额和交易记录
 		if err := tx.Where("user_id = ?", target.ID).Delete(&model.CreditBalance{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete credit balance failed: %v", target.ID, err)
 			return err
 		}
 		if err := tx.Where("user_id = ?", target.ID).Delete(&model.CreditTransaction{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete credit transactions failed: %v", target.ID, err)
 			return err
 		}
 
 		// 删除每日签到记录
 		if err := tx.Where("user_id = ?", target.ID).Delete(&model.DailyCheckinClaim{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete checkin claims failed: %v", target.ID, err)
 			return err
 		}
 
 		// 删除用户会话
 		if err := tx.Where("user_id = ?", target.ID).Delete(&model.UserSession{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete sessions failed: %v", target.ID, err)
 			return err
 		}
 
 		// 删除用户凭证
 		if err := tx.Where("user_id = ?", target.ID).Delete(&model.UserCredential{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete credential failed: %v", target.ID, err)
 			return err
 		}
 
 		// 删除用户推荐关系（作为邀请者和被邀请者）
 		if err := tx.Where("inviter_id = ? OR invitee_id = ?", target.ID, target.ID).Delete(&model.UserReferral{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete referrals failed: %v", target.ID, err)
 			return err
 		}
 
 		// 删除申诉记录
 		if err := tx.Where("user_id = ?", target.ID).Delete(&model.UserAppeal{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete appeals failed: %v", target.ID, err)
 			return err
 		}
 
 		// 删除通知
 		if err := tx.Where("user_id = ?", target.ID).Delete(&model.Notification{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete notifications failed: %v", target.ID, err)
 			return err
 		}
 		if err := tx.Where("user_id = ?", target.ID).Delete(&model.NotificationRead{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete notification reads failed: %v", target.ID, err)
 			return err
 		}
 
 		// 删除支付订单
 		if err := tx.Where("user_id = ?", target.ID).Delete(&model.PaymentOrder{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete payment orders failed: %v", target.ID, err)
 			return err
 		}
 
@@ -345,15 +359,18 @@ func executeAdminDeleteUserWithCleanup(
 
 		// 最后删除用户本身
 		if err := tx.Delete(&model.User{}, target.ID).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete user row failed: %v", target.ID, err)
 			return err
 		}
 
 		return nil
 	}); err != nil {
+		log.Printf("[admin] delete user %d: transaction rolled back: %v", target.ID, err)
 		return result, nil, nil, err
 	}
 
 	result.SubdomainsDeleted = len(subdomainIDs)
 	result.DeletedDNSCount = deleteResult.Succeeded
+	log.Printf("[admin] delete user %d: success, subdomains=%d dns=%d", target.ID, result.SubdomainsDeleted, result.DeletedDNSCount)
 	return result, nil, nil, nil
 }

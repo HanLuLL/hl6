@@ -6,16 +6,20 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"os"
 	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"hl6-server/internal/config"
+	"hl6-server/internal/logger"
 	"hl6-server/internal/migration"
 	"hl6-server/internal/model"
 	"hl6-server/internal/referral"
@@ -43,6 +47,16 @@ func main() {
 		log.Fatal("failed to migrate:", err)
 	}
 
+	// SystemLog 表已在 runSchemaMigrations 中 AutoMigrate，现在可以接管 log 输出。
+	// log.SetOutput 之后，所有 log.Printf/log.Println 都会异步入库到 system_logs 表，
+	// 同时保留 stderr 输出（容器日志兼容）。
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	dbWriter := logger.NewDBWriter(db, logger.Config{})
+	log.SetOutput(io.MultiWriter(os.Stderr, dbWriter))
+	logger.StartRetentionLoop(ctx, db, 30*24*time.Hour)
+
 	log.Println("Database migrated successfully")
 
 	// GIN index for JSONB target_ids queries
@@ -52,13 +66,12 @@ func main() {
 	seedDefaults(db, cfg)
 	bootstrapSessionSecret(db, cfg)
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
-
-	r := router.Setup(cfg, db, ctx)
+	r := router.Setup(cfg, db, ctx, dbWriter)
 	if err := router.RunServer(cfg, r); err != nil {
 		log.Fatal("server shutdown error:", err)
 	}
+	// 优雅关闭后 flush 剩余日志到 DB
+	dbWriter.Close()
 }
 
 func bootstrapSessionSecret(db *gorm.DB, cfg *config.Config) {
