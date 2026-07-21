@@ -41,6 +41,8 @@
   },
   "auth": {
     "shellTagline": "Administra tus subdominios y registros DNS desde una cuenta segura.",
+    "loadFailed": "Error al cargar la información del usuario.",
+    "loadFailedHint": "Comprueba tu conexión e inténtalo de nuevo.",
     "email": "Correo electrónico",
     "password": "Contraseña",
     "confirmPassword": "Confirmar contraseña",
@@ -444,6 +446,9 @@
     "appealHistory": "Historial de Apelaciones",
     "adminReply": "Respuesta del Admin",
     "safeLogout": "Cerrar Sesión Segura",
+    "loadFailed": "Error al cargar la información de bloqueo.",
+    "loadFailedHint": "Comprueba tu conexión e inténtalo de nuevo.",
+    "appealsLoadFailed": "Error al cargar el historial de apelaciones. Aún puedes enviar una nueva apelación.",
     "appealStatus": {
       "pending": "Pendiente",
       "approved": "Aprobada",

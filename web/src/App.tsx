@@ -1,9 +1,13 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { RootLayout } from "@/components/layout/root-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import LandingPage from "@/pages/landing";
 import LoginPage from "@/pages/auth/login";
 import RegisterPage from "@/pages/auth/register";
@@ -38,7 +42,7 @@ import { setupDeepLinkListener, removeDeepLinkListener } from "@/lib/native-clie
 import { isNativeClient } from "@/lib/client-runtime";
 
 function ProtectedRoute() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, error, user } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -74,18 +78,43 @@ function ProtectedRoute() {
   }
 
   // 如果已有缓存的用户数据（isAuthenticated=true），即使正在后台刷新也保持显示
-  // 只有在确认未登录时才重定向到登录页
-  if (!isAuthenticated) {
+  if (isAuthenticated) {
+    // 主动检测封禁状态：被封禁用户只能访问 /banned 页面（提交申诉、查看封禁原因）
+    // 这样 Web 和 Android 客户端都能在进入受保护页面时立即跳转，无需等待被动 API 403 触发
+    if (user?.is_banned && location.pathname !== "/banned") {
+      return <Navigate to="/banned" replace />;
+    }
+    return <RootLayout><ErrorBoundary><Outlet /></ErrorBoundary></RootLayout>;
+  }
+
+  // 未认证：区分 401（跳转登录）和其他错误（显示重试，避免被封禁用户因瞬时网络错误被误踢出 /banned）
+  if (error && typeof error === "object" && "status" in error && error.status === 401) {
     return <Navigate to="/login" replace />;
   }
 
-  // 主动检测封禁状态：被封禁用户只能访问 /banned 页面（提交申诉、查看封禁原因）
-  // 这样 Web 和 Android 客户端都能在进入受保护页面时立即跳转，无需等待被动 API 403 触发
-  if (user?.is_banned && location.pathname !== "/banned") {
-    return <Navigate to="/banned" replace />;
-  }
+  // 网络错误或服务器错误：显示重试入口
+  return <AuthErrorRetryScreen />;
+}
 
-  return <RootLayout><ErrorBoundary><Outlet /></ErrorBoundary></RootLayout>;
+function AuthErrorRetryScreen() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const handleRetry = () => {
+    queryClient.invalidateQueries({ queryKey: ["me"] });
+  };
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="max-w-md space-y-4 text-center">
+        <AlertCircle className="mx-auto h-10 w-10 text-destructive" />
+        <p className="text-sm font-medium">{t("auth.loadFailed", { defaultValue: "Failed to load user information." })}</p>
+        <p className="text-xs text-muted-foreground">{t("auth.loadFailedHint", { defaultValue: "Please check your network and try again." })}</p>
+        <Button variant="outline" onClick={handleRetry}>
+          <RefreshCw className="mr-2 h-4 w-4" />
+          {t("common.retry", { defaultValue: "Retry" })}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 function AdminRoute() {

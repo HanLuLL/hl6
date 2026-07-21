@@ -41,6 +41,8 @@
   },
   "auth": {
     "shellTagline": "在安全的帳戶中管理你的子網域與 DNS 記錄。",
+    "loadFailed": "載入使用者資訊失敗",
+    "loadFailedHint": "請檢查網路後重試",
     "email": "電子郵件",
     "password": "密碼",
     "confirmPassword": "確認密碼",
@@ -444,6 +446,9 @@
     "appealHistory": "申訴記錄",
     "adminReply": "管理員回覆",
     "safeLogout": "安全登出",
+    "loadFailed": "載入封禁資訊失敗",
+    "loadFailedHint": "請檢查網路後重試",
+    "appealsLoadFailed": "載入申訴歷史失敗，您仍可提交新的申訴",
     "appealStatus": {
       "pending": "待審核",
       "approved": "已通過",

@@ -41,6 +41,8 @@
   },
   "auth": {
     "shellTagline": "安全なアカウントからサブドメインと DNS レコードを管理できます。",
+    "loadFailed": "ユーザー情報の読み込みに失敗しました",
+    "loadFailedHint": "ネットワーク接続を確認して再試行してください",
     "email": "メールアドレス",
     "password": "パスワード",
     "confirmPassword": "パスワードを確認",
@@ -444,6 +446,9 @@
     "appealHistory": "申立履歴",
     "adminReply": "管理者の返信",
     "safeLogout": "安全にログアウト",
+    "loadFailed": "アカウント停止情報の読み込みに失敗しました",
+    "loadFailedHint": "ネットワーク接続を確認して再試行してください",
+    "appealsLoadFailed": "申請履歴の読み込みに失敗しました。新しい申請を送信できます。",
     "appealStatus": {
       "pending": "審査待ち",
       "approved": "承認済み",

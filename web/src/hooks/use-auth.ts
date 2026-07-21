@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api, clearBrowserSessionToken } from "@/lib/api";
+import { api, clearBrowserSessionToken, resetBannedSessionState } from "@/lib/api";
 import { isNativeClient } from "@/lib/client-runtime";
 import { signOutNativeClient } from "@/lib/native-client";
 
@@ -16,6 +16,7 @@ export function useAuth() {
   return {
     isAuthenticated,
     isLoading,
+    error,
     user: data?.data?.user ?? null,
     credits: data?.data?.credits ?? 0,
     signIn: (ref?: string) => {
@@ -23,6 +24,8 @@ export function useAuth() {
       window.location.assign(`/login${query}`);
     },
     signOut: async () => {
+      // 重置封禁跳转标志，确保下次登录若被封禁能正常跳转
+      resetBannedSessionState();
       if (isNativeClient) {
         await signOutNativeClient();
         return;

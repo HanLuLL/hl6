@@ -25,6 +25,8 @@ export function useBanInfo() {
       return res.data;
     },
     staleTime: 10_000,
+    // 封禁信息查询不重试，避免后端瞬时错误时 4 次请求放大故障
+    retry: false,
   });
 }
 
@@ -36,6 +38,8 @@ export function useMyAppeals() {
       return res.data;
     },
     staleTime: 30_000,
+    // 申诉列表查询不重试，避免后端瞬时错误时 4 次请求放大故障
+    retry: false,
   });
 }
 
@@ -48,7 +52,14 @@ export function useCreateAppeal() {
       queryClient.invalidateQueries({ queryKey: ["my-appeals"] });
       toast.success(t("aiAudit.appealCreated"));
     },
-    onError: (err) => toast.error(getErrorMessage(err, t)),
+    onError: (err) => {
+      // 409 冲突（已有待处理申诉）显示友好提示，而非原始错误 key
+      if (err && typeof err === "object" && "status" in err && err.status === 409) {
+        toast.error(t("banned.appealPending"));
+        return;
+      }
+      toast.error(getErrorMessage(err, t));
+    },
   });
 }
 

@@ -1,30 +1,32 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useBanInfo, useCreateAppeal, useMyAppeals } from "@/hooks/use-ai-audit";
 import { useAuth } from "@/hooks/use-auth";
-import { ShieldX, MessageSquare, LogOut, Send } from "lucide-react";
+import { ShieldX, MessageSquare, LogOut, Send, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function BannedPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { data: banInfo, isLoading } = useBanInfo();
-  const { data: appeals } = useMyAppeals();
+  const { data: banInfo, isLoading: banInfoLoading, isError: banInfoError, refetch: refetchBanInfo } = useBanInfo();
+  const { data: appeals, isLoading: appealsLoading, isError: appealsError } = useMyAppeals();
   const createAppeal = useCreateAppeal();
   const [appealContent, setAppealContent] = useState("");
   const [showAppealForm, setShowAppealForm] = useState(false);
 
-  // 如果用户未被封禁，跳转回控制台
-  if (!isLoading && banInfo && !banInfo.banned) {
-    navigate("/dashboard", { replace: true });
-    return null;
-  }
+  // 如果用户未被封禁，跳转回控制台（必须在 useEffect 中调用 navigate，不能在渲染期调用）
+  useEffect(() => {
+    if (!banInfoLoading && banInfo && !banInfo.banned) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [banInfoLoading, banInfo, navigate]);
 
-  const hasPendingAppeal = appeals?.some((a) => a.status === "pending");
+  const hasPendingAppeal = appeals?.some((a) => a.status === "pending") ?? false;
 
   const handleSubmitAppeal = () => {
     if (!appealContent.trim()) return;
@@ -52,23 +54,51 @@ export default function BannedPage() {
           <p className="text-sm text-muted-foreground">{t("banned.subtitle")}</p>
         </CardHeader>
         <CardContent className="space-y-6">
-          {isLoading ? null : (
+          {/* 加载中：显示骨架屏 */}
+          {banInfoLoading && (
+            <div className="space-y-3">
+              <Skeleton className="h-20 w-full rounded-lg" />
+            </div>
+          )}
+
+          {/* 加载失败：显示错误占位 + 重试按钮，避免页面卡死空白 */}
+          {!banInfoLoading && banInfoError && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-center">
+                <AlertCircle className="mx-auto mb-2 h-8 w-8 text-destructive" />
+                <p className="text-sm font-medium">{t("banned.loadFailed", { defaultValue: "Failed to load ban information." })}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("banned.loadFailedHint", { defaultValue: "Please check your network and try again." })}</p>
+              </div>
+              <Button variant="outline" className="w-full" onClick={() => refetchBanInfo()}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                {t("common.retry", { defaultValue: "Retry" })}
+              </Button>
+            </div>
+          )}
+
+          {/* 正常加载：显示封禁原因 + 申诉区 */}
+          {!banInfoLoading && !banInfoError && banInfo && (
             <>
               {/* 封禁原因 */}
-              {banInfo && (
-                <div className="rounded-lg border bg-muted/50 p-4">
-                  <p className="text-sm font-medium text-muted-foreground mb-1">{t("banned.reason")}</p>
-                  <p className="text-sm">{banInfo.reason || "-"}</p>
-                  {banInfo.banned_at && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {t("banned.bannedAt", { date: new Date(banInfo.banned_at).toLocaleString() })}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {banInfo.banned_until
-                      ? t("banned.expectedUnban", { date: new Date(banInfo.banned_until).toLocaleString(), defaultValue: `Expected unban time: ${new Date(banInfo.banned_until).toLocaleString()}` })
-                      : t("banned.expectedUnbanManual", { defaultValue: "Expected unban time: manual review required." })}
+              <div className="rounded-lg border bg-muted/50 p-4">
+                <p className="text-sm font-medium text-muted-foreground mb-1">{t("banned.reason")}</p>
+                <p className="text-sm">{banInfo.reason || "-"}</p>
+                {banInfo.banned_at && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {t("banned.bannedAt", { date: new Date(banInfo.banned_at).toLocaleString() })}
                   </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {banInfo.banned_until
+                    ? t("banned.expectedUnban", { date: new Date(banInfo.banned_until).toLocaleString() })
+                    : t("banned.expectedUnbanManual")}
+                </p>
+              </div>
+
+              {/* 申诉列表加载失败：显示提示但不阻塞提交 */}
+              {appealsError && (
+                <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3 text-xs text-muted-foreground">
+                  {t("banned.appealsLoadFailed", { defaultValue: "Failed to load appeal history. You can still submit a new appeal." })}
                 </div>
               )}
 
@@ -103,6 +133,13 @@ export default function BannedPage() {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* 申诉列表加载中 */}
+              {appealsLoading && !appeals && (
+                <div className="space-y-2">
+                  <Skeleton className="h-16 w-full" />
                 </div>
               )}
 

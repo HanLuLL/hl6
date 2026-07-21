@@ -41,6 +41,8 @@
   },
   "auth": {
     "shellTagline": "Manage your subdomains and DNS records from one secure account.",
+    "loadFailed": "Failed to load user information.",
+    "loadFailedHint": "Please check your network and try again.",
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm password",
@@ -444,6 +446,9 @@
     "appealHistory": "Appeal History",
     "adminReply": "Admin Reply",
     "safeLogout": "Safe Logout",
+    "loadFailed": "Failed to load ban information.",
+    "loadFailedHint": "Please check your network and try again.",
+    "appealsLoadFailed": "Failed to load appeal history. You can still submit a new appeal.",
     "appealStatus": {
       "pending": "Pending",
       "approved": "Approved",

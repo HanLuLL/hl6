@@ -41,6 +41,8 @@
   },
   "auth": {
     "shellTagline": "在一个安全的账户中管理你的子域名和 DNS 记录。",
+    "loadFailed": "加载用户信息失败",
+    "loadFailedHint": "请检查网络后重试",
     "email": "邮箱",
     "password": "密码",
     "confirmPassword": "确认密码",
@@ -444,6 +446,9 @@
     "appealHistory": "申诉记录",
     "adminReply": "管理员回复",
     "safeLogout": "安全登出",
+    "loadFailed": "加载封禁信息失败",
+    "loadFailedHint": "请检查网络后重试",
+    "appealsLoadFailed": "加载申诉历史失败，您仍可提交新的申诉",
     "appealStatus": {
       "pending": "待审核",
       "approved": "已通过",

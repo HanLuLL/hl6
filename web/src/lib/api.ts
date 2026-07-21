@@ -121,6 +121,12 @@ type RequestOptions = RequestInit & {
 
 let handlingBannedSession = false;
 
+// resetBannedSessionState 在用户登出或解封后调用，重置封禁跳转标志，
+// 避免模块级变量 handlingBannedSession 永不重置导致二次封禁时不再自动跳转。
+export function resetBannedSessionState() {
+  handlingBannedSession = false;
+}
+
 const BROWSER_SESSION_KEY = "hl6_browser_session";
 
 // setBrowserSessionToken is deprecated - browser mode now uses HttpOnly cookie only
