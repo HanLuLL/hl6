@@ -102,6 +102,13 @@
     "resetLinkInvalidHint": "链接可能已过期、已使用或输入不完整，请重新发起密码重置请求",
     "resetLinkMissing": "未提供重置凭证，请通过邮件链接进入此页面"
   },
+  "redirect": {
+    "title": "正在打开 APP...",
+    "description": "选择继续的方式：在 APP 中打开，或在浏览器中继续。",
+    "launching": "唤起中...",
+    "openApp": "在 APP 中打开",
+    "continueWeb": "在浏览器中继续"
+  },
   "footer": {
     "openSource": "开源地址",
     "branch": "分支",

@@ -98,9 +98,7 @@ export function hasNativeSession() {
   return Boolean(getNativeAccessToken());
 }
 
-// Deep link handling for custom scheme URLs (linyu://).
-// 注意：认证邮件自 2026-07-21 起不再发送 linyu:// 深链，邮件按钮直接指向 web 目标。
-// 此监听器保留用于未来其他深链场景（如推送通知、分享扩展等）。
+// Deep link handling for custom scheme URLs (linyu://activate?token=xxx or linyu://reset-password?token=xxx)
 export type DeepLinkHandler = (path: string, params: Record<string, string>) => void;
 
 let deepLinkHandler: DeepLinkHandler | null = null;

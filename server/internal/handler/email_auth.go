@@ -504,8 +504,8 @@ func (h *EmailAuthHandler) createAndSendAuthToken(c *gin.Context, purpose string
 	if err := h.repo.CreateAuthToken(token); err != nil {
 		return err
 	}
-	// appLink 传空：邮件里不再显示「在 APP 中打开」按钮。
-	// 邮件按钮直接指向 web 目标，用户在任何环境点击都在网页里完成操作。
+	// appLink 传空：邮件里不再显示「在 APP 中打开」按钮（邮件主按钮已指向 /redirect 网页中转页，
+	// 由该页决定打开 web 还是 native APP，避免邮件里出现两个跳转入口）。
 	return h.emailSvc.SendAuthenticationLink(emailNormalized, purpose, link, "", locale, userID)
 }
 
@@ -518,21 +518,18 @@ func (h *EmailAuthHandler) authenticationLink(c *gin.Context, purpose, rawToken 
 		log.Printf("[auth] frontend URL not confirmed (source=%s, url=%s), cannot send authentication links. Admin must confirm URL in Administration -> Site and Appearance.", state.FrontendSource, state.FrontendURL)
 		return "", errors.New("frontend URL must be explicitly confirmed before sending authentication links")
 	}
-	// 邮件按钮直接指向 web 目标：
-	// - password_reset -> /reset-password?token=xxx
-	// - registration_verify / account_activation -> /set-password?token=xxx
-	// 用户在任何环境（浏览器、邮件客户端内嵌 webview）点击都在网页里完成操作。
+	// 邮件按钮统一指向 /redirect 中转页，由该页决定打开 web 还是 native APP。
+	// 这样可以解决 QQ 邮箱等邮件客户端不直接支持 linyu:// 自定义 scheme 的问题。
 	target, err := url.Parse(state.FrontendURL)
 	if err != nil {
 		return "", err
 	}
-	path := "set-password"
-	if purpose == model.AuthTokenPurposePasswordReset {
-		path = "reset-password"
-	}
-	target.Path = strings.TrimRight(target.Path, "/") + "/" + path
+	target.Path = strings.TrimRight(target.Path, "/") + "/redirect"
 	query := target.Query()
 	query.Set("token", rawToken)
+	query.Set("purpose", purpose)
+	// app_link 参数：前端 redirect 页会尝试唤起此深链
+	query.Set("app_link", h.appAuthenticationLink(purpose, rawToken))
 	target.RawQuery = query.Encode()
 	return target.String(), nil
 }
@@ -540,8 +537,6 @@ func (h *EmailAuthHandler) authenticationLink(c *gin.Context, purpose, rawToken 
 // appAuthenticationLink generates a deep link URL for the mobile app.
 // Format: linyu://activate?token={token} (for registration verification and account activation)
 // or linyu://reset-password?token={token} (for password reset)
-//
-// Deprecated: 邮件不再附带 APP 深链按钮，保留此函数供未来其他场景使用。
 func (h *EmailAuthHandler) appAuthenticationLink(purpose, rawToken string) string {
 	path := "activate"
 	if purpose == model.AuthTokenPurposePasswordReset {

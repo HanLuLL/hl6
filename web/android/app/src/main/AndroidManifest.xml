@@ -23,10 +23,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep link intent filter for linyu:// scheme.
-                 注意：认证邮件（注册验证、账号激活、密码重置）自 2026-07-21 起不再使用深链，
-                 邮件按钮直接指向 web 目标（/set-password 或 /reset-password）。
-                 保留此 intent filter 供未来其他深链场景使用。 -->
+            <!-- Deep link intent filter for linyu://activate and linyu://reset-password -->
             <intent-filter android:exported="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

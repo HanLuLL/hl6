@@ -102,6 +102,13 @@
     "resetLinkInvalidHint": "リンクの有効期限が切れた、すでに使用された、または不完全な可能性があります。パスワードリセットを再申請してください。",
     "resetLinkMissing": "リセット認証情報が提供されていません。メールリンクからこのページにアクセスしてください。"
   },
+  "redirect": {
+    "title": "アプリを開いています...",
+    "description": "続行方法を選択してください：ネイティブアプリで開く、またはブラウザで続行する。",
+    "launching": "起動中...",
+    "openApp": "アプリで開く",
+    "continueWeb": "ブラウザで続行"
+  },
   "footer": {
     "openSource": "Open Source",
     "branch": "ブランチ",

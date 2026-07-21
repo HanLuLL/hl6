@@ -102,6 +102,13 @@
     "resetLinkInvalidHint": "El enlace puede haber caducado, ya haber sido usado o estar incompleto. Solicita un nuevo restablecimiento de contraseña.",
     "resetLinkMissing": "No se proporcionó credencial de restablecimiento. Accede a esta página a través del enlace del correo."
   },
+  "redirect": {
+    "title": "Abriendo la app...",
+    "description": "Elige cómo continuar: abrir la app nativa o continuar en el navegador.",
+    "launching": "Iniciando...",
+    "openApp": "Abrir en la app",
+    "continueWeb": "Continuar en el navegador"
+  },
   "footer": {
     "openSource": "Open Source",
     "branch": "Rama",

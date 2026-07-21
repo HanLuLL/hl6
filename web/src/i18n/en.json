@@ -102,6 +102,13 @@
     "resetLinkInvalidHint": "The link may have expired, been used, or is incomplete. Please request a new password reset.",
     "resetLinkMissing": "No reset credential provided. Please access this page via the email link."
   },
+  "redirect": {
+    "title": "Opening the app...",
+    "description": "Choose how to continue: open the native app or proceed in the web browser.",
+    "launching": "Launching...",
+    "openApp": "Open in app",
+    "continueWeb": "Continue in browser"
+  },
   "footer": {
     "openSource": "Open Source",
     "branch": "Branch",
