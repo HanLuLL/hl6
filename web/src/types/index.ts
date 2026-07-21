@@ -24,6 +24,10 @@ export interface User {
   banned_by?: number;
   group_id?: number;
   group?: UserGroup;
+  // 实名认证字段
+  realname_status?: "unverified" | "pending" | "verified" | "rejected";
+  realname_verified_at?: string | null;
+  realname_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -658,6 +662,64 @@ export interface PaymentMethodOption {
 
 export interface PaymentMethodsResponse {
   methods: PaymentMethodOption[];
+}
+
+// ---- Realname Authentication Types ----
+
+export type RealnameStatus = "unverified" | "pending" | "verified" | "rejected";
+
+export type RealnameApplicationStatus =
+  | "pending_payment"
+  | "paid"
+  | "verifying"
+  | "verified"
+  | "rejected"
+  | "failed";
+
+export type RealnameProvider = "aliyun" | "juhe" | "manual";
+
+export type RealnameVerificationType = "idcard" | "face";
+
+export interface RealnameApplication {
+  id: number;
+  user_id: number;
+  id_card_masked: string;
+  real_name_masked: string;
+  provider: RealnameProvider;
+  verification_type: RealnameVerificationType;
+  order_id?: number | null;
+  status: RealnameApplicationStatus;
+  provider_result?: unknown;
+  reject_reason: string;
+  reviewed_by?: number | null;
+  reviewed_at?: string | null;
+  verified_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  user_email?: string;
+  user_name?: string;
+}
+
+export interface RealnameStatusResponse {
+  status: RealnameStatus;
+  verified_at: string | null;
+  realname_name: string;
+  latest_application?: RealnameApplication;
+}
+
+export interface SubmitRealnameResponse {
+  application_id: number;
+  need_pay: boolean;
+  fee: number;
+  message: string;
+  verified: boolean;
+  order_no?: string;
+  pay_url?: string;
+}
+
+export interface RealnameStats {
+  status_counts: Record<string, number>;
+  verified_users: number;
 }
 
 // ---- SEO Types ----

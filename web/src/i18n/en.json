@@ -169,12 +169,14 @@
     "adminSettings": "Settings",
     "adminNotifications": "Notifications",
     "audit": "Content Audit",
+    "adminRealname": "Identity Review",
     "friendLinks": "Friend Links",
     "adminFriendLinks": "Friend Links Mgmt",
     "adminAIAudit": "AI Audit",
     "emailLogs": "Email Logs",
     "systemLogs": "System Logs",
-    "profile": "Profile"
+    "profile": "Profile",
+    "accountSecurity": "Account Security"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -857,6 +859,7 @@
       "site": "Site & Appearance",
       "mail": "Email Notifications",
       "integrations": "Payments & Integrations",
+      "realname": "Identity Verification",
       "android": "Android Client",
       "maintenance": "Data Maintenance"
     },
@@ -881,6 +884,29 @@
       "gatewayUrl": "Gateway URL",
       "merchantId": "Merchant ID",
       "merchantKey": "Merchant key"
+    },
+    "realname": {
+      "enabled": "Enable identity verification",
+      "enabledHint": "When enabled, users can submit identity verification applications from Account Security.",
+      "requiredForClaim": "Require verification to claim subdomains",
+      "requiredForClaimHint": "Unverified users cannot claim subdomains.",
+      "requiredForPayment": "Require verification to top up credits",
+      "requiredForPaymentHint": "Unverified users cannot create payment orders.",
+      "faceEnabled": "Enable face verification",
+      "faceEnabledHint": "Allow users to choose face verification (provider support required).",
+      "fee": "Verification fee",
+      "feeHint": "When greater than 0, users must pay before submitting; when 0, verification is free.",
+      "provider": "Verification provider",
+      "providerHint": "manual = manual review; aliyun/juhe = third-party API auto-verification.",
+      "providerManual": "Manual review",
+      "providerAliyun": "Aliyun Market (ID card 2-factor)",
+      "providerJuhe": "Juhe (ID card real-name)",
+      "appCode": "Aliyun AppCode",
+      "appCodePlaceholder": "ID card verification AppCode purchased from Aliyun Market",
+      "appCodeHint": "Encrypted at rest; leave blank to keep unchanged.",
+      "appKey": "Juhe API Key",
+      "appKeyPlaceholder": "API key applied from Juhe",
+      "appKeyHint": "Encrypted at rest; leave blank to keep unchanged."
     },
     "client": {
       "latestVersion": "Latest version",
@@ -1572,5 +1598,81 @@
     "last6hours": "Last 6 hours",
     "last24hours": "Last 24 hours",
     "last7days": "Last 7 days"
+  },
+  "accountSecurity": {
+    "title": "Account Security",
+    "subtitle": "Manage email binding and identity verification",
+    "email": {
+      "title": "Email Binding",
+      "current": "Currently bound email",
+      "hint": "Your email is your login account. Contact an administrator to change it."
+    },
+    "realname": {
+      "title": "Identity Verification",
+      "currentStatus": "Current status",
+      "statusHint": "Complete identity verification to unlock more site features.",
+      "verifiedAs": "Verified: {{name}}",
+      "verifiedAt": "Verified at",
+      "rejectReason": "Rejection reason",
+      "retry": "Resubmit",
+      "realName": "Real name",
+      "realNamePlaceholder": "Enter your real name exactly as on your ID card",
+      "idCard": "ID card number",
+      "idCardPlaceholder": "Enter your 18-digit ID card number",
+      "idCardInvalid": "ID card number format is invalid",
+      "verificationType": "Verification method",
+      "typeIDCard": "ID card 2-factor verification",
+      "typeFace": "Face verification",
+      "paymentMethod": "Payment method",
+      "paymentHint": "Verification fee is determined by site policy. You will be redirected to the payment page after submission.",
+      "privacyNotice": "Your name and ID card number are encrypted at rest and used only for identity verification.",
+      "submit": "Submit verification",
+      "payRedirectHint": "You will be redirected to the payment page after submission.",
+      "history": "Application history"
+    }
+  },
+  "realname": {
+    "status": {
+      "unverified": "Unverified",
+      "pending": "Pending",
+      "verified": "Verified",
+      "rejected": "Rejected",
+      "pendingPayment": "Pending payment",
+      "paid": "Paid",
+      "verifying": "Verifying",
+      "failed": "Failed"
+    },
+    "toast": {
+      "submitted": "Application submitted. Please wait for review.",
+      "verified": "Identity verification passed.",
+      "redirectingToPay": "Redirecting to payment page",
+      "retryStarted": "Verification restarted",
+      "reviewed": "Review result submitted"
+    },
+    "admin": {
+      "title": "Identity Review",
+      "subtitle": "Review user-submitted identity verification applications",
+      "filters": "Filters",
+      "filterStatus": "Status",
+      "filterProvider": "Provider",
+      "filterUserId": "User ID",
+      "filterUserIdPlaceholder": "Enter user ID",
+      "statusAll": "All",
+      "applications": "Applications",
+      "empty": "No applications yet",
+      "approve": "Approve",
+      "reject": "Reject",
+      "retry": "Retry verification",
+      "approveTitle": "Approve identity verification",
+      "rejectTitle": "Reject identity application",
+      "reviewReason": "Review reason (optional)",
+      "reviewReasonApprovePlaceholder": "Optional note",
+      "reviewReasonRejectPlaceholder": "Please provide a rejection reason. It will be shown to the user.",
+      "reviewReasonRejectHint": "The rejection reason will be shown to the user. Please fill it in truthfully.",
+      "confirmApprove": "Confirm approve",
+      "confirmReject": "Confirm reject",
+      "statsVerified": "Verified users",
+      "verifiedAt": "Verified at"
+    }
   }
 }

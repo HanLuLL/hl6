@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math"
 	"net/http"
 	"net/url"
@@ -20,12 +22,18 @@ import (
 )
 
 type PaymentHandler struct {
-	repo *repository.Repository
-	cfg  *config.Config
+	repo        *repository.Repository
+	cfg         *config.Config
+	realnameSvc *service.RealnameService // 可选：注入后 processPayment 会根据订单类型分发
 }
 
 func NewPaymentHandler(repo *repository.Repository, cfg *config.Config) *PaymentHandler {
 	return &PaymentHandler{repo: repo, cfg: cfg}
+}
+
+// SetRealnameService 注入实名认证服务，启用支付成功回调按订单类型分发。
+func (h *PaymentHandler) SetRealnameService(s *service.RealnameService) {
+	h.realnameSvc = s
 }
 
 // Credit pricing: 1 CNY = 1 display credit = CreditScale internal units
@@ -414,25 +422,58 @@ func (h *PaymentHandler) processPayment(outTradeNo, tradeNo, gateway string, not
 	now := time.Now()
 	notifyJSON, _ := json.Marshal(notifyData)
 
-	txErr := h.repo.Transaction(func(tx *gorm.DB) error {
-		// Update order status
-		if err := tx.Model(&order).Updates(map[string]interface{}{
-			"status":      model.PaymentStatusPaid,
-			"trade_no":    tradeNo,
-			"gateway":     gateway,
-			"notify_data": notifyJSON,
-			"paid_at":     &now,
-		}).Error; err != nil {
-			return err
-		}
+	// 确定订单业务类型：空值视为 credits（向后兼容历史订单）
+	orderType := order.Type
+	if orderType == "" {
+		orderType = model.PaymentOrderTypeCredits
+	}
 
-		// Credit the user
-		descParams, _ := json.Marshal(map[string]string{"order_no": outTradeNo})
-		return h.repo.GrantCredits(tx, order.UserID, order.Credits, "txn.recharge", descParams)
-	})
+	// realname 类型订单：仅更新支付状态，第三方实名验证由 RealnameService 异步触发。
+	// 此处不调用 realnameSvc.StartVerification 以避免在支付回调事务中阻塞于第三方 API。
+	var txErr error
+	if orderType == model.PaymentOrderTypeRealname && h.realnameSvc != nil {
+		txErr = h.repo.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Model(&order).Updates(map[string]interface{}{
+				"status":      model.PaymentStatusPaid,
+				"trade_no":    tradeNo,
+				"gateway":     gateway,
+				"notify_data": notifyJSON,
+				"paid_at":     &now,
+			}).Error; err != nil {
+				return err
+			}
+			return h.realnameSvc.HandlePaymentSuccess(tx, order.ID, order.ReferenceID)
+		})
+		// 事务提交后异步触发第三方验证（失败不影响回调响应）
+		if txErr == nil && order.ReferenceID != nil {
+			go func(appID uint) {
+				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				if err := h.realnameSvc.StartVerification(ctx, appID); err != nil {
+					slog.Warn("realname: async verification failed", "app_id", appID, "err", err)
+				}
+			}(*order.ReferenceID)
+		}
+	} else {
+		// 默认：积分充值
+		txErr = h.repo.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Model(&order).Updates(map[string]interface{}{
+				"status":      model.PaymentStatusPaid,
+				"trade_no":    tradeNo,
+				"gateway":     gateway,
+				"notify_data": notifyJSON,
+				"paid_at":     &now,
+			}).Error; err != nil {
+				return err
+			}
+			descParams, _ := json.Marshal(map[string]string{"order_no": outTradeNo})
+			return h.repo.GrantCredits(tx, order.UserID, order.Credits, "txn.recharge", descParams)
+		})
+	}
 
 	if txErr != nil {
 		// Log error but don't fail the callback (gateway will retry)
+		slog.Warn("payment: processPayment failed", "order_no", outTradeNo, "err", txErr)
 		return
 	}
 }

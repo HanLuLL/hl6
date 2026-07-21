@@ -25,11 +25,13 @@ import CreditsPage from "@/pages/credits";
 import ProfilePage from "@/pages/profile";
 import SessionsPage from "@/pages/sessions";
 import FriendLinksPage from "@/pages/friend-links";
+import AccountSecurityPage from "@/pages/account-security";
 import AdminDomainsPage from "@/pages/admin/domains";
 import AdminUsersPage from "@/pages/admin/users";
 import AdminAuditPage from "@/pages/admin/audit";
 import AdminFriendLinksPage from "@/pages/admin/friend-links";
 import AdminLogsPage from "@/pages/admin/logs";
+import AdminRealnamePage from "@/pages/admin/realname";
 import BannedPage from "@/pages/banned";
 
 import AdminSettingsPage from "@/pages/admin/settings";
@@ -185,6 +187,7 @@ export default function App() {
           <Route path="/banned" element={<BannedPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/sessions" element={<SessionsPage />} />
+          <Route path="/account/security" element={<AccountSecurityPage />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin/domains" element={<AdminDomainsPage />} />
             <Route path="/admin/cloudflare" element={<Navigate to="/admin/domains?tab=dns-providers" replace />} />
@@ -196,6 +199,7 @@ export default function App() {
             <Route path="/admin/audit-sites" element={<Navigate to="/admin/audit?tab=domains" replace />} />
             <Route path="/admin/audit-logs" element={<Navigate to="/admin/logs?tab=audit" replace />} />
             <Route path="/admin/ai-audit" element={<Navigate to="/admin/audit?tab=ai-models" replace />} />
+            <Route path="/admin/realname" element={<AdminRealnamePage />} />
             <Route path="/admin/groups" element={<Navigate to="/admin/users?tab=groups" replace />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
             <Route path="/admin/friend-links" element={<AdminFriendLinksPage />} />

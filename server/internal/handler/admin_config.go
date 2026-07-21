@@ -18,6 +18,11 @@ import (
 
 const configKeySMTPPassword = "smtp_password"
 
+const (
+	configKeyRealnameAppCode = "realname_app_code"
+	configKeyRealnameAppKey  = "realname_app_key"
+)
+
 var allowedConfigKeys = map[string]bool{
 	"registration_bonus_credits": true,
 	"referral_enabled":           true,
@@ -60,13 +65,24 @@ var allowedConfigKeys = map[string]bool{
 	"smtp_from_addr":      true,
 	"smtp_use_tls":        true,
 	"smtp_enabled":        true,
+	// 实名认证配置
+	"realname_enabled":            true,
+	"realname_required_for_claim": true,
+	"realname_required_for_payment": true,
+	"realname_fee":                true,
+	"realname_provider":           true,
+	configKeyRealnameAppCode:      true,
+	configKeyRealnameAppKey:       true,
+	"realname_face_enabled":       true,
 }
 
 // 支付密钥类 key，在返回给前端时需要脱敏
 var paymentSecretConfigKeys = map[string]bool{
-	"epay_key":            true,
-	"codepay_key":         true,
-	configKeySMTPPassword: true,
+	"epay_key":                true,
+	"codepay_key":             true,
+	configKeySMTPPassword:     true,
+	configKeyRealnameAppCode:  true,
+	configKeyRealnameAppKey:   true,
 }
 
 func (h *AdminHandler) GetConfig(c *gin.Context) {
@@ -177,6 +193,28 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 		}
 	}
 
+	// 实名认证密钥加密存储（AppCode / AppKey）
+	for _, secretKey := range []string{configKeyRealnameAppCode, configKeyRealnameAppKey} {
+		raw, ok := body[secretKey]
+		if !ok {
+			continue
+		}
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" || trimmed == "********" {
+			continue
+		}
+		enc, err := crypto.EncryptIfKey(trimmed, h.cfg.EncryptionKey)
+		if err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to encrypt realname secret", "error.encryptionFailed")
+			return
+		}
+		if err := h.repo.SetSystemConfig(secretKey, enc); err != nil {
+			response.ErrorWithKey(c, http.StatusInternalServerError, "failed to update config", "error.failedToUpdateConfig")
+			return
+		}
+		details[secretKey] = "***"
+	}
+
 	if raw, ok := body[configKeyDailyCheckinEnabled]; ok {
 		normalized, err := normalizeBooleanConfig(raw)
 		if err != nil {
@@ -247,7 +285,7 @@ func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 	}
 
 	for key, value := range body {
-		if isURLConfigKey(key) || key == configKeySMTPPassword {
+		if isURLConfigKey(key) || key == configKeySMTPPassword || key == configKeyRealnameAppCode || key == configKeyRealnameAppKey {
 			continue
 		}
 		trimmed := strings.TrimSpace(value)

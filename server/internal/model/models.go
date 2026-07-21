@@ -11,8 +11,8 @@ type User struct {
 	Email        string     `json:"email"`
 	Name         string     `json:"name"`
 	AvatarURL    string     `json:"avatar_url"`
-	Bio         string     `json:"bio" gorm:"type:text;default:''"`
-	Website     string     `json:"website" gorm:"type:varchar(255);default:''"`
+	Bio          string     `json:"bio" gorm:"type:text;default:''"`
+	Website      string     `json:"website" gorm:"type:varchar(255);default:''"`
 	Role         string     `json:"role" gorm:"default:user"`
 	IsBanned     bool       `json:"is_banned" gorm:"not null;default:false;index"`
 	BannedReason string     `json:"banned_reason"`
@@ -22,9 +22,23 @@ type User struct {
 	ReferralCode string     `json:"referral_code" gorm:"uniqueIndex;size:16"`
 	GroupID      *uint      `json:"group_id" gorm:"index"`
 	Group        *UserGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	// Realname 实名认证状态。
+	// unverified（默认）/ pending（已提交审核）/ verified（已通过）/ rejected（被拒绝）。
+	RealnameStatus     string     `json:"realname_status" gorm:"type:varchar(16);not null;default:unverified;index"`
+	RealnameVerifiedAt *time.Time `json:"realname_verified_at"`
+	// RealnameName 已验证后的真实姓名（脱敏形式，如"张*"），用于显示。
+	RealnameName       string     `json:"realname_name" gorm:"type:varchar(64);default:''"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
+
+// RealnameStatus 用户实名状态常量
+const (
+	RealnameStatusUnverified = "unverified"
+	RealnameStatusPending    = "pending"
+	RealnameStatusVerified   = "verified"
+	RealnameStatusRejected   = "rejected"
+)
 
 type UserGroup struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`

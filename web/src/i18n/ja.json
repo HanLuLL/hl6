@@ -169,12 +169,14 @@
     "adminSettings": "設定",
     "adminNotifications": "通知管理",
     "audit": "コンテンツ監査",
+    "adminRealname": "本人確認審査",
     "friendLinks": "リンク",
     "adminFriendLinks": "リンク管理",
     "adminAIAudit": "AI監査",
     "emailLogs": "メールログ",
     "systemLogs": "システムログ",
-    "profile": "プロフィール"
+    "profile": "プロフィール",
+    "accountSecurity": "アカウントセキュリティ"
   },
   "dashboard": {
     "title": "ダッシュボード",
@@ -857,6 +859,7 @@
       "site": "サイトと外観",
       "mail": "メール通知",
       "integrations": "決済と連携",
+      "realname": "本人確認",
       "android": "Android クライアント",
       "maintenance": "データメンテナンス"
     },
@@ -881,6 +884,29 @@
       "gatewayUrl": "ゲートウェイ URL",
       "merchantId": "加盟店 ID",
       "merchantKey": "加盟店キー"
+    },
+    "realname": {
+      "enabled": "本人確認を有効化",
+      "enabledHint": "有効にすると、ユーザーは「アカウントセキュリティ」から本人確認申請を送信できます。",
+      "requiredForClaim": "サブドメイン取得に本人確認が必要",
+      "requiredForClaimHint": "未確認ユーザーはサブドメインを取得できません。",
+      "requiredForPayment": "クレジット充值に本人確認が必要",
+      "requiredForPaymentHint": "未確認ユーザーは支払い注文を作成できません。",
+      "faceEnabled": "顔認証を有効化",
+      "faceEnabledHint": "ユーザーが顔認証を選択可能（プロバイダー対応が必要）。",
+      "fee": "認証料金",
+      "feeHint": "0 より大きい場合は申請前に支払いが必要、0 の場合は無料で検証されます。",
+      "provider": "認証プロバイダー",
+      "providerHint": "manual = 手動審査、aliyun/juhe = サードパーティ API による自動検証。",
+      "providerManual": "手動審査",
+      "providerAliyun": "Aliyun Market（身分証 2 要素）",
+      "providerJuhe": "Juhe（身分証本人確認）",
+      "appCode": "Aliyun AppCode",
+      "appCodePlaceholder": "Aliyun Market で購入した身分証検証 AppCode",
+      "appCodeHint": "保存時に暗号化されます。空白の場合は変更なし。",
+      "appKey": "Juhe API Key",
+      "appKeyPlaceholder": "Juhe で申請した API キー",
+      "appKeyHint": "保存時に暗号化されます。空白の場合は変更なし。"
     },
     "client": {
       "latestVersion": "最新バージョン",
@@ -1540,5 +1566,81 @@
     "allModules": "全モジュール",
     "noLogs": "ログがありません",
     "logId": "ログ ID"
+  },
+  "accountSecurity": {
+    "title": "アカウントセキュリティ",
+    "subtitle": "メール設定と本人確認の管理",
+    "email": {
+      "title": "メール設定",
+      "current": "現在設定されているメール",
+      "hint": "メールはログインアカウントです。変更する場合は管理者に連絡してください。"
+    },
+    "realname": {
+      "title": "本人確認",
+      "currentStatus": "現在の状態",
+      "statusHint": "本人確認を完了すると、より多くの機能を利用できます。",
+      "verifiedAs": "確認済み：{{name}}",
+      "verifiedAt": "確認日時",
+      "rejectReason": "却下理由",
+      "retry": "再提出",
+      "realName": "本名",
+      "realNamePlaceholder": "身分証と同じ本名を入力してください",
+      "idCard": "身分証番号",
+      "idCardPlaceholder": "18 桁の身分証番号を入力してください",
+      "idCardInvalid": "身分証番号の形式が正しくありません",
+      "verificationType": "確認方法",
+      "typeIDCard": "身分証 2 要素確認",
+      "typeFace": "顔認証",
+      "paymentMethod": "支払い方法",
+      "paymentHint": "認証料金はサイトポリシーにより決定されます。送信後に支払いページへ遷移します。",
+      "privacyNotice": "氏名と身分証番号は暗号化保存され、本人確認にのみ使用されます。",
+      "submit": "確認を提出",
+      "payRedirectHint": "送信成功後、支払いページへ遷移します。",
+      "history": "申請履歴"
+    }
+  },
+  "realname": {
+    "status": {
+      "unverified": "未確認",
+      "pending": "審査中",
+      "verified": "確認済み",
+      "rejected": "却下",
+      "pendingPayment": "支払い待ち",
+      "paid": "支払済み",
+      "verifying": "検証中",
+      "failed": "失敗"
+    },
+    "toast": {
+      "submitted": "申請を送信しました。審査をお待ちください。",
+      "verified": "本人確認が完了しました。",
+      "redirectingToPay": "支払いページへ遷移中",
+      "retryStarted": "検証を再開始しました",
+      "reviewed": "審査結果を送信しました"
+    },
+    "admin": {
+      "title": "本人確認審査",
+      "subtitle": "ユーザー提出の本人確認申請を審査します",
+      "filters": "フィルター",
+      "filterStatus": "状態",
+      "filterProvider": "プロバイダー",
+      "filterUserId": "ユーザー ID",
+      "filterUserIdPlaceholder": "ユーザー ID を入力",
+      "statusAll": "すべて",
+      "applications": "申請一覧",
+      "empty": "申請記録がありません",
+      "approve": "承認",
+      "reject": "却下",
+      "retry": "検証を再試行",
+      "approveTitle": "本人確認を承認",
+      "rejectTitle": "本人確認申請を却下",
+      "reviewReason": "審査理由（任意）",
+      "reviewReasonApprovePlaceholder": "メモを入力できます",
+      "reviewReasonRejectPlaceholder": "却下理由を入力してください。ユーザーに表示されます。",
+      "reviewReasonRejectHint": "却下理由はユーザーに表示されます。正確に入力してください。",
+      "confirmApprove": "承認を確認",
+      "confirmReject": "却下を確認",
+      "statsVerified": "確認済みユーザー数",
+      "verifiedAt": "確認日時"
+    }
   }
 }

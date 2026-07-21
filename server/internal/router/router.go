@@ -92,6 +92,7 @@ func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context, logSink *logger
 	registerFriendLinkRoutes(api, auth, h)
 	registerAIAuditRoutes(api, auth, h)
 	registerEmailRoutes(api, auth, h)
+	registerRealnameRoutes(api, auth, h)
 
 	setupFrontendRoutes(r)
 

@@ -169,12 +169,14 @@
     "adminSettings": "系統設定",
     "adminNotifications": "通知管理",
     "audit": "內容審查",
+    "adminRealname": "實名審核",
     "friendLinks": "友鏈",
     "adminFriendLinks": "友鏈管理",
     "adminAIAudit": "AI審查",
     "emailLogs": "郵件日誌",
     "systemLogs": "系統日誌",
-    "profile": "個人設定"
+    "profile": "個人設定",
+    "accountSecurity": "帳戶安全"
   },
   "dashboard": {
     "title": "控制台",
@@ -857,6 +859,7 @@
       "site": "網站與外觀",
       "mail": "郵件通知",
       "integrations": "付款與整合",
+      "realname": "實名認證",
       "android": "Android 用戶端",
       "maintenance": "資料維護"
     },
@@ -881,6 +884,29 @@
       "gatewayUrl": "閘道位址",
       "merchantId": "商戶識別碼",
       "merchantKey": "商戶金鑰"
+    },
+    "realname": {
+      "enabled": "啟用實名認證",
+      "enabledHint": "開啟後使用者可在「帳戶安全」中提交實名申請",
+      "requiredForClaim": "認領子網域需要實名",
+      "requiredForClaimHint": "未實名使用者禁止認領子網域",
+      "requiredForPayment": "儲值積分需要實名",
+      "requiredForPaymentHint": "未實名使用者禁止建立付款訂單",
+      "faceEnabled": "啟用人臉驗證",
+      "faceEnabledHint": "允許使用者選擇人臉核身方式（需服務商支援）",
+      "fee": "認證費用",
+      "feeHint": "大於 0 時使用者提交申請需先支付費用，為 0 時免費直接驗證",
+      "provider": "驗證服務商",
+      "providerHint": "manual 為人工審核，aliyun/juhe 為第三方 API 自動核驗",
+      "providerManual": "人工審核",
+      "providerAliyun": "阿里雲市場（身分證二要素）",
+      "providerJuhe": "聚合資料（身分證實名）",
+      "appCode": "阿里雲 AppCode",
+      "appCodePlaceholder": "在阿里雲市場購買的身分證核驗 AppCode",
+      "appCodeHint": "已加密儲存，留空表示不修改",
+      "appKey": "聚合資料 API Key",
+      "appKeyPlaceholder": "在聚合資料申請的 API Key",
+      "appKeyHint": "已加密儲存，留空表示不修改"
     },
     "client": {
       "latestVersion": "最新版本",
@@ -1540,5 +1566,81 @@
     "allModules": "全部模組",
     "noLogs": "暫無日誌",
     "logId": "日誌 ID"
+  },
+  "accountSecurity": {
+    "title": "帳戶安全",
+    "subtitle": "管理郵件綁定與實名認證",
+    "email": {
+      "title": "郵件綁定",
+      "current": "目前綁定郵件",
+      "hint": "郵件即為登入帳號，如需更換請聯絡管理員"
+    },
+    "realname": {
+      "title": "實名認證",
+      "currentStatus": "目前狀態",
+      "statusHint": "完成實名認證以解鎖更多站台能力",
+      "verifiedAs": "已實名：{{name}}",
+      "verifiedAt": "認證時間",
+      "rejectReason": "拒絕原因",
+      "retry": "重新提交",
+      "realName": "真實姓名",
+      "realNamePlaceholder": "請輸入與身分證一致的真實姓名",
+      "idCard": "身分證號",
+      "idCardPlaceholder": "請輸入 18 位身分證號",
+      "idCardInvalid": "身分證號格式不正確",
+      "verificationType": "驗證方式",
+      "typeIDCard": "身分證二要素核驗",
+      "typeFace": "人臉核身",
+      "paymentMethod": "付款方式",
+      "paymentHint": "認證費用由站台策略決定，提交後跳轉付款頁",
+      "privacyNotice": "姓名與身分證號將加密儲存，僅用於實名核驗",
+      "submit": "提交認證",
+      "payRedirectHint": "提交成功後將跳轉到付款頁面完成付款",
+      "history": "申請歷史"
+    }
+  },
+  "realname": {
+    "status": {
+      "unverified": "未認證",
+      "pending": "審核中",
+      "verified": "已認證",
+      "rejected": "未通過",
+      "pendingPayment": "待支付",
+      "paid": "已支付",
+      "verifying": "驗證中",
+      "failed": "失敗"
+    },
+    "toast": {
+      "submitted": "申請已提交，請等待審核",
+      "verified": "實名認證已通過",
+      "redirectingToPay": "正在跳轉付款頁面",
+      "retryStarted": "已重新發起驗證",
+      "reviewed": "審核結果已提交"
+    },
+    "admin": {
+      "title": "實名審核",
+      "subtitle": "審核使用者提交的實名認證申請",
+      "filters": "篩選條件",
+      "filterStatus": "狀態",
+      "filterProvider": "服務商",
+      "filterUserId": "使用者 ID",
+      "filterUserIdPlaceholder": "輸入使用者 ID",
+      "statusAll": "全部",
+      "applications": "申請列表",
+      "empty": "暫無申請記錄",
+      "approve": "通過",
+      "reject": "拒絕",
+      "retry": "重試驗證",
+      "approveTitle": "確認通過實名認證",
+      "rejectTitle": "拒絕實名認證申請",
+      "reviewReason": "審核原因（可選）",
+      "reviewReasonApprovePlaceholder": "可填寫備註說明",
+      "reviewReasonRejectPlaceholder": "請填寫拒絕原因，將展示給使用者",
+      "reviewReasonRejectHint": "拒絕原因將展示給使用者，請如實填寫",
+      "confirmApprove": "確認通過",
+      "confirmReject": "確認拒絕",
+      "statsVerified": "已認證使用者",
+      "verifiedAt": "認證時間"
+    }
   }
 }

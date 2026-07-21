@@ -34,11 +34,17 @@ type Handlers struct {
 	Client            *handler.ClientHandler
 	Maintenance       *handler.MaintenanceHandler
 	SystemLog         *handler.SystemLogHandler
+	Realname          *handler.RealnameHandler
 }
 
 func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *service.DNSOperationService, migSvc *service.DomainMigrationService, maintenanceSvc *service.DatabaseMaintenanceService, sseBroker *handler.SSEBroker, audit auditStack) *Handlers {
 	emailSvc := service.NewEmailService(repo, cfg.EncryptionKey)
 	captchaSvc := captcha.NewService(repo)
+
+	payment := handler.NewPaymentHandler(repo, cfg)
+	realnameSvc := service.NewRealnameService(repo, cfg.EncryptionKey)
+	payment.SetRealnameService(realnameSvc)
+	realname := handler.NewRealnameHandler(repo, cfg, realnameSvc, payment)
 
 	return &Handlers{
 		Auth:              handler.NewAuthHandler(repo),
@@ -57,7 +63,7 @@ func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *servic
 		NotificationAdmin: handler.NewNotificationAdminHandler(repo, sseBroker, cfg),
 		Audit:             handler.NewAuditHandler(repo, audit.auditSvc, audit.subSvc, dnsOps, audit.enqueue, audit.notif, audit.auditLog),
 		SSEBroker:         sseBroker,
-		Payment:           handler.NewPaymentHandler(repo, cfg),
+		Payment:           payment,
 		SEO:               handler.NewSEOHandler(repo),
 		FriendLink:        handler.NewFriendLinkHandler(repo),
 		AIAudit:           handler.NewAIAuditHandler(repo, cfg.EncryptionKey),
@@ -65,5 +71,6 @@ func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *servic
 		Client:            handler.NewClientHandler(repo),
 		Maintenance:       handler.NewMaintenanceHandler(repo, cfg, maintenanceSvc),
 		SystemLog:         handler.NewSystemLogHandler(repo),
+		Realname:          realname,
 	}
 }

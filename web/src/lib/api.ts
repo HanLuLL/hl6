@@ -55,6 +55,10 @@ import type {
   DatabaseRestoreJob,
   SystemLog,
   SystemLogStats,
+  RealnameStatusResponse,
+  SubmitRealnameResponse,
+  RealnameApplication,
+  RealnameStats,
 } from "@/types";
 import type { AIModelConfig, AIModelConfigInput, AuditPromptTemplate, PromptTemplateInput, AuditAIReview, AIAuditStats, UserAppeal, BanInfo } from "@/types/ai-audit";
 import { buildPaginatedQuery } from "@/lib/api-query";
@@ -444,6 +448,57 @@ export const api = {
     request<ApiResponse<CreateOrderResponse>>("/payment/orders", { method: "POST", body: JSON.stringify(data) }),
   getPaymentOrders: () =>
     request<ApiResponse<PaymentOrder[]>>("/payment/orders"),
+
+  // Realname (user)
+  getRealnameStatus: () =>
+    request<ApiResponse<RealnameStatusResponse>>("/realname/status"),
+  submitRealnameAuth: (data: {
+    real_name: string;
+    id_card: string;
+    verification_type?: string;
+    gateway?: string;
+    payment_method?: string;
+  }) =>
+    request<ApiResponse<SubmitRealnameResponse>>("/realname/apply", { method: "POST", body: JSON.stringify(data) }),
+  getRealnameHistory: (page = 1, perPage = 10) =>
+    request<PaginatedResponse<RealnameApplication[]>>(`/realname/history?page=${page}&per_page=${perPage}`),
+  retryRealnameVerification: () =>
+    request<ApiResponse<{ message: string }>>("/realname/retry", { method: "POST" }),
+
+  // Admin: Realname
+  adminListRealnameApplications: (params: {
+    page?: number;
+    per_page?: number;
+    status?: string;
+    provider?: string;
+    user_id?: number;
+    from?: string;
+    to?: string;
+  } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set("page", String(params.page));
+    if (params.per_page) qs.set("per_page", String(params.per_page));
+    if (params.status) qs.set("status", params.status);
+    if (params.provider) qs.set("provider", params.provider);
+    if (params.user_id) qs.set("user_id", String(params.user_id));
+    if (params.from) qs.set("from", params.from);
+    if (params.to) qs.set("to", params.to);
+    const query = qs.toString();
+    return request<PaginatedResponse<RealnameApplication[]>>(
+      `/admin/realname/applications${query ? "?" + query : ""}`,
+    );
+  },
+  adminGetRealnameApplication: (id: number) =>
+    request<ApiResponse<RealnameApplication>>(`/admin/realname/applications/${id}`),
+  adminReviewRealname: (id: number, data: { approved: boolean; reason: string }) =>
+    request<ApiResponse<{ message: string }>>(`/admin/realname/applications/${id}/review`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  adminRetryRealnameVerification: (id: number) =>
+    request<ApiResponse<{ message: string }>>(`/admin/realname/applications/${id}/retry`, { method: "POST" }),
+  adminGetRealnameStats: () =>
+    request<ApiResponse<RealnameStats>>("/admin/realname/stats"),
 
   // Admin
   adminCreateDomain: (data: { name: string; provider_zone_id: string; provider_account_id: number; description: string; group_access: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>

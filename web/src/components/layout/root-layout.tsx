@@ -46,6 +46,8 @@ import {
   Link2,
   LinkIcon,
   FileStack,
+  ShieldCheck as ShieldCheckIcon,
+  BadgeCheck,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -89,6 +91,7 @@ const adminItems: NavItem[] = [
   { labelKey: "nav.adminUsers", href: "/admin/users", icon: Users },
   { labelKey: "nav.adminDomains", href: "/admin/domains", icon: Settings2 },
   { labelKey: "nav.audit", href: "/admin/audit", icon: ShieldCheck },
+  { labelKey: "nav.adminRealname", href: "/admin/realname", icon: BadgeCheck },
   { labelKey: "nav.adminFriendLinks", href: "/admin/friend-links", icon: LinkIcon },
   { labelKey: "nav.systemLogs", href: "/admin/logs", icon: FileStack },
   { labelKey: "nav.adminSettings", href: "/admin/settings", icon: SlidersHorizontal },
@@ -343,6 +346,10 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
                 <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/account/security")}>
+                <ShieldCheckIcon className="h-4 w-4" />
+                {t("nav.accountSecurity")}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => signOut()}>{t("common.signOut")}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -169,12 +169,14 @@
     "adminSettings": "系统设置",
     "adminNotifications": "通知管理",
     "audit": "内容审查",
+    "adminRealname": "实名审核",
     "friendLinks": "友链",
     "adminFriendLinks": "友链管理",
     "adminAIAudit": "AI审查",
     "emailLogs": "邮件日志",
     "systemLogs": "系统日志",
-    "profile": "个人设置"
+    "profile": "个人设置",
+    "accountSecurity": "账户安全"
   },
   "dashboard": {
     "title": "控制台",
@@ -857,6 +859,7 @@
       "site": "站点与外观",
       "mail": "邮件通知",
       "integrations": "支付与集成",
+      "realname": "实名认证",
       "android": "Android 客户端",
       "maintenance": "数据维护"
     },
@@ -881,6 +884,29 @@
       "gatewayUrl": "网关地址",
       "merchantId": "商户标识",
       "merchantKey": "商户密钥"
+    },
+    "realname": {
+      "enabled": "启用实名认证",
+      "enabledHint": "开启后用户可在「账户安全」中提交实名申请",
+      "requiredForClaim": "认领子域名需要实名",
+      "requiredForClaimHint": "未实名用户禁止认领子域名",
+      "requiredForPayment": "充值积分需要实名",
+      "requiredForPaymentHint": "未实名用户禁止发起支付订单",
+      "faceEnabled": "启用人脸验证",
+      "faceEnabledHint": "允许用户选择人脸核身方式（需服务商支持）",
+      "fee": "认证费用",
+      "feeHint": "大于 0 时用户提交申请需先支付费用，为 0 时免费直接验证",
+      "provider": "验证服务商",
+      "providerHint": "manual 为人工审核，aliyun/juhe 为第三方 API 自动核验",
+      "providerManual": "人工审核",
+      "providerAliyun": "阿里云市场（身份证二要素）",
+      "providerJuhe": "聚合数据（身份证实名）",
+      "appCode": "阿里云 AppCode",
+      "appCodePlaceholder": "在阿里云市场购买的身份证核验 AppCode",
+      "appCodeHint": "已加密存储，留空表示不修改",
+      "appKey": "聚合数据 API Key",
+      "appKeyPlaceholder": "在聚合数据申请的 API Key",
+      "appKeyHint": "已加密存储，留空表示不修改"
     },
     "client": {
       "latestVersion": "最新版本",
@@ -1569,5 +1595,81 @@
     "last6hours": "最近 6 小时",
     "last24hours": "最近 24 小时",
     "last7days": "最近 7 天"
+  },
+  "accountSecurity": {
+    "title": "账户安全",
+    "subtitle": "管理邮箱绑定与实名认证",
+    "email": {
+      "title": "邮箱绑定",
+      "current": "当前绑定邮箱",
+      "hint": "邮箱即为登录账号，如需更换请联系管理员"
+    },
+    "realname": {
+      "title": "实名认证",
+      "currentStatus": "当前状态",
+      "statusHint": "完成实名认证以解锁更多站点能力",
+      "verifiedAs": "已实名：{{name}}",
+      "verifiedAt": "认证时间",
+      "rejectReason": "拒绝原因",
+      "retry": "重新提交",
+      "realName": "真实姓名",
+      "realNamePlaceholder": "请输入与身份证一致的真实姓名",
+      "idCard": "身份证号",
+      "idCardPlaceholder": "请输入 18 位身份证号",
+      "idCardInvalid": "身份证号格式不正确",
+      "verificationType": "验证方式",
+      "typeIDCard": "身份证二要素核验",
+      "typeFace": "人脸核身",
+      "paymentMethod": "支付方式",
+      "paymentHint": "认证费用由站点策略决定，提交后跳转支付页",
+      "privacyNotice": "姓名与身份证号将加密存储，仅用于实名核验",
+      "submit": "提交认证",
+      "payRedirectHint": "提交成功后将跳转到支付页面完成付款",
+      "history": "申请历史"
+    }
+  },
+  "realname": {
+    "status": {
+      "unverified": "未认证",
+      "pending": "审核中",
+      "verified": "已认证",
+      "rejected": "未通过",
+      "pendingPayment": "待支付",
+      "paid": "已支付",
+      "verifying": "验证中",
+      "failed": "失败"
+    },
+    "toast": {
+      "submitted": "申请已提交，请等待审核",
+      "verified": "实名认证已通过",
+      "redirectingToPay": "正在跳转支付页面",
+      "retryStarted": "已重新发起验证",
+      "reviewed": "审核结果已提交"
+    },
+    "admin": {
+      "title": "实名审核",
+      "subtitle": "审核用户提交的实名认证申请",
+      "filters": "筛选条件",
+      "filterStatus": "状态",
+      "filterProvider": "服务商",
+      "filterUserId": "用户 ID",
+      "filterUserIdPlaceholder": "输入用户 ID",
+      "statusAll": "全部",
+      "applications": "申请列表",
+      "empty": "暂无申请记录",
+      "approve": "通过",
+      "reject": "拒绝",
+      "retry": "重试验证",
+      "approveTitle": "确认通过实名认证",
+      "rejectTitle": "拒绝实名认证申请",
+      "reviewReason": "审核原因（可选）",
+      "reviewReasonApprovePlaceholder": "可填写备注说明",
+      "reviewReasonRejectPlaceholder": "请填写拒绝原因，将展示给用户",
+      "reviewReasonRejectHint": "拒绝原因将展示给用户，请如实填写",
+      "confirmApprove": "确认通过",
+      "confirmReject": "确认拒绝",
+      "statsVerified": "已认证用户",
+      "verifiedAt": "认证时间"
+    }
   }
 }

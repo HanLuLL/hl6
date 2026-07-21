@@ -169,12 +169,14 @@
     "adminSettings": "Configuración",
     "adminNotifications": "Notificaciones",
     "audit": "Auditoría de contenido",
+    "adminRealname": "Revisión de identidad",
     "friendLinks": "Enlaces",
     "adminFriendLinks": "Gestión de Enlaces",
     "adminAIAudit": "Auditoría IA",
     "emailLogs": "Registros de Correo",
     "systemLogs": "Registros del Sistema",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "accountSecurity": "Seguridad de la cuenta"
   },
   "dashboard": {
     "title": "Panel de control",
@@ -857,6 +859,7 @@
       "site": "Sitio y apariencia",
       "mail": "Notificaciones por correo",
       "integrations": "Pagos e integraciones",
+      "realname": "Verificación de identidad",
       "android": "Cliente Android",
       "maintenance": "Mantenimiento de datos"
     },
@@ -881,6 +884,29 @@
       "gatewayUrl": "URL de la pasarela",
       "merchantId": "ID de comerciante",
       "merchantKey": "Clave de comerciante"
+    },
+    "realname": {
+      "enabled": "Habilitar verificación de identidad",
+      "enabledHint": "Cuando está habilitado, los usuarios pueden enviar solicitudes de verificación desde Seguridad de la cuenta.",
+      "requiredForClaim": "Requerir verificación para reclamar subdominios",
+      "requiredForClaimHint": "Los usuarios no verificados no pueden reclamar subdominios.",
+      "requiredForPayment": "Requerir verificación para recargar créditos",
+      "requiredForPaymentHint": "Los usuarios no verificados no pueden crear órdenes de pago.",
+      "faceEnabled": "Habilitar verificación facial",
+      "faceEnabledHint": "Permitir a los usuarios elegir verificación facial (requiere soporte del proveedor).",
+      "fee": "Tarifa de verificación",
+      "feeHint": "Cuando es mayor que 0, los usuarios deben pagar antes de enviar; cuando es 0, la verificación es gratuita.",
+      "provider": "Proveedor de verificación",
+      "providerHint": "manual = revisión manual; aliyun/juhe = verificación automática de API de terceros.",
+      "providerManual": "Revisión manual",
+      "providerAliyun": "Aliyun Market (verificación de 2 factores)",
+      "providerJuhe": "Juhe (verificación de documento)",
+      "appCode": "Aliyun AppCode",
+      "appCodePlaceholder": "AppCode comprado en Aliyun Market",
+      "appCodeHint": "Cifrado en reposo; dejar en blanco para mantener sin cambios.",
+      "appKey": "Juhe API Key",
+      "appKeyPlaceholder": "API key solicitada de Juhe",
+      "appKeyHint": "Cifrado en reposo; dejar en blanco para mantener sin cambios."
     },
     "client": {
       "latestVersion": "Última versión",
@@ -1540,5 +1566,81 @@
     "allModules": "Todos los Módulos",
     "noLogs": "No se encontraron registros",
     "logId": "ID de Registro"
+  },
+  "accountSecurity": {
+    "title": "Seguridad de la cuenta",
+    "subtitle": "Administrar vinculación de correo y verificación de identidad",
+    "email": {
+      "title": "Correo vinculado",
+      "current": "Correo actualmente vinculado",
+      "hint": "Tu correo es tu cuenta de inicio de sesión. Contacta a un administrador para cambiarlo."
+    },
+    "realname": {
+      "title": "Verificación de identidad",
+      "currentStatus": "Estado actual",
+      "statusHint": "Completa la verificación de identidad para desbloquear más funciones.",
+      "verifiedAs": "Verificado: {{name}}",
+      "verifiedAt": "Verificado el",
+      "rejectReason": "Razón de rechazo",
+      "retry": "Reenviar",
+      "realName": "Nombre real",
+      "realNamePlaceholder": "Ingresa tu nombre real exactamente como en tu documento",
+      "idCard": "Número de documento",
+      "idCardPlaceholder": "Ingresa tu número de documento de 18 dígitos",
+      "idCardInvalid": "Formato de número de documento inválido",
+      "verificationType": "Método de verificación",
+      "typeIDCard": "Verificación de 2 factores",
+      "typeFace": "Verificación facial",
+      "paymentMethod": "Método de pago",
+      "paymentHint": "La tarifa la determina la política del sitio. Serás redirigido al pago después de enviar.",
+      "privacyNotice": "Tu nombre y documento se cifran y solo se usan para verificación.",
+      "submit": "Enviar verificación",
+      "payRedirectHint": "Serás redirigido a la página de pago después de enviar.",
+      "history": "Historial de solicitudes"
+    }
+  },
+  "realname": {
+    "status": {
+      "unverified": "No verificado",
+      "pending": "Pendiente",
+      "verified": "Verificado",
+      "rejected": "Rechazado",
+      "pendingPayment": "Pago pendiente",
+      "paid": "Pagado",
+      "verifying": "Verificando",
+      "failed": "Fallido"
+    },
+    "toast": {
+      "submitted": "Solicitud enviada. Espera la revisión.",
+      "verified": "Verificación de identidad aprobada.",
+      "redirectingToPay": "Redirigiendo a la página de pago",
+      "retryStarted": "Verificación reiniciada",
+      "reviewed": "Resultado de revisión enviado"
+    },
+    "admin": {
+      "title": "Revisión de identidad",
+      "subtitle": "Revisar solicitudes de verificación de identidad",
+      "filters": "Filtros",
+      "filterStatus": "Estado",
+      "filterProvider": "Proveedor",
+      "filterUserId": "ID de usuario",
+      "filterUserIdPlaceholder": "Ingresa el ID de usuario",
+      "statusAll": "Todos",
+      "applications": "Solicitudes",
+      "empty": "Sin solicitudes aún",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "retry": "Reintentar verificación",
+      "approveTitle": "Aprobar verificación de identidad",
+      "rejectTitle": "Rechazar solicitud de verificación",
+      "reviewReason": "Razón de revisión (opcional)",
+      "reviewReasonApprovePlaceholder": "Nota opcional",
+      "reviewReasonRejectPlaceholder": "Proporciona una razón de rechazo. Se mostrará al usuario.",
+      "reviewReasonRejectHint": "La razón de rechazo se mostrará al usuario. Por favor, sé veraz.",
+      "confirmApprove": "Confirmar aprobación",
+      "confirmReject": "Confirmar rechazo",
+      "statsVerified": "Usuarios verificados",
+      "verifiedAt": "Verificado el"
+    }
   }
 }

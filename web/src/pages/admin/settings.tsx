@@ -28,13 +28,14 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 
 const maskedSecret = "********";
 
-type SettingsSection = "access" | "site" | "mail" | "integrations" | "android" | "maintenance";
+type SettingsSection = "access" | "site" | "mail" | "integrations" | "realname" | "android" | "maintenance";
 
 const sections: Array<{ value: SettingsSection; labelKey: string; icon: typeof ShieldCheck }> = [
   { value: "access", labelKey: "adminSettings.sections.access", icon: ShieldCheck },
   { value: "site", labelKey: "adminSettings.sections.site", icon: Palette },
   { value: "mail", labelKey: "adminSettings.sections.mail", icon: Mail },
   { value: "integrations", labelKey: "adminSettings.sections.integrations", icon: PlugZap },
+  { value: "realname", labelKey: "adminSettings.sections.realname", icon: ShieldCheck },
   { value: "android", labelKey: "adminSettings.sections.android", icon: Smartphone },
   { value: "maintenance", labelKey: "adminSettings.sections.maintenance", icon: Database },
 ];
@@ -115,6 +116,15 @@ export default function AdminSettingsPage() {
   const [codepayAlipayEnabled, setCodepayAlipayEnabled] = useState(false);
   const [codepayWechatEnabled, setCodepayWechatEnabled] = useState(false);
   const [codepayQQEnabled, setCodepayQQEnabled] = useState(false);
+  // 实名认证配置
+  const [realnameEnabled, setRealnameEnabled] = useState(false);
+  const [realnameRequiredForClaim, setRealnameRequiredForClaim] = useState(false);
+  const [realnameRequiredForPayment, setRealnameRequiredForPayment] = useState(false);
+  const [realnameFee, setRealnameFee] = useState("0");
+  const [realnameProvider, setRealnameProvider] = useState<"aliyun" | "juhe" | "manual">("manual");
+  const [realnameAppCode, setRealnameAppCode] = useState("");
+  const [realnameAppKey, setRealnameAppKey] = useState("");
+  const [realnameFaceEnabled, setRealnameFaceEnabled] = useState(false);
   const [clientVersion, setClientVersion] = useState("1.0.0");
   const [clientForceUpdate, setClientForceUpdate] = useState(false);
   const [clientUpdateNotice, setClientUpdateNotice] = useState("");
@@ -167,6 +177,16 @@ export default function AdminSettingsPage() {
     setCodepayAlipayEnabled(values.codepay_alipay_enabled === "true");
     setCodepayWechatEnabled(values.codepay_wechat_enabled === "true");
     setCodepayQQEnabled(values.codepay_qq_enabled === "true");
+    // 实名认证配置初始化
+    setRealnameEnabled(values.realname_enabled === "true");
+    setRealnameRequiredForClaim(values.realname_required_for_claim === "true");
+    setRealnameRequiredForPayment(values.realname_required_for_payment === "true");
+    setRealnameFee(values.realname_fee ?? "0");
+    const provider = values.realname_provider ?? "manual";
+    setRealnameProvider(provider === "aliyun" || provider === "juhe" ? provider : "manual");
+    setRealnameAppCode(values.realname_app_code ? maskedSecret : "");
+    setRealnameAppKey(values.realname_app_key ? maskedSecret : "");
+    setRealnameFaceEnabled(values.realname_face_enabled === "true");
   }, [config]);
 
   useEffect(() => {
@@ -333,6 +353,91 @@ export default function AdminSettingsPage() {
               <PaymentFields title={t("adminSettings.payment.epay")} url={epayURL} onURL={setEpayURL} identifier={epayPID} onIdentifier={setEpayPID} secret={epayKey} onSecret={setEpayKey} labels={[t("adminSettings.payment.alipay"), t("adminSettings.payment.wechat"), "QQ"]} enabled={[epayAlipayEnabled, epayWechatEnabled, epayQQEnabled]} onEnabled={[setEpayAlipayEnabled, setEpayWechatEnabled, setEpayQQEnabled]} />
               <PaymentFields title={t("adminSettings.payment.codepay")} url={codepayURL} onURL={setCodepayURL} identifier={codepayID} onIdentifier={setCodepayID} secret={codepayKey} onSecret={setCodepayKey} labels={[t("adminSettings.payment.alipay"), t("adminSettings.payment.wechat"), "QQ"]} enabled={[codepayAlipayEnabled, codepayWechatEnabled, codepayQQEnabled]} onEnabled={[setCodepayAlipayEnabled, setCodepayWechatEnabled, setCodepayQQEnabled]} />
               <Button onClick={() => updateConfig.mutate({ epay_url: epayURL, epay_pid: epayPID, codepay_url: codepayURL, codepay_id: codepayID, epay_alipay_enabled: String(epayAlipayEnabled), epay_wechat_enabled: String(epayWechatEnabled), epay_qq_enabled: String(epayQQEnabled), codepay_alipay_enabled: String(codepayAlipayEnabled), codepay_wechat_enabled: String(codepayWechatEnabled), codepay_qq_enabled: String(codepayQQEnabled), ...(epayKey && epayKey !== maskedSecret ? { epay_key: epayKey } : {}), ...(codepayKey && codepayKey !== maskedSecret ? { codepay_key: codepayKey } : {}) })} disabled={updateConfig.isPending}><Save />{t("adminSettings.save")}</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="realname" className="mt-4">
+          <Card>
+            <CardHeader><CardTitle>{t("adminSettings.sections.realname")}</CardTitle></CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label>{t("adminSettings.realname.enabled")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("adminSettings.realname.enabledHint")}</p>
+                </div>
+                <Switch checked={realnameEnabled} onCheckedChange={setRealnameEnabled} />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label>{t("adminSettings.realname.requiredForClaim")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("adminSettings.realname.requiredForClaimHint")}</p>
+                </div>
+                <Switch checked={realnameRequiredForClaim} onCheckedChange={setRealnameRequiredForClaim} />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label>{t("adminSettings.realname.requiredForPayment")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("adminSettings.realname.requiredForPaymentHint")}</p>
+                </div>
+                <Switch checked={realnameRequiredForPayment} onCheckedChange={setRealnameRequiredForPayment} />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label>{t("adminSettings.realname.faceEnabled")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("adminSettings.realname.faceEnabledHint")}</p>
+                </div>
+                <Switch checked={realnameFaceEnabled} onCheckedChange={setRealnameFaceEnabled} />
+              </div>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>{t("adminSettings.realname.fee")}</Label>
+                  <Input value={realnameFee} onChange={(event) => setRealnameFee(event.target.value)} type="number" min="0" step="0.01" />
+                  <p className="text-xs text-muted-foreground">{t("adminSettings.realname.feeHint")}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("adminSettings.realname.provider")}</Label>
+                  <select
+                    className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                    value={realnameProvider}
+                    onChange={(event) => setRealnameProvider(event.target.value as typeof realnameProvider)}
+                  >
+                    <option value="manual">{t("adminSettings.realname.providerManual")}</option>
+                    <option value="aliyun">{t("adminSettings.realname.providerAliyun")}</option>
+                    <option value="juhe">{t("adminSettings.realname.providerJuhe")}</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">{t("adminSettings.realname.providerHint")}</p>
+                </div>
+              </div>
+              {realnameProvider === "aliyun" && (
+                <div className="space-y-2">
+                  <Label>{t("adminSettings.realname.appCode")}</Label>
+                  <Input type="password" value={realnameAppCode} onChange={(event) => setRealnameAppCode(event.target.value)} placeholder={t("adminSettings.realname.appCodePlaceholder")} />
+                  <p className="text-xs text-muted-foreground">{t("adminSettings.realname.appCodeHint")}</p>
+                </div>
+              )}
+              {realnameProvider === "juhe" && (
+                <div className="space-y-2">
+                  <Label>{t("adminSettings.realname.appKey")}</Label>
+                  <Input type="password" value={realnameAppKey} onChange={(event) => setRealnameAppKey(event.target.value)} placeholder={t("adminSettings.realname.appKeyPlaceholder")} />
+                  <p className="text-xs text-muted-foreground">{t("adminSettings.realname.appKeyHint")}</p>
+                </div>
+              )}
+              <Button
+                onClick={() => updateConfig.mutate({
+                  realname_enabled: String(realnameEnabled),
+                  realname_required_for_claim: String(realnameRequiredForClaim),
+                  realname_required_for_payment: String(realnameRequiredForPayment),
+                  realname_fee: realnameFee,
+                  realname_provider: realnameProvider,
+                  realname_face_enabled: String(realnameFaceEnabled),
+                  ...(realnameAppCode && realnameAppCode !== maskedSecret ? { realname_app_code: realnameAppCode } : {}),
+                  ...(realnameAppKey && realnameAppKey !== maskedSecret ? { realname_app_key: realnameAppKey } : {}),
+                })}
+                disabled={updateConfig.isPending}
+              >
+                <Save />{updateConfig.isPending ? t("common.saving") : t("adminSettings.save")}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
