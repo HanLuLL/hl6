@@ -53,8 +53,8 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	dbWriter := logger.NewDBWriter(db, logger.Config{})
-	log.SetOutput(io.MultiWriter(os.Stderr, dbWriter))
+	dbSink := logger.NewDBSink(db, logger.SinkConfig{})
+	log.SetOutput(io.MultiWriter(os.Stderr, dbSink))
 	logger.StartRetentionLoop(ctx, db, 30*24*time.Hour)
 
 	log.Println("Database migrated successfully")
@@ -66,12 +66,12 @@ func main() {
 	seedDefaults(db, cfg)
 	bootstrapSessionSecret(db, cfg)
 
-	r := router.Setup(cfg, db, ctx, dbWriter)
+	r := router.Setup(cfg, db, ctx, dbSink)
 	if err := router.RunServer(cfg, r); err != nil {
 		log.Fatal("server shutdown error:", err)
 	}
 	// 优雅关闭后 flush 剩余日志到 DB
-	dbWriter.Close()
+	dbSink.Close()
 }
 
 func bootstrapSessionSecret(db *gorm.DB, cfg *config.Config) {

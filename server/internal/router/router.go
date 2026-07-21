@@ -27,13 +27,13 @@ type auditStack struct {
 	subSvc   *service.SubdomainService
 }
 
-func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context, logWriter *logger.DBWriter) *gin.Engine {
+func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context, logSink *logger.DBSink) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.CORS(cfg.AllowedOrigins, cfg.FrontendURLs...))
 	// access log 异步入库到 system_logs 表（module="http"），
 	// gin.Default() 的默认 Logger 仍输出到 stdout，两者互不干扰。
-	if logWriter != nil {
-		r.Use(logger.GinMiddleware(logWriter))
+	if logSink != nil {
+		r.Use(logger.GinSinkMiddleware(logSink))
 	}
 	r.GET("/health", func(c *gin.Context) {
 		status := "ok"

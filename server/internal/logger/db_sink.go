@@ -1,4 +1,8 @@
-// Package logger 提供将标准库 log 包输出和 Gin access log 多路写入到 SystemLog 表的能力。
+// Package logger - DBSink 部分
+//
+// DBSink 把标准库 log 包输出和 Gin access log 多路写入到 SystemLog 表。
+// 注意：本文件与 logger.go（slog 实现）共存，类型命名刻意避开 Config/Logger/Entry
+// 以免与现有定义冲突。
 //
 // 设计要点：
 //   - 实现 io.Writer 接口，解析标准库 log 包的输出（如 "2026/07/21 12:34:56 [email] msg..."）
@@ -21,34 +25,34 @@ import (
 	"hl6-server/internal/model"
 )
 
-// Entry 是一条待入库的日志记录。
-type Entry struct {
+// SinkEntry 是一条待入库的日志记录。
+type SinkEntry struct {
 	Level   string                 // DEBUG / INFO / WARN / ERROR
 	Module  string                 // auth / dns / email / http / admin / migration 等
 	Message string                 // 已脱敏的消息文本
 	Fields  map[string]interface{} // 可选的结构化字段（已脱敏）
 }
 
-// Config 控制 DBWriter 的行为。
-type Config struct {
-	BufferSize   int           // 内部 channel 缓冲长度，默认 1024
+// SinkConfig 控制 DBSink 的行为。
+type SinkConfig struct {
+	BufferSize    int           // 内部 channel 缓冲长度，默认 1024
 	FlushInterval time.Duration // 批量 flush 间隔，默认 100ms
-	BatchSize    int           // 单次 INSERT 最大条数，默认 64
+	BatchSize     int           // 单次 INSERT 最大条数，默认 64
 }
 
-// DBWriter 把标准库 log 输出异步入库到 SystemLog 表。
-// 同时实现 io.Writer（给 log.SetOutput 用）和 gin.ResponseWriter 钩子（给 access log 用）。
-type DBWriter struct {
+// DBSink 把标准库 log 输出异步入库到 SystemLog 表。
+// 同时实现 io.Writer（给 log.SetOutput 用）和 Gin access log 钩子（给 middleware 用）。
+type DBSink struct {
 	db     *gorm.DB
-	cfg    Config
-	ch     chan Entry
+	cfg    SinkConfig
+	ch     chan SinkEntry
 	wg     sync.WaitGroup
 	closed chan struct{}
 }
 
-// NewDBWriter 构造一个新的 DBWriter 并启动后台 flush goroutine。
+// NewDBSink 构造一个新的 DBSink 并启动后台 flush goroutine。
 // 调用方应在退出时调用 Close() 确保剩余日志落库。
-func NewDBWriter(db *gorm.DB, cfg Config) *DBWriter {
+func NewDBSink(db *gorm.DB, cfg SinkConfig) *DBSink {
 	if cfg.BufferSize <= 0 {
 		cfg.BufferSize = 1024
 	}
@@ -58,10 +62,10 @@ func NewDBWriter(db *gorm.DB, cfg Config) *DBWriter {
 	if cfg.BatchSize <= 0 {
 		cfg.BatchSize = 64
 	}
-	w := &DBWriter{
+	w := &DBSink{
 		db:     db,
 		cfg:    cfg,
-		ch:     make(chan Entry, cfg.BufferSize),
+		ch:     make(chan SinkEntry, cfg.BufferSize),
 		closed: make(chan struct{}),
 	}
 	w.wg.Add(1)
@@ -71,8 +75,7 @@ func NewDBWriter(db *gorm.DB, cfg Config) *DBWriter {
 
 // Write 实现 io.Writer。标准库 log 包每次调用会写入一行（以 \n 结尾）。
 // 多行合并的情况按行拆分独立入库。
-func (w *DBWriter) Write(p []byte) (int, error) {
-	// log 包总会带 \n 结尾；按行拆分
+func (w *DBSink) Write(p []byte) (int, error) {
 	text := strings.TrimRight(string(p), "\n")
 	if text == "" {
 		return len(p), nil
@@ -88,8 +91,8 @@ func (w *DBWriter) Write(p []byte) (int, error) {
 }
 
 // LogEntry 是给业务代码直接调用入库的接口（不经过 log 包）。
-// 例如 Gin access log middleware 可以构造结构化 Entry 后调用此方法。
-func (w *DBWriter) LogEntry(entry Entry) {
+// 例如 Gin access log middleware 可以构造结构化 SinkEntry 后调用此方法。
+func (w *DBSink) LogEntry(entry SinkEntry) {
 	if entry.Message == "" {
 		return
 	}
@@ -104,7 +107,7 @@ func (w *DBWriter) LogEntry(entry Entry) {
 	w.enqueue(entry)
 }
 
-func (w *DBWriter) enqueue(entry Entry) {
+func (w *DBSink) enqueue(entry SinkEntry) {
 	select {
 	case w.ch <- entry:
 	default:
@@ -113,10 +116,10 @@ func (w *DBWriter) enqueue(entry Entry) {
 }
 
 // flushLoop 后台批量 flush channel 中的日志到 DB。
-func (w *DBWriter) flushLoop() {
+func (w *DBSink) flushLoop() {
 	defer w.wg.Done()
 
-	batch := make([]Entry, 0, w.cfg.BatchSize)
+	batch := make([]SinkEntry, 0, w.cfg.BatchSize)
 	ticker := time.NewTicker(w.cfg.FlushInterval)
 	defer ticker.Stop()
 
@@ -145,9 +148,9 @@ func (w *DBWriter) flushLoop() {
 	}
 }
 
-// insertBatch 把一批 Entry 转成 SystemLog 并批量 INSERT。
+// insertBatch 把一批 SinkEntry 转成 SystemLog 并批量 INSERT。
 // 失败时静默丢弃，不能让日志写入失败反向影响主业务。
-func (w *DBWriter) insertBatch(batch []Entry) {
+func (w *DBSink) insertBatch(batch []SinkEntry) {
 	logs := make([]model.SystemLog, 0, len(batch))
 	now := time.Now().UTC()
 	for _, e := range batch {
@@ -172,18 +175,18 @@ func (w *DBWriter) insertBatch(batch []Entry) {
 	_ = w.db.Create(&logs).Error
 }
 
-// Close 关闭 writer，等待后台 goroutine 把剩余日志落库。
+// Close 关闭 sink，等待后台 goroutine 把剩余日志落库。
 // 应在 server 优雅关闭流程中调用。
-func (w *DBWriter) Close() {
+func (w *DBSink) Close() {
 	close(w.ch)
 	w.wg.Wait()
 }
 
 // parseStdLogLine 解析标准库 log 包的输出行。
 // 标准库格式："2026/07/21 12:34:56 message" 或带前缀 "2026/07/21 12:34:56 [email] message"
-// 我们通过前缀 [xxx] 推断 module 和 level。
-func parseStdLogLine(line string) Entry {
-	entry := Entry{Level: model.LogLevelInfo, Module: "system"}
+// 通过前缀 [xxx] 推断 module 和 level。
+func parseStdLogLine(line string) SinkEntry {
+	entry := SinkEntry{Level: model.LogLevelInfo, Module: "system"}
 
 	// 跳过日期时间前缀 "2006/01/02 15:04:05 "（19 字符）
 	rest := line
@@ -262,7 +265,6 @@ func cleanupOldLogs(db *gorm.DB, maxAge time.Duration) {
 			Limit(batchSize).
 			Delete(&model.SystemLog{})
 		if result.Error != nil {
-			// 清理失败不重试，下次 ticker 再尝试
 			return
 		}
 		if result.RowsAffected < batchSize {
@@ -299,7 +301,6 @@ func maskSensitive(s string) string {
 	s = bearerRegexp.ReplaceAllString(s, "Bearer [REDACTED]")
 	s = jwtRegexp.ReplaceAllString(s, "[REDACTED_JWT]")
 	s = passwordRegexp.ReplaceAllStringFunc(s, func(m string) string {
-		// 保留 key 部分，把 value 替换为 [REDACTED]
 		idx := -1
 		for i := 0; i < len(m); i++ {
 			ch := m[i]
@@ -311,7 +312,6 @@ func maskSensitive(s string) string {
 		if idx < 0 {
 			return "[REDACTED]"
 		}
-		// 找到分隔符后第一个非空白和非引号字符
 		j := idx + 1
 		for j < len(m) && (m[j] == ' ' || m[j] == '\t' || m[j] == '"' || m[j] == '\'') {
 			j++
@@ -337,7 +337,6 @@ func maskFields(fields map[string]interface{}) map[string]interface{} {
 
 func maskFieldValue(key string, value interface{}) interface{} {
 	keyLower := strings.ToLower(key)
-	// 敏感 key 直接 redact
 	if strings.Contains(keyLower, "password") || strings.Contains(keyLower, "passwd") ||
 		strings.Contains(keyLower, "pwd") || strings.Contains(keyLower, "secret") ||
 		strings.Contains(keyLower, "token") || strings.Contains(keyLower, "api_key") ||
@@ -354,5 +353,5 @@ func maskFieldValue(key string, value interface{}) interface{} {
 	}
 }
 
-// 确保 DBWriter 实现了 io.Writer 接口
-var _ io.Writer = (*DBWriter)(nil)
+// 确保 DBSink 实现了 io.Writer 接口
+var _ io.Writer = (*DBSink)(nil)
