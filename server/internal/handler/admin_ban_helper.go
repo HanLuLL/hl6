@@ -338,13 +338,18 @@ func executeAdminDeleteUserWithCleanup(
 			return err
 		}
 
-		// 删除通知
-		if err := tx.Where("user_id = ?", target.ID).Delete(&model.Notification{}).Error; err != nil {
-			log.Printf("[admin] delete user %d: delete notifications failed: %v", target.ID, err)
-			return err
-		}
+		// 删除通知已读回执
+		// 注意：Notification 表是按 target_ids JSONB 数组分发的广播记录，没有 user_id 列，
+		// 不能按 user_id 删除。被删用户 ID 残留在 target_ids 中无害（用户已不存在，查询不会匹配）。
+		// 这里只删 NotificationRead（用户已读回执），符合预期。
 		if err := tx.Where("user_id = ?", target.ID).Delete(&model.NotificationRead{}).Error; err != nil {
 			log.Printf("[admin] delete user %d: delete notification reads failed: %v", target.ID, err)
+			return err
+		}
+
+		// 删除密码重置/账户激活令牌（不应残留，有安全风险）
+		if err := tx.Where("user_id = ?", target.ID).Delete(&model.AuthToken{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete auth tokens failed: %v", target.ID, err)
 			return err
 		}
 

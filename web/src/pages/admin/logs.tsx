@@ -126,9 +126,9 @@ function LogDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex flex-wrap items-center gap-2">
             <LevelBadge level={log.level} />
             <span>{log.module}</span>
           </DialogTitle>
@@ -139,12 +139,12 @@ function LogDetailDialog({
         <div className="space-y-4">
           <div>
             <Label className="text-muted-foreground">{t("systemLogs.message")}</Label>
-            <p className="mt-1 text-sm">{log.message}</p>
+            <p className="mt-1 text-sm break-words whitespace-pre-wrap">{log.message}</p>
           </div>
           {log.fields && Object.keys(log.fields).length > 0 && (
             <div>
               <Label className="text-muted-foreground">{t("systemLogs.fields")}</Label>
-              <pre className="mt-1 p-3 bg-muted rounded-md text-xs overflow-x-auto">
+              <pre className="mt-1 p-3 bg-muted rounded-md text-xs whitespace-pre-wrap break-words overflow-x-auto">
                 {JSON.stringify(log.fields, null, 2)}
               </pre>
             </div>
@@ -456,48 +456,52 @@ export default function AdminSystemLogsPage() {
           {isLoading ? (
             <TableSkeleton />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("systemLogs.level")}</TableHead>
-                  <TableHead>{t("systemLogs.module")}</TableHead>
-                  <TableHead>{t("systemLogs.message")}</TableHead>
-                  <TableHead>{t("systemLogs.time")}</TableHead>
-                  <TableHead className="w-16">{t("systemLogs.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logs.length === 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {t("systemLogs.noLogs")}
-                    </TableCell>
+                    <TableHead>{t("systemLogs.level")}</TableHead>
+                    <TableHead>{t("systemLogs.module")}</TableHead>
+                    <TableHead>{t("systemLogs.message")}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t("systemLogs.time")}</TableHead>
+                    <TableHead className="w-16">{t("systemLogs.actions")}</TableHead>
                   </TableRow>
-                ) : (
-                  logs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>
-                        <LevelBadge level={log.level} />
-                      </TableCell>
-                      <TableCell className="font-medium">{log.module}</TableCell>
-                      <TableCell className="max-w-md truncate">{log.message}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(log.created_at).toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setSelectedLog(log)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                </TableHeader>
+                <TableBody>
+                  {logs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        {t("systemLogs.noLogs")}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    logs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>
+                          <LevelBadge level={log.level} />
+                        </TableCell>
+                        <TableCell className="font-medium">{log.module}</TableCell>
+                        <TableCell className="max-w-[120px] sm:max-w-xs md:max-w-md truncate">
+                          {log.message}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                          {new Date(log.created_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setSelectedLog(log)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
