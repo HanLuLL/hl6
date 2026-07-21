@@ -500,6 +500,12 @@ export const api = {
     ),
   adminUnbanUser: (userId: number) =>
     request<ApiResponse<{ message: string }>>(`/admin/users/${userId}/unban`, { method: "PUT" }),
+  // 删除用户账号（级联清理子域名、DNS、积分等，含 Cloudflare DNS 异步任务处理）
+  adminDeleteUser: (userId: number, opts?: { idempotencyKey?: string; timeoutMs?: number }) =>
+    request<ApiResponse<{ message: string; deleted_dns_count?: number; failed_records?: Array<{ subdomain_fqdn: string; record_type: string; record_content: string; provider_record_id: string; error: string }> }>>(
+      `/admin/users/${userId}`,
+      { method: "DELETE", idempotencyKey: opts?.idempotencyKey, timeoutMs: opts?.timeoutMs }
+    ),
 
   // Admin: System Config
   adminGetConfig: () =>

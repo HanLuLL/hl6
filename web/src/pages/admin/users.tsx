@@ -139,6 +139,12 @@ function UsersContent() {
   const [banReasonPreset, setBanReasonPreset] = useState<string>("");
   const [isBanRetrying, setIsBanRetrying] = useState(false);
 
+  // 删除账号相关状态
+  const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
+  const [deleteUserEmail, setDeleteUserEmail] = useState("");
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
+  const [isDeleteRetrying, setIsDeleteRetrying] = useState(false);
+
   const submitGrant = () => {
     if (!grantUserId) return;
     const amount = parseCreditInput(grantAmount, true);
@@ -211,6 +217,34 @@ function UsersContent() {
       toast.success(t("adminUsers.unbanSuccess"));
     },
     onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+
+  // 删除账号 mutation（参考 banMutation 的幂等重试模式）
+  const deleteMutation = useMutation({
+    mutationFn: async ({ userId }: { userId: number }) => {
+      const idempotencyKey = createIdempotencyKey();
+      try {
+        return await api.adminDeleteUser(userId, { idempotencyKey, timeoutMs: 3000 });
+      } catch (err) {
+        if (!isRetryableMutationError(err)) {
+          throw err;
+        }
+        setIsDeleteRetrying(true);
+        return api.adminDeleteUser(userId, { idempotencyKey, timeoutMs: 3000 });
+      } finally {
+        setIsDeleteRetrying(false);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success(t("adminUsers.deleteAccountSuccess"));
+      setDeleteUserId(null);
+      setDeleteUserEmail("");
+      setDeleteConfirmInput("");
+    },
+    onError: (err) => {
+      handleDnsBulkJobError(err, t, "delete", (e) => toast.error(getErrorMessage(e, t)));
+    },
   });
 
   return (
@@ -378,6 +412,18 @@ function UsersContent() {
                           {t("adminUsers.banUser")}
                         </Button>
                       )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          setDeleteUserId(user.id);
+                          setDeleteUserEmail(user.email);
+                          setDeleteConfirmInput("");
+                        }}
+                        disabled={user.id === currentUser?.id || deleteMutation.isPending || isDeleteRetrying}
+                      >
+                        {t("adminUsers.deleteAccount")}
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -547,6 +593,58 @@ function UsersContent() {
               data-dialog-primary="true"
             >
               {changeGroupMutation.isPending ? t("common.saving") : t("common.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除账号确认对话框：要求输入邮箱 type-to-confirm */}
+      <Dialog open={deleteUserId !== null} onOpenChange={(open) => {
+        if (!open) {
+          setDeleteUserId(null);
+          setDeleteUserEmail("");
+          setDeleteConfirmInput("");
+        }
+      }}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogHeader><DialogTitle>{t("adminUsers.deleteAccountConfirmTitle")}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-1">
+              <p className="text-sm font-medium text-destructive">{t("adminUsers.deleteAccountConfirmDesc")}</p>
+              <p className="text-xs text-muted-foreground">{t("adminUsers.deleteAllResourcesHint")}</p>
+            </div>
+            <div className="space-y-2">
+              <UserDetailRow label={t("adminUsers.email")} value={<CopyableEmail email={deleteUserEmail} truncate={false} className="text-sm text-foreground" />} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("adminUsers.deleteAccountConfirmLabel", { email: deleteUserEmail })}</Label>
+              <Input
+                value={deleteConfirmInput}
+                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                placeholder={deleteUserEmail}
+                autoComplete="off"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteUserId(null);
+                setDeleteUserEmail("");
+                setDeleteConfirmInput("");
+              }}
+              disabled={deleteMutation.isPending || isDeleteRetrying}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteUserId && deleteMutation.mutate({ userId: deleteUserId })}
+              disabled={deleteMutation.isPending || isDeleteRetrying || deleteConfirmInput.trim() !== deleteUserEmail}
+              data-dialog-primary="true"
+            >
+              {isDeleteRetrying ? `${t("common.retry")}...` : deleteMutation.isPending ? t("common.saving") : t("adminUsers.deleteAccount")}
             </Button>
           </DialogFooter>
         </DialogContent>
