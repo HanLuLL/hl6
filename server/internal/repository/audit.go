@@ -76,6 +76,13 @@ func (r *Repository) DeleteAuditRule(id uint) error {
 	return r.DB.Delete(&model.AuditRule{}, id).Error
 }
 
+// CountAuditRules 统计内容审查规则数量（用于 seedDefaults 判断是否需要写入默认规则）。
+func (r *Repository) CountAuditRules() (int64, error) {
+	var count int64
+	err := r.DB.Model(&model.AuditRule{}).Count(&count).Error
+	return count, err
+}
+
 func (r *Repository) DomainExists(id uint) bool {
 	var count int64
 	r.DB.Model(&model.Domain{}).Where("id = ?", id).Count(&count)

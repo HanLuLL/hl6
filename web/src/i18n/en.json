@@ -1283,11 +1283,15 @@
   },
   "audit": {
     "title": "Content Audit",
-    "description": "Manage subdomain review, rules, and scan history in one place",
+    "description": "Manage subdomain review, rules, scan history, AI review, and appeals in one place",
     "tabs": {
       "domains": "Subdomains",
       "rules": "Rules",
-      "history": "History"
+      "history": "History",
+      "aiModels": "AI Models",
+      "aiTemplates": "Prompt Templates",
+      "aiReviews": "AI Reviews",
+      "appeals": "Appeals"
     },
     "summary": {
       "deleted": "Deleted",

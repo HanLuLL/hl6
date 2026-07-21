@@ -25,6 +25,7 @@ type auditStack struct {
 	auditLog *service.AuditLogService
 	notif    *service.NotificationService
 	subSvc   *service.SubdomainService
+	aiAudit  *service.AIAuditService
 }
 
 func Setup(cfg *config.Config, db *gorm.DB, ctx context.Context, logSink *logger.DBSink) *gin.Engine {
@@ -107,6 +108,13 @@ func bootstrapAudit(ctx context.Context, cfg *config.Config, db *gorm.DB, repo *
 	auditSvc := service.NewAuditService(repo, dnsOps, subSvc, notifSvc, cfg.AuditScanTimeout, auditLogSvc)
 	auditEnqueue := service.NewAuditEnqueueService(taskQueue, enqueueDedup)
 
+	// 串联式 AI 审查：实例化 AIAuditService 并注入 AuditService。
+	// 规则未命中且 scan 为 clean 时由 AuditService 主动调用 AI 复核。
+	// 未配置任何启用的 AI 模型时，AIAuditService.ReviewSubdomain 会返回 error 并被主流程静默忽略。
+	llmSvc := service.NewAILLMService(cfg.EncryptionKey)
+	aiAuditSvc := service.NewAIAuditService(repo, llmSvc, auditSvc, auditLogSvc, cfg.EncryptionKey)
+	auditSvc.SetAIAuditService(aiAuditSvc)
+
 	startAuditWorkers(ctx, cfg, db, repo, taskQueue, schedDedup, auditSvc, auditEnqueue)
 
 	return auditStack{
@@ -115,6 +123,7 @@ func bootstrapAudit(ctx context.Context, cfg *config.Config, db *gorm.DB, repo *
 		auditLog: auditLogSvc,
 		notif:    notifSvc,
 		subSvc:   subSvc,
+		aiAudit:  aiAuditSvc,
 	}
 }
 

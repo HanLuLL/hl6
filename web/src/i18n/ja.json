@@ -1283,11 +1283,15 @@
   },
   "audit": {
     "title": "コンテンツ監査",
-    "description": "サブドメイン審査、ルール設定、スキャン履歴を一元管理",
+    "description": "サブドメイン審査、ルール設定、スキャン履歴、AI 審査、申し立てを一元管理",
     "tabs": {
       "domains": "サブドメイン",
       "rules": "ルール",
-      "history": "履歴"
+      "history": "履歴",
+      "aiModels": "AI モデル",
+      "aiTemplates": "プロンプトテンプレート",
+      "aiReviews": "AI 審査記録",
+      "appeals": "申し立て管理"
     },
     "summary": {
       "deleted": "削除済み",

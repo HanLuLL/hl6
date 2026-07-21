@@ -24,6 +24,8 @@ type AuditService struct {
 	fetcher  *audit.SafeFetcher
 	engine   *AuditRuleEngine
 	auditLog *AuditLogService
+	// aiAudit 可选：串联式 AI 二次审查服务。规则未命中时若有配置则触发 AI 复核。
+	aiAudit *AIAuditService
 }
 
 func NewAuditService(repo *repository.Repository, ops *DNSOperationService, subSvc *SubdomainService, notif *NotificationService, fetchTimeout time.Duration, auditLog *AuditLogService) *AuditService {
@@ -44,6 +46,12 @@ func NewAuditService(repo *repository.Repository, ops *DNSOperationService, subS
 
 func (s *AuditService) Fetcher() *audit.SafeFetcher { return s.fetcher }
 func (s *AuditService) Engine() *AuditRuleEngine    { return s.engine }
+
+// SetAIAuditService 注入 AI 审查服务，启用串联式 AI 二次审查。
+// 传 nil 可禁用 AI 复核（仅走规则）。
+func (s *AuditService) SetAIAuditService(ai *AIAuditService) {
+	s.aiAudit = ai
+}
 
 func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScanTarget) {
 	fqdn := target.FQDN
@@ -137,6 +145,38 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 
 	if err := s.repo.CreateSubdomainScan(scan); err != nil {
 		slog.Error("audit scan: persist scan record failed", "fqdn", fqdn, "err", err)
+		return
+	}
+
+	// 串联式 AI 二次审查：规则未命中且 scan 为 clean 时触发 AI 复核。
+	// 跳过条件：未配置 AI 服务 / 是豁免重检 / scan 非 clean / 是首次扫描前的占位状态。
+	if s.aiAudit == nil || isRecheck {
+		return
+	}
+	if scan.Status != model.ScanStatusClean {
+		return
+	}
+	// 仅在内容确实可读时调用 AI，避免对不可达/错误页面浪费 LLM token
+	primaryCh := dual.PrimaryChannel()
+	if primaryCh.Body == "" && primaryCh.Title == "" {
+		return
+	}
+
+	aiInput := AIAuditInput{
+		SubdomainID: target.ID,
+		FQDN:        fqdn,
+		Title:       primaryCh.Title,
+		Content:     primaryCh.Body,
+		URL:         primaryCh.RequestURL,
+	}
+	if scan.ID > 0 {
+		scanID := scan.ID
+		aiInput.ScanID = &scanID
+	}
+
+	// AI 审查失败不影响主流程；AIAuditService 内部已处理错误日志和自动处置
+	if _, err := s.aiAudit.ReviewSubdomain(ctx, aiInput); err != nil {
+		slog.Warn("audit scan: AI review failed", "fqdn", fqdn, "err", err)
 	}
 }
 

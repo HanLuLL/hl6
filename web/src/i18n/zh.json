@@ -1283,11 +1283,15 @@
   },
   "audit": {
     "title": "内容审查",
-    "description": "统一管理子域名审查、规则配置与扫描历史",
+    "description": "统一管理子域名审查、规则配置、扫描历史、AI 审查与申诉",
     "tabs": {
       "domains": "子域名",
       "rules": "规则",
-      "history": "历史"
+      "history": "历史",
+      "aiModels": "AI 模型",
+      "aiTemplates": "提示词模板",
+      "aiReviews": "AI 审查记录",
+      "appeals": "申诉管理"
     },
     "summary": {
       "deleted": "已删除",

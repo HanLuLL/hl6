@@ -449,6 +449,125 @@ func (s *AIAuditService) CreateDefaultPromptTemplates(createdBy uint) error {
 	return nil
 }
 
+// DefaultAuditRules 返回系统默认的内容审查规则列表。
+// 这些规则覆盖最常见的违规场景，安全可靠，可作为新部署的基线。
+// 管理员可在后台「内容审查 - 规则」Tab 中编辑或禁用。
+func DefaultAuditRules(createdBy uint) []model.AuditRule {
+	return []model.AuditRule{
+		// 1. 长期不可达回收：双次确认不可达后释放子域名，回收占用资源
+		{
+			Name:        "长期不可达回收",
+			Enabled:     true,
+			Description: "子域名连续两次抓取均不可达时释放（回收长期未使用的占用）",
+			Targets:     model.StringSlice{model.AuditTargetBody},
+			MatchType:   model.AuditMatchUnreachable,
+			Keywords:    model.StringSlice{},
+			Pattern:     "",
+			Action:      model.AuditActionSite,
+			BanNotifyContent: "你的子域名 {{fqdn}} 因长期不可达已被释放。" +
+				"如需继续使用，请重新认领并配置可正常访问的 DNS 记录。",
+			ExemptEnabled:        true,
+			ExemptRecheckMinutes: 1440, // 24 小时宽限期
+			ExemptNotifyContent: "你的子域名 {{fqdn}} 当前不可达。" +
+				"请在 {{recheck_minutes}} 分钟内恢复访问，否则将被释放。",
+			CreatedBy: createdBy,
+		},
+		// 2. 5xx 服务端错误告警：仅观察，不处置（可能是临时故障）
+		{
+			Name:        "5xx 服务端错误告警",
+			Enabled:     true,
+			Description: "页面返回 5xx 状态码时记录为违规，仅观察不处置（可能是临时故障）",
+			Targets:     model.StringSlice{model.AuditTargetStatusCode},
+			MatchType:   model.AuditMatchStatusEq,
+			Keywords:    model.StringSlice{},
+			Pattern:     "502",
+			Action:      model.AuditActionObserve,
+			ExemptEnabled:        false,
+			ExemptRecheckMinutes: 0,
+			CreatedBy: createdBy,
+		},
+		// 3. 敏感政治内容：命中即释放子域名
+		{
+			Name:        "敏感政治内容拦截",
+			Enabled:     true,
+			Description: "命中煽动颠覆、分裂国家等敏感政治关键词时释放子域名",
+			Targets:     model.StringSlice{model.AuditTargetBody, model.AuditTargetTitle},
+			MatchType:   model.AuditMatchKeyword,
+			Keywords: model.StringSlice{
+				"煽动颠覆国家政权",
+				"推翻社会主义制度",
+				"分裂国家",
+				"颠覆国家政权",
+			},
+			KeywordLogic: model.AuditKeywordLogicAny,
+			Pattern:      "",
+			Action:       model.AuditActionSite,
+			BanNotifyContent: "你的子域名 {{fqdn}} 因命中敏感政治内容关键词已被释放。" +
+				"如认为误判，请提交申诉。",
+			ExemptEnabled:        false,
+			ExemptRecheckMinutes: 0,
+			CreatedBy: createdBy,
+		},
+		// 4. 恶意脚本检测：命中即封禁用户所有子域名
+		{
+			Name:        "恶意脚本检测",
+			Enabled:     true,
+			Description: "检测 XSS、挖矿、WebShell 等恶意脚本特征，命中即封禁用户所有子域名",
+			Targets:     model.StringSlice{model.AuditTargetBody},
+			MatchType:   model.AuditMatchRegex,
+			Keywords:    model.StringSlice{},
+			Pattern:     "(eval\\(atob\\(|document\\.write\\(unescape\\(|coinhive|cryptonight|<script[^>]*>\\s*eval\\(|base64,PHNjcmlwd)",
+			CaseSensitive: false,
+			Action:        model.AuditActionUser,
+			BanNotifyContent: "你的子域名 {{fqdn}} 检测到恶意脚本，已封禁账户下所有子域名。" +
+				"如认为误判，请立即提交申诉并配合审查。",
+			ExemptEnabled:        false,
+			ExemptRecheckMinutes: 0,
+			CreatedBy: createdBy,
+		},
+		// 5. 钓鱼登录页面检测：命中即释放子域名
+		{
+			Name:        "钓鱼登录页面检测",
+			Enabled:     true,
+			Description: "检测仿冒登录表单特征，命中即释放子域名",
+			Targets:     model.StringSlice{model.AuditTargetBody},
+			MatchType:   model.AuditMatchKeyword,
+			Keywords: model.StringSlice{
+				"password",
+				"passwd",
+				"密码",
+			},
+			KeywordLogic: model.AuditKeywordLogicAll,
+			Pattern:      "",
+			Action:       model.AuditActionSite,
+			BanNotifyContent: "你的子域名 {{fqdn}} 检测到疑似钓鱼登录页面，已被释放。" +
+				"如认为误判，请提交申诉。",
+			ExemptEnabled:        false,
+			ExemptRecheckMinutes: 0,
+			CreatedBy: createdBy,
+		},
+	}
+}
+
+// CreateDefaultAuditRules 创建默认内容审查规则（仅在表为空时执行）。
+func (s *AIAuditService) CreateDefaultAuditRules(createdBy uint) error {
+	existing, err := s.repo.CountAuditRules()
+	if err != nil {
+		return err
+	}
+	if existing > 0 {
+		return nil
+	}
+
+	rules := DefaultAuditRules(createdBy)
+	for i := range rules {
+		if err := s.repo.CreateAuditRule(&rules[i]); err != nil {
+			slog.Error("AI audit: failed to create default audit rule", "name", rules[i].Name, "err", err)
+		}
+	}
+	return nil
+}
+
 // MaskAPIKey 对 API Key 进行脱敏处理（仅显示后4位）。
 func MaskAPIKey(key string) string {
 	if key == "" {

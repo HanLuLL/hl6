@@ -1283,11 +1283,15 @@
   },
   "audit": {
     "title": "內容審查",
-    "description": "統一管理子網域審查、規則配置與掃描歷史",
+    "description": "統一管理子網域審查、規則配置、掃描歷史、AI 審查與申訴",
     "tabs": {
       "domains": "子網域",
       "rules": "規則",
-      "history": "歷史"
+      "history": "歷史",
+      "aiModels": "AI 模型",
+      "aiTemplates": "提示詞範本",
+      "aiReviews": "AI 審查記錄",
+      "appeals": "申訴管理"
     },
     "summary": {
       "deleted": "已刪除",

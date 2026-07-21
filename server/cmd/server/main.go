@@ -24,6 +24,7 @@ import (
 	"hl6-server/internal/model"
 	"hl6-server/internal/referral"
 	"hl6-server/internal/router"
+	"hl6-server/internal/service"
 	cryptoutil "hl6-server/pkg/crypto"
 )
 
@@ -488,6 +489,38 @@ func seedDefaults(db *gorm.DB, cfg *config.Config) {
 		if err := backfillReferralCode(db, u.ID); err != nil {
 			log.Printf("failed to backfill referral_code for user %d: %v", u.ID, err)
 		}
+	}
+
+	// 6. Seed default audit rules and AI prompt templates (only when tables empty)
+	seedDefaultAuditAssets(db)
+}
+
+// seedDefaultAuditAssets 写入默认内容审查规则和 AI 提示词模板。
+// 仅在对应表为空时执行，避免覆盖管理员已配置的内容。
+// createdBy=0 表示系统种子；管理员后续编辑会更新 CreatedBy/UpdatedBy。
+func seedDefaultAuditAssets(db *gorm.DB) {
+	var ruleCount int64
+	db.Model(&model.AuditRule{}).Count(&ruleCount)
+	if ruleCount == 0 {
+		rules := service.DefaultAuditRules(0)
+		for i := range rules {
+			if err := db.Create(&rules[i]).Error; err != nil {
+				log.Printf("failed to seed default audit rule %q: %v", rules[i].Name, err)
+			}
+		}
+		log.Printf("seeded %d default audit rules", len(rules))
+	}
+
+	var templateCount int64
+	db.Model(&model.AuditPromptTemplate{}).Count(&templateCount)
+	if templateCount == 0 {
+		templates := service.DefaultPromptTemplates(0)
+		for i := range templates {
+			if err := db.Create(&templates[i]).Error; err != nil {
+				log.Printf("failed to seed default prompt template %q: %v", templates[i].Name, err)
+			}
+		}
+		log.Printf("seeded %d default AI prompt templates", len(templates))
 	}
 }
 

@@ -1283,11 +1283,15 @@
   },
   "audit": {
     "title": "Auditoría de contenido",
-    "description": "Gestiona revisión de subdominios, reglas e historial de escaneos en un solo lugar",
+    "description": "Gestiona revisión de subdominios, reglas, historial de escaneos, revisión IA y apelaciones en un solo lugar",
     "tabs": {
       "domains": "Subdominios",
       "rules": "Reglas",
-      "history": "Historial"
+      "history": "Historial",
+      "aiModels": "Modelos IA",
+      "aiTemplates": "Plantillas de Prompt",
+      "aiReviews": "Revisiones IA",
+      "appeals": "Apelaciones"
     },
     "summary": {
       "deleted": "Eliminados",
