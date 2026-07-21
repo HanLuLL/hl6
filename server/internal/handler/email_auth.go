@@ -261,7 +261,7 @@ func (h *EmailAuthHandler) VerifyAuthToken(c *gin.Context) {
 		response.ErrorWithKey(c, http.StatusBadRequest, "invalid or expired link", "error.invalidToken")
 		return
 	}
-	response.Ok(c, gin.H{"valid": true})
+	response.OK(c, gin.H{"valid": true})
 }
 
 func (h *EmailAuthHandler) CompletePassword(c *gin.Context) {
