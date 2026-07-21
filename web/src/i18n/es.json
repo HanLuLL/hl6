@@ -1542,7 +1542,13 @@
   },
   "logsCenter": {
     "title": "Centro de Registros",
-    "subtitle": "Ver registros del sistema, correo y auditoría"
+    "subtitle": "Ver registros del sistema, correo y auditoría",
+    "description": "Ver registros del sistema, correo y auditoría",
+    "tabs": {
+      "audit": "Auditoría",
+      "email": "Correo",
+      "system": "Sistema"
+    }
   },
   "systemLogs": {
     "title": "Registros del Sistema",

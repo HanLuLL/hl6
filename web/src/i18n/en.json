@@ -1566,7 +1566,13 @@
   },
   "logsCenter": {
     "title": "Logs Center",
-    "subtitle": "View system, email and audit logs"
+    "subtitle": "View system, email and audit logs",
+    "description": "View system, email and audit logs",
+    "tabs": {
+      "audit": "Audit",
+      "email": "Email",
+      "system": "System"
+    }
   },
   "systemLogs": {
     "title": "System Logs",

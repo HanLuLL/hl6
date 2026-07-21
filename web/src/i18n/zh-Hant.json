@@ -1542,7 +1542,13 @@
   },
   "logsCenter": {
     "title": "日誌中心",
-    "subtitle": "查看系統、郵件與審計日誌"
+    "subtitle": "查看系統、郵件與審計日誌",
+    "description": "查看系統、郵件與審計日誌",
+    "tabs": {
+      "audit": "審計日誌",
+      "email": "郵件日誌",
+      "system": "系統日誌"
+    }
   },
   "systemLogs": {
     "title": "系統日誌",

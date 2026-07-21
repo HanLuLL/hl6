@@ -1563,7 +1563,13 @@
   },
   "logsCenter": {
     "title": "日志中心",
-    "subtitle": "查看系统、邮件与审计日志"
+    "subtitle": "查看系统、邮件与审计日志",
+    "description": "查看系统、邮件与审计日志",
+    "tabs": {
+      "audit": "审计日志",
+      "email": "邮件日志",
+      "system": "系统日志"
+    }
   },
   "systemLogs": {
     "title": "系统日志",

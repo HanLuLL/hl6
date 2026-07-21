@@ -1542,7 +1542,13 @@
   },
   "logsCenter": {
     "title": "ログセンター",
-    "subtitle": "システム・メール・監査ログを表示"
+    "subtitle": "システム・メール・監査ログを表示",
+    "description": "システム・メール・監査ログを表示",
+    "tabs": {
+      "audit": "監査ログ",
+      "email": "メールログ",
+      "system": "システムログ"
+    }
   },
   "systemLogs": {
     "title": "システムログ",
