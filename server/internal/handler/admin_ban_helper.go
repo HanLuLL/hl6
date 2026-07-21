@@ -353,14 +353,24 @@ func executeAdminDeleteUserWithCleanup(
 			return err
 		}
 
+		// 删除邮件发送记录（UserID 是可空指针，无外键约束，但清理避免残留）
+		if err := tx.Where("user_id = ?", target.ID).Delete(&model.EmailLog{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete email logs failed: %v", target.ID, err)
+			return err
+		}
+
 		// 删除支付订单
 		if err := tx.Where("user_id = ?", target.ID).Delete(&model.PaymentOrder{}).Error; err != nil {
 			log.Printf("[admin] delete user %d: delete payment orders failed: %v", target.ID, err)
 			return err
 		}
 
-		// 删除审计日志（可选：保留或删除）
-		// 这里选择保留审计日志，因为它们是系统级记录
+		// 删除审计日志（数据库外键约束 fk_audit_logs_user 要求必须删除，否则无法删 User）
+		// 注意：管理员"删除用户"这个动作本身会另写一条 admin_delete_user 审计日志（ResourceID 保留被删用户 ID）
+		if err := tx.Where("user_id = ?", target.ID).Delete(&model.AuditLog{}).Error; err != nil {
+			log.Printf("[admin] delete user %d: delete audit logs failed: %v", target.ID, err)
+			return err
+		}
 
 		// 最后删除用户本身
 		if err := tx.Delete(&model.User{}, target.ID).Error; err != nil {
