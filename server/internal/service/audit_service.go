@@ -157,7 +157,7 @@ func (s *AuditService) ScanSubdomain(ctx context.Context, target model.AuditScan
 		return
 	}
 	// 仅在内容确实可读时调用 AI，避免对不可达/错误页面浪费 LLM token
-	primaryCh := dual.PrimaryChannel()
+	primaryCh = dual.PrimaryChannel()
 	if primaryCh.Body == "" && primaryCh.Title == "" {
 		return
 	}

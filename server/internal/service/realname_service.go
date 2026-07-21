@@ -343,7 +343,6 @@ func (s *RealnameService) verifyAndFinalize(ctx context.Context, app *model.Real
 
 	// manual 模式：标记为 paid 等待管理员审核
 	if cfg.Provider == model.RealnameProviderManual || cfg.Provider == "" {
-		now := time.Now()
 		if err := s.repo.UpdateRealnameApplicationStatus(app.ID, model.RealnameAppStatusPaid, ""); err != nil {
 			slog.Warn("realname: mark as paid failed", "app_id", app.ID, "err", err)
 		}
