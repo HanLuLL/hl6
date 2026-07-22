@@ -40,6 +40,12 @@ export default function LoginPage() {
       const result = isNativeClient ? await signInNative(email, password) : (await api.login({ email, password })).data;
 
       if (result.banned) {
+        // 被封禁用户：后端已建立有限 session（仅可访问 /banned 等白名单路由）。
+        // 浏览器模式强制整页跳转，确保 React Query 缓存清空 + ProtectedRoute 重新走 getMe 流程。
+        if (!isNativeClient) {
+          window.location.replace("/banned");
+          return;
+        }
         navigate("/banned", { replace: true });
         return;
       }

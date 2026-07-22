@@ -51,7 +51,7 @@ func NewHandlers(cfg *config.Config, repo *repository.Repository, dnsOps *servic
 		EmailAuth:         handler.NewEmailAuthHandler(repo, emailSvc, cfg, captchaSvc),
 		Session:           handler.NewSessionHandler(repo),
 		Domain:            handler.NewDomainHandler(repo, dnsOps),
-		Subdomain:         handler.NewSubdomainHandler(repo, sseBroker, dnsOps, audit.enqueue, audit.notif, audit.subSvc, audit.auditLog),
+		Subdomain:         handler.NewSubdomainHandler(repo, sseBroker, dnsOps, audit.enqueue, audit.notif, audit.subSvc, audit.auditLog, cfg),
 		DNS:               handler.NewDNSHandler(repo, sseBroker, dnsOps, audit.enqueue, emailSvc),
 		Credit:            handler.NewCreditHandler(repo),
 		Admin:             handler.NewAdminHandler(repo, cfg, dnsOps, emailSvc),

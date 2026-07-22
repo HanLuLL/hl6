@@ -65,13 +65,14 @@ func (h *DomainHandler) PublicList(c *gin.Context) {
 		return
 	}
 	type publicDomain struct {
-		ID          uint   `json:"id"`
-		Name        string `json:"name"`
-		Description string `json:"description"`
+		ID               uint   `json:"id"`
+		Name             string `json:"name"`
+		Description      string `json:"description"`
+		RequireRealname  bool   `json:"require_realname"`
 	}
 	result := make([]publicDomain, len(domains))
 	for i, d := range domains {
-		result[i] = publicDomain{ID: d.ID, Name: d.Name, Description: d.Description}
+		result[i] = publicDomain{ID: d.ID, Name: d.Name, Description: d.Description, RequireRealname: d.RequireRealname}
 	}
 	response.OK(c, result)
 }
@@ -111,6 +112,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 		ProviderAccountID uint               `json:"provider_account_id" binding:"required"`
 		Description       string             `json:"description"`
 		CreditCost        *float64           `json:"credit_cost"`
+		RequireRealname   *bool              `json:"require_realname"`
 		GroupAccess       []groupAccessInput `json:"group_access"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -163,6 +165,7 @@ func (h *DomainHandler) AdminCreate(c *gin.Context) {
 			CreditCost:        model.CreditFromFloat(defaultCreditCost),
 			IsActive:          true,
 			Description:       body.Description,
+			RequireRealname:   body.RequireRealname != nil && *body.RequireRealname,
 		}
 		txErr := h.repo.Transaction(func(tx *gorm.DB) error {
 			if err := tx.Create(domain).Error; err != nil {
@@ -227,6 +230,7 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 		ProviderAccountID *uint              `json:"provider_account_id"`
 		IsActive          *bool              `json:"is_active"`
 		Description       *string            `json:"description"`
+		RequireRealname   *bool              `json:"require_realname"`
 		GroupAccess       []groupAccessInput `json:"group_access"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -269,6 +273,9 @@ func (h *DomainHandler) AdminUpdate(c *gin.Context) {
 			}
 			if body.Description != nil {
 				domain.Description = *body.Description
+			}
+			if body.RequireRealname != nil {
+				domain.RequireRealname = *body.RequireRealname
 			}
 			if err := tx.Save(domain).Error; err != nil {
 				return err

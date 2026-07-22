@@ -37,7 +37,9 @@
     "close": "Close",
     "expand": "Expand",
     "collapse": "Collapse",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "yes": "Yes",
+    "no": "No"
   },
   "auth": {
     "shellTagline": "Manage your subdomains and DNS records from one secure account.",
@@ -495,7 +497,11 @@
     "claimFor": "Claim for {{cost}} credit",
     "claimFor_other": "Claim for {{cost}} credits",
     "success": "Successfully claimed {{fqdn}}",
-    "earnCredits": "You'll earn {{gain}} credits after claiming"
+    "earnCredits": "You'll earn {{gain}} credits after claiming",
+    "realnameRequiredTitle": "This domain requires identity verification",
+    "realnameRequiredHint": "Please complete identity verification before claiming a subdomain of this domain.",
+    "realnameGoVerify": "Go to identity verification",
+    "realnameVerified": "You have completed identity verification"
   },
   "recordForm": {
     "addTitle": "Add DNS Record",
@@ -615,7 +621,27 @@
     "updatedAt": "Updated At",
     "bannedReason": "Ban Reason",
     "bannedAt": "Banned At",
-    "bannedBy": "Banned By ID"
+    "bannedBy": "Banned By ID",
+    "realname": "Realname",
+    "realnameManage": "Realname",
+    "realnameManageTitle": "Realname Verification Management",
+    "realnameInfo": "Realname Verification",
+    "realnameStatus": "Realname Status",
+    "realnameName": "Verified Name",
+    "realnameVerifiedAt": "Verified At",
+    "realnameActionSelect": "Select Action",
+    "realnameActionVerify": "Verify",
+    "realnameActionReject": "Reject",
+    "realnameActionReset": "Reset",
+    "realnameRejectReason": "Reject Reason",
+    "realnameRejectReasonPlaceholder": "Please provide a reject reason; it will be shown to the user",
+    "realnameVerifyHintTitle": "Confirm Verification",
+    "realnameVerifyHint": "The user's realname status will be marked as verified. If the user has any applications, the latest one will also be marked as verified.",
+    "realnameResetHintTitle": "Reset Realname Status",
+    "realnameResetHint": "Resets the user's realname status to unverified and clears the verified name and verified time. The user's application records remain unchanged.",
+    "realnameVerifySuccess": "Realname status marked as verified",
+    "realnameRejectSuccess": "Realname status marked as rejected",
+    "realnameResetSuccess": "Realname status has been reset"
   },
   "adminBrand": {
     "title": "Branding",
@@ -701,7 +727,10 @@
     "claimedNoRecords": "No claimed records",
     "releaseClaimed": "Release Claim",
     "releaseClaimedConfirm": "This will release {{fqdn}} and delete all its DNS records. This action cannot be undone.",
-    "claimedReleased": "Claim released"
+    "claimedReleased": "Claim released",
+    "realname": "Real-name",
+    "requireRealname": "Require identity verification",
+    "requireRealnameHint": "When enabled, users must complete identity verification before claiming subdomains under this domain"
   },
   "adminDnsRecords": {
     "searchPlaceholder": "Search by name or content...",
@@ -1202,7 +1231,8 @@
     "paymentGatewayNotConfigured": "Payment gateway is not configured",
     "failedToCreateOrder": "Failed to create order",
     "notFound": "Not found",
-    "accountActivationRequired": "Account requires activation. Please check your email for the activation link."
+    "accountActivationRequired": "Account requires activation. Please check your email for the activation link.",
+    "realnameRequiredForClaim": "This domain requires identity verification before claiming subdomains"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

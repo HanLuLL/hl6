@@ -322,9 +322,18 @@ func (s *RealnameService) StartVerification(ctx context.Context, applicationID u
 	if app == nil {
 		return errors.New("realname: application not found")
 	}
-	if app.Status != model.RealnameAppStatusPaid && app.Status != model.RealnameAppStatusFailed {
-		return nil // 非 paid/failed 状态不重复触发
+	// 允许 paid/failed/rejected 状态触发（重新）验证。verifying 状态不重复触发避免并发。
+	if app.Status != model.RealnameAppStatusPaid &&
+		app.Status != model.RealnameAppStatusFailed &&
+		app.Status != model.RealnameAppStatusRejected {
+		return nil
 	}
+
+	// 进入验证中状态
+	if err := s.repo.UpdateRealnameApplicationStatus(app.ID, model.RealnameAppStatusVerifying, ""); err != nil {
+		return err
+	}
+	app.Status = model.RealnameAppStatusVerifying
 
 	// 解密姓名和身份证
 	realName := crypto.DecryptOrPlaintext(app.RealName, s.encryptionKey)
@@ -595,6 +604,102 @@ func (s *RealnameService) AdminReview(ctx context.Context, input AdminReviewInpu
 // RetryVerification 重试失败的第三方 API 调用。
 func (s *RealnameService) RetryVerification(ctx context.Context, applicationID uint) error {
 	return s.StartVerification(ctx, applicationID)
+}
+
+// AdminUpdateUserRealnameInput 管理员直接修改用户实名状态输入。
+type AdminUpdateUserRealnameInput struct {
+	UserID    uint
+	AdminID   uint
+	Action    string // verify / reject / reset
+	Reason    string
+}
+
+// AdminUpdateUserRealname 管理员直接修改用户的实名状态，无需走申请单流程。
+//   - verify: 将用户标记为已实名，若存在申请单则同步标记为已通过
+//   - reject: 将用户标记为未通过，若存在申请单则同步标记为已拒绝
+//   - reset:  重置用户实名状态为未认证，清空脱敏姓名与认证时间，申请单保持原状
+func (s *RealnameService) AdminUpdateUserRealname(ctx context.Context, input AdminUpdateUserRealnameInput) error {
+	user, err := s.repo.FindUserByID(input.UserID)
+	if err != nil || user == nil {
+		return ErrRealnameNotFound
+	}
+
+	switch input.Action {
+	case "verify", "reject", "reset":
+	default:
+		return ErrRealnameInvalidInput
+	}
+
+	now := time.Now()
+	reason := strings.TrimSpace(input.Reason)
+
+	// 拿到用户最近一条申请单（若有），用于同步状态与提取脱敏姓名
+	latestApp, _ := s.repo.FindLatestRealnameApplication(input.UserID)
+	var maskedName string
+	if latestApp != nil {
+		realName := crypto.DecryptOrPlaintext(latestApp.RealName, s.encryptionKey)
+		maskedName = model.MaskRealName(realName)
+	}
+
+	return s.repo.Transaction(func(tx *gorm.DB) error {
+		switch input.Action {
+		case "verify":
+			// 若用户当前已是 verified，不重复操作
+			if user.RealnameStatus == model.RealnameStatusVerified {
+				return nil
+			}
+			// 更新用户实名状态
+			if err := s.repo.UpdateUserRealnameStatus(tx, input.UserID, model.RealnameStatusVerified, maskedName, &now); err != nil {
+				return err
+			}
+			// 同步更新最近申请单状态（若有）
+			if latestApp != nil && latestApp.Status != model.RealnameAppStatusVerified {
+				if err := tx.Model(latestApp).Updates(map[string]interface{}{
+					"status":        model.RealnameAppStatusVerified,
+					"reject_reason": "",
+					"reviewed_by":   input.AdminID,
+					"reviewed_at":   &now,
+					"verified_at":   &now,
+					"updated_at":    now,
+				}).Error; err != nil {
+					return err
+				}
+			}
+		case "reject":
+			// 更新用户实名状态
+			if err := s.repo.UpdateUserRealnameStatus(tx, input.UserID, model.RealnameStatusRejected, "", nil); err != nil {
+				return err
+			}
+			// 同步更新最近申请单状态（仅对未终态的申请单）
+			if latestApp != nil {
+				switch latestApp.Status {
+				case model.RealnameAppStatusPaid, model.RealnameAppStatusVerifying,
+					model.RealnameAppStatusFailed, model.RealnameAppStatusRejected:
+					if err := tx.Model(latestApp).Updates(map[string]interface{}{
+						"status":        model.RealnameAppStatusRejected,
+						"reject_reason": reason,
+						"reviewed_by":   input.AdminID,
+						"reviewed_at":   &now,
+						"updated_at":    now,
+					}).Error; err != nil {
+						return err
+					}
+				}
+			}
+		case "reset":
+			// 重置用户实名状态：清空脱敏姓名与认证时间
+			updates := map[string]interface{}{
+				"realname_status":      model.RealnameStatusUnverified,
+				"realname_name":        "",
+				"realname_verified_at": nil,
+				"updated_at":           now,
+			}
+			if err := tx.Model(&model.User{}).Where("id = ?", input.UserID).Updates(updates).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // --- 输入校验 ---

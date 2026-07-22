@@ -37,7 +37,9 @@
     "close": "Закрыть",
     "expand": "Развернуть",
     "collapse": "Свернуть",
-    "toggleTheme": "Переключить тему"
+    "toggleTheme": "Переключить тему",
+    "yes": "Да",
+    "no": "Нет"
   },
   "auth": {
     "shellTagline": "Управляйте поддоменами и DNS-записями из одной защищённой учётной записи.",
@@ -495,7 +497,11 @@
     "claimFor": "Зарегистрировать за {{cost}} кредит",
     "claimFor_other": "Зарегистрировать за {{cost}} кредитов",
     "success": "{{fqdn}} успешно зарегистрирован",
-    "earnCredits": "Вы получите {{gain}} кредитов после регистрации"
+    "earnCredits": "Вы получите {{gain}} кредитов после регистрации",
+    "realnameRequiredTitle": "Этот домен требует проверки личности",
+    "realnameRequiredHint": "Пожалуйста, пройдите проверку личности перед регистрацией поддомена этого домена.",
+    "realnameGoVerify": "Перейти к проверке личности",
+    "realnameVerified": "Вы прошли проверку личности"
   },
   "recordForm": {
     "addTitle": "Добавить DNS-запись",
@@ -615,7 +621,27 @@
     "updatedAt": "Обновлено",
     "bannedReason": "Причина блокировки",
     "bannedAt": "Заблокирован в",
-    "bannedBy": "Кем заблокирован (ID)"
+    "bannedBy": "Кем заблокирован (ID)",
+    "realname": "Верификация",
+    "realnameManage": "Верификация",
+    "realnameManageTitle": "Управление верификацией личности",
+    "realnameInfo": "Верификация личности",
+    "realnameStatus": "Статус верификации",
+    "realnameName": "Проверенное имя",
+    "realnameVerifiedAt": "Время проверки",
+    "realnameActionSelect": "Выберите действие",
+    "realnameActionVerify": "Подтвердить",
+    "realnameActionReject": "Отклонить",
+    "realnameActionReset": "Сбросить",
+    "realnameRejectReason": "Причина отклонения",
+    "realnameRejectReasonPlaceholder": "Укажите причину отклонения; она будет показана пользователю",
+    "realnameVerifyHintTitle": "Подтвердить верификацию",
+    "realnameVerifyHint": "Статус верификации пользователя будет отмечен как проверенный. Если у пользователя есть заявки, последняя также будет отмечена как проверенная.",
+    "realnameResetHintTitle": "Сбросить статус верификации",
+    "realnameResetHint": "Сбрасывает статус верификации пользователя на непроверенный и очищает проверенное имя и время проверки. Записи заявок пользователя остаются без изменений.",
+    "realnameVerifySuccess": "Статус верификации отмечен как проверенный",
+    "realnameRejectSuccess": "Статус верификации отмечен как отклоненный",
+    "realnameResetSuccess": "Статус верификации сброшен"
   },
   "adminBrand": {
     "title": "Бренд",
@@ -701,7 +727,10 @@
     "claimedNoRecords": "Занятые записи не найдены",
     "releaseClaimed": "Освободить",
     "releaseClaimedConfirm": "Поддомен {{fqdn}} будет освобождён, а все его DNS-записи удалены. Это действие необратимо.",
-    "claimedReleased": "Занятое имя освобождено"
+    "claimedReleased": "Занятое имя освобождено",
+    "realname": "Личность",
+    "requireRealname": "Требовать проверку личности",
+    "requireRealnameHint": "Если включено, пользователи должны пройти проверку личности перед регистрацией поддоменов в этом домене"
   },
   "adminDnsRecords": {
     "searchPlaceholder": "Поиск по имени или содержимому...",
@@ -1202,7 +1231,8 @@
     "paymentGatewayNotConfigured": "Платёжный шлюз не настроен",
     "failedToCreateOrder": "Не удалось создать заказ",
     "notFound": "Не найдено",
-    "accountActivationRequired": "Аккаунт требует активации. Проверьте электронную почту для ссылки на активацию."
+    "accountActivationRequired": "Аккаунт требует активации. Проверьте электронную почту для ссылки на активацию.",
+    "realnameRequiredForClaim": "Этот домен требует проверки личности перед регистрацией поддоменов"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

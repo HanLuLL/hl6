@@ -145,6 +145,11 @@ function UsersContent() {
   const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
   const [isDeleteRetrying, setIsDeleteRetrying] = useState(false);
 
+  // 实名管理相关状态
+  const [realnameUserId, setRealnameUserId] = useState<number | null>(null);
+  const [realnameAction, setRealnameAction] = useState<"verify" | "reject" | "reset" | null>(null);
+  const [realnameReason, setRealnameReason] = useState("");
+
   const submitGrant = () => {
     if (!grantUserId) return;
     const amount = parseCreditInput(grantAmount, true);
@@ -247,6 +252,25 @@ function UsersContent() {
     },
   });
 
+  // 实名管理 mutation
+  const realnameMutation = useMutation({
+    mutationFn: ({ userId, action, reason }: { userId: number; action: "verify" | "reject" | "reset"; reason?: string }) =>
+      api.adminUpdateUserRealname(userId, { action, reason }),
+    onSuccess: (_res, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      const msgKey = vars.action === "verify"
+        ? "adminUsers.realnameVerifySuccess"
+        : vars.action === "reject"
+          ? "adminUsers.realnameRejectSuccess"
+          : "adminUsers.realnameResetSuccess";
+      toast.success(t(msgKey));
+      setRealnameUserId(null);
+      setRealnameAction(null);
+      setRealnameReason("");
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+
   return (
     <>
       <Card>
@@ -329,6 +353,7 @@ function UsersContent() {
                 <TableHead>{t("adminUsers.email")}</TableHead>
                 <TableHead>{t("adminUsers.credits")}</TableHead>
                 <TableHead>{t("adminUsers.group")}</TableHead>
+                <TableHead>{t("adminUsers.realname")}</TableHead>
                 <TableHead>{t("adminUsers.joined")}</TableHead>
                 <TableHead>{t("adminUsers.invitedBy")}</TableHead>
                 <TableHead className="text-right">{t("adminUsers.actions")}</TableHead>
@@ -340,6 +365,7 @@ function UsersContent() {
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-4 w-36" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
@@ -359,6 +385,9 @@ function UsersContent() {
                     <TableCell className="text-sm text-muted-foreground">{formatCredits(user.credits)}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{user.group?.name ?? "-"}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <RealnameStatusBadge status={user.realname_status} />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(user.created_at)}
@@ -412,6 +441,18 @@ function UsersContent() {
                           {t("adminUsers.banUser")}
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setRealnameUserId(user.id);
+                          setRealnameAction(null);
+                          setRealnameReason("");
+                        }}
+                        disabled={realnameMutation.isPending}
+                      >
+                        {t("adminUsers.realnameManage")}
+                      </Button>
                       <Button
                         variant="destructive"
                         size="sm"
@@ -649,6 +690,98 @@ function UsersContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 实名管理对话框：通过 / 拒绝 / 重置 */}
+      <Dialog open={realnameUserId !== null} onOpenChange={(open) => {
+        if (!open) {
+          setRealnameUserId(null);
+          setRealnameAction(null);
+          setRealnameReason("");
+        }
+      }}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogHeader><DialogTitle>{t("adminUsers.realnameManageTitle")}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t("adminUsers.realnameActionSelect")}</Label>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { key: "verify", label: t("adminUsers.realnameActionVerify"), variant: "default" as const },
+                  { key: "reject", label: t("adminUsers.realnameActionReject"), variant: "destructive" as const },
+                  { key: "reset", label: t("adminUsers.realnameActionReset"), variant: "outline" as const },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setRealnameAction(opt.key)}
+                    className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                      realnameAction === opt.key
+                        ? opt.variant === "destructive"
+                          ? "border-destructive bg-destructive text-destructive-foreground"
+                          : opt.variant === "outline"
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-primary bg-primary text-primary-foreground"
+                        : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {realnameAction === "reject" && (
+              <div className="space-y-2">
+                <Label>{t("adminUsers.realnameRejectReason")}</Label>
+                <Input
+                  value={realnameReason}
+                  onChange={(e) => setRealnameReason(e.target.value)}
+                  placeholder={t("adminUsers.realnameRejectReasonPlaceholder")}
+                />
+              </div>
+            )}
+            {realnameAction === "verify" && (
+              <div className="rounded-md border p-3">
+                <p className="text-sm font-medium">{t("adminUsers.realnameVerifyHintTitle")}</p>
+                <p className="text-xs text-muted-foreground">{t("adminUsers.realnameVerifyHint")}</p>
+              </div>
+            )}
+            {realnameAction === "reset" && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-1">
+                <p className="text-sm font-medium text-destructive">{t("adminUsers.realnameResetHintTitle")}</p>
+                <p className="text-xs text-muted-foreground">{t("adminUsers.realnameResetHint")}</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRealnameUserId(null);
+                setRealnameAction(null);
+                setRealnameReason("");
+              }}
+              disabled={realnameMutation.isPending}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant={realnameAction === "reject" ? "destructive" : "default"}
+              onClick={() => {
+                if (!realnameUserId || !realnameAction) return;
+                realnameMutation.mutate({
+                  userId: realnameUserId,
+                  action: realnameAction,
+                  reason: realnameAction === "reject" ? realnameReason.trim() : undefined,
+                });
+              }}
+              disabled={!realnameAction || realnameMutation.isPending || (realnameAction === "reject" && !realnameReason.trim())}
+              data-dialog-primary="true"
+            >
+              {realnameMutation.isPending ? t("common.saving") : t("common.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -690,6 +823,16 @@ function UserDetailDialog({ user, onClose }: { user: UserWithInviter | null; onC
               <UserDetailRow label={t("adminUsers.id")} value={String(user.id)} mono />
               <UserDetailRow label={t("adminUsers.referralCode")} value={user.referral_code || "-"} mono />
               <UserDetailRow label={t("adminUsers.avatarUrl")} value={user.avatar_url || "-"} breakAll />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">{t("adminUsers.realnameInfo")}</p>
+              <UserDetailRow
+                label={t("adminUsers.realnameStatus")}
+                value={<RealnameStatusBadge status={user.realname_status} />}
+              />
+              <UserDetailRow label={t("adminUsers.realnameName")} value={user.realname_name || "-"} />
+              <UserDetailRow label={t("adminUsers.realnameVerifiedAt")} value={formatDate(user.realname_verified_at ?? undefined, true)} />
             </div>
 
             {user.is_banned && (
@@ -743,6 +886,24 @@ function UserDetailRow({
       <span className={`text-sm ${mono ? "font-mono" : ""} ${breakAll ? "break-all" : "break-words"}`}>{value}</span>
     </div>
   );
+}
+
+// RealnameStatusBadge 实名状态徽章：根据状态展示不同颜色。
+function RealnameStatusBadge({ status }: { status?: string }) {
+  const { t } = useTranslation();
+  if (!status || status === "unverified") {
+    return <Badge variant="outline">{t("realname.status.unverified")}</Badge>;
+  }
+  if (status === "verified") {
+    return <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white">{t("realname.status.verified")}</Badge>;
+  }
+  if (status === "pending") {
+    return <Badge className="bg-amber-500 hover:bg-amber-500 text-white">{t("realname.status.pending")}</Badge>;
+  }
+  if (status === "rejected") {
+    return <Badge variant="destructive">{t("realname.status.rejected")}</Badge>;
+  }
+  return <Badge variant="outline">{status}</Badge>;
 }
 
 export default function AdminUsersPage() {

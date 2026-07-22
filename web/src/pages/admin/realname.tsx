@@ -236,7 +236,7 @@ export default function AdminRealnamePage() {
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">
                     {/* 仅 manual 模式下且处于 verifying 状态可审核 */}
-                    {app.provider === "manual" && app.status === "verifying" && (
+                    {app.provider === "manual" && (app.status === "paid" || app.status === "verifying" || app.status === "failed") && (
                       <>
                         <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-600" onClick={() => openReview(app, true)}>
                           <CheckCircle2 className="h-4 w-4" />

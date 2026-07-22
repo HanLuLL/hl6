@@ -48,6 +48,7 @@ import {
   FileStack,
   ShieldCheck as ShieldCheckIcon,
   BadgeCheck,
+  LogOut,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -350,7 +351,10 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
                 <ShieldCheckIcon className="h-4 w-4" />
                 {t("nav.accountSecurity")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => signOut()}>{t("common.signOut")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => signOut()}>
+                <LogOut className="h-4 w-4" />
+                {t("common.signOut")}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>

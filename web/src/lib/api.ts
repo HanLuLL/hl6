@@ -499,11 +499,16 @@ export const api = {
     request<ApiResponse<{ message: string }>>(`/admin/realname/applications/${id}/retry`, { method: "POST" }),
   adminGetRealnameStats: () =>
     request<ApiResponse<RealnameStats>>("/admin/realname/stats"),
+  adminUpdateUserRealname: (userId: number, data: { action: "verify" | "reject" | "reset"; reason?: string }) =>
+    request<ApiResponse<{ message: string }>>(`/admin/users/${userId}/realname`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
 
   // Admin
-  adminCreateDomain: (data: { name: string; provider_zone_id: string; provider_account_id: number; description: string; group_access: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
+  adminCreateDomain: (data: { name: string; provider_zone_id: string; provider_account_id: number; description: string; require_realname?: boolean; group_access: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
     request<ApiResponse<{ domain: Domain; group_access: DomainGroupAccess[] }>>("/admin/domains", { method: "POST", body: JSON.stringify(data) }),
-  adminUpdateDomain: (id: number, data: { provider_zone_id?: string; provider_account_id?: number; is_active?: boolean; description?: string; group_access?: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
+  adminUpdateDomain: (id: number, data: { provider_zone_id?: string; provider_account_id?: number; is_active?: boolean; description?: string; require_realname?: boolean; group_access?: { group_id: number; credit_cost: number; max_dns_records?: number | null }[] }) =>
     request<ApiResponse<{ domain: Domain; group_access: DomainGroupAccess[] }>>(`/admin/domains/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   adminDeleteDomain: (id: number, options?: { refund?: boolean; idempotencyKey?: string; timeoutMs?: number }) =>
     request<ApiResponse<{ message: string }>>(`/admin/domains/${id}?refund=${options?.refund ?? false}`, {

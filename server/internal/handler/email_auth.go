@@ -409,9 +409,10 @@ func (h *EmailAuthHandler) Login(c *gin.Context) {
 			user.BannedUntil = nil
 			user.BannedReason = ""
 		} else {
-			// User is still banned, reject login
+			// 用户仍处于封禁状态：建立有限 session（仅可访问 /banned、/auth/me、/ban-info、/appeals），
+			// 让用户能进入封禁页面查看原因并提交申诉。writeSession 会返回 banned=true + 封禁原因。
 			h.recordSecurityEvent(c, &user.ID, "login", model.AuthSecurityOutcomeFailure, credential.EmailNormalized)
-			response.ErrorWithKey(c, http.StatusForbidden, "user is banned", "error.userBanned")
+			h.writeSession(c, user, credential)
 			return
 		}
 	}

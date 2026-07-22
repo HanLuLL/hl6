@@ -37,7 +37,9 @@
     "close": "关闭",
     "expand": "展开",
     "collapse": "收起",
-    "toggleTheme": "切换主题"
+    "toggleTheme": "切换主题",
+    "yes": "是",
+    "no": "否"
   },
   "auth": {
     "shellTagline": "在一个安全的账户中管理你的子域名和 DNS 记录。",
@@ -495,7 +497,11 @@
     "claimFor": "花费 {{cost}} 积分申请",
     "claimFor_other": "花费 {{cost}} 积分申请",
     "success": "成功申请 {{fqdn}}",
-    "earnCredits": "申请后可获得 {{gain}} 积分"
+    "earnCredits": "申请后可获得 {{gain}} 积分",
+    "realnameRequiredTitle": "该域名需要实名认证",
+    "realnameRequiredHint": "认领该域名的子域名前请先完成实名认证。",
+    "realnameGoVerify": "前往实名认证",
+    "realnameVerified": "您已完成实名认证"
   },
   "recordForm": {
     "addTitle": "添加 DNS 记录",
@@ -615,7 +621,27 @@
     "updatedAt": "更新时间",
     "bannedReason": "封禁原因",
     "bannedAt": "封禁时间",
-    "bannedBy": "封禁人 ID"
+    "bannedBy": "封禁人 ID",
+    "realname": "实名",
+    "realnameManage": "实名管理",
+    "realnameManageTitle": "实名认证管理",
+    "realnameInfo": "实名认证信息",
+    "realnameStatus": "实名状态",
+    "realnameName": "已认证姓名",
+    "realnameVerifiedAt": "认证时间",
+    "realnameActionSelect": "选择操作",
+    "realnameActionVerify": "通过实名",
+    "realnameActionReject": "拒绝实名",
+    "realnameActionReset": "重置实名",
+    "realnameRejectReason": "拒绝原因",
+    "realnameRejectReasonPlaceholder": "请填写拒绝原因，将展示给用户",
+    "realnameVerifyHintTitle": "确认通过实名认证",
+    "realnameVerifyHint": "该用户的实名状态将直接标记为已通过。若用户存在申请单，最新一条申请单也会同步标记为已通过。",
+    "realnameResetHintTitle": "重置实名状态",
+    "realnameResetHint": "将用户的实名状态重置为未认证，并清空已认证姓名与认证时间。用户的申请单记录保持不变。",
+    "realnameVerifySuccess": "实名状态已标记为已通过",
+    "realnameRejectSuccess": "实名状态已标记为未通过",
+    "realnameResetSuccess": "实名状态已重置"
   },
   "adminBrand": {
     "title": "品牌设置",
@@ -701,7 +727,10 @@
     "claimedNoRecords": "暂无认领记录",
     "releaseClaimed": "释放认领",
     "releaseClaimedConfirm": "将释放 {{fqdn}}，并删除其全部解析记录。此操作不可撤销。",
-    "claimedReleased": "认领已释放"
+    "claimedReleased": "认领已释放",
+    "realname": "实名",
+    "requireRealname": "需要实名认证",
+    "requireRealnameHint": "开启后用户认领该域名下子域名前必须完成实名认证"
   },
   "adminDnsRecords": {
     "searchPlaceholder": "按名称或内容搜索...",
@@ -1202,7 +1231,8 @@
     "paymentGatewayNotConfigured": "支付网关未配置",
     "failedToCreateOrder": "创建订单失败",
     "notFound": "未找到",
-    "accountActivationRequired": "账号需要激活，请查收邮件中的激活链接"
+    "accountActivationRequired": "账号需要激活，请查收邮件中的激活链接",
+    "realnameRequiredForClaim": "该域名要求完成实名认证后才能认领子域名"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

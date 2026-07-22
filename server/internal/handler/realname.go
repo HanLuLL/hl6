@@ -389,6 +389,59 @@ func (h *RealnameHandler) AdminGetStats(c *gin.Context) {
 	})
 }
 
+type adminUpdateUserRealnameRequest struct {
+	Action string `json:"action" binding:"required"`
+	Reason string `json:"reason"`
+}
+
+// AdminUpdateUserRealname PUT /api/v1/admin/users/:id/realname
+// 管理员直接修改用户的实名状态，无需走申请单流程。
+// action: verify / reject / reset
+func (h *RealnameHandler) AdminUpdateUserRealname(c *gin.Context) {
+	userID, ok := helpers.ParseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	var req adminUpdateUserRealnameRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid request body", "error.invalidRequestBody")
+		return
+	}
+	action := strings.TrimSpace(req.Action)
+	if action != "verify" && action != "reject" && action != "reset" {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid action", "error.invalidRequestBody")
+		return
+	}
+	admin := ctxutil.GetUser(c)
+	if admin == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+	if err := h.realnameSvc.AdminUpdateUserRealname(c.Request.Context(), service.AdminUpdateUserRealnameInput{
+		UserID:  userID,
+		AdminID: admin.ID,
+		Action:  action,
+		Reason:  req.Reason,
+	}); err != nil {
+		h.handleServiceError(c, err)
+		return
+	}
+	// 记录审计
+	detailJSON, _ := json.Marshal(map[string]interface{}{
+		"target_user_id": userID,
+		"action":         action,
+		"reason":         req.Reason,
+	})
+	_ = h.repo.CreateAuditLog(&model.AuditLog{
+		UserID:     admin.ID,
+		Action:     "admin_update_user_realname",
+		Resource:   "user",
+		ResourceID: userID,
+		Details:    detailJSON,
+	})
+	response.OK(c, gin.H{"message": "realname status updated"})
+}
+
 // --- 工具 ---
 
 // realnamePayBuilder 实现 service.PayURLBuilder，复用 PaymentHandler 的支付网关配置。

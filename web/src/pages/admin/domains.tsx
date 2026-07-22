@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import {
   Command,
   CommandInput,
@@ -156,6 +157,7 @@ function DomainsContent() {
   const [selectedZone, setSelectedZone] = useState<DNSProviderZone | null>(null);
   const [description, setDescription] = useState("");
   const [groupAccess, setGroupAccess] = useState<GroupAccessEntry[]>([]);
+  const [requireRealname, setRequireRealname] = useState(false);
 
   // 删除域名状态
   const [deleteDomain, setDeleteDomain] = useState<DomainWithGroupAccess | null>(null);
@@ -189,12 +191,13 @@ function DomainsContent() {
       setSelectedZone(null);
       setDescription("");
       setGroupAccess([]);
+      setRequireRealname(false);
     },
     onError: (err) => toast.error(getErrorMessage(err, t)),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...data }: { id: number; is_active?: boolean; description?: string; group_access?: GroupAccessEntry[] }) =>
+    mutationFn: ({ id, ...data }: { id: number; is_active?: boolean; description?: string; require_realname?: boolean; group_access?: GroupAccessEntry[] }) =>
       api.adminUpdateDomain(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-domains"] });
@@ -348,6 +351,7 @@ function DomainsContent() {
                 <TableHead>{t("adminDomains.domain")}</TableHead>
                 <TableHead>{t("adminDomains.zoneId")}</TableHead>
                 <TableHead>{t("adminDomains.groupAccess")}</TableHead>
+                <TableHead>{t("adminDomains.realname")}</TableHead>
                 <TableHead>{t("adminDomains.status")}</TableHead>
                 <TableHead>{t("dnsMigration.migrationState")}</TableHead>
                 <TableHead className="text-right">{t("adminDomains.actions")}</TableHead>
@@ -369,6 +373,11 @@ function DomainsContent() {
                         <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={domain.require_realname ? "default" : "outline"} className={domain.require_realname ? "bg-emerald-600 hover:bg-emerald-600 text-white" : ""}>
+                      {domain.require_realname ? t("common.yes") : t("common.no")}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={domain.is_active ? "default" : "secondary"}>
@@ -443,6 +452,7 @@ function DomainsContent() {
           setSelectedZone(null);
           setDescription("");
           setGroupAccess([]);
+          setRequireRealname(false);
         }
       }}>
         <DialogContent className="max-w-lg" aria-describedby={undefined}>
@@ -475,6 +485,17 @@ function DomainsContent() {
               <Label>{t("adminDomains.description")}</Label>
               <Textarea placeholder={t("adminDomains.optionalDescription")} value={description || t("adminDomains.descriptionTemplate")} onChange={(e) => setDescription(e.target.value)} rows={6} />
             </div>
+            <div className="flex items-center justify-between gap-4 rounded-md border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="require-realname-add" className="cursor-pointer">{t("adminDomains.requireRealname")}</Label>
+                <p className="text-xs text-muted-foreground">{t("adminDomains.requireRealnameHint")}</p>
+              </div>
+              <Switch
+                id="require-realname-add"
+                checked={requireRealname}
+                onCheckedChange={setRequireRealname}
+              />
+            </div>
             <GroupAccessEditor
               groups={groups ?? []}
               value={groupAccess}
@@ -491,6 +512,7 @@ function DomainsContent() {
                   provider_zone_id: selectedZone.id,
                   provider_account_id: selectedAccount.id,
                   description,
+                  require_realname: requireRealname,
                   group_access: groupAccess,
                 });
               }}
@@ -1076,13 +1098,14 @@ function ZoneCombobox({ value, onSelect, accountId, accountProvider, existingDom
 function EditDomainForm({ domain, groups, onSave, isPending }: {
   domain: DomainWithGroupAccess;
   groups: UserGroup[];
-  onSave: (data: { description: string; group_access: GroupAccessEntry[] }) => void;
+  onSave: (data: { description: string; require_realname: boolean; group_access: GroupAccessEntry[] }) => void;
   isPending: boolean;
 }) {
   const [desc, setDesc] = useState(domain.description);
   const [access, setAccess] = useState<GroupAccessEntry[]>(
     domain.group_access?.map((ga) => ({ group_id: ga.group_id, credit_cost: ga.credit_cost, max_dns_records: ga.max_dns_records ?? null })) ?? []
   );
+  const [requireRealname, setRequireRealname] = useState(!!domain.require_realname);
   const { t } = useTranslation();
 
   return (
@@ -1092,6 +1115,17 @@ function EditDomainForm({ domain, groups, onSave, isPending }: {
           <Label>{t("adminDomains.description")}</Label>
           <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} />
         </div>
+        <div className="flex items-center justify-between gap-4 rounded-md border p-3">
+          <div className="space-y-0.5">
+            <Label htmlFor="require-realname-edit" className="cursor-pointer">{t("adminDomains.requireRealname")}</Label>
+            <p className="text-xs text-muted-foreground">{t("adminDomains.requireRealnameHint")}</p>
+          </div>
+          <Switch
+            id="require-realname-edit"
+            checked={requireRealname}
+            onCheckedChange={setRequireRealname}
+          />
+        </div>
         <GroupAccessEditor
           groups={groups}
           value={access}
@@ -1099,7 +1133,7 @@ function EditDomainForm({ domain, groups, onSave, isPending }: {
         />
       </div>
       <DialogFooter>
-        <Button onClick={() => onSave({ description: desc, group_access: access })} disabled={isPending} data-dialog-primary="true">
+        <Button onClick={() => onSave({ description: desc, require_realname: requireRealname, group_access: access })} disabled={isPending} data-dialog-primary="true">
           {isPending ? t("common.saving") : t("common.save")}
         </Button>
       </DialogFooter>

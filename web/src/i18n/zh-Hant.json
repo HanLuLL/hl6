@@ -37,7 +37,9 @@
     "close": "關閉",
     "expand": "展開",
     "collapse": "收起",
-    "toggleTheme": "切換主題"
+    "toggleTheme": "切換主題",
+    "yes": "是",
+    "no": "否"
   },
   "auth": {
     "shellTagline": "在安全的帳戶中管理你的子網域與 DNS 記錄。",
@@ -495,7 +497,11 @@
     "claimFor": "花費 {{cost}} 積分申請",
     "claimFor_other": "花費 {{cost}} 積分申請",
     "success": "成功申請 {{fqdn}}",
-    "earnCredits": "申請後可獲得 {{gain}} 積分"
+    "earnCredits": "申請後可獲得 {{gain}} 積分",
+    "realnameRequiredTitle": "該網域需要實名認證",
+    "realnameRequiredHint": "認領該網域的子網域前請先完成實名認證。",
+    "realnameGoVerify": "前往實名認證",
+    "realnameVerified": "您已完成實名認證"
   },
   "recordForm": {
     "addTitle": "新增 DNS 記錄",
@@ -615,7 +621,27 @@
     "updatedAt": "更新時間",
     "bannedReason": "封禁原因",
     "bannedAt": "封禁時間",
-    "bannedBy": "封禁人 ID"
+    "bannedBy": "封禁人 ID",
+    "realname": "實名",
+    "realnameManage": "實名管理",
+    "realnameManageTitle": "實名認證管理",
+    "realnameInfo": "實名認證資訊",
+    "realnameStatus": "實名狀態",
+    "realnameName": "已認證姓名",
+    "realnameVerifiedAt": "認證時間",
+    "realnameActionSelect": "選擇操作",
+    "realnameActionVerify": "通過實名",
+    "realnameActionReject": "拒絕實名",
+    "realnameActionReset": "重置實名",
+    "realnameRejectReason": "拒絕原因",
+    "realnameRejectReasonPlaceholder": "請填寫拒絕原因，將展示給使用者",
+    "realnameVerifyHintTitle": "確認通過實名認證",
+    "realnameVerifyHint": "該使用者的實名狀態將直接標記為已通過。若使用者存在申請單，最新一條申請單也會同步標記為已通過。",
+    "realnameResetHintTitle": "重置實名狀態",
+    "realnameResetHint": "將使用者的實名狀態重置為未認證，並清空已認證姓名與認證時間。使用者的申請單記錄保持不變。",
+    "realnameVerifySuccess": "實名狀態已標記為已通過",
+    "realnameRejectSuccess": "實名狀態已標記為未通過",
+    "realnameResetSuccess": "實名狀態已重置"
   },
   "adminBrand": {
     "title": "品牌設定",
@@ -701,7 +727,10 @@
     "claimedNoRecords": "暫無認領記錄",
     "releaseClaimed": "釋放認領",
     "releaseClaimedConfirm": "將釋放 {{fqdn}}，並刪除其全部解析記錄。此操作不可撤銷。",
-    "claimedReleased": "認領已釋放"
+    "claimedReleased": "認領已釋放",
+    "realname": "實名",
+    "requireRealname": "需要實名認證",
+    "requireRealnameHint": "開啟後使用者認領該網域下子網域前必須完成實名認證"
   },
   "adminDnsRecords": {
     "searchPlaceholder": "按名稱或內容搜尋...",
@@ -1202,7 +1231,8 @@
     "paymentGatewayNotConfigured": "支付閘道未設定",
     "failedToCreateOrder": "建立訂單失敗",
     "notFound": "未找到",
-    "accountActivationRequired": "帳號需要啟用，請查收郵件中的啟用連結"
+    "accountActivationRequired": "帳號需要啟用，請查收郵件中的啟用連結",
+    "realnameRequiredForClaim": "該網域要求完成實名認證後才能認領子網域"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

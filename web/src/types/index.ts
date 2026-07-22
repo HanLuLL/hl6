@@ -60,6 +60,7 @@ export interface Domain {
   credit_cost: number;
   is_active: boolean;
   description: string;
+  require_realname: boolean;
   migration_state: "idle" | "running" | "partial_failed" | "failed" | "queued";
   migration_read_only: boolean;
   last_migration_task_id?: number | null;

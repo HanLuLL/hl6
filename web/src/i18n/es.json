@@ -37,7 +37,9 @@
     "close": "Cerrar",
     "expand": "Expandir",
     "collapse": "Contraer",
-    "toggleTheme": "Cambiar tema"
+    "toggleTheme": "Cambiar tema",
+    "yes": "Sí",
+    "no": "No"
   },
   "auth": {
     "shellTagline": "Administra tus subdominios y registros DNS desde una cuenta segura.",
@@ -495,7 +497,11 @@
     "claimFor": "Solicitar por {{cost}} crédito",
     "claimFor_other": "Solicitar por {{cost}} créditos",
     "success": "Se ha solicitado {{fqdn}} correctamente",
-    "earnCredits": "Recibirás {{gain}} créditos al solicitar"
+    "earnCredits": "Recibirás {{gain}} créditos al solicitar",
+    "realnameRequiredTitle": "Este dominio requiere verificación de identidad",
+    "realnameRequiredHint": "Completa la verificación de identidad antes de solicitar un subdominio de este dominio.",
+    "realnameGoVerify": "Ir a verificación de identidad",
+    "realnameVerified": "Has completado la verificación de identidad"
   },
   "recordForm": {
     "addTitle": "Añadir registro DNS",
@@ -615,7 +621,27 @@
     "updatedAt": "Actualizado en",
     "bannedReason": "Motivo de bloqueo",
     "bannedAt": "Bloqueado en",
-    "bannedBy": "Bloqueado por ID"
+    "bannedBy": "Bloqueado por ID",
+    "realname": "Verificación",
+    "realnameManage": "Gestionar",
+    "realnameManageTitle": "Gestión de Verificación de Identidad",
+    "realnameInfo": "Verificación de Identidad",
+    "realnameStatus": "Estado de Verificación",
+    "realnameName": "Nombre Verificado",
+    "realnameVerifiedAt": "Verificado El",
+    "realnameActionSelect": "Seleccionar Acción",
+    "realnameActionVerify": "Aprobar",
+    "realnameActionReject": "Rechazar",
+    "realnameActionReset": "Restablecer",
+    "realnameRejectReason": "Razón de Rechazo",
+    "realnameRejectReasonPlaceholder": "Proporcione una razón de rechazo; se mostrará al usuario",
+    "realnameVerifyHintTitle": "Confirmar Verificación",
+    "realnameVerifyHint": "El estado de verificación del usuario se marcará como verificado. Si el usuario tiene solicitudes, la más reciente también se marcará como verificada.",
+    "realnameResetHintTitle": "Restablecer Estado de Verificación",
+    "realnameResetHint": "Restablece el estado de verificación del usuario a no verificado y borra el nombre verificado y la hora de verificación. Los registros de solicitudes del usuario permanecen sin cambios.",
+    "realnameVerifySuccess": "Estado de verificación marcado como verificado",
+    "realnameRejectSuccess": "Estado de verificación marcado como rechazado",
+    "realnameResetSuccess": "Estado de verificación restablecido"
   },
   "adminBrand": {
     "title": "Marca",
@@ -701,7 +727,10 @@
     "claimedNoRecords": "No hay reclamaciones",
     "releaseClaimed": "Liberar reclamación",
     "releaseClaimedConfirm": "Esto liberará {{fqdn}} y eliminará todos sus registros DNS. Esta acción no se puede deshacer.",
-    "claimedReleased": "Reclamación liberada"
+    "claimedReleased": "Reclamación liberada",
+    "realname": "Identidad",
+    "requireRealname": "Requerir verificación de identidad",
+    "requireRealnameHint": "Cuando está activado, los usuarios deben completar la verificación de identidad antes de solicitar subdominios en este dominio"
   },
   "adminDnsRecords": {
     "searchPlaceholder": "Buscar por nombre o contenido...",
@@ -1202,7 +1231,8 @@
     "paymentGatewayNotConfigured": "La pasarela de pago no está configurada",
     "failedToCreateOrder": "Error al crear el pedido",
     "notFound": "No encontrado",
-    "accountActivationRequired": "La cuenta requiere activación. Revisa tu correo electrónico para el enlace de activación."
+    "accountActivationRequired": "La cuenta requiere activación. Revisa tu correo electrónico para el enlace de activación.",
+    "realnameRequiredForClaim": "Este dominio requiere verificación de identidad antes de solicitar subdominios"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

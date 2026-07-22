@@ -76,6 +76,8 @@ type Domain struct {
 	CreditCost            Credit    `json:"credit_cost" gorm:"type:bigint;default:10"`
 	IsActive              bool      `json:"is_active" gorm:"default:true"`
 	Description           string    `json:"description"`
+	// RequireRealname 域名级实名要求：开启后用户认领该域名下子域名前必须完成实名认证。
+	RequireRealname       bool      `json:"require_realname" gorm:"not null;default:false"`
 	MigrationState        string    `json:"migration_state" gorm:"type:varchar(24);not null;default:idle;index"`
 	MigrationReadOnly     bool      `json:"migration_read_only" gorm:"not null;default:false"`
 	LastMigrationTaskID   *uint     `json:"last_migration_task_id" gorm:"index"`

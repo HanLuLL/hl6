@@ -20,4 +20,6 @@ func registerRealnameRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddlewar
 	admin.PUT("/realname/applications/:id/review", h.Realname.AdminReview)
 	admin.POST("/realname/applications/:id/retry", h.Realname.AdminRetryVerification)
 	admin.GET("/realname/stats", h.Realname.AdminGetStats)
+	// 管理员直接修改用户的实名状态（不依赖申请单）
+	admin.PUT("/users/:id/realname", h.Realname.AdminUpdateUserRealname)
 }

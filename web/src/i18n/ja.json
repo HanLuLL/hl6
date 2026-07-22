@@ -37,7 +37,9 @@
     "close": "閉じる",
     "expand": "展開",
     "collapse": "折りたたむ",
-    "toggleTheme": "テーマを切り替え"
+    "toggleTheme": "テーマを切り替え",
+    "yes": "はい",
+    "no": "いいえ"
   },
   "auth": {
     "shellTagline": "安全なアカウントからサブドメインと DNS レコードを管理できます。",
@@ -495,7 +497,11 @@
     "claimFor": "{{cost}} クレジットで取得",
     "claimFor_other": "{{cost}} クレジットで取得",
     "success": "{{fqdn}} を取得しました",
-    "earnCredits": "取得後に {{gain}} クレジットが付与されます"
+    "earnCredits": "取得後に {{gain}} クレジットが付与されます",
+    "realnameRequiredTitle": "このドメインは本人確認が必要です",
+    "realnameRequiredHint": "このドメインのサブドメインを取得する前に本人確認を完了してください。",
+    "realnameGoVerify": "本人確認へ進む",
+    "realnameVerified": "本人確認が完了しています"
   },
   "recordForm": {
     "addTitle": "DNSレコードを追加",
@@ -615,7 +621,27 @@
     "updatedAt": "更新日時",
     "bannedReason": "封禁理由",
     "bannedAt": "封禁日時",
-    "bannedBy": "封禁者 ID"
+    "bannedBy": "封禁者 ID",
+    "realname": "実名",
+    "realnameManage": "実名管理",
+    "realnameManageTitle": "実名認証管理",
+    "realnameInfo": "実名認証情報",
+    "realnameStatus": "実名ステータス",
+    "realnameName": "認証済み名",
+    "realnameVerifiedAt": "認証日時",
+    "realnameActionSelect": "アクションを選択",
+    "realnameActionVerify": "承認",
+    "realnameActionReject": "拒否",
+    "realnameActionReset": "リセット",
+    "realnameRejectReason": "拒否理由",
+    "realnameRejectReasonPlaceholder": "拒否理由を入力してください。ユーザーに表示されます",
+    "realnameVerifyHintTitle": "実名認証を承認",
+    "realnameVerifyHint": "ユーザーの実名ステータスが認証済みとしてマークされます。申請がある場合、最新の申請も認証済みとしてマークされます。",
+    "realnameResetHintTitle": "実名ステータスをリセット",
+    "realnameResetHint": "ユーザーの実名ステータスを未認証にリセットし、認証済み名と認証日時をクリアします。ユーザーの申請記録は変更されません。",
+    "realnameVerifySuccess": "実名ステータスを認証済みにしました",
+    "realnameRejectSuccess": "実名ステータスを拒否にしました",
+    "realnameResetSuccess": "実名ステータスをリセットしました"
   },
   "adminBrand": {
     "title": "ブランド設定",
@@ -701,7 +727,10 @@
     "claimedNoRecords": "取得済みレコードはありません",
     "releaseClaimed": "取得を解放",
     "releaseClaimedConfirm": "{{fqdn}} の取得を解放し、関連するDNSレコードをすべて削除します。この操作は取り消せません。",
-    "claimedReleased": "取得を解放しました"
+    "claimedReleased": "取得を解放しました",
+    "realname": "本人確認",
+    "requireRealname": "本人確認を必須にする",
+    "requireRealnameHint": "有効にすると、このドメインのサブドメインを取得する前に本人確認が必要になります"
   },
   "adminDnsRecords": {
     "searchPlaceholder": "名前またはコンテンツで検索...",
@@ -1202,7 +1231,8 @@
     "paymentGatewayNotConfigured": "決済ゲートウェイが設定されていません",
     "failedToCreateOrder": "注文の作成に失敗",
     "notFound": "見つかりません",
-    "accountActivationRequired": "アカウントのアクティベーションが必要です。メールのアクティベーションリンクを確認してください"
+    "accountActivationRequired": "アカウントのアクティベーションが必要です。メールのアクティベーションリンクを確認してください",
+    "realnameRequiredForClaim": "このドメインはサブドメイン取得前に本人確認が必要です"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",

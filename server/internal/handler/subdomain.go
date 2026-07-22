@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
+	"hl6-server/internal/config"
 	"hl6-server/internal/helpers"
 	"hl6-server/internal/model"
 	"hl6-server/internal/repository"
@@ -28,10 +29,11 @@ type SubdomainHandler struct {
 	notif     *service.NotificationService
 	subSvc    *service.SubdomainService
 	auditLog  *service.AuditLogService
+	cfg       *config.Config
 }
 
-func NewSubdomainHandler(repo *repository.Repository, broker *SSEBroker, ops *service.DNSOperationService, enqueue *service.AuditEnqueueService, notif *service.NotificationService, subSvc *service.SubdomainService, auditLog *service.AuditLogService) *SubdomainHandler {
-	return &SubdomainHandler{repo: repo, broker: broker, ops: ops, enqueue: enqueue, notif: notif, subSvc: subSvc, auditLog: auditLog}
+func NewSubdomainHandler(repo *repository.Repository, broker *SSEBroker, ops *service.DNSOperationService, enqueue *service.AuditEnqueueService, notif *service.NotificationService, subSvc *service.SubdomainService, auditLog *service.AuditLogService, cfg *config.Config) *SubdomainHandler {
+	return &SubdomainHandler{repo: repo, broker: broker, ops: ops, enqueue: enqueue, notif: notif, subSvc: subSvc, auditLog: auditLog, cfg: cfg}
 }
 
 func (h *SubdomainHandler) List(c *gin.Context) {
@@ -123,6 +125,15 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 		return
 	}
 
+	// 实名认证检查：域名级开关（domain.RequireRealname）或全局开关（realname_required_for_claim）
+	// 任一开启时，认领该域名子域名前用户必须已完成实名认证。
+	if domain.RequireRealname || h.isGlobalRealnameRequiredForClaim() {
+		if user.RealnameStatus != model.RealnameStatusVerified {
+			response.ErrorWithKey(c, http.StatusForbidden, "realname verification required to claim this subdomain", "error.realnameRequiredForClaim")
+			return
+		}
+	}
+
 	// Check group access and get group-specific cost
 	if user.GroupID == nil {
 		response.ErrorWithKey(c, http.StatusForbidden, "user has no group assigned", "error.noGroupAssigned")
@@ -193,6 +204,20 @@ func (h *SubdomainHandler) Claim(c *gin.Context) {
 		_ = h.enqueue.EnqueueScan(c.Request.Context(), sub.ID, sub.FQDN, "claim", service.EnqueueOpts{})
 	}
 	response.Created(c, sub)
+}
+
+// isGlobalRealnameRequiredForClaim 读取全局 realname_required_for_claim 配置。
+// 加载失败时返回 false（不阻塞认领流程），仅记录日志。
+func (h *SubdomainHandler) isGlobalRealnameRequiredForClaim() bool {
+	if h.cfg == nil {
+		return false
+	}
+	cfg, err := service.LoadRealnameConfigGlobal(h.repo, h.cfg.EncryptionKey)
+	if err != nil || cfg == nil {
+		log.Printf("[subdomain] load realname config failed: %v", err)
+		return false
+	}
+	return cfg.RequiredForClaim
 }
 
 func (h *SubdomainHandler) Release(c *gin.Context) {
