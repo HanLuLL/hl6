@@ -701,6 +701,16 @@ export interface RealnameApplication {
   user_name?: string;
 }
 
+// 管理员按需查看的明文实名信息（每次查看都会写入审计日志）
+export interface RealnameApplicationFull {
+  id: number;
+  user_id: number;
+  real_name: string;
+  id_card: string;
+  user_email?: string;
+  user_name?: string;
+}
+
 export interface RealnameStatusResponse {
   status: RealnameStatus;
   verified_at: string | null;

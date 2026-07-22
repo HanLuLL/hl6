@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, getErrorMessage } from "@/lib/api";
 import type {
   RealnameApplication,
+  RealnameApplicationFull,
   RealnameStats,
   RealnameStatusResponse,
   SubmitRealnameResponse,
@@ -153,4 +154,17 @@ export function useAdminRetryRealname() {
   });
 }
 
-export type { RealnameApplication, RealnameStats, RealnameStatusResponse };
+// 管理员：按需查看明文实名信息（每次调用后端强制写入审计日志）
+export function useAdminViewRealnameFull() {
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      api.adminGetRealnameApplicationFull(id, { reason }),
+    onSuccess: () => {
+      toast.success(t("realname.toast.viewFullReady"));
+    },
+    onError: (err) => toast.error(getErrorMessage(err, t)),
+  });
+}
+
+export type { RealnameApplication, RealnameApplicationFull, RealnameStats, RealnameStatusResponse };

@@ -1232,7 +1232,8 @@
     "failedToCreateOrder": "建立訂單失敗",
     "notFound": "未找到",
     "accountActivationRequired": "帳號需要啟用，請查收郵件中的啟用連結",
-    "realnameRequiredForClaim": "該網域要求完成實名認證後才能認領子網域"
+    "realnameRequiredForClaim": "該網域要求完成實名認證後才能認領子網域",
+    "realnameViewReasonRequired": "查看明文實名資訊必須填寫理由"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -1651,7 +1652,8 @@
       "verified": "實名認證已通過",
       "redirectingToPay": "正在跳轉付款頁面",
       "retryStarted": "已重新發起驗證",
-      "reviewed": "審核結果已提交"
+      "reviewed": "審核結果已提交",
+      "viewFullReady": "明文實名資訊已載入"
     },
     "admin": {
       "title": "實名審核",
@@ -1676,7 +1678,18 @@
       "confirmApprove": "確認通過",
       "confirmReject": "確認拒絕",
       "statsVerified": "已認證使用者",
-      "verifiedAt": "認證時間"
+      "verifiedAt": "認證時間",
+      "viewFull": "查看完整資訊",
+      "viewFullTitle": "查看明文實名資訊",
+      "viewFullWarning": "即將查看該使用者的明文姓名和身分證號。此操作會被記錄到稽核日誌，請確認你有正當理由。",
+      "viewFullReasonLabel": "查看理由（必填）",
+      "viewFullReasonPlaceholder": "請填寫查看明文實名的正當理由，例如：配合執法調查、使用者申訴核實等",
+      "viewFullReasonHint": "此理由將永久記錄在稽核日誌中，不可刪除。",
+      "viewFullConfirm": "確認查看",
+      "viewFullAuditNotice": "本次查看已記錄到稽核日誌。請妥善保管以下資訊，不得用於本理由之外的用途。",
+      "viewFullNameLabel": "姓名",
+      "viewFullIDCardLabel": "身分證號",
+      "viewFullEmailLabel": "信箱"
     }
   }
 }

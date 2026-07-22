@@ -17,6 +17,8 @@ func registerRealnameRoutes(api *gin.RouterGroup, auth *middleware.AuthMiddlewar
 	admin := api.Group("/admin", auth.Required(), middleware.AdminRequired())
 	admin.GET("/realname/applications", h.Realname.AdminListApplications)
 	admin.GET("/realname/applications/:id", h.Realname.AdminGetApplication)
+	// 管理员按需查看明文实名（POST：需请求体携带 reason，强制审计留痕）
+	admin.POST("/realname/applications/:id/full", h.Realname.AdminGetApplicationFull)
 	admin.PUT("/realname/applications/:id/review", h.Realname.AdminReview)
 	admin.POST("/realname/applications/:id/retry", h.Realname.AdminRetryVerification)
 	admin.GET("/realname/stats", h.Realname.AdminGetStats)

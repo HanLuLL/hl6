@@ -1232,7 +1232,8 @@
     "failedToCreateOrder": "Failed to create order",
     "notFound": "Not found",
     "accountActivationRequired": "Account requires activation. Please check your email for the activation link.",
-    "realnameRequiredForClaim": "This domain requires identity verification before claiming subdomains"
+    "realnameRequiredForClaim": "This domain requires identity verification before claiming subdomains",
+    "realnameViewReasonRequired": "A reason is required to view plain-text identity info"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -1683,7 +1684,8 @@
       "verified": "Identity verification passed.",
       "redirectingToPay": "Redirecting to payment page",
       "retryStarted": "Verification restarted",
-      "reviewed": "Review result submitted"
+      "reviewed": "Review result submitted",
+      "viewFullReady": "Full identity info loaded"
     },
     "admin": {
       "title": "Identity Review",
@@ -1708,7 +1710,18 @@
       "confirmApprove": "Confirm approve",
       "confirmReject": "Confirm reject",
       "statsVerified": "Verified users",
-      "verifiedAt": "Verified at"
+      "verifiedAt": "Verified at",
+      "viewFull": "View full info",
+      "viewFullTitle": "View plain-text identity",
+      "viewFullWarning": "You are about to view this user's plain-text name and ID card number. This action will be recorded in the audit log. Please confirm you have a legitimate reason.",
+      "viewFullReasonLabel": "Reason (required)",
+      "viewFullReasonPlaceholder": "Provide the legitimate reason for viewing, e.g. law enforcement cooperation, user appeal verification",
+      "viewFullReasonHint": "This reason will be permanently recorded in the audit log and cannot be deleted.",
+      "viewFullConfirm": "Confirm view",
+      "viewFullAuditNotice": "This view has been recorded in the audit log. Keep the following information secure and do not use it beyond the stated reason.",
+      "viewFullNameLabel": "Name",
+      "viewFullIDCardLabel": "ID Card",
+      "viewFullEmailLabel": "Email"
     }
   }
 }

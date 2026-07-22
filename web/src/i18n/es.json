@@ -1232,7 +1232,8 @@
     "failedToCreateOrder": "Error al crear el pedido",
     "notFound": "No encontrado",
     "accountActivationRequired": "La cuenta requiere activación. Revisa tu correo electrónico para el enlace de activación.",
-    "realnameRequiredForClaim": "Este dominio requiere verificación de identidad antes de solicitar subdominios"
+    "realnameRequiredForClaim": "Este dominio requiere verificación de identidad antes de solicitar subdominios",
+    "realnameViewReasonRequired": "Se requiere un motivo para ver la información de identidad en texto plano"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -1651,7 +1652,8 @@
       "verified": "Verificación de identidad aprobada.",
       "redirectingToPay": "Redirigiendo a la página de pago",
       "retryStarted": "Verificación reiniciada",
-      "reviewed": "Resultado de revisión enviado"
+      "reviewed": "Resultado de revisión enviado",
+      "viewFullReady": "Información de identidad completa cargada"
     },
     "admin": {
       "title": "Revisión de identidad",
@@ -1676,7 +1678,18 @@
       "confirmApprove": "Confirmar aprobación",
       "confirmReject": "Confirmar rechazo",
       "statsVerified": "Usuarios verificados",
-      "verifiedAt": "Verificado el"
+      "verifiedAt": "Verificado el",
+      "viewFull": "Ver información completa",
+      "viewFullTitle": "Ver identidad en texto plano",
+      "viewFullWarning": "Estás a punto de ver el nombre y el número de identificación de este usuario en texto plano. Esta acción se registrará en el registro de auditoría. Confirma que tienes un motivo legítimo.",
+      "viewFullReasonLabel": "Motivo (obligatorio)",
+      "viewFullReasonPlaceholder": "Indica el motivo legítimo para ver, p. ej. cooperación con las autoridades, verificación de apelación",
+      "viewFullReasonHint": "Este motivo se registrará permanentemente en el registro de auditoría y no se podrá eliminar.",
+      "viewFullConfirm": "Confirmar vista",
+      "viewFullAuditNotice": "Esta vista se ha registrado en el registro de auditoría. Mantén segura la siguiente información y no la uses fuera del motivo indicado.",
+      "viewFullNameLabel": "Nombre",
+      "viewFullIDCardLabel": "Documento",
+      "viewFullEmailLabel": "Correo"
     }
   }
 }

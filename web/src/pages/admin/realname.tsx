@@ -4,6 +4,8 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCw,
+  Eye,
+  ShieldAlert,
 } from "lucide-react";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import {
@@ -11,6 +13,7 @@ import {
   useAdminRealnameStats,
   useAdminReviewRealname,
   useAdminRetryRealname,
+  useAdminViewRealnameFull,
 } from "@/hooks/use-realname";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { RealnameApplication } from "@/types";
+import type { RealnameApplication, RealnameApplicationFull } from "@/types";
 
 const PER_PAGE = 10;
 
@@ -84,6 +87,12 @@ export default function AdminRealnamePage() {
   const [reviewApproved, setReviewApproved] = useState(true);
   const [reviewReason, setReviewReason] = useState("");
 
+  // 查看明文实名状态
+  const [viewFullOpen, setViewFullOpen] = useState(false);
+  const [viewFullTarget, setViewFullTarget] = useState<RealnameApplication | null>(null);
+  const [viewFullReason, setViewFullReason] = useState("");
+  const [viewFullResult, setViewFullResult] = useState<RealnameApplicationFull | null>(null);
+
   const { data: stats, isLoading: statsLoading } = useAdminRealnameStats();
   const { data: listData, isLoading: listLoading } = useAdminRealnameApplications({
     page,
@@ -95,6 +104,7 @@ export default function AdminRealnamePage() {
 
   const reviewMutation = useAdminReviewRealname();
   const retryMutation = useAdminRetryRealname();
+  const viewFullMutation = useAdminViewRealnameFull();
 
   const applications = listData?.data ?? [];
   const total = listData?.total ?? 0;
@@ -118,6 +128,32 @@ export default function AdminRealnamePage() {
         },
       },
     );
+  };
+
+  const openViewFull = (app: RealnameApplication) => {
+    setViewFullTarget(app);
+    setViewFullReason("");
+    setViewFullResult(null);
+    setViewFullOpen(true);
+  };
+
+  const handleViewFullSubmit = () => {
+    if (!viewFullTarget || !viewFullReason.trim()) return;
+    viewFullMutation.mutate(
+      { id: viewFullTarget.id, reason: viewFullReason.trim() },
+      {
+        onSuccess: (res) => {
+          setViewFullResult(res.data);
+        },
+      },
+    );
+  };
+
+  const closeViewFull = () => {
+    setViewFullOpen(false);
+    setViewFullTarget(null);
+    setViewFullReason("");
+    setViewFullResult(null);
   };
 
   return (
@@ -235,6 +271,15 @@ export default function AdminRealnamePage() {
                     )}
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">
+                    {/* 查看明文实名：所有申请单均可查看，每次调用强制审计 */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openViewFull(app)}
+                    >
+                      <Eye className="h-4 w-4" />
+                      {t("realname.admin.viewFull")}
+                    </Button>
                     {/* 仅 manual 模式下且处于 verifying 状态可审核 */}
                     {app.provider === "manual" && (app.status === "paid" || app.status === "verifying" || app.status === "failed") && (
                       <>
@@ -309,6 +354,86 @@ export default function AdminRealnamePage() {
             >
               {reviewMutation.isPending ? t("common.processing") : reviewApproved ? t("realname.admin.confirmApprove") : t("realname.admin.confirmReject")}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 查看明文实名对话框 */}
+      <Dialog open={viewFullOpen} onOpenChange={(open) => { if (!open) closeViewFull(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-amber-500" />
+              {t("realname.admin.viewFullTitle")}
+            </DialogTitle>
+            <DialogDescription>
+              {viewFullTarget && (
+                <span>
+                  #{viewFullTarget.id} · {viewFullTarget.real_name_masked} · {viewFullTarget.id_card_masked}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewFullResult ? (
+            <div className="space-y-4 py-2">
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
+                {t("realname.admin.viewFullAuditNotice")}
+              </div>
+              <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2 items-center">
+                  <Label className="text-muted-foreground">{t("realname.admin.viewFullNameLabel")}</Label>
+                  <div className="col-span-2 font-medium">{viewFullResult.real_name}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 items-center">
+                  <Label className="text-muted-foreground">{t("realname.admin.viewFullIDCardLabel")}</Label>
+                  <div className="col-span-2 font-mono">{viewFullResult.id_card}</div>
+                </div>
+                {viewFullResult.user_email && (
+                  <div className="grid grid-cols-3 gap-2 items-center">
+                    <Label className="text-muted-foreground">{t("realname.admin.viewFullEmailLabel")}</Label>
+                    <div className="col-span-2 text-sm">{viewFullResult.user_email}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 py-2">
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
+                {t("realname.admin.viewFullWarning")}
+              </div>
+              <div className="space-y-2">
+                <Label>{t("realname.admin.viewFullReasonLabel")}</Label>
+                <Textarea
+                  value={viewFullReason}
+                  onChange={(e) => setViewFullReason(e.target.value)}
+                  rows={3}
+                  placeholder={t("realname.admin.viewFullReasonPlaceholder")}
+                />
+                <p className="text-xs text-muted-foreground">{t("realname.admin.viewFullReasonHint")}</p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            {viewFullResult ? (
+              <Button variant="outline" onClick={closeViewFull}>
+                {t("common.close")}
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={closeViewFull} disabled={viewFullMutation.isPending}>
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={handleViewFullSubmit}
+                  disabled={viewFullMutation.isPending || !viewFullReason.trim()}
+                >
+                  {viewFullMutation.isPending ? t("common.processing") : t("realname.admin.viewFullConfirm")}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

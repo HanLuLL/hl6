@@ -300,6 +300,81 @@ func (h *RealnameHandler) AdminGetApplication(c *gin.Context) {
 	response.OK(c, h.buildApplicationView(app, true))
 }
 
+// adminViewFullRequest 查看明文实名的请求体。
+// reason 必填：用于审计留痕，记录管理员查看明文实名的正当理由。
+type adminViewFullRequest struct {
+	Reason string `json:"reason" binding:"required"`
+}
+
+// realnameApplicationFullView 明文视图（仅管理员按需查看，每次调用强制审计）。
+type realnameApplicationFullView struct {
+	ID        uint   `json:"id"`
+	UserID    uint   `json:"user_id"`
+	RealName  string `json:"real_name"`
+	IDCard    string `json:"id_card"`
+	UserEmail string `json:"user_email,omitempty"`
+	UserName  string `json:"user_name,omitempty"`
+}
+
+// AdminGetApplicationFull POST /api/v1/admin/realname/applications/:id/full
+// 管理员按需查看申请单的明文实名信息（姓名+身份证）。
+// 每次调用强制写入审计日志，记录查看者、目标用户、查看理由。
+func (h *RealnameHandler) AdminGetApplicationFull(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "invalid id", "error.invalidId")
+		return
+	}
+	var req adminViewFullRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ErrorWithKey(c, http.StatusBadRequest, "reason is required", "error.realnameViewReasonRequired")
+		return
+	}
+	reason := strings.TrimSpace(req.Reason)
+	if reason == "" {
+		response.ErrorWithKey(c, http.StatusBadRequest, "reason is required", "error.realnameViewReasonRequired")
+		return
+	}
+	admin := ctxutil.GetUser(c)
+	if admin == nil {
+		response.ErrorWithKey(c, http.StatusUnauthorized, "unauthorized", "error.unauthorized")
+		return
+	}
+	app, err := h.repo.FindRealnameApplication(uint(id))
+	if err != nil || app == nil {
+		response.ErrorWithKey(c, http.StatusNotFound, "not found", "error.realnameNotFound")
+		return
+	}
+	if err := h.repo.GetDB().First(&app.User, app.UserID).Error; err != nil {
+		slog.Warn("realname: load user failed", "app_id", app.ID, "err", err)
+	}
+	// 解密明文
+	realName := crypto.DecryptOrPlaintext(app.RealName, h.cfg.EncryptionKey)
+	idCard := crypto.DecryptOrPlaintext(app.IDCard, h.cfg.EncryptionKey)
+	// 强制写入审计日志：谁、何时、查看了谁的明文实名、理由
+	detailJSON, _ := json.Marshal(map[string]interface{}{
+		"application_id":  app.ID,
+		"target_user_id":  app.UserID,
+		"target_user_email": app.User.Email,
+		"reason":          reason,
+	})
+	_ = h.repo.CreateAuditLog(&model.AuditLog{
+		UserID:     admin.ID,
+		Action:     "admin_view_realname_full",
+		Resource:   "realname_application",
+		ResourceID: app.ID,
+		Details:    detailJSON,
+	})
+	response.OK(c, realnameApplicationFullView{
+		ID:        app.ID,
+		UserID:    app.UserID,
+		RealName:  realName,
+		IDCard:    idCard,
+		UserEmail: app.User.Email,
+		UserName:  app.User.Name,
+	})
+}
+
 type adminReviewRequest struct {
 	Approved bool   `json:"approved"`
 	Reason   string `json:"reason"`

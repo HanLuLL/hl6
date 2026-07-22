@@ -1232,7 +1232,8 @@
     "failedToCreateOrder": "注文の作成に失敗",
     "notFound": "見つかりません",
     "accountActivationRequired": "アカウントのアクティベーションが必要です。メールのアクティベーションリンクを確認してください",
-    "realnameRequiredForClaim": "このドメインはサブドメイン取得前に本人確認が必要です"
+    "realnameRequiredForClaim": "このドメインはサブドメイン取得前に本人確認が必要です",
+    "realnameViewReasonRequired": "平文の本人確認情報を表示するには理由が必要です"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -1651,7 +1652,8 @@
       "verified": "本人確認が完了しました。",
       "redirectingToPay": "支払いページへ遷移中",
       "retryStarted": "検証を再開始しました",
-      "reviewed": "審査結果を送信しました"
+      "reviewed": "審査結果を送信しました",
+      "viewFullReady": "平文の本人確認情報を読み込みました"
     },
     "admin": {
       "title": "本人確認審査",
@@ -1676,7 +1678,18 @@
       "confirmApprove": "承認を確認",
       "confirmReject": "却下を確認",
       "statsVerified": "確認済みユーザー数",
-      "verifiedAt": "確認日時"
+      "verifiedAt": "確認日時",
+      "viewFull": "完全情報を表示",
+      "viewFullTitle": "平文の本人確認情報を表示",
+      "viewFullWarning": "このユーザーの平文の氏名と身份证番号を表示します。この操作は監査ログに記録されます。正当な理由があることを確認してください。",
+      "viewFullReasonLabel": "理由（必須）",
+      "viewFullReasonPlaceholder": "正当な理由を入力してください（例：法執行機関への協力、ユーザー申立ての確認など）",
+      "viewFullReasonHint": "この理由は監査ログに永続的に記録され、削除できません。",
+      "viewFullConfirm": "表示を確認",
+      "viewFullAuditNotice": "今回の表示は監査ログに記録されました。以下の情報を厳重に保管し、記載理由以外の目的で使用しないでください。",
+      "viewFullNameLabel": "氏名",
+      "viewFullIDCardLabel": "身份证番号",
+      "viewFullEmailLabel": "メール"
     }
   }
 }

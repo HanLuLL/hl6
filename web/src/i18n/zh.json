@@ -1232,7 +1232,8 @@
     "failedToCreateOrder": "创建订单失败",
     "notFound": "未找到",
     "accountActivationRequired": "账号需要激活，请查收邮件中的激活链接",
-    "realnameRequiredForClaim": "该域名要求完成实名认证后才能认领子域名"
+    "realnameRequiredForClaim": "该域名要求完成实名认证后才能认领子域名",
+    "realnameViewReasonRequired": "查看明文实名信息必须填写理由"
   },
   "dnsProviders": {
     "cloudflare": "Cloudflare",
@@ -1680,7 +1681,8 @@
       "verified": "实名认证已通过",
       "redirectingToPay": "正在跳转支付页面",
       "retryStarted": "已重新发起验证",
-      "reviewed": "审核结果已提交"
+      "reviewed": "审核结果已提交",
+      "viewFullReady": "明文实名信息已加载"
     },
     "admin": {
       "title": "实名审核",
@@ -1705,7 +1707,18 @@
       "confirmApprove": "确认通过",
       "confirmReject": "确认拒绝",
       "statsVerified": "已认证用户",
-      "verifiedAt": "认证时间"
+      "verifiedAt": "认证时间",
+      "viewFull": "查看完整信息",
+      "viewFullTitle": "查看明文实名信息",
+      "viewFullWarning": "即将查看该用户的明文姓名和身份证号。此操作会被记录到审计日志，请确认你有正当理由。",
+      "viewFullReasonLabel": "查看理由（必填）",
+      "viewFullReasonPlaceholder": "请填写查看明文实名的正当理由，例如：配合执法调查、用户申诉核实等",
+      "viewFullReasonHint": "此理由将永久记录在审计日志中，不可删除。",
+      "viewFullConfirm": "确认查看",
+      "viewFullAuditNotice": "本次查看已记录到审计日志。请妥善保管以下信息，不得用于本理由之外的用途。",
+      "viewFullNameLabel": "姓名",
+      "viewFullIDCardLabel": "身份证号",
+      "viewFullEmailLabel": "邮箱"
     }
   }
 }

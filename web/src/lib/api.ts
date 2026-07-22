@@ -58,6 +58,7 @@ import type {
   RealnameStatusResponse,
   SubmitRealnameResponse,
   RealnameApplication,
+  RealnameApplicationFull,
   RealnameStats,
 } from "@/types";
 import type { AIModelConfig, AIModelConfigInput, AuditPromptTemplate, PromptTemplateInput, AuditAIReview, AIAuditStats, UserAppeal, BanInfo } from "@/types/ai-audit";
@@ -490,6 +491,11 @@ export const api = {
   },
   adminGetRealnameApplication: (id: number) =>
     request<ApiResponse<RealnameApplication>>(`/admin/realname/applications/${id}`),
+  adminGetRealnameApplicationFull: (id: number, data: { reason: string }) =>
+    request<ApiResponse<RealnameApplicationFull>>(`/admin/realname/applications/${id}/full`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   adminReviewRealname: (id: number, data: { approved: boolean; reason: string }) =>
     request<ApiResponse<{ message: string }>>(`/admin/realname/applications/${id}/review`, {
       method: "PUT",
