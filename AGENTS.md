@@ -6,7 +6,7 @@ HL6 是一个域名/子域名管理平台，用户可以在已注册域名下认
 >
 > **本项目**：[https://github.com/HanLuLL/hl6](https://github.com/HanLuLL/hl6)
 >
-> **容器镜像**：`mirror.houlang.cloud/hanlull/hl6:latest`（需先注册并登录）
+> **容器镜像**：`ghcr.nju.edu.cn/hanlull/hl6:latest`（南大镜像站，无需登录直接拉取）
 
 ## Tech Stack
 

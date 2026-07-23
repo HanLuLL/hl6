@@ -13,12 +13,11 @@
 # 全球注册表
 docker pull ghcr.io/hanlull/hl6:v2.0.0
 
-# 国内镜像（需先注册并登录）
-docker login mirror.houlang.cloud
-docker pull mirror.houlang.cloud/hanlull/hl6:v2.0.0
+# 国内镜像（无需登录，直接拉取）
+docker pull ghcr.nju.edu.cn/hanlull/hl6:v2.0.0
 ```
 
-将 `HL6_IMAGE` 设置为任一地址。国内镜像需要先在 [mirror.houlang.cloud](https://mirror.houlang.cloud) 注册账号并通过 `docker login` 登录后才能拉取；仅是拉取路径替代，不得用作镜像构建源。
+将 `HL6_IMAGE` 设置为任一地址。国内镜像由南京大学镜像站提供，无需注册登录即可直接拉取；仅是拉取路径替代，不得用作镜像构建源。
 
 ## 环境
 
